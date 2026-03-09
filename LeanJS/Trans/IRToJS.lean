@@ -147,7 +147,9 @@ partial def translateExpr (e : IRExpr) : IRToJSM Expr := do
   | .«continue» => return .literal .undefined
   | .throw value => translateExpr value
   | .tryCatch _ _ _ _ => return .literal .undefined
-  | .«match» _ _ => return .literal .undefined
+  | .«match» scrutinee cases =>
+    let s ← translateExpr scrutinee
+    translateMatchExpr s cases
   | .construct name args =>
     let aJS ← args.mapM translateExpr
     return .call (.ident name) aJS
@@ -228,6 +230,10 @@ partial def translateToStmts (e : IRExpr) : IRToJSM (List Stmt) := do
       else some (CatchClause.mk catchParam handlerStmts)
     return [.try_ bodyStmts handlerClause finalizerStmts]
 
+  | .«match» scrutinee cases =>
+    let s ← translateExpr scrutinee
+    translateMatchStmts s cases
+
   | .assign ref value =>
     let v ← translateExpr value
     match ref with
@@ -244,11 +250,147 @@ partial def translateToStmts (e : IRExpr) : IRToJSM (List Stmt) := do
     if isUndefined expr then return []
     else return [.expr expr]
 
+/-- Translate match cases to expression form (nested ternary) -/
+partial def translateMatchExpr (scrutinee : Expr) (cases : List IRMatchCase)
+    : IRToJSM Expr := do
+  match cases with
+  | [] => return .literal .undefined
+  | [.mk pat body] =>
+    match pat with
+    | .wildcard =>
+      translateExpr body
+    | .var name =>
+      let b ← translateExpr body
+      return .call (.arrowFunction [.ident name none] (.expr b)) [scrutinee]
+    | .lit litVal =>
+      let b ← translateExpr body
+      let cond := Expr.binary .strictEq scrutinee (.literal (irLitToJS litVal))
+      return .conditional cond b (.literal .undefined)
+    | .constructor tag bindings =>
+      let b ← translateExpr body
+      let cond := Expr.binary .strictEq
+        (.member scrutinee (.ident "_tag"))
+        (.literal (.string tag))
+      -- Wrap in IIFE to bind extracted fields
+      let mut innerBody := b
+      for (binding, idx) in bindings.zipIdx.reverse do
+        let extract := Expr.member scrutinee (.computed (.literal (.number (Float.ofNat idx))))
+        innerBody := .call (.arrowFunction [.ident binding none] (.expr innerBody)) [extract]
+      return .conditional cond innerBody (.literal .undefined)
+  | (.mk pat body) :: rest =>
+    let restExpr ← translateMatchExpr scrutinee rest
+    match pat with
+    | .wildcard =>
+      translateExpr body
+    | .var name =>
+      let b ← translateExpr body
+      return .call (.arrowFunction [.ident name none] (.expr b)) [scrutinee]
+    | .lit litVal =>
+      let b ← translateExpr body
+      let cond := Expr.binary .strictEq scrutinee (.literal (irLitToJS litVal))
+      return .conditional cond b restExpr
+    | .constructor tag bindings =>
+      let b ← translateExpr body
+      let cond := Expr.binary .strictEq
+        (.member scrutinee (.ident "_tag"))
+        (.literal (.string tag))
+      let mut innerBody := b
+      for (binding, idx) in bindings.zipIdx.reverse do
+        let extract := Expr.member scrutinee (.computed (.literal (.number (Float.ofNat idx))))
+        innerBody := .call (.arrowFunction [.ident binding none] (.expr innerBody)) [extract]
+      return .conditional cond innerBody restExpr
+
+/-- Translate match cases to statement form (nested if-else) -/
+partial def translateMatchStmts (scrutinee : Expr) (cases : List IRMatchCase)
+    : IRToJSM (List Stmt) := do
+  match cases with
+  | [] => return []
+  | [.mk pat body] =>
+    match pat with
+    | .wildcard =>
+      translateToStmts body
+    | .var name =>
+      let bodyStmts ← translateToStmts body
+      return [.varDecl .const [.mk (.ident name none) (some scrutinee)]] ++ bodyStmts
+    | .lit litVal =>
+      let bodyStmts ← translateToStmts body
+      let cond := Expr.binary .strictEq scrutinee (.literal (irLitToJS litVal))
+      return [.ifStmt cond (.block bodyStmts) none]
+    | .constructor tag bindings =>
+      let bodyStmts ← translateToStmts body
+      let cond := Expr.binary .strictEq
+        (.member scrutinee (.ident "_tag"))
+        (.literal (.string tag))
+      let mut extracts : List Stmt := []
+      for (binding, idx) in bindings.zipIdx do
+        let extract := Expr.member scrutinee (.computed (.literal (.number (Float.ofNat idx))))
+        extracts := extracts ++ [.varDecl .const [.mk (.ident binding none) (some extract)]]
+      return [.ifStmt cond (.block (extracts ++ bodyStmts)) none]
+  | (.mk pat body) :: rest =>
+    let restStmts ← translateMatchStmts scrutinee rest
+    let restBlock := if restStmts.isEmpty then none else some (Stmt.block restStmts)
+    match pat with
+    | .wildcard =>
+      translateToStmts body
+    | .var name =>
+      let bodyStmts ← translateToStmts body
+      let stmts := [Stmt.varDecl .const [.mk (.ident name none) (some scrutinee)]] ++ bodyStmts
+      return stmts
+    | .lit litVal =>
+      let bodyStmts ← translateToStmts body
+      let cond := Expr.binary .strictEq scrutinee (.literal (irLitToJS litVal))
+      return [.ifStmt cond (.block bodyStmts) restBlock]
+    | .constructor tag bindings =>
+      let bodyStmts ← translateToStmts body
+      let cond := Expr.binary .strictEq
+        (.member scrutinee (.ident "_tag"))
+        (.literal (.string tag))
+      let mut extracts : List Stmt := []
+      for (binding, idx) in bindings.zipIdx do
+        let extract := Expr.member scrutinee (.computed (.literal (.number (Float.ofNat idx))))
+        extracts := extracts ++ [.varDecl .const [.mk (.ident binding none) (some extract)]]
+      return [.ifStmt cond (.block (extracts ++ bodyStmts)) restBlock]
+
 end
 
 /-- Translate an IR expression to JS statements -/
 def translateToJS (ir : IRExpr) : Except String (List Stmt) := do
   let (stmts, _) ← (translateToStmts ir).run {}
   return stmts
+
+/-- Translate an IR declaration to JS statements -/
+partial def translateDeclToJS (d : IRDecl) : IRToJSM (List Stmt) := do
+  match d with
+  | .funcDecl name params _retTy body =>
+    let paramPats := params.map fun (n, _) => Pattern.ident n none
+    let bodyStmts ← translateToStmts body
+    return [.funcDecl name paramPats bodyStmts false false]
+  | .letDecl name _ty value =>
+    let v ← translateExpr value
+    return [.varDecl .const [.mk (.ident name none) (some v)]]
+  | .classDecl name parent fields methods =>
+    let superExpr := parent.map fun p => Expr.ident p
+    let mut members : List ClassMember := []
+    -- Constructor with fields
+    if !fields.isEmpty then
+      let paramPats := fields.map fun (n, _) => Pattern.ident n none
+      let bodyStmts := fields.map fun (n, _) =>
+        Stmt.expr (.assign .assign (.expr (.member .this (.ident n))) (.ident n))
+      members := members ++ [.method (.ident "constructor") paramPats bodyStmts .method false false]
+    -- Methods
+    for (mname, mbody) in methods do
+      let mStmts ← translateToStmts mbody
+      members := members ++ [.method (.ident mname) [] mStmts .method false false]
+    return [.classDecl name superExpr members]
+  | .typeDecl _name _ty =>
+    return []  -- Type declarations don't produce JS output
+
+/-- Translate an IR module to JS statements -/
+def translateModuleToJS (m : IRModule) : Except String (List Stmt) := do
+  let mut allStmts : List Stmt := []
+  for d in m.decls do
+    let (stmts, _) ← (translateDeclToJS d).run {}
+    allStmts := allStmts ++ stmts
+  return allStmts
 
 end LeanJS.Trans.IRToJS

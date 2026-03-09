@@ -91,12 +91,46 @@ def main (args : List String) : IO UInt32 := do
       IO.eprintln s!"Parse error: {err}"
       return 1
 
+  | ["lean-roundtrip", file] =>
+    let contents ← IO.FS.readFile file
+    match LeanJS.Lean.Parser.parseModule contents with
+    | .ok mod =>
+      let output := LeanJS.Lean.Emit.emitLeanModule mod
+      IO.print output
+      return 0
+    | .error err =>
+      IO.eprintln s!"Parse error: {err}"
+      return 1
+
+  | ["js", file] =>
+    let contents ← IO.FS.readFile file
+    match LeanJS.Lean.Parser.parseModule contents with
+    | .ok mod =>
+      match LeanJS.Trans.LeanToIR.translateModule mod with
+      | .ok irMod =>
+        match LeanJS.Trans.IRToJS.translateModuleToJS irMod with
+        | .ok stmts =>
+          let output := LeanJS.JS.Emit.emitProgram stmts
+          IO.println output
+          return 0
+        | .error err =>
+          IO.eprintln s!"IR→JS error: {err}"
+          return 1
+      | .error err =>
+        IO.eprintln s!"Lean→IR error: {err}"
+        return 1
+    | .error err =>
+      IO.eprintln s!"Parse error: {err}"
+      return 1
+
   | _ =>
-    IO.eprintln "Usage: lean-js <command> <file.js>"
+    IO.eprintln "Usage: lean-js <command> <file>"
     IO.eprintln "Commands:"
-    IO.eprintln "  parse      Parse JS and emit it back"
-    IO.eprintln "  ir         Parse JS and show IR"
-    IO.eprintln "  roundtrip  JS → IR → JS round-trip"
-    IO.eprintln "  lean       JS → IR → Lean (module-level)"
-    IO.eprintln "  lean-expr  JS → IR → Lean (expression-level)"
+    IO.eprintln "  parse           Parse JS and emit it back"
+    IO.eprintln "  ir              Parse JS and show IR"
+    IO.eprintln "  roundtrip       JS → IR → JS round-trip"
+    IO.eprintln "  lean            JS → IR → Lean (module-level)"
+    IO.eprintln "  lean-expr       JS → IR → Lean (expression-level)"
+    IO.eprintln "  lean-roundtrip  Parse Lean and emit it back"
+    IO.eprintln "  js              Lean → IR → JS"
     return 1
