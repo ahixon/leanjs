@@ -121,11 +121,14 @@ partial def emitExpr (e : Expr) (prec : Nat := 0) : Emitter Unit := do
       commaSep props emitProperty
       write " "
     write "}"
-  | .function name params body =>
+  | .function name params body async_ generator =>
+    if async_ then write "async "
     write "function"
+    if generator then write "*"
     match name with | some n => write s!" {n}" | none => pure ()
     write "("; emitParams params; write ") "; emitBlock body
-  | .arrowFunction params body =>
+  | .arrowFunction params body async_ =>
+    if async_ then write "async "
     match params with
     | [.ident name none] => write name
     | _ => write "("; emitParams params; write ")"
@@ -169,6 +172,16 @@ partial def emitExpr (e : Expr) (prec : Nat := 0) : Emitter Unit := do
     emitTemplateQuasis quasis expressions 0
     write "`"
   | .spread arg => write "..."; emitExpr arg 2
+  | .await arg =>
+    if prec > 15 then write "("
+    write "await "; emitExpr arg 15
+    if prec > 15 then write ")"
+  | .yield arg delegate =>
+    if prec > 1 then write "("
+    write "yield"
+    if delegate then write "*"
+    match arg with | some a => write " "; emitExpr a 2 | none => pure ()
+    if prec > 1 then write ")"
 
 partial def emitTemplateQuasis (quasis : List String) (exprs : List Expr) (idx : Nat) : Emitter Unit := do
   match quasis with
@@ -318,10 +331,12 @@ partial def emitStmt (s : Stmt) : Emitter Unit := do
   | .varDecl kind declarations =>
     writeIndent; write (emitVarKind kind); write " "
     emitDeclarators declarations; semi; write "\n"
-  | .funcDecl name params body async _generator =>
+  | .funcDecl name params body async generator =>
     writeIndent
     if async then write "async "
-    write s!"function {name}("; emitParams params; write ") "; emitBlock body; write "\n"
+    write "function"
+    if generator then write "*"
+    write s!" {name}("; emitParams params; write ") "; emitBlock body; write "\n"
   | .classDecl name superClass body =>
     writeIndent; write s!"class {name}"
     match superClass with | some sc => write " extends "; emitExpr sc | none => pure ()
@@ -357,9 +372,11 @@ partial def emitStmtInline (s : Stmt) : Emitter Unit := do
   match s with
   | .varDecl kind declarations =>
     write (emitVarKind kind); write " "; emitDeclarators declarations; semi; write "\n"
-  | .funcDecl name params body async _gen =>
+  | .funcDecl name params body async gen =>
     if async then write "async "
-    write s!"function {name}("; emitParams params; write ") "; emitBlock body; write "\n"
+    write "function"
+    if gen then write "*"
+    write s!" {name}("; emitParams params; write ") "; emitBlock body; write "\n"
   | .classDecl name superClass body =>
     write s!"class {name}"
     match superClass with | some sc => write " extends "; emitExpr sc | none => pure ()

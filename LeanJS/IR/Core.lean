@@ -76,6 +76,7 @@ inductive IRExpr where
   | «let» (name : String) (type : IRType) (value : IRExpr) (body : IRExpr)
   | lam (name : Option String) (params : List (String × IRType))
       (captures : List Capture) (body : IRExpr)
+      (async_ : Bool := false) (generator : Bool := false)
   | app (func : IRExpr) (args : List IRExpr)
   | binOp (op : IRBinOp) (left : IRExpr) (right : IRExpr)
   | unaryOp (op : IRUnaryOp) (arg : IRExpr)
@@ -105,6 +106,9 @@ inductive IRExpr where
   -- New/construction
   | construct (name : String) (args : List IRExpr)  -- constructor call
   | newObj (callee : IRExpr) (args : List IRExpr)   -- JS new
+  -- Async/generators
+  | «await» (expr : IRExpr)
+  | «yield» (expr : Option IRExpr) (delegate : Bool)
   -- Special
   | spread (expr : IRExpr)
   | ternary (cond : IRExpr) (then_ : IRExpr) (else_ : IRExpr)
@@ -122,15 +126,26 @@ inductive IRPattern where
 
 end
 
+/-- IR import specifier -/
+inductive IRImportSpec where
+  | default_ (localName : String)
+  | named (imported : String) (localName : String)
+  | namespace (localName : String)
+  deriving Inhabited
+
 /-- Top-level IR declarations -/
 inductive IRDecl where
   | letDecl (name : String) (type : IRType) (value : IRExpr)
   | funcDecl (name : String) (params : List (String × IRType))
       (retType : IRType) (body : IRExpr)
+      (async_ : Bool := false) (generator : Bool := false)
   | typeDecl (name : String) (type : IRType)
   | classDecl (name : String) (parent : Option String)
       (fields : List (String × IRType))
       (methods : List (String × IRExpr))
+  | importDecl (specifiers : List IRImportSpec) (source : String)
+  | exportDecl (names : List (String × String)) (source : Option String)
+  | exportDefault (value : IRExpr)
   deriving Inhabited
 
 /-- An IR module -/

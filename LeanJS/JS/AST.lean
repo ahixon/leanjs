@@ -39,7 +39,8 @@ inductive Expr where
   | array (elements : List (Option Expr))
   | object (properties : List Property)
   | function (name : Option Ident) (params : List Pattern) (body : List Stmt)
-  | arrowFunction (params : List Pattern) (body : ExprOrBlock)
+      (async_ : Bool) (generator : Bool)
+  | arrowFunction (params : List Pattern) (body : ExprOrBlock) (async_ : Bool)
   | unary (op : UnaryOp) (argument : Expr)
   | update (op : UpdateOp) (argument : Expr) (prefix_ : Bool)
   | binary (op : BinOp) (left : Expr) (right : Expr)
@@ -52,6 +53,8 @@ inductive Expr where
   | template (tag : Option Expr) (quasis : List String) (expressions : List Expr)
   | spread (argument : Expr)
   | paren (expr : Expr)
+  | await (argument : Expr)
+  | yield (argument : Option Expr) (delegate : Bool)
 
 inductive Stmt where
   | expr (expression : Expr)

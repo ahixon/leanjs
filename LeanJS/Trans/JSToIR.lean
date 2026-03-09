@@ -14,6 +14,8 @@ structure TransEnv where
   mutated : List String := []
   /-- Variables in scope -/
   scope : List String := []
+  /-- Counter for generating fresh names -/
+  freshCounter : Nat := 0
   deriving Inhabited
 
 /-- Translation monad -/
@@ -31,6 +33,12 @@ def markMutated (name : String) : TransM Unit :=
 /-- Add variable to scope -/
 def addToScope (name : String) : TransM Unit :=
   modify fun env => { env with scope := name :: env.scope }
+
+/-- Generate a fresh temporary variable name -/
+def freshName (prefix_ : String := "__tmp") : TransM String := do
+  let env ← get
+  modify fun e => { e with freshCounter := e.freshCounter + 1 }
+  return s!"{prefix_}{env.freshCounter}"
 
 -- ============================================================
 -- Mutation analysis: scan JS AST to find assigned variables
@@ -61,11 +69,14 @@ partial def collectMutatedExpr (e : Expr) : List String :=
   | .conditional t c a => collectMutatedExpr t ++ collectMutatedExpr c ++ collectMutatedExpr a
   | .array elems => elems.flatMap fun e => match e with | some x => collectMutatedExpr x | none => []
   | .object props => props.flatMap collectMutatedProp
-  | .function _ _ body => body.flatMap collectMutatedStmt
-  | .arrowFunction _ body =>
+  | .function _ _ body _ _ => body.flatMap collectMutatedStmt
+  | .arrowFunction _ body _ =>
     match body with
     | .expr e => collectMutatedExpr e
     | .block stmts => stmts.flatMap collectMutatedStmt
+  | .await arg => collectMutatedExpr arg
+  | .yield (some arg) _ => collectMutatedExpr arg
+  | .yield none _ => []
   | .sequence exprs => exprs.flatMap collectMutatedExpr
   | .paren inner => collectMutatedExpr inner
   | .spread arg => collectMutatedExpr arg
@@ -209,18 +220,18 @@ partial def translateExpr (e : Expr) : TransM IRExpr := do
   | .object props =>
     let fields ← props.mapM translateProperty
     return .record fields
-  | .function name params body =>
+  | .function name params body async_ gen =>
     let paramNames := params.filterMap patternName
     let irParams := paramNames.map (·, IRType.any)
     let irBody ← translateBody body
-    return .lam name irParams [] irBody
-  | .arrowFunction params body =>
+    return .lam name irParams [] irBody async_ gen
+  | .arrowFunction params body async_ =>
     let paramNames := params.filterMap patternName
     let irParams := paramNames.map (·, IRType.any)
     let irBody ← match body with
       | .expr e => translateExpr e
       | .block stmts => translateBody stmts
-    return .lam none irParams [] irBody
+    return .lam none irParams [] irBody async_ false
   | .binary op left right =>
     let l ← translateExpr left
     let r ← translateExpr right
@@ -300,6 +311,14 @@ partial def translateExpr (e : Expr) : TransM IRExpr := do
         let e ← translateExpr expressions[i]
         result := .binOp .strConcat result e
     return result
+  | .await arg =>
+    let a ← translateExpr arg
+    return .«await» a
+  | .yield arg delegate =>
+    let a ← match arg with
+      | some e => do let v ← translateExpr e; pure (some v)
+      | none => pure none
+    return .«yield» a delegate
   | .spread arg =>
     let a ← translateExpr arg
     return .spread a
@@ -397,11 +416,11 @@ partial def translateStmt (s : Stmt) : TransM IRExpr := do
   | .labeled _label body => translateStmt body
   | .debugger => return .undefined
   | .varDecl kind decls => translateVarDecls kind decls
-  | .funcDecl name params body _async _gen =>
+  | .funcDecl name params body async_ gen =>
     let paramNames := params.filterMap patternName
     let irParams := paramNames.map (·, IRType.any)
     let irBody ← translateBody body
-    return .«let» name (.func (irParams.map Prod.snd) .any) (.lam (some name) irParams [] irBody) (.var name)
+    return .«let» name (.func (irParams.map Prod.snd) .any) (.lam (some name) irParams [] irBody async_ gen) (.var name)
   | .classDecl name superClass members =>
     translateClassDecl name superClass members
   | .importDecl _specs _source => return .undefined
@@ -428,8 +447,53 @@ partial def translateVarDecls (kind : VarKind) (decls : List VarDeclarator) : Tr
         IRExpr.«let» name .any initVal (.var name)
       result := if result matches .undefined then declExpr
         else .seq [result, declExpr]
+    | .mk (.array elements _rest) init =>
+      -- Array destructuring: const [a, b, c] = expr
+      let initVal ← match init with
+        | some e => translateExpr e
+        | none => pure .undefined
+      let tmp ← freshName
+      let mut bindings : IRExpr := .undefined
+      for (elem, idx) in elements.zipIdx do
+        match elem with
+        | some (.ident name _) =>
+          let binding := IRExpr.«let» name .any (.index (.var tmp) (.lit (.number (Float.ofNat idx)))) (.var name)
+          bindings := if bindings matches .undefined then binding else .seq [bindings, binding]
+        | _ => pure ()
+      let declExpr := IRExpr.«let» tmp .any initVal bindings
+      result := if result matches .undefined then declExpr else .seq [result, declExpr]
+    | .mk (.object props _rest) init =>
+      -- Object destructuring: const {a, b} = expr
+      let initVal ← match init with
+        | some e => translateExpr e
+        | none => pure .undefined
+      let tmp ← freshName
+      let mut bindings : IRExpr := .undefined
+      for prop in props do
+        match prop with
+        | .shorthand name dflt =>
+          let access := IRExpr.project (.var tmp) name
+          let binding := match dflt with
+            | some d =>
+              let dIR := IRExpr.lit (.string "TODO")  -- simplified default
+              let _ := d  -- suppress unused warning
+              IRExpr.«let» name .any (.ternary (.binOp .neq access .undefined) access dIR) (.var name)
+            | none =>
+              IRExpr.«let» name .any access (.var name)
+          bindings := if bindings matches .undefined then binding else .seq [bindings, binding]
+        | .keyVal key (.ident name _) _ =>
+          let field := match key with
+            | .ident n => n
+            | .literal (.string s) => s
+            | _ => "__computed"
+          let access := IRExpr.project (.var tmp) field
+          let binding := IRExpr.«let» name .any access (.var name)
+          bindings := if bindings matches .undefined then binding else .seq [bindings, binding]
+        | _ => pure ()
+      let declExpr := IRExpr.«let» tmp .any initVal bindings
+      result := if result matches .undefined then declExpr else .seq [result, declExpr]
     | _ =>
-      -- Destructuring patterns — simplified
+      -- Fallback for unsupported patterns
       let initVal ← match d with | .mk _ (some e) => translateExpr e | _ => pure .undefined
       result := .seq [result, initVal]
   return result
@@ -480,7 +544,7 @@ partial def translateClassDecl (name : String) (superClass : Option Expr)
       let paramNames := params.filterMap patternName
       let irParams := paramNames.map (·, IRType.any)
       let irBody ← translateBody body
-      let methodExpr := IRExpr.lam (some methodName) irParams [] irBody
+      let methodExpr := IRExpr.lam (some methodName) irParams [] irBody false false
       match kind with
       | .method => methods := methods ++ [(methodName, methodExpr)]
       | .get => methods := methods ++ [("get_" ++ methodName, methodExpr)]
@@ -519,17 +583,39 @@ end
 
 /-- Translate a JS program to an IR module -/
 partial def extractDecls : IRExpr → List IRDecl
-  | .«let» name ty (.lam _n params _caps body) rest =>
-    [.funcDecl name params ty body] ++ extractDecls rest
+  | .«let» name ty (.lam _n params _caps body async_ gen) rest =>
+    [.funcDecl name params ty body async_ gen] ++ extractDecls rest
   | .«let» name ty val rest =>
     [.letDecl name ty val] ++ extractDecls rest
   | .seq exprs => exprs.flatMap extractDecls
   | _ => []
 
+/-- Extract import/export declarations from statements -/
+def extractImportExport : List Stmt → List IRDecl
+  | [] => []
+  | (.importDecl specs source) :: rest =>
+    let irSpecs := specs.map fun s => match s with
+      | .default_ n => IRImportSpec.default_ n
+      | .named imp loc => IRImportSpec.named imp loc
+      | .namespace n => IRImportSpec.namespace n
+    [.importDecl irSpecs source] ++ extractImportExport rest
+  | (.exportNamed none specs source) :: rest =>
+    let names := specs.map fun s => match s with
+      | .mk loc exp => (loc, exp)
+    [.exportDecl names source] ++ extractImportExport rest
+  | (.exportDefault decl) :: rest =>
+    -- For default exports of expression statements, extract the expression
+    let irExpr := match decl with
+      | .expr _ => IRExpr.undefined  -- will be translated normally
+      | _ => IRExpr.undefined
+    [.exportDefault irExpr] ++ extractImportExport rest
+  | _ :: rest => extractImportExport rest
+
 def translateProgram (prog : List Stmt) : Except String IRModule := do
   let env : TransEnv := { mutated := collectAllMutated prog }
   let (irExpr, _) ← (translateBody prog).run env
-  let decls := extractDecls irExpr
+  let importExportDecls := extractImportExport prog
+  let decls := importExportDecls ++ extractDecls irExpr
   return { name := "", decls := decls }
 
 /-- Translate a JS program to a single IR expression (simpler for round-trips) -/

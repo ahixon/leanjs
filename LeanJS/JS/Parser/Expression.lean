@@ -125,9 +125,69 @@ partial def parsePrimary : JSParser Expr := do
     if nextTok == .arrow then
       let _ ← advance  -- consume =>
       let body ← parseArrowBody
-      return .arrowFunction [.ident name none] body
+      return .arrowFunction [.ident name none] body false
     else
       return .ident name
+  | .keyword "await" =>
+    let _ ← advance
+    let arg ← parseExpr 15
+    return .await arg
+  | .keyword "yield" =>
+    let _ ← advance
+    let delegate ← if ← eat .star then pure true else pure false
+    let tok' ← peek
+    -- yield with no argument at statement boundary
+    let arg ← match tok' with
+    | .semi | .rbrace | .rparen | .rbracket | .eof | .comma => pure none
+    | _ =>
+      let nl ← hadNewline
+      if nl then pure none
+      else do let e ← parseExpr 2; pure (some e)
+    return .yield arg delegate
+  | .keyword "async" =>
+    -- Try async arrow: async (params) => body  or  async ident => body
+    let pos ← savePos
+    let _ ← advance
+    let tok' ← peek
+    match tok' with
+    | .keyword "function" =>
+      -- async function expression
+      let _ ← advance
+      let gen ← if ← eat .star then pure true else pure false
+      let name ← do
+        let t ← peek
+        match t with
+        | .ident n => let _ ← advance; pure (some n)
+        | _ => pure none
+      expect .lparen "'('"
+      let params ← parseParamList
+      expect .rparen "')'"
+      let body ← parseBlock
+      return .function name params body true gen
+    | .lparen =>
+      match ← tryParseArrowParams with
+      | some params =>
+        let body ← parseArrowBody
+        return .arrowFunction params body true
+      | none =>
+        restorePos pos
+        -- Just an identifier "async"
+        let _ ← advance
+        return .ident "async"
+    | .ident name =>
+      let _ ← advance
+      let arrowTok ← peek
+      if arrowTok == .arrow then
+        let _ ← advance
+        let body ← parseArrowBody
+        return .arrowFunction [.ident name none] body true
+      else
+        restorePos pos
+        let _ ← advance
+        return .ident "async"
+    | _ =>
+      -- Just the identifier "async"
+      return .ident "async"
   | .keyword "function" =>
     let _ ← advance
     parseFunctionExpr
@@ -148,7 +208,7 @@ partial def parsePrimary : JSParser Expr := do
     match ← tryParseArrowParams with
     | some params =>
       let body ← parseArrowBody
-      return .arrowFunction params body
+      return .arrowFunction params body false
     | none =>
       restorePos pos
       let _ ← advance  -- consume (
@@ -189,6 +249,21 @@ partial def parsePrimary : JSParser Expr := do
     let _ ← advance
     let arg ← parseExpr 3
     return .spread arg
+  | .template raw tail =>
+    let _ ← advance
+    let mut quasis : List String := [raw]
+    let mut expressions : List Expr := []
+    let mut done := tail
+    while !done do
+      let expr ← parseExpr 0
+      expressions := expressions ++ [expr]
+      let tok' ← advance
+      match tok' with
+      | .template raw' tail' =>
+        quasis := quasis ++ [raw']
+        done := tail'
+      | _ => throw s!"expected template continuation, got {repr tok'}"
+    return .template none quasis expressions
   | _ => throw s!"unexpected token in expression: {repr tok}"
 
 /-- Parse unary expression -/
@@ -438,6 +513,7 @@ partial def parsePropertyKey : JSParser Expr := do
 
 /-- Parse function expression (after 'function' keyword) -/
 partial def parseFunctionExpr : JSParser Expr := do
+  let gen ← if ← eat .star then pure true else pure false
   let name ← do
     let tok ← peek
     match tok with
@@ -447,7 +523,7 @@ partial def parseFunctionExpr : JSParser Expr := do
   let params ← parseParamList
   expect .rparen "')'"
   let body ← parseBlock
-  return .function name params body
+  return .function name params body false gen
 
 /-- Parse new expression -/
 partial def parseNewExpr : JSParser Expr := do
@@ -1005,13 +1081,13 @@ partial def parseImportDecl : JSParser Stmt := do
         specifiers := specifiers ++ more
     | .star =>
       let _ ← advance
-      expectKeyword "as"
+      expectContextualKeyword "as"
       let name ← expectIdent
       specifiers := [.namespace name]
     | .lbrace =>
       specifiers ← parseImportSpecifiers
     | _ => throw s!"unexpected token in import: {repr tok}"
-    expectKeyword "from"
+    expectContextualKeyword "from"
     let srcTok ← advance
     let source ← match srcTok with
       | .string s => pure s
@@ -1025,7 +1101,7 @@ partial def parseImportSpecifiers : JSParser (List ImportSpecifier) := do
   let mut specs : List ImportSpecifier := []
   while !(← isToken .rbrace) do
     let imported ← expectIdent
-    let localName ← if ← eatKeyword "as" then expectIdent else pure imported
+    let localName ← if ← eatContextualKeyword "as" then expectIdent else pure imported
     specs := specs ++ [.named imported localName]
     if !(← isToken .rbrace) then
       expect .comma "','"
@@ -1042,7 +1118,7 @@ partial def parseExportDecl : JSParser Stmt := do
     return .exportDefault stmt
   | .lbrace =>
     let specs ← parseExportSpecifiers
-    let source ← if ← eatKeyword "from" then
+    let source ← if ← eatContextualKeyword "from" then
       let s ← advance
       match s with
       | .string str => pure (some str)
@@ -1052,7 +1128,7 @@ partial def parseExportDecl : JSParser Stmt := do
     return .exportNamed none specs source
   | .star =>
     let _ ← advance
-    expectKeyword "from"
+    expectContextualKeyword "from"
     let s ← advance
     match s with
     | .string source => semicolon; return .exportAll source
@@ -1067,7 +1143,7 @@ partial def parseExportSpecifiers : JSParser (List ExportSpecifier) := do
   let mut specs : List ExportSpecifier := []
   while !(← isToken .rbrace) do
     let localName ← expectIdent
-    let exported ← if ← eatKeyword "as" then expectIdent else pure localName
+    let exported ← if ← eatContextualKeyword "as" then expectIdent else pure localName
     specs := specs ++ [.mk localName exported]
     if !(← isToken .rbrace) then
       expect .comma "','"

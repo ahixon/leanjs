@@ -117,6 +117,22 @@ def expectIdent : JSParser String := do
       throw s!"expected identifier, got keyword '{name}'"
   | _ => throw s!"expected identifier, got {repr t}"
 
+/-- Expect a contextual keyword (may be lexed as ident) -/
+def expectContextualKeyword (kw : String) : JSParser Unit := do
+  let t ← advance
+  match t with
+  | .keyword k => if k == kw then pure () else throw s!"expected '{kw}', got keyword '{k}'"
+  | .ident k => if k == kw then pure () else throw s!"expected '{kw}', got ident '{k}'"
+  | _ => throw s!"expected '{kw}', got {repr t}"
+
+/-- Check and consume a contextual keyword (may be lexed as ident) -/
+def eatContextualKeyword (kw : String) : JSParser Bool := do
+  let t ← peek
+  match t with
+  | .keyword k => if k == kw then do let _ ← advance; return true else return false
+  | .ident k => if k == kw then do let _ ← advance; return true else return false
+  | _ => return false
+
 /-- Save parser position for backtracking -/
 def savePos : JSParser Nat := do
   let s ← get
@@ -137,12 +153,40 @@ def tryParse {α : Type} (p : JSParser α) : JSParser (Option α) := do
     restorePos pos
     return none
 
+/-- The backtick character (0x60) — needs explicit def since `` '`' `` conflicts with Lean syntax -/
+private def backtick : Char := Char.ofNat 96
+
+/-- Scan a template chunk starting after ` or }. Returns (raw text, isTail, new iterator). -/
+private def scanTemplateChunk (it : String.Iterator) : Except String (String × Bool × String.Iterator) := do
+  let mut raw := ""
+  let mut cur := it
+  while cur.hasNext do
+    let c := cur.curr
+    if c == '\\' then
+      -- Escape sequence: include both chars raw
+      raw := raw.push c
+      cur := cur.next
+      if cur.hasNext then
+        raw := raw.push cur.curr
+        cur := cur.next
+    else if c == backtick then
+      -- End of template — tail
+      return (raw, true, cur.next)
+    else if c == '$' && cur.next.hasNext && cur.next.curr == '{' then
+      -- Interpolation start — not tail
+      return (raw, false, cur.next.next)
+    else
+      raw := raw.push c
+      cur := cur.next
+  throw "unterminated template literal"
+
 /-- Tokenize input string into ParserState -/
 partial def tokenizeToState (input : String) : Except String ParserState := do
   let mut tokens : Array Token := #[]
   let mut newlines : Array Bool := #[]
   let mut it := input.mkIterator
   let mut hadNl := false
+  let mut templateDepth : Nat := 0
   while it.hasNext || tokens.isEmpty || tokens.back? != some .eof do
     -- Skip whitespace, track newlines
     let mut foundNl := hadNl
@@ -188,21 +232,40 @@ partial def tokenizeToState (input : String) : Except String ParserState := do
       tokens := tokens.push .eof
       break
 
-    -- Lex one token
-    match Lexer.nextToken it with
-    | .success it' tok =>
-      match tok with
-      | .eof =>
-        newlines := newlines.push hadNl
-        tokens := tokens.push .eof
-        break
-      | _ =>
-        newlines := newlines.push hadNl
-        tokens := tokens.push tok
-        hadNl := false
-        it := it'
-    | .error _it' err =>
-      throw s!"Lex error: {err}"
+    let c := it.curr
+
+    -- Template literal: backtick starts a new template
+    if c == backtick then
+      let (raw, tail, it') ← scanTemplateChunk it.next
+      newlines := newlines.push hadNl
+      tokens := tokens.push (.template raw tail)
+      hadNl := false
+      it := it'
+      if !tail then templateDepth := templateDepth + 1
+    -- Inside template interpolation: } resumes template scanning
+    else if c == '}' && templateDepth > 0 then
+      let (raw, tail, it') ← scanTemplateChunk it.next
+      newlines := newlines.push hadNl
+      tokens := tokens.push (.template raw tail)
+      hadNl := false
+      it := it'
+      if tail then templateDepth := templateDepth - 1
+    else
+      -- Lex one token
+      match Lexer.nextToken it with
+      | .success it' tok =>
+        match tok with
+        | .eof =>
+          newlines := newlines.push hadNl
+          tokens := tokens.push .eof
+          break
+        | _ =>
+          newlines := newlines.push hadNl
+          tokens := tokens.push tok
+          hadNl := false
+          it := it'
+      | .error _it' err =>
+        throw s!"Lex error: {err}"
 
   if tokens.isEmpty || tokens.back? != some .eof then
     newlines := newlines.push false

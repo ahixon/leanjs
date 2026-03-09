@@ -188,7 +188,7 @@ partial def translateExpr (e : LeanExpr) : LeanTransM IRExpr := do
         | none => .any
       (p.name, ty)
     let bodyIR ← translateExpr body
-    return .lam none irParams [] bodyIR
+    return .lam none irParams [] bodyIR false false
 
   | .«let» name _ty value body =>
     -- Check for IO.mkRef in value

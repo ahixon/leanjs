@@ -56,18 +56,18 @@ partial def translateExpr (e : IRExpr) : IRToJSM Expr := do
       let initJS ← translateExpr inner
       let bodyJS ← translateExpr body
       -- Use IIFE: (name => body)(init)
-      return .call (.arrowFunction [.ident name none] (.expr bodyJS)) [initJS]
-    | .lam fnName params _caps fnBody =>
+      return .call (.arrowFunction [.ident name none] (.expr bodyJS) false) [initJS]
+    | .lam fnName params _caps fnBody async_ gen =>
       let bodyExprJS ← translateExpr body
-      let fnJS ← translateFuncExpr fnName params fnBody
-      return .call (.arrowFunction [.ident name none] (.expr bodyExprJS)) [fnJS]
+      let fnJS ← translateFuncExpr fnName params fnBody async_ gen
+      return .call (.arrowFunction [.ident name none] (.expr bodyExprJS) false) [fnJS]
     | _ =>
       let initJS ← translateExpr value
       let bodyJS ← translateExpr body
-      return .call (.arrowFunction [.ident name none] (.expr bodyJS)) [initJS]
+      return .call (.arrowFunction [.ident name none] (.expr bodyJS) false) [initJS]
 
-  | .lam name params _caps body =>
-    translateFuncExpr name params body
+  | .lam name params _caps body async_ gen =>
+    translateFuncExpr name params body async_ gen
 
   | .app func args =>
     let fJS ← translateExpr func
@@ -157,6 +157,14 @@ partial def translateExpr (e : IRExpr) : IRToJSM Expr := do
     let c ← translateExpr callee
     let a ← args.mapM translateExpr
     return .new c a
+  | .«await» expr =>
+    let e ← translateExpr expr
+    return .await e
+  | .«yield» expr delegate =>
+    let e ← match expr with
+      | some ex => do let v ← translateExpr ex; pure (some v)
+      | none => pure none
+    return .yield e delegate
   | .spread expr =>
     let e ← translateExpr expr
     return .spread e
@@ -167,10 +175,10 @@ partial def translateExpr (e : IRExpr) : IRToJSM Expr := do
     return .conditional c t e
 
 partial def translateFuncExpr (name : Option String) (params : List (String × IRType))
-    (body : IRExpr) : IRToJSM Expr := do
+    (body : IRExpr) (async_ : Bool := false) (generator : Bool := false) : IRToJSM Expr := do
   let paramPats := params.map fun (n, _) => Pattern.ident n none
   let bodyStmts ← translateToStmts body
-  return .function name paramPats bodyStmts
+  return .function name paramPats bodyStmts async_ generator
 
 partial def translateToStmts (e : IRExpr) : IRToJSM (List Stmt) := do
   match e with
@@ -184,7 +192,7 @@ partial def translateToStmts (e : IRExpr) : IRToJSM (List Stmt) := do
       | _ => .const
     let initExpr ← match value with
       | .mkRef inner => translateExpr inner
-      | .lam fnName params _caps fnBody => translateFuncExpr fnName params fnBody
+      | .lam fnName params _caps fnBody async_ gen => translateFuncExpr fnName params fnBody async_ gen
       | _ => translateExpr value
     match value with
     | .mkRef _ => addRefVar name
@@ -261,7 +269,7 @@ partial def translateMatchExpr (scrutinee : Expr) (cases : List IRMatchCase)
       translateExpr body
     | .var name =>
       let b ← translateExpr body
-      return .call (.arrowFunction [.ident name none] (.expr b)) [scrutinee]
+      return .call (.arrowFunction [.ident name none] (.expr b) false) [scrutinee]
     | .lit litVal =>
       let b ← translateExpr body
       let cond := Expr.binary .strictEq scrutinee (.literal (irLitToJS litVal))
@@ -275,7 +283,7 @@ partial def translateMatchExpr (scrutinee : Expr) (cases : List IRMatchCase)
       let mut innerBody := b
       for (binding, idx) in bindings.zipIdx.reverse do
         let extract := Expr.member scrutinee (.computed (.literal (.number (Float.ofNat idx))))
-        innerBody := .call (.arrowFunction [.ident binding none] (.expr innerBody)) [extract]
+        innerBody := .call (.arrowFunction [.ident binding none] (.expr innerBody) false) [extract]
       return .conditional cond innerBody (.literal .undefined)
   | (.mk pat body) :: rest =>
     let restExpr ← translateMatchExpr scrutinee rest
@@ -284,7 +292,7 @@ partial def translateMatchExpr (scrutinee : Expr) (cases : List IRMatchCase)
       translateExpr body
     | .var name =>
       let b ← translateExpr body
-      return .call (.arrowFunction [.ident name none] (.expr b)) [scrutinee]
+      return .call (.arrowFunction [.ident name none] (.expr b) false) [scrutinee]
     | .lit litVal =>
       let b ← translateExpr body
       let cond := Expr.binary .strictEq scrutinee (.literal (irLitToJS litVal))
@@ -297,7 +305,7 @@ partial def translateMatchExpr (scrutinee : Expr) (cases : List IRMatchCase)
       let mut innerBody := b
       for (binding, idx) in bindings.zipIdx.reverse do
         let extract := Expr.member scrutinee (.computed (.literal (.number (Float.ofNat idx))))
-        innerBody := .call (.arrowFunction [.ident binding none] (.expr innerBody)) [extract]
+        innerBody := .call (.arrowFunction [.ident binding none] (.expr innerBody) false) [extract]
       return .conditional cond innerBody restExpr
 
 /-- Translate match cases to statement form (nested if-else) -/
@@ -361,10 +369,10 @@ def translateToJS (ir : IRExpr) : Except String (List Stmt) := do
 /-- Translate an IR declaration to JS statements -/
 partial def translateDeclToJS (d : IRDecl) : IRToJSM (List Stmt) := do
   match d with
-  | .funcDecl name params _retTy body =>
+  | .funcDecl name params _retTy body async_ gen =>
     let paramPats := params.map fun (n, _) => Pattern.ident n none
     let bodyStmts ← translateToStmts body
-    return [.funcDecl name paramPats bodyStmts false false]
+    return [.funcDecl name paramPats bodyStmts async_ gen]
   | .letDecl name _ty value =>
     let v ← translateExpr value
     return [.varDecl .const [.mk (.ident name none) (some v)]]
@@ -384,6 +392,18 @@ partial def translateDeclToJS (d : IRDecl) : IRToJSM (List Stmt) := do
     return [.classDecl name superExpr members]
   | .typeDecl _name _ty =>
     return []  -- Type declarations don't produce JS output
+  | .importDecl specs source =>
+    let jsSpecs := specs.map fun s => match s with
+      | .default_ n => ImportSpecifier.default_ n
+      | .named imp loc => ImportSpecifier.named imp loc
+      | .namespace n => ImportSpecifier.namespace n
+    return [.importDecl jsSpecs source]
+  | .exportDecl names source =>
+    let jsSpecs := names.map fun (loc, exp) => ExportSpecifier.mk loc exp
+    return [.exportNamed none jsSpecs source]
+  | .exportDefault value =>
+    let v ← translateExpr value
+    return [.exportDefault (.expr v)]
 
 /-- Translate an IR module to JS statements -/
 def translateModuleToJS (m : IRModule) : Except String (List Stmt) := do

@@ -39,7 +39,7 @@ partial def containsRefs : IRExpr → Bool
   | .assign _ _ => true
   | .loop _ _ => true
   | .«let» _ _ val body => containsRefs val || containsRefs body
-  | .lam _ _ _ body => containsRefs body
+  | .lam _ _ _ body _ _ => containsRefs body
   | .app func args => containsRefs func || args.any containsRefs
   | .binOp _ l r => containsRefs l || containsRefs r
   | .unaryOp _ a => containsRefs a
@@ -60,6 +60,9 @@ partial def containsRefs : IRExpr → Bool
     containsRefs s || cases.any fun c => match c with | .mk _ b => containsRefs b
   | .construct _ args => args.any containsRefs
   | .newObj c args => containsRefs c || args.any containsRefs
+  | .«await» e => containsRefs e
+  | .«yield» (some e) _ => containsRefs e
+  | .«yield» none _ => false
   | .spread e => containsRefs e
   | _ => false
 
@@ -149,7 +152,7 @@ partial def translateExpr (e : IRExpr) : IRToLeanM LeanExpr := do
         addRefVar name
         let doElems ← translateExprDo e
         return .doBlock doElems
-      | .lam fnName params _caps fnBody =>
+      | .lam fnName params _caps fnBody _ _ =>
         let lamExpr ← translateLambda fnName params fnBody
         let bodyExpr ← translateExpr body
         return .«let» name none lamExpr bodyExpr
@@ -158,7 +161,7 @@ partial def translateExpr (e : IRExpr) : IRToLeanM LeanExpr := do
         let bodyExpr ← translateExpr body
         return .«let» name none valExpr bodyExpr
 
-  | .lam name params _caps body =>
+  | .lam name params _caps body _ _ =>
     translateLambda name params body
 
   | .app func args =>
@@ -275,6 +278,17 @@ partial def translateExpr (e : IRExpr) : IRToLeanM LeanExpr := do
       result := .app result a
     return result
 
+  | .«await» expr =>
+    -- await → monadic bind
+    let e ← translateExpr expr
+    return .bind "result" none e
+
+  | .«yield» expr _ =>
+    -- yield → pure (simplified)
+    match expr with
+    | some ex => translateExpr ex
+    | none => return .unit
+
   | .spread expr =>
     let e ← translateExpr expr
     return e
@@ -295,7 +309,7 @@ partial def translateExprDo (e : IRExpr) : IRToLeanM (List LeanDoElem) := do
       let innerExpr ← translateExpr inner
       let bodyElems ← translateExprDo body
       return [.bind name none (.refNew innerExpr)] ++ bodyElems
-    | .lam fnName params _caps fnBody =>
+    | .lam fnName params _caps fnBody _ _ =>
       let lamExpr ← translateLambda fnName params fnBody
       let bodyElems ← translateExprDo body
       return [.letDecl name none lamExpr] ++ bodyElems
@@ -406,7 +420,7 @@ def translateDecl (d : IRDecl) : IRToLeanM LeanDecl := do
   match d with
   | .letDecl name _ty value =>
     match value with
-    | .lam _fnName params _caps body =>
+    | .lam _fnName params _caps body _ _ =>
       let leanParams := params.map fun (n, _) => LeanParam.mk n none
       let bodyExpr ← if containsRefs body then do
         let doElems ← translateExprDo body
@@ -416,7 +430,7 @@ def translateDecl (d : IRDecl) : IRToLeanM LeanDecl := do
     | _ =>
       let valExpr ← translateExpr value
       return .let_ name none valExpr
-  | .funcDecl name params _retTy body =>
+  | .funcDecl name params _retTy body _ _ =>
     let leanParams := params.map fun (n, _) => LeanParam.mk n none
     let bodyExpr ← if containsRefs body then do
       let doElems ← translateExprDo body
@@ -431,6 +445,12 @@ def translateDecl (d : IRDecl) : IRToLeanM LeanDecl := do
     -- Methods become separate defs; for now emit only fields as structure
     let methodDecls := methods.map fun (mname, _) => (mname, LeanType.hole)
     return .structure_ name extends_ (leanFields ++ methodDecls)
+  | .importDecl _specs source =>
+    return .import_ source
+  | .exportDecl _names _source =>
+    return .let_ "" none (.unit)
+  | .exportDefault _value =>
+    return .let_ "" none (.unit)
 
 /-- Translate an IR module to a Lean module -/
 def translateModule (m : IRModule) : Except String LeanModule := do
@@ -443,8 +463,8 @@ def translateIRToLean (e : IRExpr) : Except String LeanExpr := do
   return expr
 
 partial def extractDeclsFromIR : IRExpr → List IRDecl
-  | .«let» name ty (.lam _n params _caps body) rest =>
-    [.funcDecl name params ty body] ++ extractDeclsFromIR rest
+  | .«let» name ty (.lam _n params _caps body async_ gen) rest =>
+    [.funcDecl name params ty body async_ gen] ++ extractDeclsFromIR rest
   | .«let» name ty val rest =>
     [.letDecl name ty val] ++ extractDeclsFromIR rest
   | .seq exprs => exprs.flatMap extractDeclsFromIR

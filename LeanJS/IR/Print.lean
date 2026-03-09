@@ -46,10 +46,11 @@ partial def printExpr (e : IRExpr) (indent : Nat := 0) : String :=
   | .this => "this"
   | .«let» name ty val body =>
     s!"{pad}let {name} : {printType ty} = {printExpr val}\n{printExpr body indent}"
-  | .lam name params _caps body =>
+  | .lam name params _caps body async_ gen =>
     let nameStr := match name with | some n => n | none => "λ"
     let paramsStr := ", ".intercalate (params.map fun (n, t) => s!"{n}: {printType t}")
-    s!"fun {nameStr}({paramsStr}) =>\n{printExpr body (indent + 1)}"
+    let pfx := (if async_ then "async " else "") ++ (if gen then "gen " else "")
+    s!"{pfx}fun {nameStr}({paramsStr}) =>\n{printExpr body (indent + 1)}"
   | .app func args =>
     let argsStr := ", ".intercalate (args.map (printExpr · indent))
     s!"{printExpr func indent}({argsStr})"
@@ -91,6 +92,13 @@ partial def printExpr (e : IRExpr) (indent : Nat := 0) : String :=
   | .newObj callee args =>
     let argsStr := ", ".intercalate (args.map (printExpr · indent))
     s!"new {printExpr callee indent}({argsStr})"
+  | .«await» expr => s!"await {printExpr expr indent}"
+  | .«yield» (some expr) delegate =>
+    let star := if delegate then "*" else ""
+    s!"yield{star} {printExpr expr indent}"
+  | .«yield» none delegate =>
+    let star := if delegate then "*" else ""
+    s!"yield{star}"
   | .spread expr => s!"...{printExpr expr indent}"
   | .ternary cond then_ else_ =>
     s!"({printExpr cond} ? {printExpr then_} : {printExpr else_})"
@@ -117,15 +125,21 @@ def printModule (m : IRModule) : String :=
     match d with
     | .letDecl name ty val =>
       s!"let {name} : {printType ty} = {printExpr val}"
-    | .funcDecl name params retTy body =>
+    | .funcDecl name params retTy body async_ gen =>
       let paramsStr := ", ".intercalate (params.map fun (n, t) => s!"{n}: {printType t}")
-      s!"def {name}({paramsStr}) : {printType retTy} =\n{printExpr body 1}"
+      let pfx := (if async_ then "async " else "") ++ (if gen then "gen " else "")
+      s!"{pfx}def {name}({paramsStr}) : {printType retTy} =\n{printExpr body 1}"
     | .typeDecl name ty => s!"type {name} = {printType ty}"
     | .classDecl name parent fields methods =>
       let parentStr := match parent with | some p => s!" extends {p}" | none => ""
       let fieldsStr := ", ".intercalate (fields.map fun (n, t) => s!"{n}: {printType t}")
       let methodsStr := ", ".intercalate (methods.map fun (n, _) => n)
       s!"class {name}{parentStr} \{{ fieldsStr }; methods: {methodsStr} }"
+    | .importDecl _specs source => s!"import \"{source}\""
+    | .exportDecl names _source =>
+      let namesStr := ", ".intercalate (names.map fun (l, _) => l)
+      s!"export \{{ namesStr }}"
+    | .exportDefault value => s!"export default {printExpr value}"
   "\n\n".intercalate declStrs
 
 end LeanJS.IR.Print
