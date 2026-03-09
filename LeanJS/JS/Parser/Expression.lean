@@ -538,11 +538,10 @@ partial def parseBindingPattern : JSParser Pattern := do
   match tok with
   | .ident name =>
     let _ ← advance
-    if ← eat .assign then
-      let def_ ← parseExpr 3
-      return .ident name (some def_)
-    else
-      return .ident name none
+    -- Don't consume `=` here for simple identifiers.
+    -- Default values for simple idents are handled by the caller
+    -- (parseVarDeclarator handles initializers, parseParamList handles defaults).
+    return .ident name none
   | .lbrace => parseObjectPattern
   | .lbracket => parseArrayPattern
   | _ => throw s!"expected binding pattern, got {repr tok}"
