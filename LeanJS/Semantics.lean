@@ -3,3 +3,8 @@ import LeanJS.Semantics.BinOp
 import LeanJS.Semantics.Match
 import LeanJS.Semantics.Eval
 import LeanJS.Semantics.Properties
+import LeanJS.Semantics.StoreProps
+import LeanJS.Semantics.Relation
+import LeanJS.Semantics.Determinism
+import LeanJS.Semantics.FuelMono
+import LeanJS.Semantics.Simulation
