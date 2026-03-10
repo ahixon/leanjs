@@ -8,3 +8,13 @@ import LeanJS.Semantics.Relation
 import LeanJS.Semantics.Determinism
 import LeanJS.Semantics.FuelMono
 import LeanJS.Semantics.Simulation
+import LeanJS.Semantics.EnvCorr
+import LeanJS.Semantics.JSEval
+import LeanJS.Semantics.LeanEval
+import LeanJS.Semantics.TransRel
+import LeanJS.Semantics.SimJSToIR
+import LeanJS.Semantics.SimIRToJS
+import LeanJS.Semantics.SimLeanToIR
+import LeanJS.Semantics.SimIRToLean
+import LeanJS.Semantics.SimCompose
+import LeanJS.Semantics.SimTests
