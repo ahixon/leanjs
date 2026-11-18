@@ -1,0 +1,41 @@
+[unverified] outside the verified core (unsupported: ++/--); using the legacy translator
+const makeCounter = function() {
+  let count = 0;
+  return { increment: function() {
+    count = count + 1;
+    count;
+  }, decrement: function() {
+    count = count - 1;
+    count;
+  }, getCount: function() {
+    count;
+  } };
+};
+const counter = makeCounter();
+counter.increment();
+counter.increment();
+console.log(counter.getCount());
+const compose = function compose(f, g) {
+  return function(x) {
+    return f(g(x));
+  };
+};
+const add1 = function(x) {
+  x + 1;
+};
+const mul2 = function(x) {
+  x * 2;
+};
+const add1ThenMul2 = compose(mul2, add1);
+console.log(add1ThenMul2(3));
+let items = [1, 2, 3, 4, 5];
+let i = 0;
+i;
+while (i < items.length) {
+  console.log(items[i]);
+  const __old = i;
+  i = i + 1;
+  __old;
+}
+
+[exit 0]

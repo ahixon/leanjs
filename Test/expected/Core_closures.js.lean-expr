@@ -1,0 +1,8 @@
+[unverified] outside the verified core (unsupported for Lean: only non-recursive one-parameter functions); using the legacy translator
+let makeAdder := fun n => fun x => x + n
+let add5 := makeAdder 5
+let apply := fun f x => return f x
+let twice := fun f => fun x => f (f x)
+let result := { a := apply add5 10, b := makeAdder "x" "y", c := twice add5 0 }
+result
+[exit 0]

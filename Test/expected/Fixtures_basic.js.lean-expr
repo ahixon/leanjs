@@ -1,0 +1,43 @@
+[unverified] outside the verified core (unsupported: var declaration); using the legacy translator
+do
+  let x ← IO.mkRef (1 + 2)
+  let y ← IO.mkRef "hello"
+  let z := true
+  let add := fun a b => return a + b
+  if x.get.get > 2 then
+    y.set "world"
+  else
+    y.set "foo"
+  let i ← IO.mkRef 0
+  i.get
+  while i.get.get < 10 do
+    x.set (x.get.get + i.get.get)
+    let __old ← i.get.get
+    i.set (i.get.get + 1)
+    __old
+  while x.get.get > 0 do
+    let __old ← x.get.get
+    x.set (x.get.get - 1)
+    __old
+  let arr ← IO.mkRef #[1, 2, 3]
+  let obj ← IO.mkRef { a := 1, b := "two", c := true }
+  let result ← IO.mkRef (add x.get.get y.get.get)
+  console.log result.get
+  let ternary ← IO.mkRef (if x.get.get > 0 then "positive" else "non-positive")
+  try
+    throw "error"
+  catch e =>
+    console.log e
+  finally
+    console.log "done"
+  if x.get.get == 0 then
+    console.log "zero"
+    break
+  else
+    if x.get.get == 1 then
+      console.log "one"
+      break
+    else
+      console.log "other"
+
+[exit 0]

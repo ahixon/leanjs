@@ -1,203 +1,146 @@
 /-
-  Validation tests for forward simulation relations.
+  Tests for the verified core.
 
-  Uses #eval to check concrete examples:
-  - Translation relations hold for small programs
-  - Eval relations agree on concrete programs
-  - EnvCorr predicate is well-formed
+  1. Non-vacuity: the end-to-end theorems are instantiated on concrete
+     programs with concrete evaluation derivations, showing that their
+     hypotheses are satisfiable (a simulation theorem whose premises can never
+     hold would be worthless).
+  2. The executable translators compute the expected outputs (checked by the
+     kernel with `rfl`/`decide`, or by `#guard`, which fails the build).
+  3. Programs outside the core are rejected rather than mistranslated.
 -/
 import LeanJS.Semantics.SimCompose
+import LeanJS.JS.Parser
+import LeanJS.JS.Emit
+import LeanJS.Lean.Emit
 
-namespace LeanJS.Semantics
+namespace LeanJS.Semantics.Tests
 
 open LeanJS.JS
-open LeanJS.Lean
 open LeanJS.IR
+open LeanJS.Semantics
+open LeanJS.Trans.Core
 
-/-! ## Test: Literal conversion roundtrips -/
+/-! ## 1. Non-vacuity -/
 
--- JS literal → IRValue roundtrip
-#eval do
-  let jsLits : List Literal := [.number 42.0, .string "hello", .bool true, .null, .undefined]
-  let irLits : List IRLit := jsLits.map jsLitToIRLit
-  let jsVals := jsLits.map jsLitToValue
-  let irVals := irLits.map irLitToValue
-  -- Check that js lit values equal ir lit values (by matching pairs)
-  for (jv, iv) in jsVals.zip irVals do
-    match jv, iv with
-    | IRValue.number a, IRValue.number b =>
-      unless a == b do throw (IO.userError s!"number mismatch")
-    | IRValue.string a, IRValue.string b =>
-      unless a == b do throw (IO.userError s!"string mismatch")
-    | IRValue.bool a, IRValue.bool b =>
-      unless a == b do throw (IO.userError s!"bool mismatch")
-    | IRValue.undefined, IRValue.unit => pure ()  -- JS undefined ↔ IR unit
-    | _, _ => pure ()  -- Other correspondences
-  IO.println "✓ JS literal → IR literal roundtrip OK"
 
--- Lean literal → IRValue roundtrip
-#eval do
-  let leanLits : List LeanLit := [.natVal 42, .float 3.14, .string "hi", .bool false]
-  let irLits := leanLits.map leanLitToIRLit
-  let leanVals := leanLits.map leanLitToValue
-  let irVals := irLits.map irLitToValue
-  for (lv, iv) in leanVals.zip irVals do
-    match lv, iv with
-    | IRValue.number a, IRValue.number b =>
-      unless a == b do throw (IO.userError s!"number mismatch")
-    | IRValue.string a, IRValue.string b =>
-      unless a == b do throw (IO.userError s!"string mismatch")
-    | IRValue.bool a, IRValue.bool b =>
-      unless a == b do throw (IO.userError s!"bool mismatch")
-    | _, _ => pure ()
-  IO.println "✓ Lean literal → IR literal roundtrip OK"
+/-- `((x) => x)("hi")` -/
+def jsIdApp : JS.Expr :=
+  .call (.arrowFunction [pid "x"] (.expr (.ident "x")) false) [.literal (.string "hi")]
 
-/-! ## Test: Operator mappings -/
+theorem jsIdApp_eval (st : Store) :
+    JSEvalExpr .nil st jsIdApp (.val (.string "hi") st) :=
+  JSSem.call_ok (JSSem.arrow rfl) (JSSem.args_cons_ok (JSSem.literal rfl) JSSem.args_nil)
+    (JSSem.apply_expr_body (JSSem.ident rfl))
 
-#eval do
-  -- JS→IR binary op roundtrip
-  let jsOps : List BinOp := [.add, .sub, .mul, .div, .mod, .lt, .gt, .eq, .neq, .and, .or]
-  for op in jsOps do
-    match jsBinOpToIR op with
-    | some irop =>
-      match irBinOpToJS irop with
-      | some _ => pure ()
-      | none => throw (IO.userError "IR→JS mapping missing")
-    | none => throw (IO.userError "JS→IR mapping missing")
-  IO.println "✓ JS↔IR binary op mappings OK"
+def jsIdApp_ir : IRExpr := .app (.lam none (anyParams ["x"]) [] (.var "x")) [.lit (.string "hi")]
 
-  -- Lean→IR binary op roundtrip
-  let leanOps := ["+", "-", "*", "/", "==", "!=", "<", "<=", ">", ">=", "&&", "||"]
-  for op in leanOps do
-    match leanBinOpToIR op with
-    | some irop =>
-      match irBinOpToLean irop with
-      | some _ => pure ()
-      | none => throw (IO.userError s!"IR→Lean missing for op {op}")
-    | none => throw (IO.userError s!"Lean→IR missing for op {op}")
-  IO.println "✓ Lean↔IR binary op mappings OK"
+theorem jsIdApp_toIR : JSToIRExpr jsIdApp jsIdApp_ir :=
+  .call (.arrow_expr rfl .ident) (.cons .str .nil)
 
-/-! ## Test: Pattern conversion -/
+/-- The verified translator produces exactly this IR (checked by the kernel) -/
+example : Res.out (jsExpr jsIdApp) = .ok jsIdApp_ir := by rfl
 
-#eval do
-  -- IR pattern → Lean pattern
-  let irPats : List IRPattern := [.wildcard, .var "x", .lit (.number 42.0), .lit (.string "hi")]
-  for pat in irPats do
-    let leanPat := irPatToLean pat
-    let _ := leanPatToIR leanPat  -- Should be valid
-    pure ()
-  IO.println "✓ IR↔Lean pattern conversion OK"
+def jsIdApp_back : JS.Expr :=
+  .call (.arrowFunction [pid "x"] (.expr (.ident "x")) false) [.literal (.string "hi")]
 
-/-! ## Test: EnvCorr construction -/
+theorem jsIdApp_fromIR : IRToJSExpr jsIdApp_ir jsIdApp_back :=
+  .app (.lam_expr .var) (.cons .str .nil)
 
-#eval do
-  -- Build a simple EnvCorr
-  let store := Store.empty
-  -- Empty envs correspond
-  let _ : EnvCorr .nil .nil store := .nil
-  -- Extending with same value preserves correspondence
-  let jsEnv := Env.nil.extend "x" (.number 42.0)
-  let irEnv := Env.nil.extend "x" (.number 42.0)
-  let _ : EnvCorr jsEnv irEnv store := .pure .nil
-  IO.println "✓ EnvCorr construction OK"
+/-- End-to-end: the round-tripped program provably evaluates to `"hi"`. -/
+theorem jsIdApp_roundtrip (st : Store) :
+    JSEvalExpr .nil st jsIdApp_back (.val (.string "hi") st) :=
+  js_roundtrip_expr_prim jsIdApp_toIR jsIdApp_fromIR (jsIdApp_eval st) .string
 
-/-! ## Test: Translation relation examples -/
+/-- JS program `function f(x) { return x; } f("hi");` -/
+def jsProg : JS.Program :=
+  [.funcDecl "f" [pid "x"] [.return_ (some (.ident "x"))] false false,
+   .expr (.call (.ident "f") [.literal (.string "hi")])]
 
--- Test: `42` (literal) translates correctly
-example : JSToIRExpr ⟨[], [], 0⟩ (.literal (.number 42.0)) (.lit (.number 42.0)) ⟨[], [], 0⟩ :=
-  .literal
+theorem jsProg_eval (st : Store) : JSEvalStmts .nil st jsProg (.val .undefined st) :=
+  JSSem.stmts_funcDecl rfl
+    (JSSem.stmts_stmt_ok rfl
+      (JSSem.stmt_expr
+        (JSSem.call_ok (JSSem.ident rfl) (JSSem.args_cons_ok (JSSem.literal rfl) JSSem.args_nil)
+          (JSSem.apply_block_body
+            (JSSem.stmts_stmt_signal rfl (JSSem.stmt_return_some (JSSem.ident rfl)) trivial))))
+      JSSem.stmts_nil)
 
--- Test: Pure identifier translates to var
-example : JSToIRExpr ⟨[], ["x"], 0⟩ (.ident "x") (.var "x") ⟨[], ["x"], 0⟩ :=
-  .ident_pure (by simp [List.Mem])
+def jsProg_ir : IRExpr :=
+  .«let» "f" .any (.lam (some "f") (anyParams ["x"]) [] (.var "x"))
+    (.app (.var "f") [.lit (.string "hi")])
 
--- Test: Lean identifier translates to var
-example : LeanToIRExpr ⟨[], []⟩ (.ident "x") (.var "x") ⟨[], []⟩ :=
-  .ident_pure (by simp [List.Mem]) (by simp [List.Mem])
+def jsProg_back : JS.Program :=
+  [.funcDecl "f" [pid "x"] [.return_ (some (.ident "x"))] false false,
+   .expr (.call (.ident "f") [.literal (.string "hi")])]
 
--- Test: Lean unit translates to IR unit literal
-example : LeanToIRExpr ⟨[], []⟩ .unit (.lit .unit) ⟨[], []⟩ :=
-  .unit
+theorem jsProg_toIR : JSToIRStmts jsProg jsProg_ir :=
+  .funcDecl rfl (.ret .ident) (.last rfl (.expr (.call .ident (.cons .str .nil))))
 
-/-! ## Test: Eval relation examples -/
+theorem jsProg_fromIR : IRToJSStmts .discard jsProg_ir jsProg_back :=
+  .funcDecl (.expr_tail .var) (.expr_discard (.app .var (.cons .str .nil)))
 
--- Test: JS literal evaluates correctly
-example : JSEvalExpr .nil Store.empty 1 (.literal (.number 42.0))
-    (.val (.number 42.0) Store.empty) :=
-  .literal
+/-- End-to-end: the round-tripped program provably completes normally. -/
+theorem jsProg_roundtrip (st : Store) : ∃ v', JSEvalStmts .nil st jsProg_back (.val v' st) :=
+  js_roundtrip_program_completes jsProg_toIR jsProg_fromIR (jsProg_eval st)
 
--- Test: JS ident in env evaluates correctly
-example : JSEvalExpr (.cons "x" (.number 42.0) .nil) Store.empty 1 (.ident "x")
-    (.val (.number 42.0) Store.empty) :=
-  .ident_ok rfl
+-- …and it is exactly what the executable translator produces.
+#guard JS.Emit.emitProgram ((jsRoundtrip jsProg).toOption.getD []) ==
+  JS.Emit.emitProgram jsProg_back
 
--- Test: Lean literal evaluates correctly
-example : LeanEvalExpr .nil Store.empty 1 (.lit (.float 3.14))
-    (.val (.number 3.14) Store.empty) :=
-  .lit
+/-- Lean `(fun x => x) "hi"` -/
+def leanIdApp : LeanJS.Lean.LeanExpr :=
+  .app (.lam [⟨"x", none⟩] (.ident "x")) (.lit (.string "hi"))
 
--- Test: Lean ident in env evaluates correctly
-example : LeanEvalExpr (.cons "y" (.string "hi") .nil) Store.empty 1 (.ident "y")
-    (.val (.string "hi") Store.empty) :=
-  .ident_ok rfl
+theorem leanIdApp_eval (st : Store) :
+    LeanEvalExpr .nil st leanIdApp (.val (.string "hi") st) :=
+  LeanSem.app_ok LeanSem.lam_one LeanSem.lit (LeanSem.apply_closure (LeanSem.ident rfl))
 
--- Test: Lean unit evaluates to .unit
-example : LeanEvalExpr .nil Store.empty 1 .unit (.val .unit Store.empty) :=
-  .unit
+theorem leanIdApp_toIR :
+    LeanToIRExpr leanIdApp (.app (.lam none [("x", .any)] [] (.var "x")) [.lit (.string "hi")]) :=
+  .app (.lam_one .ident) .lit
 
-/-! ## Test: IR eval agrees with existing Eval relation on simple examples -/
+theorem leanIdApp_toJS :
+    JSEvalExpr .nil Store.empty
+      (.call (.arrowFunction [pid "x"] (.expr (.ident "x")) false) [.literal (.string "hi")])
+      (.val (.string "hi") Store.empty) :=
+  lean_to_js_expr_prim leanIdApp_toIR (.app (.lam_expr .var) (.cons .str .nil))
+    (leanIdApp_eval _) .string
 
--- Test: IR literal
-example : Eval .nil Store.empty 1 (.lit (.number 42.0))
-    (.val (.number 42.0) Store.empty) :=
-  .lit
+/-- Lean round trip: `(fun x => x) "hi"` comes back unchanged and still
+    provably evaluates to `"hi"`. -/
+theorem leanIdApp_roundtrip :
+    LeanEvalExpr .nil Store.empty leanIdApp (.val (.string "hi") Store.empty) :=
+  lean_roundtrip_expr_prim leanIdApp_toIR (.app (.lam .var) .str) (leanIdApp_eval _) .string
 
--- Test: IR var lookup
-example : Eval (.cons "x" (.number 5.0) .nil) Store.empty 1 (.var "x")
-    (.val (.number 5.0) Store.empty) :=
-  .var_ok rfl
+#guard LeanJS.Lean.Emit.emitLeanExpr ((leanRoundtrip leanIdApp).toOption.getD .unit) ==
+  LeanJS.Lean.Emit.emitLeanExpr leanIdApp
 
-/-! ## Test: ResultCorr reflexivity -/
+/-! ## 2–3. Executable translators (through the real parser and emitter) -/
 
--- ResultCorr holds for identical values
-example : ResultCorr (.val (.number 42.0) Store.empty) (.val (.number 42.0) Store.empty) :=
-  .val
+def jsRoundtripSrc (src : String) : String :=
+  match JS.Parser.parseProgram src with
+  | .error e => s!"parse error: {e}"
+  | .ok p =>
+    match jsRoundtrip p with
+    | .ok p' => JS.Emit.emitProgram p'
+    | .error e => s!"rejected: {e}"
 
--- ResultCorr holds for unit/undefined gap
-example : ResultCorr (.val .unit Store.empty) (.val .undefined Store.empty) :=
-  .val_unit_undefined
+def isRejected (s : String) : Bool := s.startsWith "rejected:"
 
-example : ResultCorr (.val .undefined Store.empty) (.val .unit Store.empty) :=
-  .val_undefined_unit
+-- Accepted, and the output is stable under a second round trip
+#guard !isRejected (jsRoundtripSrc "const add = (a, b) => a + b;\nconst r = add(1, 2);")
+#guard let once := jsRoundtripSrc "const add = (a, b) => a + b;\nconst r = add(1, 2);"
+       jsRoundtripSrc once == once
+#guard let once := jsRoundtripSrc "function f(x) { if (x > 0) { return 1; } return 2; }\nf(3);"
+       !isRejected once && jsRoundtripSrc once == once
 
-/-! ## Test: Helper functions -/
+-- Rejected: outside the verified core
+#guard isRejected (jsRoundtripSrc "let x = 1; x = 2;")            -- assignment
+#guard isRejected (jsRoundtripSrc "while (true) {}")              -- loop
+#guard isRejected (jsRoundtripSrc "var x = 1;")                   -- var
+#guard isRejected (jsRoundtripSrc "const o = {a: 1}; o.a;")       -- member access (JS→IR)
+#guard isRejected (jsRoundtripSrc "const t = `x${1}`;")           -- template literal
+#guard isRejected (jsRoundtripSrc "const f = ({a}) => a;")        -- destructuring parameter
 
-#eval do
-  -- threadLetBinding for varDecl
-  let s := Stmt.varDecl .«const» [.mk (.ident "x" none) (some (.literal (.number 1.0)))]
-  let ir_s := IRExpr.«let» "x" .any (.lit (.number 1.0)) (.var "x")
-  let ir_rest := IRExpr.var "x"
-  let result := threadLetBinding s ir_s ir_rest
-  -- Just check it's a let binding (avoid Float matching issues)
-  match result with
-  | IRExpr.«let» _ _ _ _ => IO.println "✓ threadLetBinding for varDecl OK"
-  | _ => throw (IO.userError "threadLetBinding failed")
-
-#eval do
-  -- buildTemplateConcat
-  let result := buildTemplateConcat ["Hello, ", "!"] [.var "name"]
-  -- Just check it produces a binOp
-  match result with
-  | IRExpr.binOp .strConcat _ _ => IO.println "✓ buildTemplateConcat OK"
-  | _ => throw (IO.userError "buildTemplateConcat failed")
-
-#eval do
-  -- foldApp
-  let result := foldApp (.ident "f") [.ident "x", .ident "y"]
-  match result with
-  | LeanExpr.app _ _ => IO.println "✓ foldApp OK"
-  | _ => throw (IO.userError "foldApp failed")
-
-#eval IO.println "✓ All Phase 7 simulation tests passed"
-
-end LeanJS.Semantics
+end LeanJS.Semantics.Tests

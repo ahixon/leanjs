@@ -5,6 +5,8 @@
   mutable store (heap), and evaluation result with control flow signals.
 -/
 import LeanJS.IR.Core
+import LeanJS.JS.AST
+import LeanJS.Lean.AST
 
 namespace LeanJS.Semantics
 
@@ -25,6 +27,12 @@ inductive IRValue where
   | unit
   | undefined
   | closure (env : Env) (name : Option String) (params : List String) (body : IRExpr)
+  /-- A JS function value: captured env, optional self-name, parameters, source body -/
+  | jsClosure (env : Env) (name : Option String) (params : List String)
+      (body : LeanJS.JS.ExprOrBlock)
+  /-- A Lean function value (single parameter; multi-parameter lambdas are curried) -/
+  | leanClosure (env : Env) (name : Option String) (param : String)
+      (body : LeanJS.Lean.LeanExpr)
   | record (fields : List (String × IRValue))
   | array (elements : List IRValue)
   | ref (loc : Loc)

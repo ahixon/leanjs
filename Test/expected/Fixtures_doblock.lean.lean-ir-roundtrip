@@ -1,0 +1,28 @@
+[unverified] outside the verified core (unsupported: recursive definition `tryCatch_`); using the legacy translator
+def countdown n :=
+  do
+    let i ← IO.mkRef n
+    while i.get.get > 0 do
+      i.set (i.get.get - 1)
+    return i.get.get
+
+
+def sumArray arr :=
+  do
+    let total ← IO.mkRef 0
+    let x := ()
+    return total.get.get
+
+
+def safeDivide a b :=
+  return a / b
+
+def tryCatch_ :=
+  do
+    try
+      let result := safeDivide 10 0
+      return result
+    catch e =>
+      return 0
+
+[exit 0]

@@ -1,0 +1,22 @@
+[verified] translated by the verified core translator
+let sign : Any = fun sign(x: Any) =>
+      if (x > 0) then
+    return "positive"
+  else
+    if (x < 0) then
+      return "negative"
+    else
+undefined
+    return "zero"
+  undefined
+let fact : Any = fun f(n: Any) =>
+  if (n <= 1) then
+1
+  else
+(n * f((n - 1)))
+let noReturn : Any = fun noReturn(x: Any) =>
+  (x + 1)
+  undefined
+let result : Any = [sign(5), sign((-2)), sign(0), fact(5), (noReturn(1) == undefined)]
+undefined
+[exit 0]

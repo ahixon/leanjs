@@ -1,0 +1,16 @@
+[unverified] outside the verified core (unsupported: class); using the legacy translator
+const Animal = { constructor: function constructor(name) {
+  this.name = name;
+  name;
+}, speak: function speak() {
+  return this.name + " makes a noise.";
+} };
+const Dog = { constructor: function constructor(name) {
+  super(name);
+}, speak: function speak() {
+  return this.name + " barks.";
+} };
+const d = new Dog("Rex");
+console.log(d.speak());
+
+[exit 0]

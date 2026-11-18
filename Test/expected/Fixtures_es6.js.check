@@ -1,0 +1,4 @@
+Test/Fixtures/es6.js:
+  JS → IR → JS    : not in verified core — unsupported: template literal
+  JS → IR → Lean  : not in verified core — unsupported: template literal
+[exit 0]

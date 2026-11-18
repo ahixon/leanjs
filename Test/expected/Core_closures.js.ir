@@ -1,0 +1,13 @@
+[verified] translated by the verified core translator
+let makeAdder : Any = fun λ(n: Any) =>
+fun λ(x: Any) =>
+(x + n)
+let add5 : Any = makeAdder(5)
+let apply : Any = fun apply(f: Any, x: Any) =>
+f(x)
+let twice : Any = fun λ(f: Any) =>
+fun λ(x: Any) =>
+f(f(x))
+let result : Any = {a: apply(add5, 10), b: makeAdder("x")("y"), c: twice(add5)(0)}
+undefined
+[exit 0]

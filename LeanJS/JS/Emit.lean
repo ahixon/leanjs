@@ -281,11 +281,7 @@ partial def emitStmt (s : Stmt) : Emitter Unit := do
     match label with | some l => write s!" {l}" | none => pure ()
     semi; write "\n"
   | .ifStmt test consequent alternate =>
-    writeIndent; write "if ("; emitExpr test; write ") "
-    emitStmtBody consequent
-    match alternate with
-    | some alt => write " else "; emitStmtBody alt; write "\n"
-    | none => write "\n"
+    writeIndent; emitIfTail test consequent alternate
   | .while_ test body =>
     writeIndent; write "while ("; emitExpr test; write ") "
     emitStmtBody body; write "\n"
@@ -362,6 +358,16 @@ partial def emitStmt (s : Stmt) : Emitter Unit := do
     writeIndent; write "export default "; emitStmtInline decl
   | .exportAll source =>
     writeIndent; write s!"export * from \"{escapeString source}\""; semi; write "\n"
+
+/-- `if (…) … [else if (…) …]* [else …]`, starting at the current column -/
+partial def emitIfTail (test : Expr) (consequent : Stmt) (alternate : Option Stmt) :
+    Emitter Unit := do
+  write "if ("; emitExpr test; write ") "
+  emitStmtBody consequent
+  match alternate with
+  | some (.ifStmt t c a) => write " else "; emitIfTail t c a
+  | some alt => write " else "; emitStmtBody alt; write "\n"
+  | none => write "\n"
 
 partial def emitStmtBody (s : Stmt) : Emitter Unit := do
   match s with

@@ -1,0 +1,43 @@
+[unverified] outside the verified core (unsupported: var declaration); using the legacy translator
+let x : Any = ref((1 + 2))
+let y : Any = ref("hello")
+let z : Any = true
+let add : (Any, Any) → Any = fun add(a: Any, b: Any) =>
+  return (a + b)
+if (!x > 2) then
+y := "world"
+else
+y := "foo"
+let i : Any = ref(0)
+i
+while (!i < 10) do
+  x := (!x + !i)
+    let __old : Any = !i
+  i := (!i + 1)
+  __old
+while (!x > 0) do
+  let __old : Any = !x
+  x := (!x - 1)
+  __old
+let arr : Any = ref([1, 2, 3])
+let obj : Any = ref({a: 1, b: "two", c: true})
+let result : Any = ref(add(!x, !y))
+console.log(result)
+let ternary : Any = ref(if (!x > 0) then
+"positive"
+else
+"non-positive")
+try
+  throw "error"
+catch e
+console.log(e)
+if (!x == 0) then
+  console.log("zero")
+    break
+else
+  if (!x == 1) then
+    console.log("one")
+        break
+  else
+console.log("other")
+[exit 0]

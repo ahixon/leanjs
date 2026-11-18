@@ -1,0 +1,43 @@
+[unverified] outside the verified core (unsupported: assignment); using the legacy translator
+const Person = function Person(name, age) {
+  this.name = name;
+  name;
+  this.age = age;
+  age;
+};
+Person.prototype.greet = function() {
+  return "Hi, I'm " + this.name;
+};
+function() {
+  return "Hi, I'm " + this.name;
+};
+let p = new Person("Alice", 30);
+console.log(p.greet());
+let obj = { value: function value() {
+  return this._value;
+}, value: function value(v) {
+  this._value = v;
+  v;
+} };
+obj.value = 42;
+42;
+console.log(obj.value);
+let nested = { a: { b: { c: 1 } } };
+let c = nested.a.b.c;
+let arr = [[1, 2], [3, 4]];
+let first = arr[0][1];
+let x = typeof p === "object" ? "yes" : "no";
+let y = 0;
+let z = !true;
+let w = ~255;
+x = x + "!";
+while (x.length < 5) {
+  x = x + "!";
+}
+const key = undefined;
+while (true) {
+  key = __nextKey(obj);
+  console.log(key);
+}
+
+[exit 0]
