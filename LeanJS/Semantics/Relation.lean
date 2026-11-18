@@ -94,14 +94,20 @@ inductive Eval : Env → Store → Nat → IRExpr → EvalResult → Prop where
   -- Binary operators
   | binOp_ok :
       Eval env store fuel left (.val lv s1) →
+      needsRight op lv = true →
       Eval env s1 fuel right (.val rv s2) →
       evalBinOp op lv rv s2 = result →
       Eval env store (fuel+1) (.binOp op left right) result
+  | binOp_short :
+      Eval env store fuel left (.val lv s1) →
+      needsRight op lv = false →
+      Eval env store (fuel+1) (.binOp op left right) (.val lv s1)
   | binOp_left_signal :
       Eval env store fuel left r → isSignal r →
       Eval env store (fuel+1) (.binOp op left right) r
   | binOp_right_signal :
       Eval env store fuel left (.val lv s1) →
+      needsRight op lv = true →
       Eval env s1 fuel right r → isSignal r →
       Eval env store (fuel+1) (.binOp op left right) r
 
@@ -463,11 +469,16 @@ inductive EvalArgs : Env → Store → Nat → List IRExpr → List IRValue →
 inductive ApplyFunc : IRValue → List IRValue → Store → Nat →
     EvalResult → Prop where
   | closure_ok :
+      params.length = args.length →
       callEnv = closureEnv.extendMany (params.zip args) →
       callEnv' = (match name with | some n => callEnv.extend n (.closure closureEnv name params body) | none => callEnv) →
       Eval callEnv' store fuel body bodyResult →
       result = (match bodyResult with | .return_ v s => .val v s | other => other) →
       ApplyFunc (.closure closureEnv name params body) args store fuel result
+  | arity_mismatch :
+      params.length ≠ args.length →
+      ApplyFunc (.closure closureEnv name params body) args store fuel
+        (.error "wrong number of arguments")
   | non_function :
       (∀ cenv n ps b, fv ≠ .closure cenv n ps b) →
       ApplyFunc fv args store fuel (.error "application of non-function")

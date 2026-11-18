@@ -139,7 +139,7 @@ theorem sim_lean_all (h : LeanSem j r) : NoErr r → LeanIRGoal j r := by
     | if_ htc _ _ =>
       obtain ⟨n1, r1, e1, c1⟩ := ihc hne _ _ htc hc
       exact ⟨n1 + 1, _, .if_signal e1 (c1.signal hs), c1⟩
-  | binOp_ok _ _ hop ihl ihr =>
+  | binOp_ok _ hop hn _ ihl ihr =>
     intro hne e' ienv ht hc
     cases ht with
     | binOp htl htr hop' =>
@@ -149,24 +149,34 @@ theorem sim_lean_all (h : LeanSem j r) : NoErr r → LeanIRGoal j r := by
       obtain ⟨n2, r2, e2, c2⟩ := ihr trivial _ _ htr hc
       obtain ⟨rv', rfl, hrv⟩ := c2.inv_val
       exact ⟨max n1 n2 + 1, _,
-        .binOp_ok (e1.lift (.val hlv) (by omega)) (e2.lift (.val hrv) (by omega)) rfl,
+        .binOp_ok (e1.lift (.val hlv) (by omega)) (hlv.needsRight_tgt (.inl rfl) hn)
+          (e2.lift (.val hrv) (by omega)) rfl,
         evalBinOp_corr (.inl rfl) hlv hrv _ hne⟩
+  | binOp_short _ hop hn ihl =>
+    intro hne e' ienv ht hc
+    cases ht with
+    | binOp htl htr hop' =>
+      rw [hop] at hop'; cases hop'
+      obtain ⟨n1, r1, e1, c1⟩ := ihl trivial _ _ htl hc
+      obtain ⟨lv', rfl, hlv⟩ := c1.inv_val
+      exact ⟨n1 + 1, _, .binOp_short e1 (hlv.needsRight_tgt (.inl rfl) hn), .val hlv⟩
   | binOp_left_signal _ hs ihl =>
     intro hne e' ienv ht hc
     cases ht with
     | binOp htl _ _ =>
       obtain ⟨n1, r1, e1, c1⟩ := ihl hne _ _ htl hc
       exact ⟨n1 + 1, _, .binOp_left_signal e1 (c1.signal hs), c1⟩
-  | binOp_right_signal _ _ hs ihl ihr =>
+  | binOp_right_signal _ hn _ hs ihl ihr =>
     intro hne e' ienv ht hc
     cases ht with
-    | binOp htl htr _ =>
+    | binOp htl htr hop' =>
+      rw [hop'] at hn
       obtain ⟨n1, r1, e1, c1⟩ := ihl trivial _ _ htl hc
       obtain ⟨lv', rfl, hlv⟩ := c1.inv_val
       obtain ⟨n2, r2, e2, c2⟩ := ihr hne _ _ htr hc
       exact ⟨max n1 n2 + 1, _,
-        .binOp_right_signal (e1.lift (.val hlv) (by omega)) (e2.lift c2 (by omega))
-          (c2.signal hs), c2⟩
+        .binOp_right_signal (e1.lift (.val hlv) (by omega)) (hlv.needsRight_tgt (.inl rfl) hn)
+          (e2.lift c2 (by omega)) (c2.signal hs), c2⟩
   | unaryOp_ok _ hop iha =>
     intro hne e' ienv ht hc
     cases ht with
@@ -272,7 +282,7 @@ theorem sim_lean_all (h : LeanSem j r) : NoErr r → LeanIRGoal j r := by
       have hfv : VCorr SLI _ (.closure _ name [p] body') := .clo ⟨_, _, _, _, rfl, rfl, hb⟩ hce
       obtain ⟨n1, r1, e1, c1⟩ :=
         ih (unwrapReturn_noErr hne) _ _ hb (hce.ofCall (.cons hav .nil) hfv [p] name)
-      exact ⟨n1, _, .ofBody e1, c1.unwrapReturn⟩
+      exact ⟨n1, _, .ofBody rfl e1, c1.unwrapReturn⟩
 
 /-- **Forward simulation, Lean → IR.** -/
 theorem sim_lean_to_ir_expr

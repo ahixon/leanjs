@@ -61,16 +61,19 @@ def Eval.fuel_mono
     obtain ⟨m', rfl⟩ := succ_le_succ hle
     exact .app_args_signal (Eval.fuel_mono hf (by omega) trivial)
       (EvalArgs.fuel_mono ha (by omega) hnf) hs
-  | binOp_ok hl hr heq =>
+  | binOp_ok hl hn hr heq =>
     obtain ⟨m', rfl⟩ := succ_le_succ hle
-    exact .binOp_ok (Eval.fuel_mono hl (by omega) trivial)
+    exact .binOp_ok (Eval.fuel_mono hl (by omega) trivial) hn
       (Eval.fuel_mono hr (by omega) trivial) heq
+  | binOp_short hl hn =>
+    obtain ⟨m', rfl⟩ := succ_le_succ hle
+    exact .binOp_short (Eval.fuel_mono hl (by omega) trivial) hn
   | binOp_left_signal hl hs =>
     obtain ⟨m', rfl⟩ := succ_le_succ hle
     exact .binOp_left_signal (Eval.fuel_mono hl (by omega) hnf) hs
-  | binOp_right_signal hl hr hs =>
+  | binOp_right_signal hl hn hr hs =>
     obtain ⟨m', rfl⟩ := succ_le_succ hle
-    exact .binOp_right_signal (Eval.fuel_mono hl (by omega) trivial)
+    exact .binOp_right_signal (Eval.fuel_mono hl (by omega) trivial) hn
       (Eval.fuel_mono hr (by omega) hnf) hs
   | unaryOp_ok ha heq =>
     obtain ⟨m', rfl⟩ := succ_le_succ hle
@@ -324,9 +327,10 @@ def ApplyFunc.fuel_mono
     (h : ApplyFunc fv args store n r) (hle : n ≤ m) (hnf : notFuelError r) :
     ApplyFunc fv args store m r := by
   cases h with
-  | closure_ok henv henv' heval hres =>
-    exact .closure_ok henv henv'
+  | closure_ok hlen henv henv' heval hres =>
+    exact .closure_ok hlen henv henv'
       (Eval.fuel_mono heval hle (notFuelError_of_return_match hres hnf)) hres
+  | arity_mismatch hlen => exact .arity_mismatch hlen
   | non_function hne => exact .non_function hne
   termination_by (n, 1)
   decreasing_by

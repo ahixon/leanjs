@@ -57,9 +57,11 @@ partial def eval (env : Env) (store : Store) (fuel : Nat) (e : IRExpr) : EvalRes
   | .binOp op left right =>
     match eval env store fuel' left with
     | .val lv s1 =>
-      match eval env s1 fuel' right with
-      | .val rv s2 => evalBinOp op lv rv s2
-      | other => other
+      if needsRight op lv then
+        match eval env s1 fuel' right with
+        | .val rv s2 => evalBinOp op lv rv s2
+        | other => other
+      else .val lv s1
     | other => other
 
   -- Unary operators
@@ -254,6 +256,7 @@ where
       : EvalResult :=
     match fv with
     | .closure closureEnv name params body =>
+      if params.length != args.length then .error "wrong number of arguments" else
       let callEnv := closureEnv.extendMany (params.zip args)
       let callEnv := match name with
         | some n => callEnv.extend n fv

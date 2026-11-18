@@ -469,6 +469,29 @@ end LeanToIR
 
 section IRToLean
 
+/-- Arguments after the first must be atoms (see `IRToLeanAtoms`) -/
+def irLeanAtoms : (es : List IRExpr) → Res {es' // IRToLeanAtoms es es'}
+  | [] => pure ⟨_, .nil⟩
+  | .var x :: es => do
+    let ⟨es', hs⟩ ← irLeanAtoms es
+    pure ⟨_, .cons .var .var hs⟩
+  | .lit (.number n) :: es => do
+    let ⟨es', hs⟩ ← irLeanAtoms es
+    pure ⟨_, .cons .lit .num hs⟩
+  | .lit (.string s) :: es => do
+    let ⟨es', hs⟩ ← irLeanAtoms es
+    pure ⟨_, .cons .lit .str hs⟩
+  | .lit (.bool b) :: es => do
+    let ⟨es', hs⟩ ← irLeanAtoms es
+    pure ⟨_, .cons .lit .bool hs⟩
+  | .lit .unit :: es => do
+    let ⟨es', hs⟩ ← irLeanAtoms es
+    pure ⟨_, .cons .lit .unit hs⟩
+  | .undefined :: es => do
+    let ⟨es', hs⟩ ← irLeanAtoms es
+    pure ⟨_, .cons .undef .undef hs⟩
+  | _ :: _ => throw "unsupported for Lean: arguments after the first must be variables or literals"
+
 mutual
 
 def irLean : (e : IRExpr) → Res {e' // IRToLeanExpr e e'}
@@ -482,13 +505,14 @@ def irLean : (e : IRExpr) → Res {e' // IRToLeanExpr e e'}
     let ⟨v', hv⟩ ← irLean v
     let ⟨b', hb⟩ ← irLean b
     pure ⟨_, .let_ hv hb⟩
-  | .lam none [(p, ty)] _ body false false => do
+  | .lam none (p :: ps) _ body false false => do
     let ⟨b', hb⟩ ← irLean body
-    pure ⟨_, .lam hb⟩
-  | .app f [a] => do
+    pure ⟨_, .lam hb (by simp)⟩
+  | .app f (a :: as) => do
     let ⟨f', hf⟩ ← irLean f
     let ⟨a', ha⟩ ← irLean a
-    pure ⟨_, .app hf ha⟩
+    let ⟨as', hs⟩ ← irLeanAtoms as
+    pure ⟨_, .app hf ha hs⟩
   | .binOp op l r =>
     match hop : irBinOpToLean op with
     | none => throw "unsupported operator for Lean"
@@ -519,8 +543,10 @@ def irLean : (e : IRExpr) → Res {e' // IRToLeanExpr e e'}
   | .throw e => do
     let ⟨e', h⟩ ← irLean e
     pure ⟨_, .throw h⟩
-  | .lam .. => throw "unsupported for Lean: only non-recursive one-parameter functions"
-  | .app .. => throw "unsupported for Lean: only one-argument application"
+  | .lam (some _) .. => throw "unsupported for Lean: named function (`function` declaration or expression; use an arrow function)"
+  | .lam none [] .. => throw "unsupported for Lean: function with no parameters"
+  | .lam .. => throw "unsupported for Lean: async or generator function"
+  | .app .. => throw "unsupported for Lean: call with no arguments"
   | .seq _ => throw "unsupported for Lean: statement sequence"
   | .«return» _ => throw "unsupported for Lean: return"
   | _ => throw "unsupported IR construct for Lean"

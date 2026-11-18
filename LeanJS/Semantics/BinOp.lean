@@ -66,7 +66,8 @@ def evalBinOp (op : IRBinOp) (l r : IRValue) (store : Store) : EvalResult :=
   | .neq, .bool a, .bool b => .val (.bool (a != b)) store
   | .neq, .unit, .unit => .val (.bool false) store
   | .neq, .undefined, .undefined => .val (.bool false) store
-  -- Logical operators (short-circuit semantics handled in eval, these are fallback)
+  -- Logical operators: only reached when the right operand was needed
+  -- (see `needsRight`); the result is then one of the operands
   | .and, _, _ =>
     if isTruthy l then .val r store else .val l store
   | .or, _, _ =>
@@ -85,6 +86,19 @@ def evalBinOp (op : IRBinOp) (l r : IRValue) (store : Store) : EvalResult :=
   | .gte, .string a, .string b => .val (.bool (b ≤ a)) store
   -- Type mismatch
   | _, _, _ => .error s!"binOp type mismatch: {repr op}"
+
+/-- Does `l op r` evaluate its right operand once the left operand has
+    evaluated to `lv`? `&&` and `||` short-circuit; every other operator
+    needs both operands. -/
+def needsRight : IRBinOp → IRValue → Bool
+  | .and, lv => isTruthy lv
+  | .or, lv => !isTruthy lv
+  | _, _ => true
+
+/-- `needsRight` for a source operator that may have no IR counterpart -/
+def optNeedsRight : Option IRBinOp → IRValue → Bool
+  | some op, lv => needsRight op lv
+  | none, _ => true
 
 /-- Evaluate a unary operator -/
 def evalUnaryOp (op : IRUnaryOp) (v : IRValue) (store : Store) : EvalResult :=

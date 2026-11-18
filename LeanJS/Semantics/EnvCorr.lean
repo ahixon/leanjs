@@ -138,6 +138,20 @@ theorem VCorr.truthy (h : VCorr S v v') : isTruthy v = isTruthy v' := by
     cases h1 <;> cases h2 <;> rfl
   | record | array => rfl
 
+/-- Short-circuiting is decided the same way on corresponding values -/
+theorem VCorr.needsRight_eq (h : VCorr S v v') (op : IRBinOp) :
+    needsRight op v = needsRight op v' := by
+  cases op <;> simp only [LeanJS.Semantics.needsRight, h.truthy]
+
+/-- Transport `needsRight` to the target operator `op'`, which is the same
+    as `op` or `+` for IR's string concatenation. -/
+theorem VCorr.needsRight_tgt {op op' : IRBinOp} {b : Bool} (h : VCorr S v v')
+    (hop : op' = op ∨ (op = .strConcat ∧ op' = .add))
+    (hn : needsRight op v = b) : needsRight op' v' = b := by
+  rcases hop with rfl | ⟨rfl, rfl⟩
+  · rw [← h.needsRight_eq]; exact hn
+  · exact hn
+
 theorem EnvCorr.lookup (h : EnvCorr S e e') (hl : e.lookup x = some v) :
     ∃ v', e'.lookup x = some v' ∧ VCorr S v v' := by
   match h with
@@ -159,6 +173,11 @@ theorem FieldsCorr.lookup (h : FieldsCorr S fs fs') (k : String) :
     · have hk' : (k == k') = false := by simp [hk]
       simp only [List.lookup, hk']
       exact FieldsCorr.lookup hf k
+
+theorem ListCorr.length_eq (h : ListCorr S a a') : a.length = a'.length := by
+  match h with
+  | .nil => rfl
+  | .cons _ ht => simp [ListCorr.length_eq ht]
 
 theorem ListCorr.append (h1 : ListCorr S a a') (h2 : ListCorr S b b') :
     ListCorr S (a ++ b) (a' ++ b') := by

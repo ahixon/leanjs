@@ -141,6 +141,19 @@ def cmdLeanExpr (file : String) : IO UInt32 := do
         | .ok expr => IO.println (Lean.Emit.emitLeanExpr expr); return 0
         | .error err => fail s!"IR→Lean error: {err}"
 
+/-- JS → IR → Lean through the verified translators, printed as a runnable
+    Lean file over `LeanJS.Runtime`. There is no unverified fallback. -/
+def cmdLeanExec (file : String) : IO UInt32 := do
+  match ← parseJS file with
+  | .error err => fail s!"Parse error: {err}"
+  | .ok prog =>
+    match Trans.Core.jsToLean prog with
+    | .error why => fail s!"not in the verified core: {why}"
+    | .ok e =>
+      match Lean.EmitExec.emitModule e with
+      | .ok src => note true; IO.print src; return 0
+      | .error err => fail s!"cannot emit executable Lean: {err}"
+
 def cmdLeanRoundtrip (file : String) : IO UInt32 := do
   match ← parseLean file with
   | .error err => fail s!"Parse error: {err}"
@@ -207,6 +220,7 @@ def usage : IO UInt32 := do
   IO.eprintln "  roundtrip         JS → IR → JS"
   IO.eprintln "  lean              JS → IR → Lean (module-level, unverified)"
   IO.eprintln "  lean-expr         JS → IR → Lean (expression-level)"
+  IO.eprintln "  lean-exec         JS → IR → Lean as a runnable file (verified core only)"
   IO.eprintln "  lean-roundtrip    Parse Lean and emit it back"
   IO.eprintln "  lean-ir-roundtrip Lean → IR → Lean"
   IO.eprintln "  js                Lean → IR → JS"
@@ -223,6 +237,7 @@ def main (args : List String) : IO UInt32 := do
   | ["roundtrip", f] => cmdRoundtrip f
   | ["lean", f] => cmdLean f
   | ["lean-expr", f] => cmdLeanExpr f
+  | ["lean-exec", f] => cmdLeanExec f
   | ["lean-roundtrip", f] => cmdLeanRoundtrip f
   | ["lean-ir-roundtrip", f] => cmdLeanIRRoundtrip f
   | ["js", f] => cmdJS f

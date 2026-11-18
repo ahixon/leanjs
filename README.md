@@ -39,10 +39,27 @@ lean-js <command> <file>
 | `roundtrip`         | JS → IR → JS                     | yes           |
 | `lean`              | JS → IR → Lean module            | no            |
 | `lean-expr`         | JS → IR → Lean expression        | yes           |
+| `lean-exec`         | JS → IR → runnable Lean file     | only          |
 | `lean-roundtrip`    | Lean → Lean (parse and re-emit)  | –             |
 | `lean-ir-roundtrip` | Lean → IR → Lean                 | yes           |
 | `js`                | Lean → IR → JS                   | yes           |
 | `check`             | which pipelines are verified for a file, and why not | – |
+
+The Lean printed by `lean` and `lean-expr` is untyped: a variable can hold a
+number in one place and a function in another. It shows the shape of the
+translation but is generally not well-typed Lean. `lean-exec` prints the
+verified translation as Lean code over the dynamic value type of
+`LeanJS/Runtime.lean` instead, so it compiles and runs, printing the
+program's value in the format of `JSON.stringify`:
+
+```
+$ lean-js lean-exec prog.js > Prog.lean && lake env lean Prog.lean
+[{"x":42,"y":10},4,0,10]
+```
+
+`lean-exec` has no unverified fallback: it refuses programs outside the
+verified JS → Lean fragment. The value printed is the program's completion
+value, so end the program with an expression statement such as `result;`.
 
 If the input is in the verified core, commands marked "yes" use the verified
 translators and print `[verified]` on stderr. Otherwise they fall back to the
@@ -74,8 +91,8 @@ bodies are in the Lean core below. Such a file is treated as the expression
 | unary/binary operators | ✓ (all mapped ops) | ✓ | ✓ | ✓ (no bitwise/`**`/`typeof`) |
 | conditionals | `?:`, `if`/`else` | `?:`, `if`/`else` | `if … then … else` | ✓ |
 | local bindings | `const`/`let x = e;` | ✓ | non-recursive `let` | ✓ |
-| functions | arrow and `function` (incl. self-recursive), simple params | ✓ | `fun x y => …` (curried) | one-parameter, non-recursive |
-| calls | ✓ | ✓ | one argument at a time | one argument |
+| functions | arrow and `function` (incl. self-recursive), simple params | ✓ | `fun x y => …` (curried) | non-recursive, ≥ 1 parameter (curried) |
+| calls | ✓ | ✓ | one argument at a time | ≥ 1 argument; all but the first must be variables or literals |
 | arrays, records | array literals (holes ok), `{k: e}` | ✓ incl. `.field` | `#[…]`, `{ k := e }`, `.field` | ✓ |
 | `return`, `throw` | ✓ | ✓ | `throw` | `throw` |
 | function declarations | ✓ (not hoisted) | ✓ | | |
@@ -149,7 +166,11 @@ Be aware of:
   the IR operator semantics (`LeanJS/Semantics/BinOp.lean`):
   * `==` and `===` are both structural equality without coercion, and `null`
     is identified with `undefined`;
-  * `&&`/`||` evaluate both operands;
+  * `&&`/`||` short-circuit, as in JS (the right operand is evaluated only
+    when needed);
+  * calling a function with the wrong number of arguments is a runtime
+    error, so the theorems do not cover such calls. In JS the missing
+    parameters would be `undefined`;
   * numbers are Lean `Float`s, and number-to-string conversion uses Lean's
     formatting;
   * function declarations are not hoisted;
@@ -157,7 +178,11 @@ Be aware of:
 
   The Lean model is untyped and treats numeric literals as floats.
 * **Trusted, unverified components:** the JS and Lean parsers and emitters,
-  the IR printer, and the legacy translators used outside the core. The
+  the IR printer, the executable-Lean emitter (`LeanJS/Lean/EmitExec.lean`)
+  and its runtime (`LeanJS/Runtime.lean`), and the legacy translators used
+  outside the core. The runtime shares its operators with the model
+  semantics (`evalBinOp`/`evalUnaryOp`), and the test suite checks its
+  output against Node.js. The
   legacy translators have known semantic bugs. For example, the legacy
   JS→Lean path translates `function f(x) { x + 1; }`, which returns
   `undefined`, to `def f x := x + 1`.
@@ -176,7 +201,10 @@ Be aware of:
 3. **Behavioural tests (Node.js):** each `Test/Core/*.js` program and its
    round-tripped output are run, and the printed value of `result` must match.
    Each `Test/Core/*.lean` program is translated to JS and its `result`
-   compared with `<file>.expected`.
+   compared with `<file>.expected`. Each `Test/Core/*.js` program in the
+   verified JS → Lean fragment is turned into a runnable Lean file
+   (`lean-exec`), which is run with `lake env lean`; it must print what Node
+   prints. `Test/Core/curried.js` is required to be in that fragment.
 4. **Axiom audit:** `Test/Axioms.lean` must not mention `sorryAx`.
 
 `lake build` itself also runs the proof-level tests in `SimTests.lean`
@@ -189,6 +217,8 @@ the suite.
 ```
 LeanJS/JS/          JS AST, lexer, parser, emitter
 LeanJS/Lean/        Lean AST, lexer, parser, emitter
+LeanJS/Lean/EmitExec  runnable Lean output for the verified core
+LeanJS/Runtime      dynamic values for runnable Lean output
 LeanJS/IR/          IR definition and printer
 LeanJS/Trans/       legacy translators (JSToIR, IRToJS, LeanToIR, IRToLean)
 LeanJS/Trans/Core   verified, certified translators for the core fragment

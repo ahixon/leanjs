@@ -15,9 +15,11 @@ namespace LeanJS.Semantics
 open LeanJS.Lean
 open LeanJS.IR
 
+/-- An IR closure with parameters `p :: qs` corresponds to the curried Lean
+    closure for `p` whose body takes the remaining parameters. -/
 def IRLeanClo (v v' : IRValue) (e e' : Env) : Prop :=
-  ∃ p body body', v = .closure e none [p] body ∧
-    v' = .leanClosure e' none p body' ∧ IRToLeanExpr body body'
+  ∃ p qs body body', v = .closure e none (p :: qs) body ∧
+    v' = .leanClosure e' none p (leanTail qs body') ∧ IRToLeanExpr body body'
 
 def SIL : CorrSpec where
   uUnit := .unit
@@ -25,8 +27,72 @@ def SIL : CorrSpec where
   hUnit := .unit
   hUndef := .unit
   Clo := IRLeanClo
-  clo_src := by rintro _ _ _ _ ⟨_, _, _, rfl, _, _⟩; exact .closure
-  clo_tgt := by rintro _ _ _ _ ⟨_, _, _, _, rfl, _⟩; exact .lean
+  clo_src := by rintro _ _ _ _ ⟨_, _, _, _, rfl, _, _⟩; exact .closure
+  clo_tgt := by rintro _ _ _ _ ⟨_, _, _, _, _, rfl, _⟩; exact .lean
+
+/-! ## Curried application in Lean -/
+
+/-- Applying a Lean function value to several arguments, one at a time.
+    Every application but the last returns a function value. -/
+inductive LeanApplyMany : IRValue → List IRValue → Store → EvalResult → Prop where
+  | one : LeanApply g v st r → LeanApplyMany g [v] st r
+  | cons : LeanApply g v st (.val g' st') → LeanApplyMany g' (w :: ws) st' r →
+      LeanApplyMany g (v :: w :: ws) st r
+
+theorem lean_lam_eval (p : String) (qs : List String) (b : LeanExpr) :
+    LeanEvalExpr env st (.lam (leanParamsOf (p :: qs)) b)
+      (.val (.leanClosure env none p (leanTail qs b)) st) := by
+  cases qs with
+  | nil => exact .lam_one
+  | cons q qs => exact .lam_cons (by simp [leanParamsOf])
+
+/-- Applying a curried closure to its parameters one by one evaluates the
+    body in the environment extended with all of them. -/
+theorem lean_apply_curried (b : LeanExpr) :
+    ∀ (p : String) (qs : List String) (cenv : Env) (vs : List IRValue) (st : Store) (r : EvalResult),
+      vs.length = qs.length + 1 →
+      LeanEvalExpr (cenv.extendMany ((p :: qs).zip vs)) st b r →
+      LeanApplyMany (.leanClosure cenv none p (leanTail qs b)) vs st (unwrapReturn r)
+  | p, [], cenv, [v], st, r, _, h => .one (.apply_closure h)
+  | p, q :: qs, cenv, v :: w :: ws, st, r, hlen, h => by
+    have hlam : LeanApply (.leanClosure cenv none p (leanTail (q :: qs) b)) v st
+        (.val (.leanClosure (cenv.extend p v) none q (leanTail qs b)) st) :=
+      .apply_closure (lean_lam_eval q qs b)
+    refine .cons hlam ?_
+    exact lean_apply_curried b q qs (cenv.extend p v) (w :: ws) st r
+      (by simp at hlen ⊢; omega) h
+  | _, [], _, [], _, _, hlen, _ => by simp at hlen
+  | _, [], _, _ :: _ :: _, _, _, hlen, _ => by simp at hlen
+  | _, _ :: _, _, [], _, _, hlen, _ => by simp at hlen
+  | _, _ :: _, _, [_], _, _, hlen, _ => by simp at hlen
+
+/-- Lean values of atoms: they evaluate in any store, without changing it -/
+inductive LeanAtomVals (env : Env) : List LeanExpr → List IRValue → Prop where
+  | nil : LeanAtomVals env [] []
+  | cons : (∀ st, LeanEvalExpr env st e (.val v st)) → LeanAtomVals env es vs →
+      LeanAtomVals env (e :: es) (v :: vs)
+
+/-- The Lean application spine `((h a) e₁) … eₙ` with atoms `eᵢ` -/
+theorem lean_spine (hat : LeanAtomVals lenv as' vs') :
+    ∀ {H a g v s1 s2 r}, LeanEvalExpr lenv st H (.val g s1) →
+      LeanEvalExpr lenv s1 a (.val v s2) →
+      LeanApplyMany g (v :: vs') s2 r →
+      LeanEvalExpr lenv st (as'.foldl .app (.app H a)) r := by
+  induction hat with
+  | nil =>
+    intro H a g v s1 s2 r hH ha hap
+    cases hap with
+    | one hap => exact .app_ok hH ha hap
+  | cons he _ ih =>
+    intro H a g v s1 s2 r hH ha hap
+    cases hap with
+    | cons hap1 hrest => exact ih (.app_ok hH ha hap1) (he _) hrest
+
+theorem lean_spine_signal (hs : isSignal r) :
+    ∀ (es : List LeanExpr) {H : LeanExpr}, LeanEvalExpr lenv st H r →
+      LeanEvalExpr lenv st (es.foldl .app H) r
+  | [], _, h => h
+  | _ :: es, _, h => lean_spine_signal hs es (.app_fn_signal h hs)
 
 theorem irBinOpToLean_spec (h : irBinOpToLean op = some lop) : leanBinOpToIR lop = some op := by
   cases op <;> simp [irBinOpToLean] at h <;> subst h <;> rfl
@@ -34,24 +100,58 @@ theorem irBinOpToLean_spec (h : irBinOpToLean op = some lop) : leanBinOpToIR lop
 theorem irUnaryOpToLean_spec (h : irUnaryOpToLean op = some lop) : leanUnaryOpToIR lop = some op := by
   cases op <;> simp [irUnaryOpToLean] at h <;> subst h <;> rfl
 
-/-- A one-argument `EvalArgs` derivation that produced a value -/
-theorem EvalArgs.inv_single_val (h : EvalArgs env st n [a] [] (.val (.array vs) s)) :
-    ∃ v, Eval env st n a (.val v s) ∧ vs = [v] := by
-  cases h with
-  | cons_ok ha hrest =>
-    cases hrest with
-    | nil => exact ⟨_, ha, rfl⟩
-  | cons_signal _ hs => simp [isSignal] at hs
+/-! ## Atoms -/
 
-theorem EvalArgs.inv_single_signal (h : EvalArgs env st n [a] [] r) (hs : isSignal r) :
-    Eval env st n a r := by
-  cases h with
-  | cons_ok ha hrest =>
-    cases hrest with
-    | nil => simp [isSignal] at hs
-  | cons_signal ha _ => exact ha
+theorem atom_eval (ha : IsAtom e) (ht : IRToLeanExpr e e') (h : Eval ienv st n e (.val v s))
+    (hc : EnvCorr SIL ienv lenv) :
+    ∃ v', VCorr SIL v v' ∧ (∀ st', LeanEvalExpr lenv st' e' (.val v' st')) ∧ s = st := by
+  cases ha with
+  | var =>
+    cases h with
+    | var_ok hl =>
+      cases ht
+      obtain ⟨v', hl', hv⟩ := hc.lookup hl
+      exact ⟨v', hv, fun _ => .ident hl', rfl⟩
+  | lit =>
+    cases h with
+    | lit =>
+      cases ht with
+      | num => exact ⟨_, .number, fun _ => .lit, rfl⟩
+      | str => exact ⟨_, .string, fun _ => .lit, rfl⟩
+      | bool => exact ⟨_, .bool, fun _ => .lit, rfl⟩
+      | unit => exact ⟨_, .unit, fun _ => .unit, rfl⟩
+  | undef =>
+    cases h with
+    | undefined => cases ht; exact ⟨_, .undefined, fun _ => .unit, rfl⟩
+
+theorem atom_no_signal (ha : IsAtom e) (h : Eval ienv st n e r) (hs : isSignal r) : ¬ NoErr r := by
+  cases ha <;> cases h <;> simp_all [isSignal, NoErr]
+
+/-- Evaluating atomic arguments: values, store unchanged, and the Lean
+    atoms evaluate to corresponding values. -/
+theorem EvalArgs.atoms (hc : EnvCorr SIL ienv lenv) :
+    ∀ (as : List IRExpr) {as' st acc r}, IRToLeanAtoms as as' →
+      EvalArgs ienv st n as acc r → NoErr r →
+      ∃ vs vs', r = .val (.array (acc.reverse ++ vs)) st ∧ ListCorr SIL vs vs' ∧
+        LeanAtomVals lenv as' vs' := by
+  intro as
+  induction as with
+  | nil =>
+    intro as' st acc r ht h _
+    cases ht; cases h; exact ⟨[], [], by simp, .nil, .nil⟩
+  | cons e es ih =>
+    intro as' st acc r ht h hne
+    cases ht with
+    | cons hat hte hts =>
+      cases h with
+      | cons_ok he hrest =>
+        obtain ⟨v', hv, hl, rfl⟩ := atom_eval hat hte he hc
+        obtain ⟨vs, vs', rfl, hvs, hlv⟩ := ih hts hrest hne
+        exact ⟨_ :: vs, v' :: vs', by simp, .cons hv hvs, .cons hl hlv⟩
+      | cons_signal he hs => exact absurd hne (atom_no_signal hat he hs)
 
 set_option maxHeartbeats 6400000 in
+set_option maxRecDepth 8192 in
 mutual
 
 theorem sim_ir_lean_expr {n : Nat} (h : Eval ienv st n e r) (hne : NoErr r)
@@ -88,30 +188,43 @@ theorem sim_ir_lean_expr {n : Nat} (h : Eval ienv st n e r) (hne : NoErr r)
   | lam hp =>
     subst hp
     cases ht with
-    | lam hb => exact ⟨_, .lam_one, .val (.clo ⟨_, _, _, rfl, rfl, hb⟩ hc)⟩
+    | lam hb hps =>
+      obtain ⟨⟨p, ty⟩, qs, rfl⟩ := List.exists_cons_of_ne_nil hps
+      exact ⟨_, lean_lam_eval p (qs.map Prod.fst) _,
+        .val (.clo ⟨p, _, _, _, rfl, rfl, hb⟩ hc)⟩
   | app_ok hf ha hap =>
     cases ht with
-    | app htf hta =>
+    | app htf hta hts =>
       obtain ⟨r1, e1, c1⟩ := sim_ir_lean_expr hf trivial htf hc
       obtain ⟨fv', rfl, hfv⟩ := c1.inv_val
-      obtain ⟨v, hav, rfl⟩ := ha.inv_single_val
-      obtain ⟨r2, e2, c2⟩ := sim_ir_lean_expr hav trivial hta hc
-      obtain ⟨v', rfl, hv⟩ := c2.inv_val
-      obtain ⟨r3, e3, c3⟩ := sim_ir_lean_apply hap hne hfv hv
-      exact ⟨_, .app_ok e1 e2 e3, c3⟩
+      cases ha with
+      | cons_ok ha1 hrest =>
+        obtain ⟨r2, e2, c2⟩ := sim_ir_lean_expr ha1 trivial hta hc
+        obtain ⟨v', rfl, hv⟩ := c2.inv_val
+        obtain ⟨vs, vs', heq, hvs, hat⟩ := EvalArgs.atoms hc _ hts hrest trivial
+        simp at heq
+        obtain ⟨rfl, rfl⟩ := heq
+        obtain ⟨r3, e3, c3⟩ := sim_ir_lean_apply hap hne hfv (.cons hv hvs)
+        exact ⟨_, lean_spine hat e1 e2 e3, c3⟩
+      | cons_signal _ hs => simp [isSignal] at hs
   | app_func_signal hf hs =>
     cases ht with
-    | app htf _ =>
+    | app htf _ _ =>
       obtain ⟨r1, e1, c1⟩ := sim_ir_lean_expr hf hne htf hc
-      exact ⟨_, .app_fn_signal e1 (c1.signal hs), c1⟩
+      exact ⟨_, lean_spine_signal (c1.signal hs) _ (.app_fn_signal e1 (c1.signal hs)), c1⟩
   | app_args_signal hf ha hs =>
     cases ht with
-    | app htf hta =>
+    | app htf hta hts =>
       obtain ⟨r1, e1, c1⟩ := sim_ir_lean_expr hf trivial htf hc
       obtain ⟨fv', rfl, hfv⟩ := c1.inv_val
-      obtain ⟨r2, e2, c2⟩ := sim_ir_lean_expr (ha.inv_single_signal hs) hne hta hc
-      exact ⟨_, .app_arg_signal e1 e2 (c2.signal hs), c2⟩
-  | binOp_ok hl hr hres =>
+      cases ha with
+      | cons_ok _ hrest =>
+        obtain ⟨vs, vs', rfl, _, _⟩ := EvalArgs.atoms hc _ hts hrest hne
+        simp [isSignal] at hs
+      | cons_signal ha1 _ =>
+        obtain ⟨r2, e2, c2⟩ := sim_ir_lean_expr ha1 hne hta hc
+        exact ⟨_, lean_spine_signal (c2.signal hs) _ (.app_arg_signal e1 e2 (c2.signal hs)), c2⟩
+  | binOp_ok hl hn hr hres =>
     subst hres
     cases ht with
     | binOp htl htr hop =>
@@ -119,19 +232,29 @@ theorem sim_ir_lean_expr {n : Nat} (h : Eval ienv st n e r) (hne : NoErr r)
       obtain ⟨lv', rfl, hlv⟩ := c1.inv_val
       obtain ⟨r2, e2, c2⟩ := sim_ir_lean_expr hr trivial htr hc
       obtain ⟨rv', rfl, hrv⟩ := c2.inv_val
-      exact ⟨_, .binOp_ok e1 e2 (irBinOpToLean_spec hop), evalBinOp_corr (.inl rfl) hlv hrv _ hne⟩
+      exact ⟨_, .binOp_ok e1 (irBinOpToLean_spec hop) (hlv.needsRight_tgt (.inl rfl) hn) e2,
+        evalBinOp_corr (.inl rfl) hlv hrv _ hne⟩
+  | binOp_short hl hn =>
+    cases ht with
+    | binOp htl htr hop =>
+      obtain ⟨r1, e1, c1⟩ := sim_ir_lean_expr hl trivial htl hc
+      obtain ⟨lv', rfl, hlv⟩ := c1.inv_val
+      exact ⟨_, .binOp_short e1 (irBinOpToLean_spec hop) (hlv.needsRight_tgt (.inl rfl) hn),
+        .val hlv⟩
   | binOp_left_signal hl hs =>
     cases ht with
     | binOp htl _ _ =>
       obtain ⟨r1, e1, c1⟩ := sim_ir_lean_expr hl hne htl hc
       exact ⟨_, .binOp_left_signal e1 (c1.signal hs), c1⟩
-  | binOp_right_signal hl hr hs =>
+  | binOp_right_signal hl hn hr hs =>
     cases ht with
-    | binOp htl htr _ =>
+    | @binOp _ _ _ _ _ lop htl htr hop =>
       obtain ⟨r1, e1, c1⟩ := sim_ir_lean_expr hl trivial htl hc
       obtain ⟨lv', rfl, hlv⟩ := c1.inv_val
       obtain ⟨r2, e2, c2⟩ := sim_ir_lean_expr hr hne htr hc
-      exact ⟨_, .binOp_right_signal e1 e2 (c2.signal hs), c2⟩
+      have hn' : optNeedsRight (leanBinOpToIR lop) lv' = true := by
+        rw [irBinOpToLean_spec hop]; exact hlv.needsRight_tgt (.inl rfl) hn
+      exact ⟨_, .binOp_right_signal e1 hn' e2 (c2.signal hs), c2⟩
   | unaryOp_ok ha hres =>
     subst hres
     cases ht with
@@ -272,18 +395,21 @@ theorem sim_ir_lean_elems {n : Nat} (h : EvalElems ienv st n es acc r) (hne : No
       | (apply Prod.Lex.left; omega)
       | (apply Prod.Lex.right; first | omega | (simp [List.length_cons]; done) | (simp [List.length_cons]; omega))
 
-theorem sim_ir_lean_apply {n : Nat} (h : ApplyFunc fv [av] st n r) (hne : NoErr r)
-    (hf : VCorr SIL fv fv') (hv : VCorr SIL av av') :
-    ∃ r', LeanApply fv' av' st r' ∧ ResultCorr SIL r r' := by
+theorem sim_ir_lean_apply {n : Nat} (h : ApplyFunc fv vs st n r) (hne : NoErr r)
+    (hf : VCorr SIL fv fv') (hv : ListCorr SIL vs vs') :
+    ∃ r', LeanApplyMany fv' vs' st r' ∧ ResultCorr SIL r r' := by
   cases hf with
   | clo hclo hce =>
-    obtain ⟨p, body, body', rfl, rfl, hb⟩ := hclo
-    obtain ⟨bodyRes, heb, rfl⟩ := h.inv_closure
-    have hfv : VCorr SIL (.closure _ none [p] body) (.leanClosure _ none p body') :=
-      .clo ⟨_, _, _, rfl, rfl, hb⟩ hce
+    obtain ⟨p, qs, body, body', rfl, rfl, hb⟩ := hclo
+    obtain ⟨hlen, bodyRes, heb, rfl⟩ := h.inv_closure hne
+    have hfv : VCorr SIL (.closure _ none (p :: qs) body)
+        (.leanClosure _ none p (leanTail qs body')) :=
+      .clo ⟨_, _, _, _, rfl, rfl, hb⟩ hce
     obtain ⟨r1, e1, c1⟩ :=
-      sim_ir_lean_expr heb (unwrapReturn_noErr hne) hb (hce.ofCall (.cons hv .nil) hfv [p] none)
-    exact ⟨_, .apply_closure e1, c1.unwrapReturn⟩
+      sim_ir_lean_expr heb (unwrapReturn_noErr hne) hb (hce.ofCall hv hfv (p :: qs) none)
+    have hlen' : vs'.length = qs.length + 1 := by
+      have := hv.length_eq; simp at hlen; omega
+    exact ⟨_, lean_apply_curried body' p qs _ vs' st r1 hlen' e1, c1.unwrapReturn⟩
   | _ => cases h <;> exact absurd hne id
   termination_by (n, 1)
   decreasing_by

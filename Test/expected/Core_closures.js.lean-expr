@@ -1,4 +1,4 @@
-[unverified] outside the verified core (unsupported for Lean: only non-recursive one-parameter functions); using the legacy translator
+[unverified] outside the verified core (unsupported for Lean: named function (`function` declaration or expression; use an arrow function)); using the legacy translator
 let makeAdder := fun n => fun x => x + n
 let add5 := makeAdder 5
 let apply := fun f x => return f x

@@ -42,7 +42,7 @@ golden() {  # golden <command> <file>
 }
 
 for f in Test/Fixtures/*.js Test/Core/*.js; do
-  for cmd in parse ir roundtrip lean lean-expr check; do golden "$cmd" "$f"; done
+  for cmd in parse ir roundtrip lean lean-expr lean-exec check; do golden "$cmd" "$f"; done
 done
 for f in Test/Fixtures/*.lean Test/Core/*.lean; do
   for cmd in lean-roundtrip lean-ir-roundtrip js check; do golden "$cmd" "$f"; done
@@ -57,6 +57,11 @@ for f in Test/Core/*.lean; do
   if "$EXE" js "$f" 2>&1 >/dev/null | grep -q '^\[verified\]'; then ok
   else bad "$f: js did not use the verified translator"; fi
 done
+# Core files that must also be in the verified JS → Lean fragment
+for f in Test/Core/curried.js; do
+  if "$EXE" check "$f" | grep -q 'JS → IR → Lean  : verified'; then ok
+  else bad "$f: not in the verified JS → Lean fragment"; fi
+done
 
 # ------------------------------------------------- behavioural tests (Node.js)
 if command -v node > /dev/null; then
@@ -68,6 +73,21 @@ if command -v node > /dev/null; then
     a=$(node "$tmp/orig.js" 2>&1); b=$(node "$tmp/rt.js" 2>&1)
     if [[ "$a" == "$b" ]]; then ok
     else bad "$f: original prints $a but round trip prints $b"; fi
+  done
+  # Executable Lean: every core JS program in the verified JS → Lean fragment
+  # is translated with `result;` appended, so the program's value is
+  # `result`; the Lean file is run against LeanJS.Runtime and must print
+  # what Node prints.
+  for f in Test/Core/*.js; do
+    "$EXE" check "$f" | grep -q 'JS → IR → Lean  : verified' || continue
+    { cat "$f"; echo; echo "result;"; } > "$tmp/prog.js"
+    { cat "$f"; echo; echo "$harness"; } > "$tmp/orig.js"
+    if ! "$EXE" lean-exec "$tmp/prog.js" > "$tmp/Prog.lean" 2>"$tmp/err"; then
+      bad "$f: lean-exec failed: $(cat "$tmp/err")"; continue
+    fi
+    a=$(node "$tmp/orig.js" 2>&1); b=$(lake env lean "$tmp/Prog.lean" 2>&1)
+    if [[ "$a" == "$b" ]]; then ok
+    else bad "$f: Node prints $a but the generated Lean prints $b"; fi
   done
   for f in Test/Core/*.lean; do
     { "$EXE" js "$f" 2>/dev/null; echo "$harness"; } > "$tmp/out.js"

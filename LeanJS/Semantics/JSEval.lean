@@ -162,14 +162,21 @@ inductive JSSem : JSJ → EvalResult → Prop where
       JSSem (.expr env st (.paren e)) r
   | binary_ok :
       JSSem (.expr env st l) (.val lv s1) →
-      JSSem (.expr env s1 r) (.val rv s2) →
       jsBinOpToIR op = some irop →
+      needsRight irop lv = true →
+      JSSem (.expr env s1 r) (.val rv s2) →
       JSSem (.expr env st (.binary op l r)) (evalBinOp irop lv rv s2)
+  | binary_short :
+      JSSem (.expr env st l) (.val lv s1) →
+      jsBinOpToIR op = some irop →
+      needsRight irop lv = false →
+      JSSem (.expr env st (.binary op l r)) (.val lv s1)
   | binary_left_signal :
       JSSem (.expr env st l) res → isSignal res →
       JSSem (.expr env st (.binary op l r)) res
   | binary_right_signal :
       JSSem (.expr env st l) (.val lv s1) →
+      optNeedsRight (jsBinOpToIR op) lv = true →
       JSSem (.expr env s1 r) res → isSignal res →
       JSSem (.expr env st (.binary op l r)) res
   | unary_ok :
@@ -256,9 +263,11 @@ inductive JSSem : JSJ → EvalResult → Prop where
       JSSem (.expr env st e) res → isSignal res →
       JSSem (.props env st (.prop (.ident k) e .init false false :: rest) acc) res
   | apply_expr_body :
+      params.length = args.length →
       JSSem (.expr (callEnv cenv name params args (.jsClosure cenv name params (.expr e))) st e) res →
       JSSem (.apply (.jsClosure cenv name params (.expr e)) args st) (unwrapReturn res)
   | apply_block_body :
+      params.length = args.length →
       JSSem (.stmts (callEnv cenv name params args (.jsClosure cenv name params (.block ss))) st ss) res →
       JSSem (.apply (.jsClosure cenv name params (.block ss)) args st) (unwrapBlockResult res)
   | stmt_expr :

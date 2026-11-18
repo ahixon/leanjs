@@ -165,7 +165,7 @@ partial def parsePrimary : JSParser Expr := do
       let body ← parseBlock
       return .function name params body true gen
     | .lparen =>
-      match ← tryParseArrowParams with
+      match (← tryParse tryParseArrowParams).join with
       | some params =>
         let body ← parseArrowBody
         return .arrowFunction params body true
@@ -205,7 +205,7 @@ partial def parsePrimary : JSParser Expr := do
   | .lparen =>
     -- Try arrow function first, fall back to parenthesized expression
     let pos ← savePos
-    match ← tryParseArrowParams with
+    match (← tryParse tryParseArrowParams).join with
     | some params =>
       let body ← parseArrowBody
       return .arrowFunction params body false
@@ -356,7 +356,9 @@ partial def parseExpr (minBP : Nat) : JSParser Expr := do
           let _ ← advance
           let consequent ← parseExpr 0
           expect .colon "':'"
-          let alternate ← parseExpr rbp
+          -- The alternate is an AssignmentExpression, so `?:` is
+          -- right-associative: `a ? b : c ? d : e` is `a ? b : (c ? d : e)`.
+          let alternate ← parseExpr 3
           lhs := .conditional lhs consequent alternate
         -- Assignment operators
         else if tok.isAssignOp then

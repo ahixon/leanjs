@@ -31,7 +31,7 @@ def jsIdApp : JS.Expr :=
 theorem jsIdApp_eval (st : Store) :
     JSEvalExpr .nil st jsIdApp (.val (.string "hi") st) :=
   JSSem.call_ok (JSSem.arrow rfl) (JSSem.args_cons_ok (JSSem.literal rfl) JSSem.args_nil)
-    (JSSem.apply_expr_body (JSSem.ident rfl))
+    (JSSem.apply_expr_body rfl (JSSem.ident rfl))
 
 def jsIdApp_ir : IRExpr := .app (.lam none (anyParams ["x"]) [] (.var "x")) [.lit (.string "hi")]
 
@@ -62,7 +62,7 @@ theorem jsProg_eval (st : Store) : JSEvalStmts .nil st jsProg (.val .undefined s
     (JSSem.stmts_stmt_ok rfl
       (JSSem.stmt_expr
         (JSSem.call_ok (JSSem.ident rfl) (JSSem.args_cons_ok (JSSem.literal rfl) JSSem.args_nil)
-          (JSSem.apply_block_body
+          (JSSem.apply_block_body rfl
             (JSSem.stmts_stmt_signal rfl (JSSem.stmt_return_some (JSSem.ident rfl)) trivial))))
       JSSem.stmts_nil)
 
@@ -111,7 +111,7 @@ theorem leanIdApp_toJS :
     provably evaluates to `"hi"`. -/
 theorem leanIdApp_roundtrip :
     LeanEvalExpr .nil Store.empty leanIdApp (.val (.string "hi") Store.empty) :=
-  lean_roundtrip_expr_prim leanIdApp_toIR (.app (.lam .var) .str) (leanIdApp_eval _) .string
+  lean_roundtrip_expr_prim leanIdApp_toIR (.app (.lam .var (by simp)) .str .nil) (leanIdApp_eval _) .string
 
 #guard LeanJS.Lean.Emit.emitLeanExpr ((leanRoundtrip leanIdApp).toOption.getD .unit) ==
   LeanJS.Lean.Emit.emitLeanExpr leanIdApp
@@ -142,5 +142,27 @@ def isRejected (s : String) : Bool := s.startsWith "rejected:"
 #guard isRejected (jsRoundtripSrc "const o = {a: 1}; o.a;")       -- member access (JS→IR)
 #guard isRejected (jsRoundtripSrc "const t = `x${1}`;")           -- template literal
 #guard isRejected (jsRoundtripSrc "const f = ({a}) => a;")        -- destructuring parameter
+
+-- Parenthesised binary expressions parse (regression: the arrow-function
+-- lookahead used to fail instead of backtracking)
+#guard !(jsRoundtripSrc "const a = (1 + 2) * 3;").startsWith "parse error"
+#guard !(jsRoundtripSrc "const f = (x) => (x < 1 ? 0 : x);").startsWith "parse error"
+-- `?:` is right-associative (regression: it used to group to the left)
+#guard ((jsRoundtripSrc "const r = (x) => x ? 1 : x ? 2 : 3;").splitOn "(x ? 1 : x)").length == 1
+
+def jsToLeanSrc (src : String) : String :=
+  match JS.Parser.parseProgram src with
+  | .error e => s!"parse error: {e}"
+  | .ok p =>
+    match jsToLean p with
+    | .ok e => LeanJS.Lean.Emit.emitLeanExpr e
+    | .error e => s!"rejected: {e}"
+
+-- JS → Lean: multi-parameter functions are curried; arguments after the
+-- first must be atoms
+#guard !isRejected (jsToLeanSrc "const add = (a, b) => a + b;\nadd(1, 2);")
+#guard !isRejected (jsToLeanSrc "const f = (a, b, c) => a;\nconst x = 1;\nf(f(x, 1, 2), x, \"s\");")
+#guard isRejected (jsToLeanSrc "const add = (a, b) => a + b;\nadd(1, add(2, 3));")
+#guard isRejected (jsToLeanSrc "const f = () => 1;")
 
 end LeanJS.Semantics.Tests

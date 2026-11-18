@@ -81,32 +81,52 @@ def Eval.deterministic
     | app_args_signal hf2 ha2 _ =>
       have := Eval.deterministic hf1 hf2; cases this
       exact EvalArgs.deterministic ha1 ha2
-  | binOp_ok hl1 hr1 heq1 =>
+  | binOp_ok hl1 hn1 hr1 heq1 =>
     cases h2 with
-    | binOp_ok hl2 hr2 heq2 =>
+    | binOp_ok hl2 _ hr2 heq2 =>
       have := Eval.deterministic hl1 hl2; cases this
       have := Eval.deterministic hr1 hr2; cases this
       rw [← heq1, ← heq2]
+    | binOp_short hl2 hn2 =>
+      have := Eval.deterministic hl1 hl2; cases this
+      rw [hn1] at hn2; cases hn2
     | binOp_left_signal hl2 hs =>
       have := Eval.deterministic hl1 hl2; subst this; simp [isSignal] at hs
-    | binOp_right_signal hl2 hr2 hs =>
+    | binOp_right_signal hl2 _ hr2 hs =>
       have := Eval.deterministic hl1 hl2; cases this
       have := Eval.deterministic hr1 hr2; subst this; simp [isSignal] at hs
-  | binOp_left_signal hl1 hs1 =>
+  | binOp_short hl1 hn1 =>
     cases h2 with
-    | binOp_ok hl2 _ _ =>
-      have := Eval.deterministic hl1 hl2; subst this; simp [isSignal] at hs1
-    | binOp_left_signal hl2 _ => exact Eval.deterministic hl1 hl2
-    | binOp_right_signal hl2 _ _ =>
-      have := Eval.deterministic hl1 hl2; subst this; simp [isSignal] at hs1
-  | binOp_right_signal hl1 hr1 hs1 =>
-    cases h2 with
-    | binOp_ok hl2 hr2 _ =>
+    | binOp_ok hl2 hn2 _ _ =>
       have := Eval.deterministic hl1 hl2; cases this
-      have := Eval.deterministic hr1 hr2; subst this; simp [isSignal] at hs1
+      rw [hn1] at hn2; cases hn2
+    | binOp_short hl2 _ =>
+      have := Eval.deterministic hl1 hl2; cases this; rfl
     | binOp_left_signal hl2 hs =>
       have := Eval.deterministic hl1 hl2; subst this; simp [isSignal] at hs
-    | binOp_right_signal hl2 hr2 _ =>
+    | binOp_right_signal hl2 hn2 _ _ =>
+      have := Eval.deterministic hl1 hl2; cases this
+      rw [hn1] at hn2; cases hn2
+  | binOp_left_signal hl1 hs1 =>
+    cases h2 with
+    | binOp_ok hl2 _ _ _ =>
+      have := Eval.deterministic hl1 hl2; subst this; simp [isSignal] at hs1
+    | binOp_short hl2 _ =>
+      have := Eval.deterministic hl1 hl2; subst this; simp [isSignal] at hs1
+    | binOp_left_signal hl2 _ => exact Eval.deterministic hl1 hl2
+    | binOp_right_signal hl2 _ _ _ =>
+      have := Eval.deterministic hl1 hl2; subst this; simp [isSignal] at hs1
+  | binOp_right_signal hl1 hn1 hr1 hs1 =>
+    cases h2 with
+    | binOp_ok hl2 _ hr2 _ =>
+      have := Eval.deterministic hl1 hl2; cases this
+      have := Eval.deterministic hr1 hr2; subst this; simp [isSignal] at hs1
+    | binOp_short hl2 hn2 =>
+      have := Eval.deterministic hl1 hl2; cases this
+      rw [hn1] at hn2; cases hn2
+    | binOp_left_signal hl2 hs =>
+      have := Eval.deterministic hl1 hl2; subst this; simp [isSignal] at hs
+    | binOp_right_signal hl2 _ hr2 _ =>
       have := Eval.deterministic hl1 hl2; cases this
       exact Eval.deterministic hr1 hr2
   | unaryOp_ok ha1 heq1 =>
@@ -880,16 +900,23 @@ def ApplyFunc.deterministic
     (h1 : ApplyFunc fv args store fuel r1) (h2 : ApplyFunc fv args store fuel r2) :
     r1 = r2 := by
   cases h1 with
-  | closure_ok henv1 henv1' heval1 hres1 =>
+  | closure_ok hlen1 henv1 henv1' heval1 hres1 =>
     cases h2 with
-    | closure_ok henv2 henv2' heval2 hres2 =>
+    | closure_ok _ henv2 henv2' heval2 hres2 =>
       subst henv1; subst henv1'; subst henv2; subst henv2'
       have := Eval.deterministic heval1 heval2
       subst this; subst hres1; subst hres2; rfl
+    | arity_mismatch hlen2 => exact absurd hlen1 hlen2
+    | non_function hne => exact absurd rfl (hne _ _ _ _)
+  | arity_mismatch hlen1 =>
+    cases h2 with
+    | closure_ok hlen2 _ _ _ _ => exact absurd hlen2 hlen1
+    | arity_mismatch _ => rfl
     | non_function hne => exact absurd rfl (hne _ _ _ _)
   | non_function hne1 =>
     cases h2 with
-    | closure_ok _ _ _ _ => exact absurd rfl (hne1 _ _ _ _)
+    | closure_ok _ _ _ _ _ => exact absurd rfl (hne1 _ _ _ _)
+    | arity_mismatch _ => exact absurd rfl (hne1 _ _ _ _)
     | non_function _ => rfl
   termination_by (fuel, 1)
   decreasing_by

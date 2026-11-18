@@ -1,0 +1,4 @@
+Test/Core/curried.js:
+  JS → IR → JS    : verified
+  JS → IR → Lean  : verified
+[exit 0]

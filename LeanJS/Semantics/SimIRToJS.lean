@@ -197,14 +197,17 @@ theorem simpleParamNames_fst_pid (ps : List (String × IRType)) :
     simpleParamNames ((ps.map Prod.fst).map pid) = some (ps.map Prod.fst) :=
   simpleParamNames_map_pid _
 
-theorem ApplyFunc.inv_closure (h : ApplyFunc (.closure cenv name ps body) args st n r) :
+theorem ApplyFunc.inv_closure (h : ApplyFunc (.closure cenv name ps body) args st n r)
+    (hne : NoErr r) :
+    ps.length = args.length ∧
     ∃ bodyRes, Eval (callEnv cenv name ps args (.closure cenv name ps body)) st n body bodyRes ∧
       r = unwrapReturn bodyRes := by
   cases h with
-  | closure_ok henv henv' hb hres =>
+  | closure_ok hlen henv henv' hb hres =>
     subst henv henv'
-    exact ⟨_, by cases name <;> exact hb, hres.trans (unwrapReturn_eq_match _)⟩
-  | non_function hne => exact absurd rfl (hne _ _ _ _)
+    exact ⟨hlen, _, by cases name <;> exact hb, hres.trans (unwrapReturn_eq_match _)⟩
+  | arity_mismatch => exact absurd hne id
+  | non_function hnf => exact absurd rfl (hnf _ _ _ _)
 
 theorem jsEvalStmts_nil_inv (h : JSEvalStmts env st [] r) : r = .val .undefined st := by
   cases h; rfl
@@ -241,7 +244,7 @@ theorem sim_ir_js_expr {n : Nat} (h : Eval ienv st n e r) (hne : NoErr r)
       obtain ⟨vv', rfl, hvv⟩ := c1.inv_val
       obtain ⟨r2, e2, c2⟩ := sim_ir_js_expr hb hne htb (.cons hvv hc)
       refine ⟨_, .call_ok (.arrow (simpleParamNames_map_pid [_]))
-        (.args_cons_ok e1 .args_nil) (.apply_expr_body e2), ?_⟩
+        (.args_cons_ok e1 .args_nil) (.apply_expr_body rfl e2), ?_⟩
       rw [unwrapReturn_of_not_return (jsExpr_no_return e2)]; exact c2
   | let_signal hv hs =>
     cases ht with
@@ -283,7 +286,7 @@ theorem sim_ir_js_expr {n : Nat} (h : Eval ienv st n e r) (hne : NoErr r)
       obtain ⟨fv', rfl, hfv⟩ := c1.inv_val
       obtain ⟨r2, e2, c2⟩ := sim_ir_js_args ha hne hta hc .nil
       exact ⟨_, .call_args_signal e1 e2 (c2.signal hs), c2⟩
-  | binOp_ok hl hr hres =>
+  | binOp_ok hl hn hr hres =>
     subst hres
     cases ht with
     | binOp htl htr hop =>
@@ -292,19 +295,30 @@ theorem sim_ir_js_expr {n : Nat} (h : Eval ienv st n e r) (hne : NoErr r)
       obtain ⟨lv', rfl, hlv⟩ := c1.inv_val
       obtain ⟨r2, e2, c2⟩ := sim_ir_js_expr hr trivial htr hc
       obtain ⟨rv', rfl, hrv⟩ := c2.inv_val
-      exact ⟨_, .binary_ok e1 e2 hop', evalBinOp_corr hrel hlv hrv _ hne⟩
+      exact ⟨_, .binary_ok e1 hop' (hlv.needsRight_tgt hrel hn) e2,
+        evalBinOp_corr hrel hlv hrv _ hne⟩
+  | binOp_short hl hn =>
+    cases ht with
+    | binOp htl htr hop =>
+      obtain ⟨op', hop', hrel⟩ := irBinOpToJS_spec hop
+      obtain ⟨r1, e1, c1⟩ := sim_ir_js_expr hl trivial htl hc
+      obtain ⟨lv', rfl, hlv⟩ := c1.inv_val
+      exact ⟨_, .binary_short e1 hop' (hlv.needsRight_tgt hrel hn), .val hlv⟩
   | binOp_left_signal hl hs =>
     cases ht with
     | binOp htl _ _ =>
       obtain ⟨r1, e1, c1⟩ := sim_ir_js_expr hl hne htl hc
       exact ⟨_, .binary_left_signal e1 (c1.signal hs), c1⟩
-  | binOp_right_signal hl hr hs =>
+  | binOp_right_signal hl hn hr hs =>
     cases ht with
-    | binOp htl htr _ =>
+    | @binOp _ _ _ _ _ jop htl htr hop =>
+      obtain ⟨op', hop', hrel⟩ := irBinOpToJS_spec hop
       obtain ⟨r1, e1, c1⟩ := sim_ir_js_expr hl trivial htl hc
       obtain ⟨lv', rfl, hlv⟩ := c1.inv_val
       obtain ⟨r2, e2, c2⟩ := sim_ir_js_expr hr hne htr hc
-      exact ⟨_, .binary_right_signal e1 e2 (c2.signal hs), c2⟩
+      have hn' : optNeedsRight (jsBinOpToIR jop) lv' = true := by
+        rw [hop']; exact hlv.needsRight_tgt hrel hn
+      exact ⟨_, .binary_right_signal e1 hn' e2 (c2.signal hs), c2⟩
   | unaryOp_ok ha hres =>
     subst hres
     cases ht with
@@ -467,20 +481,20 @@ theorem sim_ir_js_apply {n : Nat} (h : ApplyFunc fv vs st n r) (hne : NoErr r)
   cases hf with
   | clo hclo hce =>
     obtain ⟨name, ps, body, jb, rfl, rfl, hfun⟩ := hclo
-    obtain ⟨bodyRes, hb, rfl⟩ := h.inv_closure
+    obtain ⟨hlen, bodyRes, hb, rfl⟩ := h.inv_closure hne
     cases hfun with
     | expr hte =>
       have hfv : VCorr SIJ (.closure _ none ps body) (.jsClosure _ none ps (.expr _)) :=
         .clo ⟨_, _, _, _, rfl, rfl, .expr hte⟩ hce
       obtain ⟨r1, e1, c1⟩ :=
         sim_ir_js_expr hb (unwrapReturn_noErr hne) hte (hce.ofCall hv hfv ps none)
-      exact ⟨_, .apply_expr_body e1, c1.unwrapReturn⟩
+      exact ⟨_, .apply_expr_body (hlen.trans hv.length_eq) e1, c1.unwrapReturn⟩
     | block hts =>
       have hfv : VCorr SIJ (.closure _ name ps body) (.jsClosure _ name ps (.block _)) :=
         .clo ⟨_, _, _, _, rfl, rfl, .block hts⟩ hce
       obtain ⟨r1, e1, c1⟩ :=
         sim_ir_js_stmts hb (unwrapReturn_noErr hne) hts (hce.ofCall hv hfv ps name)
-      exact ⟨_, .apply_block_body e1, c1.apply⟩
+      exact ⟨_, .apply_block_body (hlen.trans hv.length_eq) e1, c1.apply⟩
   | _ => cases h <;> exact absurd hne id
   termination_by (n, 2)
   decreasing_by

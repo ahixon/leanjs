@@ -1,0 +1,28 @@
+[verified] translated by the verified core translator
+let add : Any = fun λ(a: Any, b: Any) =>
+(a + b)
+let inc : Any = fun λ(x: Any) =>
+add(x, 1)
+let compose : Any = fun λ(f: Any, g: Any) =>
+fun λ(x: Any) =>
+f(g(x))
+let double : Any = fun λ(x: Any) =>
+(x * 2)
+let clamp : Any = fun λ(lo: Any, hi: Any, x: Any) =>
+  if (x < lo) then
+lo
+  else
+    if (x > hi) then
+hi
+    else
+x
+let neg : Any = (-3)
+let guard : Any = fun λ(x: Any) =>
+((x > 0) && (100 / x))
+let orDefault : Any = fun λ(s: Any) =>
+(s || "default")
+let lazy : Any = (false && missing(1))
+let point : Any = {x: inc(41), y: compose(double, inc)(4)}
+let result : Any = [point, add(inc(1), 2), clamp(0, 10, neg), clamp(0, 10, 99), guard(4), guard(neg), orDefault(""), orDefault("given"), lazy, [true, (!true)], {n: (-0.500000), s: ("hi " + "there")}]
+undefined
+[exit 0]

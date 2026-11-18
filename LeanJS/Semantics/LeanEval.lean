@@ -110,14 +110,21 @@ inductive LeanSem : LeanJ → EvalResult → Prop where
       LeanSem (.expr env st (.«if» c t (some e))) r
   | binOp_ok :
       LeanSem (.expr env st l) (.val lv s1) →
-      LeanSem (.expr env s1 rr) (.val rv s2) →
       leanBinOpToIR op = some irop →
+      needsRight irop lv = true →
+      LeanSem (.expr env s1 rr) (.val rv s2) →
       LeanSem (.expr env st (.binOp op l rr)) (evalBinOp irop lv rv s2)
+  | binOp_short :
+      LeanSem (.expr env st l) (.val lv s1) →
+      leanBinOpToIR op = some irop →
+      needsRight irop lv = false →
+      LeanSem (.expr env st (.binOp op l rr)) (.val lv s1)
   | binOp_left_signal :
       LeanSem (.expr env st l) r → isSignal r →
       LeanSem (.expr env st (.binOp op l rr)) r
   | binOp_right_signal :
       LeanSem (.expr env st l) (.val lv s1) →
+      optNeedsRight (leanBinOpToIR op) lv = true →
       LeanSem (.expr env s1 rr) r → isSignal r →
       LeanSem (.expr env st (.binOp op l rr)) r
   | unaryOp_ok :

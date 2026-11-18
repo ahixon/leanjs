@@ -58,9 +58,10 @@ theorem unwrapReturn_eq_match (r : EvalResult) :
   cases r <;> rfl
 
 /-- Build an IR closure application from a body derivation in `callEnv` -/
-theorem ApplyFunc.ofBody (h : Eval (callEnv cenv name ps args (.closure cenv name ps body)) st n body r) :
+theorem ApplyFunc.ofBody (hlen : ps.length = args.length)
+    (h : Eval (callEnv cenv name ps args (.closure cenv name ps body)) st n body r) :
     ApplyFunc (.closure cenv name ps body) args st n (unwrapReturn r) := by
-  refine .closure_ok rfl rfl ?_ (unwrapReturn_eq_match r).symm
+  refine .closure_ok hlen rfl rfl ?_ (unwrapReturn_eq_match r).symm
   cases name <;> exact h
 
 theorem unwrapBlockResult_signal (h : isSignal r) : unwrapBlockResult r = unwrapReturn r := by
@@ -151,7 +152,7 @@ theorem sim_js_all (h : JSSem j r) : NoErr r → JSIRGoal j r := by
     intro hne e' ienv ht hc
     cases ht with
     | paren ht => exact ih hne _ _ ht hc
-  | binary_ok _ _ hop ihl ihr =>
+  | binary_ok _ hop hn _ ihl ihr =>
     intro hne e' ienv ht hc
     cases ht with
     | binary htl htr hop' =>
@@ -161,24 +162,34 @@ theorem sim_js_all (h : JSSem j r) : NoErr r → JSIRGoal j r := by
       obtain ⟨n2, r2, e2, c2⟩ := ihr trivial _ _ htr hc
       obtain ⟨rv', rfl, hrv⟩ := c2.inv_val
       exact ⟨max n1 n2 + 1, _,
-        .binOp_ok (e1.lift (.val hlv) (by omega)) (e2.lift (.val hrv) (by omega)) rfl,
+        .binOp_ok (e1.lift (.val hlv) (by omega)) (hlv.needsRight_tgt (.inl rfl) hn)
+          (e2.lift (.val hrv) (by omega)) rfl,
         evalBinOp_corr (.inl rfl) hlv hrv _ hne⟩
+  | binary_short _ hop hn ihl =>
+    intro hne e' ienv ht hc
+    cases ht with
+    | binary htl htr hop' =>
+      rw [hop] at hop'; cases hop'
+      obtain ⟨n1, r1, e1, c1⟩ := ihl trivial _ _ htl hc
+      obtain ⟨lv', rfl, hlv⟩ := c1.inv_val
+      exact ⟨n1 + 1, _, .binOp_short e1 (hlv.needsRight_tgt (.inl rfl) hn), .val hlv⟩
   | binary_left_signal _ hs ihl =>
     intro hne e' ienv ht hc
     cases ht with
     | binary htl htr hop' =>
       obtain ⟨n1, r1, e1, c1⟩ := ihl hne _ _ htl hc
       exact ⟨n1 + 1, _, .binOp_left_signal e1 (c1.signal hs), c1⟩
-  | binary_right_signal _ _ hs ihl ihr =>
+  | binary_right_signal _ hn _ hs ihl ihr =>
     intro hne e' ienv ht hc
     cases ht with
     | binary htl htr hop' =>
+      rw [hop'] at hn
       obtain ⟨n1, r1, e1, c1⟩ := ihl trivial _ _ htl hc
       obtain ⟨lv', rfl, hlv⟩ := c1.inv_val
       obtain ⟨n2, r2, e2, c2⟩ := ihr hne _ _ htr hc
       exact ⟨max n1 n2 + 1, _,
-        .binOp_right_signal (e1.lift (.val hlv) (by omega)) (e2.lift c2 (by omega))
-          (c2.signal hs), c2⟩
+        .binOp_right_signal (e1.lift (.val hlv) (by omega)) (hlv.needsRight_tgt (.inl rfl) hn)
+          (e2.lift c2 (by omega)) (c2.signal hs), c2⟩
   | unary_ok _ hop iha =>
     intro hne e' ienv ht hc
     cases ht with
@@ -351,7 +362,7 @@ theorem sim_js_all (h : JSSem j r) : NoErr r → JSIRGoal j r := by
       obtain ⟨n1, r1, e1, c1⟩ := ihe hne _ _ hte hc
       exact ⟨n1, _, .cons_signal e1 (c1.signal hs), c1⟩
   -- function application
-  | @apply_expr_body cenv name params args e st res _ ih =>
+  | @apply_expr_body cenv name params args e st res hlen _ ih =>
     intro hne fv' vs' hf hv
     cases hf with
     | clo hclo hce =>
@@ -363,8 +374,8 @@ theorem sim_js_all (h : JSSem j r) : NoErr r → JSIRGoal j r := by
           .clo ⟨_, _, _, _, rfl, rfl, .expr hte⟩ hce
         obtain ⟨n1, r1, e1, c1⟩ :=
           ih (unwrapReturn_noErr hne) _ _ hte (hce.ofCall hv hfv params name)
-        exact ⟨n1, _, .ofBody e1, c1.unwrapReturn⟩
-  | @apply_block_body cenv name params args ss st res hb ih =>
+        exact ⟨n1, _, .ofBody (hlen.trans hv.length_eq) e1, c1.unwrapReturn⟩
+  | @apply_block_body cenv name params args ss st res hlen hb ih =>
     intro hne fv' vs' hf hv
     cases hf with
     | clo hclo hce =>
@@ -386,21 +397,21 @@ theorem sim_js_all (h : JSSem j r) : NoErr r → JSIRGoal j r := by
             cases c1 with
             | sig c1 _ =>
               cases c1 with
-              | ret hv' => exact ⟨_, _, .ofBody he', .val hv'⟩
+              | ret hv' => exact ⟨_, _, .ofBody (hlen.trans hv.length_eq) he', .val hv'⟩
           | return_signal he' hs' =>
             cases c1 with
             | val => simp [isSignal] at hs'
             | sig c1 hs =>
-              refine ⟨_, _, .ofBody he', ?_⟩
+              refine ⟨_, _, .ofBody (hlen.trans hv.length_eq) he', ?_⟩
               rw [unwrapBlockResult_signal hs]; exact c1.unwrapReturn
         | general hts =>
           obtain ⟨n1, r1, e1, c1⟩ := ih (unwrapBlockResult_noErr hne) _ _ hts hce'
           cases c1 with
           | val =>
-            exact ⟨n1 + 2, _, .ofBody (.seq (.cons_ok (Eval.fuel_mono e1 (by omega) trivial)
+            exact ⟨n1 + 2, _, .ofBody (hlen.trans hv.length_eq) (.seq (.cons_ok (Eval.fuel_mono e1 (by omega) trivial)
                 (.singleton .undefined) (by simp))), .val .undefined⟩
           | sig c1 hs =>
-            refine ⟨n1 + 1, _, .ofBody (.seq (.cons_signal e1 (c1.signal hs) (by simp))), ?_⟩
+            refine ⟨n1 + 1, _, .ofBody (hlen.trans hv.length_eq) (.seq (.cons_signal e1 (c1.signal hs) (by simp))), ?_⟩
             rw [unwrapBlockResult_signal hs]; exact c1.unwrapReturn
   -- single statements
   | stmt_expr _ ih =>

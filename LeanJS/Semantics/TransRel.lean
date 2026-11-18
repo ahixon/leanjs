@@ -373,7 +373,30 @@ inductive LeanToIRFields : List (String × LeanExpr) → List (String × IRExpr)
 
 end
 
-/-! ## IR → Lean -/
+/-! ## IR → Lean
+
+  A multi-parameter IR function becomes a curried Lean `fun`, and an
+  application to several arguments becomes nested one-argument
+  applications. Lean evaluates `f a b` as `(f a) b`, applying `f` before
+  evaluating `b`, while IR evaluates all arguments before calling `f`. The
+  two orders agree when the arguments after the first cannot signal, so
+  those must be atoms (variables and literals).
+-/
+
+/-- IR expressions that evaluate without effects and never signal -/
+inductive IsAtom : IRExpr → Prop where
+  | var {x : String} : IsAtom (.var x)
+  | lit {l : IRLit} : IsAtom (.lit l)
+  | undef : IsAtom .undefined
+
+/-- Untyped Lean parameters with the given names -/
+def leanParamsOf (names : List String) : List LeanParam :=
+  names.map fun n => ⟨n, none⟩
+
+/-- What remains of a curried `fun p q₁ … qₙ => b` once `p` is bound -/
+def leanTail : List String → LeanExpr → LeanExpr
+  | [], b => b
+  | q :: qs, b => .lam (leanParamsOf (q :: qs)) b
 
 set_option autoImplicit true in
 mutual
@@ -389,12 +412,12 @@ inductive IRToLeanExpr : IRExpr → LeanExpr → Prop where
       IRToLeanExpr v v' → IRToLeanExpr b b' →
       IRToLeanExpr (.«let» x ty v b) (.«let» x none v' b')
   | lam :
-      IRToLeanExpr body body' →
-      IRToLeanExpr (.lam none [(p, ty)] caps body false false)
-        (.lam [⟨p, none⟩] body')
+      IRToLeanExpr body body' → params ≠ [] →
+      IRToLeanExpr (.lam none params caps body false false)
+        (.lam (leanParamsOf (params.map Prod.fst)) body')
   | app :
-      IRToLeanExpr f f' → IRToLeanExpr a a' →
-      IRToLeanExpr (.app f [a]) (.app f' a')
+      IRToLeanExpr f f' → IRToLeanExpr a a' → IRToLeanAtoms as as' →
+      IRToLeanExpr (.app f (a :: as)) (as'.foldl .app (.app f' a'))
   | binOp :
       IRToLeanExpr l l' → IRToLeanExpr r r' → irBinOpToLean op = some lop →
       IRToLeanExpr (.binOp op l r) (.binOp lop l' r')
@@ -420,6 +443,12 @@ inductive IRToLeanExpr : IRExpr → LeanExpr → Prop where
 inductive IRToLeanExprs : List IRExpr → List LeanExpr → Prop where
   | nil : IRToLeanExprs [] []
   | cons : IRToLeanExpr e e' → IRToLeanExprs es es' → IRToLeanExprs (e :: es) (e' :: es')
+
+/-- Arguments after the first: atoms only -/
+inductive IRToLeanAtoms : List IRExpr → List LeanExpr → Prop where
+  | nil : IRToLeanAtoms [] []
+  | cons : IsAtom e → IRToLeanExpr e e' → IRToLeanAtoms es es' →
+      IRToLeanAtoms (e :: es) (e' :: es')
 
 inductive IRToLeanFields : List (String × IRExpr) → List (String × LeanExpr) → Prop where
   | nil : IRToLeanFields [] []
