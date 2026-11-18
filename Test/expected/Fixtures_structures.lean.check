@@ -1,0 +1,4 @@
+Test/Fixtures/structures.lean:
+  Lean → IR → JS  : not in verified core — unsupported: only `def` declarations
+  Lean → IR → Lean: not in verified core — unsupported: only `def` declarations
+[exit 0]

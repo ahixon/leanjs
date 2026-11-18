@@ -1,0 +1,4 @@
+Test/Fixtures/closures.js:
+  JS → IR → JS    : not in verified core — unsupported: ++/--
+  JS → IR → Lean  : not in verified core — unsupported: ++/--
+[exit 0]

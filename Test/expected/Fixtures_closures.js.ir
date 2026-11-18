@@ -1,0 +1,31 @@
+[unverified] outside the verified core (unsupported: ++/--); using the legacy translator
+let makeCounter : Any = fun λ() =>
+  let count : Any = ref(0)
+  return {increment: fun λ() =>
+    count := (!count + 1)
+    !count, decrement: fun λ() =>
+    count := (!count - 1)
+    !count, getCount: fun λ() =>
+!count}
+let counter : Any = makeCounter()
+counter.increment()
+counter.increment()
+console.log(counter.getCount())
+let compose : (Any, Any) → Any = fun compose(f: Any, g: Any) =>
+  return fun λ(x: Any) =>
+    return f(g(x))
+let add1 : Any = fun λ(x: Any) =>
+(x + 1)
+let mul2 : Any = fun λ(x: Any) =>
+(x * 2)
+let add1ThenMul2 : Any = compose(mul2, add1)
+console.log(add1ThenMul2(3))
+let items : Any = ref([1, 2, 3, 4, 5])
+let i : Any = ref(0)
+i
+while (!i < items.length) do
+  console.log(items[!i])
+    let __old : Any = !i
+  i := (!i + 1)
+  __old
+[exit 0]

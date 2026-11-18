@@ -49,4 +49,22 @@ theorem Store.alloc_loc (store : Store) (v : IRValue) :
   unfold Store.alloc
   rfl
 
+/-- A store extends another if every existing cell is preserved -/
+def StoreExtends (s1 s2 : Store) : Prop :=
+  s1.cells.size ≤ s2.cells.size ∧
+  ∀ (loc : Loc), loc.n < s1.cells.size → s2.read loc = s1.read loc
+
+theorem StoreExtends.refl (s : Store) : StoreExtends s s :=
+  ⟨Nat.le_refl _, fun _ _ => rfl⟩
+
+theorem StoreExtends.trans {s1 s2 s3 : Store}
+    (h1 : StoreExtends s1 s2) (h2 : StoreExtends s2 s3) : StoreExtends s1 s3 :=
+  ⟨Nat.le_trans h1.1 h2.1, fun loc hloc => by
+    rw [h2.2 loc (Nat.lt_of_lt_of_le hloc h1.1)]; exact h1.2 loc hloc⟩
+
+/-- Allocation extends the store -/
+theorem StoreExtends.alloc (s : Store) (v : IRValue) : StoreExtends s (s.alloc v).1 :=
+  ⟨by have := Store.alloc_increases_size s v; simp_all,
+   fun loc hloc => Store.alloc_preserves s v loc hloc⟩
+
 end LeanJS.Semantics

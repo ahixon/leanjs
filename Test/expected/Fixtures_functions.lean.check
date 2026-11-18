@@ -1,0 +1,4 @@
+Test/Fixtures/functions.lean:
+  Lean → IR → JS  : verified
+  Lean → IR → Lean: verified
+[exit 0]

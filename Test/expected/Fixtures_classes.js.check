@@ -1,0 +1,4 @@
+Test/Fixtures/classes.js:
+  JS → IR → JS    : not in verified core — unsupported: class
+  JS → IR → Lean  : not in verified core — unsupported: class
+[exit 0]

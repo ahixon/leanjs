@@ -1,0 +1,39 @@
+[unverified] outside the verified core (unsupported: assignment); using the legacy translator
+let Person : (Any, Any) → Any = fun Person(name: Any, age: Any) =>
+    this.name := name
+  name
+    this.age := age
+  age
+Person.prototype.greet := fun λ() =>
+  return ("Hi, I'm " + this.name)
+fun λ() =>
+  return ("Hi, I'm " + this.name)
+let p : Any = ref(new Person("Alice", 30))
+console.log(p.greet())
+let obj : Any = ref({value: fun value() =>
+  return this._value, value: fun value(v: Any) =>
+  this._value := v
+  v})
+obj.value := 42
+42
+console.log(obj.value)
+let nested : Any = ref({a: {b: {c: 1}}})
+let c : Any = ref(nested.a.b.c)
+let arr : Any = ref([[1, 2], [3, 4]])
+let first : Any = ref(arr[0][1])
+let x : Any = ref(if ((typeof p) == "object") then
+"yes"
+else
+"no")
+let y : Any = ref(0
+undefined)
+let z : Any = ref((!true))
+let w : Any = ref((~255))
+x := (!x + "!")
+while (!x.length < 5) do
+x := (!x + "!")
+let key : Any = undefined
+while true do
+  key := __nextKey(obj)
+  console.log(key)
+[exit 0]

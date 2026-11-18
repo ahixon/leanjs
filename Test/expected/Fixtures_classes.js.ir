@@ -1,0 +1,11 @@
+[unverified] outside the verified core (unsupported: class); using the legacy translator
+let Animal : Any = {constructor: fun constructor(name: Any) =>
+  this.name := name
+  name, speak: fun speak() =>
+  return (this.name + " makes a noise.")}
+let Dog : Any = {constructor: fun constructor(name: Any) =>
+super(name), speak: fun speak() =>
+  return (this.name + " barks.")}
+let d : Any = new Dog("Rex")
+console.log(d.speak())
+[exit 0]

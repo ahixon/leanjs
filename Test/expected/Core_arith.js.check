@@ -1,0 +1,4 @@
+Test/Core/arith.js:
+  JS → IR → JS    : verified
+  JS → IR → Lean  : not in verified core — unsupported for Lean: only non-recursive one-parameter functions
+[exit 0]

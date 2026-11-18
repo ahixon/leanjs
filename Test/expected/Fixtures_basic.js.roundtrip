@@ -1,0 +1,50 @@
+[unverified] outside the verified core (unsupported: var declaration); using the legacy translator
+let x = 1 + 2;
+let y = "hello";
+const z = true;
+const add = function add(a, b) {
+  return a + b;
+};
+if (x > 2) {
+  y = "world";
+} else {
+  y = "foo";
+}
+let i = 0;
+i;
+while (i < 10) {
+  x = x + i;
+  const __old = i;
+  i = i + 1;
+  __old;
+}
+while (x > 0) {
+  const __old = x;
+  x = x - 1;
+  __old;
+}
+let arr = [1, 2, 3];
+let obj = { a: 1, b: "two", c: true };
+let result = add(x, y);
+console.log(result);
+let ternary = x > 0 ? "positive" : "non-positive";
+try {
+  throw "error";
+} catch (e) {
+  console.log(e);
+} finally {
+  console.log("done");
+}
+if (x === 0) {
+  console.log("zero");
+  break;
+} else {
+  if (x === 1) {
+    console.log("one");
+    break;
+  } else {
+    console.log("other");
+  }
+}
+
+[exit 0]

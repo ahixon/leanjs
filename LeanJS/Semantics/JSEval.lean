@@ -1,13 +1,31 @@
 /-
-  Big-step evaluation relation for JS AST (core subset).
+  Big-step semantics for the verified JS core fragment.
 
-  Uses the shared `IRValue` domain. JS closures are stored as `IRValue.closure`
-  with the closure body being an IR expression (set at function creation time).
-  Function application delegates to the IR `ApplyFunc` relation for body evaluation.
+  Design notes:
+  * Fuel-free inductive semantics. A derivation exists exactly when the
+    program terminates; "stuck" programs (e.g. calling a non-function,
+    reading an unbound variable) simply have no derivation.
+  * Values live in the shared `IRValue` domain, but JS functions evaluate to
+    `IRValue.jsClosure`, which carries the *JS* source body. (An earlier
+    version let a JS function evaluate to an IR closure with an arbitrary,
+    unconstrained body, which made every simulation theorem false.)
+  * Primitive operators reuse the IR operator semantics (`evalBinOp`,
+    `evalUnaryOp`) through `jsBinOpToIR` / `jsUnaryOpToIR`. This is a model of
+    JS, not full ECMAScript: e.g. `==`/`===` are both structural equality
+    without coercion, and `null` and `undefined` are both modelled as
+    `undefined`.
+  * The core has no mutation: there is no assignment, so the store is
+    threaded but never changed.
+  * Block scoping: only a statement *list* can extend the environment (via
+    `const`/`let`/`function` declarations), and the extension is scoped to
+    the rest of that list. Blocks and `if` branches do not leak bindings.
 
-  This hybrid approach avoids defining separate JS values while enabling
-  forward simulation proofs: the simulation theorem provides the specific IR body
-  (from translation) that makes the evaluation correspond.
+  Fragment: identifiers, non-regex literals, parentheses, unary/binary
+  operators, `?:`, calls, arrow functions and `function` expressions with
+  simple identifier parameters, array literals (holes allowed), object
+  literals with identifier keys, `.field` access; statements: expression,
+  block, empty, `return`, `throw`, `if`/`else`, single-binding `const`/`let`
+  declarations with an initializer, and `function` declarations.
 -/
 import LeanJS.JS.AST
 import LeanJS.Semantics.Relation
@@ -17,17 +35,16 @@ namespace LeanJS.Semantics
 open LeanJS.JS
 open LeanJS.IR
 
-/-! ## JS literal → IRValue conversion -/
+/-! ## Helpers -/
 
-def jsLitToValue : Literal → IRValue
-  | .string s => .string s
-  | .number n => .number n
-  | .bool b => .bool b
-  | .null => .undefined
-  | .undefined => .undefined
-  | .regex _ _ => .string "<regex>"
-
-/-! ## JS operator → IR operator mappings -/
+/-- JS literal → value. Regular expressions are outside the core. -/
+def jsLitToValue : Literal → Option IRValue
+  | .string s => some (.string s)
+  | .number n => some (.number n)
+  | .bool b => some (.bool b)
+  | .null => some .undefined
+  | .undefined => some .undefined
+  | .regex _ _ => none
 
 def jsBinOpToIR : BinOp → Option IRBinOp
   | .add => some .add
@@ -65,428 +82,259 @@ def jsUnaryOpToIR : UnaryOp → Option IRUnaryOp
   | .void => none
   | .delete => none
 
-/-! ## Helper: extract parameter name from JS pattern -/
+/-- A simple (non-destructuring, no default) parameter pattern -/
+abbrev pid (n : String) : Pattern := .ident n none
 
-def extractParamName : Pattern → Option String
-  | .ident name _ => some name
+/-- Name of a simple parameter pattern -/
+def patName : Pattern → Option String
+  | .ident n none => some n
   | _ => none
 
-def extractParamNames (params : List Pattern) : List String :=
-  params.filterMap extractParamName
+/-- Parameter names, if every parameter is a simple identifier -/
+def simpleParamNames : List Pattern → Option (List String)
+  | [] => some []
+  | p :: ps => do
+    let n ← patName p
+    let ns ← simpleParamNames ps
+    pure (n :: ns)
 
-/-! ## Helpers (must be before mutual block) -/
+theorem simpleParamNames_map_pid (names : List String) :
+    simpleParamNames (names.map pid) = some names := by
+  induction names with
+  | nil => rfl
+  | cons n ns ih => simp [simpleParamNames, patName, pid, ih]
 
-/-- Interleave template quasi strings with expression values -/
-def interleaveTemplate : List String → List IRValue → String
-  | [], _ => ""
-  | [s], _ => s
-  | s :: rest, [] => s ++ interleaveTemplate rest []
-  | s :: srest, v :: vrest =>
-    let vs := match v with
-      | .string sv => sv
-      | .number n => toString n
-      | .bool b => toString b
-      | _ => ""
-    s ++ vs ++ interleaveTemplate srest vrest
+/-- Statements that bind a name in the enclosing statement list -/
+def _root_.LeanJS.JS.Stmt.isDecl : Stmt → Bool
+  | .varDecl .. => true
+  | .funcDecl .. => true
+  | .classDecl .. => true
+  | _ => false
 
-/-! ## JS big-step evaluation relation (core subset) -/
+/-- How a call's body result becomes the call's result:
+    `return v` and falling off the end of a block body. -/
+def unwrapBlockResult : EvalResult → EvalResult
+  | .return_ v s => .val v s
+  | .val _ s => .val .undefined s
+  | other => other
 
-set_option maxHeartbeats 3200000 in
+/-- Same unwrapping as IR's `ApplyFunc` (used for expression bodies) -/
+def unwrapReturn : EvalResult → EvalResult
+  | .return_ v s => .val v s
+  | other => other
+
+/-- Environment of a call: parameters bound, then the self-name (if any).
+    This mirrors IR's `ApplyFunc`. -/
+def callEnv (cenv : Env) (self : Option String) (params : List String)
+    (args : List IRValue) (fv : IRValue) : Env :=
+  let e := cenv.extendMany (params.zip args)
+  match self with
+  | some n => e.extend n fv
+  | none => e
+
+/-! ## Evaluation relation
+
+  All judgments are folded into one inductive `JSSem` over a judgment form
+  `JSJ`, so that proofs can use ordinary structural induction (Lean 4.17
+  cannot recurse structurally over mutually inductive predicates). The
+  familiar names (`JSEvalExpr`, `JSEvalStmts`, …) are abbreviations. -/
+
+/-- Judgment forms of the JS semantics -/
+inductive JSJ where
+  | expr (env : Env) (st : Store) (e : Expr)
+  | args (env : Env) (st : Store) (es : List Expr) (acc : List IRValue)
+  | elems (env : Env) (st : Store) (es : List (Option Expr)) (acc : List IRValue)
+  | props (env : Env) (st : Store) (ps : List Property) (acc : List (String × IRValue))
+  | apply (fv : IRValue) (vs : List IRValue) (st : Store)
+  | stmt (env : Env) (st : Store) (s : Stmt)
+  | stmts (env : Env) (st : Store) (ss : List Stmt)
+
 set_option autoImplicit true in
-mutual
-
-/-- Big-step evaluation for JS expressions.
-    Uses shared IRValue domain; closures delegate to IR's ApplyFunc. -/
-inductive JSEvalExpr : Env → Store → Nat → Expr → EvalResult → Prop where
-  | fuel_zero :
-      JSEvalExpr env store 0 e (.error "out of fuel")
-
-  -- Identifier
-  | ident_ok :
-      env.lookup name = some v →
-      JSEvalExpr env store (fuel+1) (.ident name) (.val v store)
-  | ident_unbound :
-      env.lookup name = none →
-      JSEvalExpr env store (fuel+1) (.ident name) (.error s!"unbound variable: {name}")
-
-  -- Literal
+inductive JSSem : JSJ → EvalResult → Prop where
+  | ident :
+      env.lookup x = some v →
+      JSSem (.expr env st (.ident x)) (.val v st)
   | literal :
-      JSEvalExpr env store (fuel+1) (.literal lit) (.val (jsLitToValue lit) store)
-
-  -- This
-  | this_ok :
-      env.lookup "this" = some v →
-      JSEvalExpr env store (fuel+1) .this (.val v store)
-  | this_none :
-      env.lookup "this" = none →
-      JSEvalExpr env store (fuel+1) .this (.val .undefined store)
-
-  -- Binary operator
-  | binary_ok :
-      JSEvalExpr env store fuel left (.val lv s1) →
-      JSEvalExpr env s1 fuel right (.val rv s2) →
-      jsBinOpToIR op = some irop →
-      evalBinOp irop lv rv s2 = result →
-      JSEvalExpr env store (fuel+1) (.binary op left right) result
-  | binary_left_signal :
-      JSEvalExpr env store fuel left r → isSignal r →
-      JSEvalExpr env store (fuel+1) (.binary op left right) r
-  | binary_right_signal :
-      JSEvalExpr env store fuel left (.val lv s1) →
-      JSEvalExpr env s1 fuel right r → isSignal r →
-      JSEvalExpr env store (fuel+1) (.binary op left right) r
-
-  -- Unary operator
-  | unary_ok :
-      JSEvalExpr env store fuel arg (.val v s) →
-      jsUnaryOpToIR op = some irop →
-      evalUnaryOp irop v s = result →
-      JSEvalExpr env store (fuel+1) (.unary op arg) result
-  | unary_signal :
-      JSEvalExpr env store fuel arg r → isSignal r →
-      JSEvalExpr env store (fuel+1) (.unary op arg) r
-
-  -- Conditional (ternary)
-  | conditional_true :
-      JSEvalExpr env store fuel test (.val cv s) →
-      isTruthy cv = true →
-      JSEvalExpr env s fuel consequent result →
-      JSEvalExpr env store (fuel+1) (.conditional test consequent alternate) result
-  | conditional_false :
-      JSEvalExpr env store fuel test (.val cv s) →
-      isTruthy cv = false →
-      JSEvalExpr env s fuel alternate result →
-      JSEvalExpr env store (fuel+1) (.conditional test consequent alternate) result
-  | conditional_signal :
-      JSEvalExpr env store fuel test r → isSignal r →
-      JSEvalExpr env store (fuel+1) (.conditional test consequent alternate) r
-
-  -- Function call
-  | call_ok :
-      JSEvalExpr env store fuel callee (.val fv s1) →
-      JSEvalArgs env s1 fuel args [] (.val (.array argVals) s2) →
-      ApplyFunc fv argVals s2 fuel result →
-      JSEvalExpr env store (fuel+1) (.call callee args) result
-  | call_func_signal :
-      JSEvalExpr env store fuel callee r → isSignal r →
-      JSEvalExpr env store (fuel+1) (.call callee args) r
-  | call_args_signal :
-      JSEvalExpr env store fuel callee (.val fv s1) →
-      JSEvalArgs env s1 fuel args [] r → isSignal r →
-      JSEvalExpr env store (fuel+1) (.call callee args) r
-
-  -- Function expression (creates closure with IR body placeholder)
-  | function :
-      paramNames = extractParamNames params →
-      JSEvalExpr env store (fuel+1)
-        (.function name params body async_ gen)
-        (.val (.closure env name paramNames irBody) store)
-
-  -- Arrow function
-  | arrowFunction :
-      paramNames = extractParamNames params →
-      JSEvalExpr env store (fuel+1)
-        (.arrowFunction params body async_)
-        (.val (.closure env none paramNames irBody) store)
-
-  -- Member access
-  | member_ident_ok :
-      JSEvalExpr env store fuel obj (.val (.record fields) s) →
-      fields.lookup prop = some v →
-      JSEvalExpr env store (fuel+1) (.member obj (.ident prop)) (.val v s)
-  | member_ident_missing :
-      JSEvalExpr env store fuel obj (.val (.record fields) s) →
-      fields.lookup prop = none →
-      JSEvalExpr env store (fuel+1) (.member obj (.ident prop)) (.val .undefined s)
-  | member_signal :
-      JSEvalExpr env store fuel obj r → isSignal r →
-      JSEvalExpr env store (fuel+1) (.member obj prop) r
-
-  -- Array literal
-  | array :
-      JSEvalElems env store fuel elements [] result →
-      JSEvalExpr env store (fuel+1) (.array elements) result
-
-  -- Object literal
-  | object :
-      JSEvalFields env store fuel properties [] result →
-      JSEvalExpr env store (fuel+1) (.object properties) result
-
-  -- Parenthesized expression
+      jsLitToValue lit = some v →
+      JSSem (.expr env st (.literal lit)) (.val v st)
   | paren :
-      JSEvalExpr env store fuel e result →
-      JSEvalExpr env store (fuel+1) (.paren e) result
-
-  -- Template literal (simplified: evaluates to string concatenation)
-  | template_no_tag :
-      tag = none →
-      JSEvalTemplateExprs env store fuel exprs [] (.val (.array vals) s) →
-      JSEvalExpr env store (fuel+1) (.template tag quasis exprs)
-        (.val (.string (interleaveTemplate quasis vals)) s)
-
-  -- New (constructor call)
-  | new_ok :
-      JSEvalExpr env store fuel callee (.val fv s1) →
-      JSEvalArgs env s1 fuel args [] (.val (.array argVals) s2) →
-      ApplyFunc fv argVals s2 fuel result →
-      JSEvalExpr env store (fuel+1) (.«new» callee args) result
-
-  -- Assignment (returns assigned value; env update happens at stmt level)
-  | assign_simple :
-      JSEvalExpr env store fuel right (.val v s) →
-      JSEvalExpr env store (fuel+1) (.assign .assign target right) (.val v s)
-  | assign_signal :
-      JSEvalExpr env store fuel right r → isSignal r →
-      JSEvalExpr env store (fuel+1) (.assign op target right) r
-
-/-- Evaluate a list of JS argument expressions -/
-inductive JSEvalArgs : Env → Store → Nat → List Expr → List IRValue →
-    EvalResult → Prop where
-  | nil :
-      JSEvalArgs env store fuel [] acc (.val (.array acc.reverse) store)
-  | cons_ok :
-      JSEvalExpr env store fuel a (.val v s) →
-      JSEvalArgs env s fuel rest (v :: acc) result →
-      JSEvalArgs env store fuel (a :: rest) acc result
-  | cons_signal :
-      JSEvalExpr env store fuel a r → isSignal r →
-      JSEvalArgs env store fuel (a :: rest) acc r
-
-/-- Evaluate JS statements. Returns updated env and result. -/
-inductive JSEvalStmt : Env → Store → Nat → Stmt → Env → EvalResult → Prop where
-  | fuel_zero :
-      JSEvalStmt env store 0 s env (.error "out of fuel")
-
-  -- Expression statement
-  | expr :
-      JSEvalExpr env store fuel e result →
-      JSEvalStmt env store (fuel+1) (.expr e) env result
-
-  -- Block
-  | block :
-      JSEvalStmts env store fuel body env' result →
-      JSEvalStmt env store (fuel+1) (.block body) env' result
-
-  -- Variable declaration (const, no mutation)
-  | varDecl_const_init :
-      init = some initExpr →
-      JSEvalExpr env store fuel initExpr (.val v s) →
-      JSEvalStmt env store (fuel+1)
-        (.varDecl .«const» [.mk (.ident name none) init])
-        (env.extend name v) (.val .undefined s)
-  | varDecl_const_init_signal :
-      init = some initExpr →
-      JSEvalExpr env store fuel initExpr r → isSignal r →
-      JSEvalStmt env store (fuel+1)
-        (.varDecl .«const» [.mk (.ident name none) init])
-        env r
-
-  -- Variable declaration (let, potentially mutable)
-  | varDecl_let_init :
-      init = some initExpr →
-      JSEvalExpr env store fuel initExpr (.val v s) →
-      JSEvalStmt env store (fuel+1)
-        (.varDecl .«let» [.mk (.ident name none) init])
-        (env.extend name v) (.val .undefined s)
-  | varDecl_let_noinit :
-      JSEvalStmt env store (fuel+1)
-        (.varDecl .«let» [.mk (.ident name none) none])
-        (env.extend name .undefined) (.val .undefined store)
-
-  -- Return
-  | return_some :
-      JSEvalExpr env store fuel arg (.val v s) →
-      JSEvalStmt env store (fuel+1) (.return_ (some arg)) env (.return_ v s)
-  | return_none :
-      JSEvalStmt env store (fuel+1) (.return_ none) env (.return_ .undefined store)
-  | return_signal :
-      JSEvalExpr env store fuel arg r → isSignal r →
-      JSEvalStmt env store (fuel+1) (.return_ (some arg)) env r
-
-  -- Throw
-  | throw_ok :
-      JSEvalExpr env store fuel arg (.val v s) →
-      JSEvalStmt env store (fuel+1) (.throw arg) env (.throw_ v s)
-  | throw_signal :
-      JSEvalExpr env store fuel arg r → isSignal r →
-      JSEvalStmt env store (fuel+1) (.throw arg) env r
-
-  -- If-else
-  | if_true :
-      JSEvalExpr env store fuel test (.val cv s) →
-      isTruthy cv = true →
-      JSEvalStmt env s fuel cons env' result →
-      JSEvalStmt env store (fuel+1) (.ifStmt test cons alt) env' result
-  | if_false_some :
-      JSEvalExpr env store fuel test (.val cv s) →
-      isTruthy cv = false →
-      JSEvalStmt env s fuel altStmt env' result →
-      JSEvalStmt env store (fuel+1) (.ifStmt test cons (some altStmt)) env' result
-  | if_false_none :
-      JSEvalExpr env store fuel test (.val cv s) →
-      isTruthy cv = false →
-      JSEvalStmt env store (fuel+1) (.ifStmt test cons none) env (.val .undefined s)
-  | if_signal :
-      JSEvalExpr env store fuel test r → isSignal r →
-      JSEvalStmt env store (fuel+1) (.ifStmt test cons alt) env r
-
-  -- While loop
-  | while_ :
-      JSEvalLoop env store fuel test body result →
-      JSEvalStmt env store (fuel+1) (.while_ test (.block [body])) env result
-
-  -- Function declaration
-  | funcDecl :
-      paramNames = extractParamNames params →
-      JSEvalStmt env store (fuel+1)
-        (.funcDecl name params body async gen)
-        (env.extend name (.closure env (some name) paramNames irBody))
-        (.val .undefined store)
-
-  -- Try-catch (no finalizer)
-  | try_ok_no_fin :
-      JSEvalStmts env store fuel block_ env' bodyResult →
-      (∀ v s, bodyResult ≠ .throw_ v s) →
-      JSEvalStmt env store (fuel+1) (.try_ block_ handler none) env' bodyResult
-  | try_throw_no_fin :
-      JSEvalStmts env store fuel block_ env' (.throw_ v s) →
-      catchParam = (match handler with
-        | some (.mk (some (.ident n _)) hbody) => some (n, hbody)
-        | _ => none) →
-      catchEnv = (match catchParam with
-        | some (n, _) => env.extend n v
-        | none => env) →
-      catchBody = (match catchParam with
-        | some (_, hb) => hb
-        | none => []) →
-      JSEvalStmts catchEnv s fuel catchBody catchEnv' result →
-      JSEvalStmt env store (fuel+1) (.try_ block_ handler none) catchEnv' result
-
-  -- Break / Continue
-  | break_ :
-      JSEvalStmt env store (fuel+1) (.break_ none) env (.break_ store)
-  | continue_ :
-      JSEvalStmt env store (fuel+1) (.continue_ none) env (.continue_ store)
-
-  -- Empty statement
-  | empty :
-      JSEvalStmt env store (fuel+1) .empty env (.val .undefined store)
-
-  -- For-of loop (simplified)
-  | forOf :
-      JSEvalExpr env store fuel right (.val (.array elems) s) →
-      JSEvalForOf env s fuel varName elems result →
-      JSEvalStmt env store (fuel+1)
-        (.forOf (.varDecl .«const» [.mk (.ident varName none) none]) right (.block [body]))
-        env result
-
-/-- Evaluate a list of JS statements, threading environment -/
-inductive JSEvalStmts : Env → Store → Nat → List Stmt → Env → EvalResult → Prop where
-  | nil :
-      JSEvalStmts env store fuel [] env (.val .undefined store)
-  | cons_ok :
-      JSEvalStmt env store fuel s env' (.val v s') →
-      JSEvalStmts env' s' fuel rest finalEnv result →
-      JSEvalStmts env store fuel (s :: rest) finalEnv result
-  | cons_signal :
-      JSEvalStmt env store fuel s env' result → isSignal result →
-      JSEvalStmts env store fuel (s :: rest) env' result
-
-/-- Evaluate a while loop in JS -/
-inductive JSEvalLoop : Env → Store → Nat → Expr → Stmt → EvalResult → Prop where
-  | fuel_zero :
-      JSEvalLoop env store 0 test body (.error "out of fuel in loop")
+      JSSem (.expr env st e) r →
+      JSSem (.expr env st (.paren e)) r
+  | binary_ok :
+      JSSem (.expr env st l) (.val lv s1) →
+      JSSem (.expr env s1 r) (.val rv s2) →
+      jsBinOpToIR op = some irop →
+      JSSem (.expr env st (.binary op l r)) (evalBinOp irop lv rv s2)
+  | binary_left_signal :
+      JSSem (.expr env st l) res → isSignal res →
+      JSSem (.expr env st (.binary op l r)) res
+  | binary_right_signal :
+      JSSem (.expr env st l) (.val lv s1) →
+      JSSem (.expr env s1 r) res → isSignal res →
+      JSSem (.expr env st (.binary op l r)) res
+  | unary_ok :
+      JSSem (.expr env st a) (.val v s) →
+      jsUnaryOpToIR op = some irop →
+      JSSem (.expr env st (.unary op a)) (evalUnaryOp irop v s)
+  | unary_signal :
+      JSSem (.expr env st a) res → isSignal res →
+      JSSem (.expr env st (.unary op a)) res
+  | cond_true :
+      JSSem (.expr env st c) (.val cv s) → isTruthy cv = true →
+      JSSem (.expr env s t) res →
+      JSSem (.expr env st (.conditional c t e)) res
   | cond_false :
-      JSEvalExpr env store fuel test (.val cv s) →
-      isTruthy cv = false →
-      JSEvalLoop env store (fuel+1) test body (.val .undefined s)
-  | body_val :
-      JSEvalExpr env store fuel test (.val cv s) →
-      isTruthy cv = true →
-      JSEvalStmt env s fuel body env' (.val _ s') →
-      JSEvalLoop env' s' fuel test body result →
-      JSEvalLoop env store (fuel+1) test body result
-  | body_break :
-      JSEvalExpr env store fuel test (.val cv s) →
-      isTruthy cv = true →
-      JSEvalStmt env s fuel body env' (.break_ s') →
-      JSEvalLoop env store (fuel+1) test body (.val .undefined s')
-  | body_continue :
-      JSEvalExpr env store fuel test (.val cv s) →
-      isTruthy cv = true →
-      JSEvalStmt env s fuel body env' (.continue_ s') →
-      JSEvalLoop env' s' fuel test body result →
-      JSEvalLoop env store (fuel+1) test body result
-  | body_other :
-      JSEvalExpr env store fuel test (.val cv s) →
-      isTruthy cv = true →
-      JSEvalStmt env s fuel body env' r →
-      (∀ v' s', r ≠ .val v' s') → (∀ s', r ≠ .continue_ s') → (∀ s', r ≠ .break_ s') →
-      JSEvalLoop env store (fuel+1) test body r
+      JSSem (.expr env st c) (.val cv s) → isTruthy cv = false →
+      JSSem (.expr env s e) res →
+      JSSem (.expr env st (.conditional c t e)) res
   | cond_signal :
-      JSEvalExpr env store fuel test r → isSignal r →
-      JSEvalLoop env store (fuel+1) test body r
+      JSSem (.expr env st c) res → isSignal res →
+      JSSem (.expr env st (.conditional c t e)) res
+  | call_ok :
+      JSSem (.expr env st f) (.val fv s1) →
+      JSSem (.args env s1 args []) (.val (.array vs) s2) →
+      JSSem (.apply fv vs s2) res →
+      JSSem (.expr env st (.call f args)) res
+  | call_callee_signal :
+      JSSem (.expr env st f) res → isSignal res →
+      JSSem (.expr env st (.call f args)) res
+  | call_args_signal :
+      JSSem (.expr env st f) (.val fv s1) →
+      JSSem (.args env s1 args []) res → isSignal res →
+      JSSem (.expr env st (.call f args)) res
+  | function :
+      simpleParamNames params = some names →
+      JSSem (.expr env st (.function name params body false false)) (.val (.jsClosure env name names (.block body)) st)
+  | arrow :
+      simpleParamNames params = some names →
+      JSSem (.expr env st (.arrowFunction params body false)) (.val (.jsClosure env none names body) st)
+  | array :
+      JSSem (.elems env st elems []) res →
+      JSSem (.expr env st (.array elems)) res
+  | object :
+      JSSem (.props env st props []) res →
+      JSSem (.expr env st (.object props)) res
+  | member_ok :
+      JSSem (.expr env st o) (.val (.record fs) s) →
+      fs.lookup k = some v →
+      JSSem (.expr env st (.member o (.ident k))) (.val v s)
+  | member_missing :
+      JSSem (.expr env st o) (.val (.record fs) s) →
+      fs.lookup k = none →
+      JSSem (.expr env st (.member o (.ident k))) (.val .undefined s)
+  | member_signal :
+      JSSem (.expr env st o) res → isSignal res →
+      JSSem (.expr env st (.member o (.ident k))) res
+  | args_nil :
+      JSSem (.args env st [] acc) (.val (.array acc.reverse) st)
+  | args_cons_ok :
+      JSSem (.expr env st a) (.val v s) →
+      JSSem (.args env s rest (v :: acc)) res →
+      JSSem (.args env st (a :: rest) acc) res
+  | args_cons_signal :
+      JSSem (.expr env st a) res → isSignal res →
+      JSSem (.args env st (a :: rest) acc) res
+  | elems_nil :
+      JSSem (.elems env st [] acc) (.val (.array acc.reverse) st)
+  | elems_some_ok :
+      JSSem (.expr env st e) (.val v s) →
+      JSSem (.elems env s rest (v :: acc)) res →
+      JSSem (.elems env st (some e :: rest) acc) res
+  | elems_some_signal :
+      JSSem (.expr env st e) res → isSignal res →
+      JSSem (.elems env st (some e :: rest) acc) res
+  | elems_hole :
+      JSSem (.elems env st rest (.undefined :: acc)) res →
+      JSSem (.elems env st (none :: rest) acc) res
+  | props_nil :
+      JSSem (.props env st [] acc) (.val (.record acc.reverse) st)
+  | props_cons_ok :
+      JSSem (.expr env st e) (.val v s) →
+      JSSem (.props env s rest ((k, v) :: acc)) res →
+      JSSem (.props env st (.prop (.ident k) e .init false false :: rest) acc) res
+  | props_cons_signal :
+      JSSem (.expr env st e) res → isSignal res →
+      JSSem (.props env st (.prop (.ident k) e .init false false :: rest) acc) res
+  | apply_expr_body :
+      JSSem (.expr (callEnv cenv name params args (.jsClosure cenv name params (.expr e))) st e) res →
+      JSSem (.apply (.jsClosure cenv name params (.expr e)) args st) (unwrapReturn res)
+  | apply_block_body :
+      JSSem (.stmts (callEnv cenv name params args (.jsClosure cenv name params (.block ss))) st ss) res →
+      JSSem (.apply (.jsClosure cenv name params (.block ss)) args st) (unwrapBlockResult res)
+  | stmt_expr :
+      JSSem (.expr env st e) res →
+      JSSem (.stmt env st (.expr e)) res
+  | stmt_block :
+      JSSem (.stmts env st ss) res →
+      JSSem (.stmt env st (.block ss)) res
+  | stmt_empty :
+      JSSem (.stmt env st .empty) (.val .undefined st)
+  | stmt_return_some :
+      JSSem (.expr env st e) (.val v s) →
+      JSSem (.stmt env st (.return_ (some e))) (.return_ v s)
+  | stmt_return_some_signal :
+      JSSem (.expr env st e) res → isSignal res →
+      JSSem (.stmt env st (.return_ (some e))) res
+  | stmt_return_none :
+      JSSem (.stmt env st (.return_ none)) (.return_ .undefined st)
+  | stmt_throw_ok :
+      JSSem (.expr env st e) (.val v s) →
+      JSSem (.stmt env st (.throw e)) (.throw_ v s)
+  | stmt_throw_signal :
+      JSSem (.expr env st e) res → isSignal res →
+      JSSem (.stmt env st (.throw e)) res
+  | stmt_if_true :
+      JSSem (.expr env st c) (.val cv s) → isTruthy cv = true →
+      JSSem (.stmt env s t) res →
+      JSSem (.stmt env st (.ifStmt c t alt)) res
+  | stmt_if_false :
+      JSSem (.expr env st c) (.val cv s) → isTruthy cv = false →
+      JSSem (.stmt env s e) res →
+      JSSem (.stmt env st (.ifStmt c t (some e))) res
+  | stmt_if_false_none :
+      JSSem (.expr env st c) (.val cv s) → isTruthy cv = false →
+      JSSem (.stmt env st (.ifStmt c t none)) (.val .undefined s)
+  | stmt_if_signal :
+      JSSem (.expr env st c) res → isSignal res →
+      JSSem (.stmt env st (.ifStmt c t alt)) res
+  | stmts_nil :
+      JSSem (.stmts env st []) (.val .undefined st)
+  | stmts_decl_ok :
+      (kind = .const ∨ kind = .let) →
+      JSSem (.expr env st init) (.val v s) →
+      JSSem (.stmts (env.extend x v) s rest) res →
+      JSSem (.stmts env st (.varDecl kind [.mk (.ident x none) (some init)] :: rest)) res
+  | stmts_decl_signal :
+      (kind = .const ∨ kind = .let) →
+      JSSem (.expr env st init) res → isSignal res →
+      JSSem (.stmts env st (.varDecl kind [.mk (.ident x none) (some init)] :: rest)) res
+  | stmts_funcDecl :
+      simpleParamNames params = some names →
+      JSSem (.stmts (env.extend f (.jsClosure env (some f) names (.block body))) st rest) res →
+      JSSem (.stmts env st (.funcDecl f params body false false :: rest)) res
+  | stmts_stmt_ok :
+      s.isDecl = false →
+      JSSem (.stmt env st s) (.val v s1) →
+      JSSem (.stmts env s1 rest) res →
+      JSSem (.stmts env st (s :: rest)) res
+  | stmts_stmt_signal :
+      s.isDecl = false →
+      JSSem (.stmt env st s) res → isSignal res →
+      JSSem (.stmts env st (s :: rest)) res
 
-/-- Evaluate for-of loop iteration -/
-inductive JSEvalForOf : Env → Store → Nat → String → List IRValue →
-    EvalResult → Prop where
-  | nil :
-      JSEvalForOf env store fuel varName [] (.val .undefined store)
-  | cons_ok :
-      JSEvalStmt (env.extend varName v) store fuel body env' (.val _ s') →
-      JSEvalForOf env s' fuel varName rest result →
-      JSEvalForOf env store fuel varName (v :: rest) result
-  | cons_break :
-      JSEvalStmt (env.extend varName v) store fuel body env' (.break_ s') →
-      JSEvalForOf env store fuel varName (v :: rest) (.val .undefined s')
-  | cons_signal :
-      JSEvalStmt (env.extend varName v) store fuel body env' r →
-      (∀ v' s', r ≠ .val v' s') → (∀ s', r ≠ .break_ s') →
-      JSEvalForOf env store fuel varName (v :: rest) r
-
-/-- Evaluate array literal elements (handling Option Expr for sparse arrays) -/
-inductive JSEvalElems : Env → Store → Nat → List (Option Expr) → List IRValue →
-    EvalResult → Prop where
-  | nil :
-      JSEvalElems env store fuel [] acc (.val (.array acc.reverse) store)
-  | cons_some_ok :
-      JSEvalExpr env store fuel e (.val v s) →
-      JSEvalElems env s fuel rest (v :: acc) result →
-      JSEvalElems env store fuel (some e :: rest) acc result
-  | cons_none :
-      JSEvalElems env store fuel rest (.undefined :: acc) result →
-      JSEvalElems env store fuel (none :: rest) acc result
-  | cons_signal :
-      JSEvalExpr env store fuel e r → isSignal r →
-      JSEvalElems env store fuel (some e :: rest) acc r
-
-/-- Evaluate object property list -/
-inductive JSEvalFields : Env → Store → Nat → List Property → List (String × IRValue) →
-    EvalResult → Prop where
-  | nil :
-      JSEvalFields env store fuel [] acc (.val (.record acc.reverse) store)
-  | cons_prop_ok :
-      JSEvalExpr env store fuel key (.val (.string kname) s1) →
-      JSEvalExpr env s1 fuel value (.val v s2) →
-      JSEvalFields env s2 fuel rest ((kname, v) :: acc) result →
-      JSEvalFields env store fuel (.prop key value .init false false :: rest) acc result
-  | cons_signal :
-      JSEvalExpr env store fuel key r → isSignal r →
-      JSEvalFields env store fuel (.prop key value kind computed shorthand :: rest) acc r
-
-/-- Evaluate template literal expressions -/
-inductive JSEvalTemplateExprs : Env → Store → Nat → List Expr → List IRValue →
-    EvalResult → Prop where
-  | nil :
-      JSEvalTemplateExprs env store fuel [] acc (.val (.array acc.reverse) store)
-  | cons_ok :
-      JSEvalExpr env store fuel e (.val v s) →
-      JSEvalTemplateExprs env s fuel rest (v :: acc) result →
-      JSEvalTemplateExprs env store fuel (e :: rest) acc result
-  | cons_signal :
-      JSEvalExpr env store fuel e r → isSignal r →
-      JSEvalTemplateExprs env store fuel (e :: rest) acc r
-
-end
+/-- Expressions -/
+abbrev JSEvalExpr (env : Env) (st : Store) (e : Expr) (r : EvalResult) : Prop := JSSem (.expr env st e) r
+/-- Call arguments, accumulated in reverse (mirrors IR `EvalArgs`) -/
+abbrev JSEvalArgs (env : Env) (st : Store) (es : List Expr) (acc : List IRValue) (r : EvalResult) : Prop := JSSem (.args env st es acc) r
+/-- Array literal elements; a hole evaluates to `undefined` -/
+abbrev JSEvalElems (env : Env) (st : Store) (es : List (Option Expr)) (acc : List IRValue) (r : EvalResult) : Prop := JSSem (.elems env st es acc) r
+/-- Object literal properties `k: e` with identifier keys -/
+abbrev JSEvalProps (env : Env) (st : Store) (ps : List Property) (acc : List (String × IRValue)) (r : EvalResult) : Prop := JSSem (.props env st ps acc) r
+/-- Applying a function value to arguments -/
+abbrev JSApply (fv : IRValue) (vs : List IRValue) (st : Store) (r : EvalResult) : Prop := JSSem (.apply fv vs st) r
+/-- Single (non-declaration) statements -/
+abbrev JSEvalStmt (env : Env) (st : Store) (s : Stmt) (r : EvalResult) : Prop := JSSem (.stmt env st s) r
+/-- Statement lists; normal completion yields `undefined` -/
+abbrev JSEvalStmts (env : Env) (st : Store) (ss : List Stmt) (r : EvalResult) : Prop := JSSem (.stmts env st ss) r
 
 end LeanJS.Semantics

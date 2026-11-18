@@ -1,0 +1,16 @@
+[verified] translated by the verified core translator
+def double x :=
+  x * 2.0
+
+def greet name :=
+  "Hello, " ++ name
+
+def max2 a :=
+  fun b => if a > b then a else b
+
+def compose f :=
+  fun g => fun x => f (g x)
+
+def result :=
+  #[double 21.0, max2 3.0 7.0, compose double double 5.0]
+[exit 0]
