@@ -17,6 +17,11 @@ namespace ES
 open ES (F64)
 open Std (HashSet)
 
+/-- `Array.map` through `List.map`: the same function, but it unfolds definitionally on literal
+arrays (`Array.map` is well-founded recursion), so a generated denotation is the interpreter's by
+`rfl` (docs/compile.md). -/
+@[inline] def amap {α β} (f : α → β) (a : Array α) : Array β := (a.toList.map f).toArray
+
 /-- The depth bound of one function body's evaluation (see the module docstring). -/
 def evalDepth : Nat := 1000000
 
@@ -36,15 +41,34 @@ def refThisValue (r : Ref) : M Value := do
   | _ => pure .undefined
 
 /-- A short description of a callee for error messages. -/
-def calleeName : Expr → String
+inductive CalleeDesc where
+  | ident (x : JSStr)
+  | prop (k : JSStr)
+  | priv (k : JSStr)
+  | computed
+  | superProp (k : JSStr)
+  | other
+
+/-- A callee's description for error messages (kept structured: formatted only when thrown). -/
+def calleeDesc : Expr → CalleeDesc
+  | .ident x => .ident x
+  | .member _ (.name k) _ => .prop k
+  | .member _ (.priv k) _ => .priv k
+  | .member _ (.computed _) _ => .computed
+  | .superMember (.name k) => .superProp k
+  | .paren e => calleeDesc e
+  | .chain e => calleeDesc e
+  | _ => .other
+
+def CalleeDesc.toString : CalleeDesc → String
   | .ident x => x.toString
-  | .member _ (.name k) _ => s!"….{k}"
-  | .member _ (.priv k) _ => s!"….#{k}"
-  | .member _ (.computed _) _ => "…[…]"
-  | .superMember (.name k) => s!"super.{k}"
-  | .paren e => calleeName e
-  | .chain e => calleeName e
-  | _ => "expression"
+  | .prop k => s!"….{k}"
+  | .priv k => s!"….#{k}"
+  | .computed => "…[…]"
+  | .superProp k => s!"super.{k}"
+  | .other => "expression"
+
+def calleeName (e : Expr) : String := (calleeDesc e).toString
 
 /-- The literal's value. -/
 def litValue : Lit → Value
@@ -523,13 +547,13 @@ def args (as : Array ArgD) : CArgs := fun ctx => M.foldArr as #[] fun acc a => d
 
 /-- EvaluateCall (callees other than a possible direct `eval`).
 spec: https://tc39.es/ecma262/#sec-evaluatecall -/
-def call (callee : CRef) (argList : CArgs) (optional : Bool) (name : String) : CExpr := fun ctx => do
+def call (callee : CRef) (argList : CArgs) (optional : Bool) (name : CalleeDesc) : CExpr := fun ctx => do
   let ref ← callee ctx
   let func ← getRefValue ref
   if optional && func.isNullish then M.throwV sentinelOptional
   let thisV ← refThisValue ref
   let as ← argList ctx
-  if !(← isCallable func) then throwType s!"{name} is not a function"
+  if !(← isCallable func) then throwType s!"{name.toString} is not a function"
   ES.call func thisV as
 
 /-- spec: https://tc39.es/ecma262/#sec-evaluatenew -/
@@ -743,7 +767,7 @@ def evalExpr : Nat → Ctx → Expr → M Value
     | .ident x => Sem.ident x ctx
     | .lit l => Sem.lit l ctx
     | .paren e => evalExpr n ctx e
-    | .template cooked _ exprs => Sem.template cooked (exprs.map fun e c => evalExpr n c e) ctx
+    | .template cooked _ exprs => Sem.template cooked (amap (fun e c => evalExpr n c e) exprs) ctx
     | .tagged tag cooked raw exprs site =>
       -- spec: https://tc39.es/ecma262/#sec-tagged-templates-runtime-semantics-evaluation
       let ref ← evalRef n ctx tag
@@ -773,13 +797,10 @@ def evalExpr : Nat → Ctx → Expr → M Value
       readObj o fun ob => .bool (ob.privates.any (·.1 == id))
     | .assign op target value => evalAssign n ctx op target value
     | .cond t c a => Sem.cond (evalExpr n · t) (evalExpr n · c) (evalExpr n · a) ctx
-    | .call callee args optional =>
-      match callee with
-      | .ident nm =>
-        if nm == JSStr.ofString "eval" then evalCall n ctx callee args optional
-        else Sem.call (evalRef n · callee) (Sem.args (args.map (argD n))) optional (calleeName callee) ctx
-      | _ => Sem.call (evalRef n · callee) (Sem.args (args.map (argD n))) optional (calleeName callee) ctx
-    | .new callee args => Sem.new (evalExpr n · callee) (Sem.args (args.map (argD n))) ctx
+    | .call callee args optional directEval =>
+      if directEval then evalCall n ctx callee args optional
+      else Sem.call (evalRef n · callee) (Sem.args (amap (argD n) args)) optional (calleeDesc callee) ctx
+    | .new callee args => Sem.new (evalExpr n · callee) (Sem.args (amap (argD n) args)) ctx
     | .member .. | .superMember _ => Sem.getValue (evalRef n · e) ctx
     | .chain inner => Sem.chain (evalExpr n · inner) ctx
     | .superCall args =>
@@ -803,7 +824,7 @@ def evalExpr : Nat → Ctx → Expr → M Value
         | some o => evalExpr n ctx o
         | none => pure .undefined
       call (← intrinsicV "%DynamicImport%") .undefined #[sv, ov]
-    | .seq es => Sem.seq (es.map fun e c => evalExpr n c e) ctx
+    | .seq es => Sem.seq (amap (fun e c => evalExpr n c e) es) ctx
     | .yield arg delegate =>
       if delegate then evalYieldStar n ctx (arg.getD (.lit .null))
       else
@@ -1320,7 +1341,7 @@ def evalStmt : Nat → Ctx → Stmt → M Compl
     match st with
     | .expr e => Sem.exprStmt (evalExpr n · e) ctx
     | .varDecl kind ds =>
-      Sem.varDecl (ds.map (declD n kind)) ctx
+      Sem.varDecl (amap (declD n kind) ds) ctx
     | .funDecl f => Sem.funDecl f ctx
     | .classDecl c =>
       let ctx := Sem.inner ctx
@@ -1328,7 +1349,7 @@ def evalStmt : Nat → Ctx → Stmt → M Compl
       let v ← evalClass n ctx c (some nm) (some (.str nm))
       initializeBinding ctx.lex nm v
       pure (.normal none)
-    | .block body => Sem.block (lexicallyScoped body) (body.map fun s c => evalStmt n c s) ctx
+    | .block body => Sem.block (lexicallyScoped body) (amap (fun s c => evalStmt n c s) body) ctx
     | .empty | .debugger => Sem.empty ctx
     | .ret e => Sem.ret (e.map fun e c => evalExpr n c e) ctx
     | .ifS t c a => Sem.ifS (evalExpr n · t) (evalStmt n · c) (a.map fun a c => evalStmt n c a) ctx
@@ -1432,7 +1453,7 @@ def declD : Nat → VarKind → VarDeclarator → Sem.CDecl
 spec: https://tc39.es/ecma262/#sec-block-runtime-semantics-evaluation -/
 def evalStmts : Nat → Ctx → Array Stmt → M Compl
   | 0, _, _ => tooDeep
-  | n + 1, ctx, ss => Sem.stmts (ss.map fun s c => evalStmt n c s) ctx
+  | n + 1, ctx, ss => Sem.stmts (amap (fun s c => evalStmt n c s) ss) ctx
 
 /-- ForLoopEvaluation and ForBodyEvaluation (with CreatePerIterationEnvironment).
 spec: https://tc39.es/ecma262/#sec-forbodyevaluation -/

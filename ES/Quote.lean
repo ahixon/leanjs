@@ -114,7 +114,7 @@ def qExpr : Nat → Expr → String
     | .privIn nm r => app "ES.Expr.privIn" [qStr nm, qExpr n r]
     | .assign o t v => app "ES.Expr.assign" [qAssignOp o, qPattern n t, qExpr n v]
     | .cond a b c => app "ES.Expr.cond" [qExpr n a, qExpr n b, qExpr n c]
-    | .call c args o => app "ES.Expr.call" [qExpr n c, qArr (qArg n) args, qBool o]
+    | .call c args o de => app "ES.Expr.call" [qExpr n c, qArr (qArg n) args, qBool o, qBool de]
     | .new c args => app "ES.Expr.new" [qExpr n c, qArr (qArg n) args]
     | .member o k opt => app "ES.Expr.member" [qExpr n o, qMemberKey n k, qBool opt]
     | .chain e => app "ES.Expr.chain" [qExpr n e]

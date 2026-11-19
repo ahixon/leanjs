@@ -25,6 +25,11 @@ error (spec: https://tc39.es/ecma262/#sec-static-semantic-rules) and Annex B's s
 
 namespace ES.Parse
 
+/-- A callee that makes a call a direct-eval candidate: the identifier `eval`. -/
+def isEvalIdent : Expr → Bool
+  | .ident n => n == JSStr.ofString "eval"
+  | _ => false
+
 open ES (F64)
 open Std (HashSet HashMap)
 open ES.Lex
@@ -575,7 +580,7 @@ def toPattern : Nat → Bool → Expr → Nat → P Pattern
           if i + 1 != elems.size then fail "rest element must be last" pos
           rest := some (← toPattern n binding arg pos)
       return .arr out rest
-    | .call _ _ false =>
+    | .call _ _ false _ =>
       -- spec: AssignmentTargetType web-compat (runtime ReferenceError in sloppy mode)
       if binding || strict then fail "invalid assignment target" pos
       return .expr e
@@ -596,7 +601,7 @@ def simpleTarget (e : Expr) (allowCall : Bool) (pos : Nat) : P Pattern := do
     if let some x := parenIdent astFuel inner then
       if strict && isEvalOrArgs x then fail s!"cannot assign to '{x}' in strict mode" pos
     return .expr e
-  | .call _ _ false =>
+  | .call _ _ false _ =>
     if allowCall && !strict then return .expr e
     fail "invalid assignment target" pos
   | _ => fail "invalid assignment target" pos
@@ -1531,7 +1536,7 @@ def parseSubscripts (r : Rec) (base : Expr) (noCalls : Bool) : P Expr := do
       match n.kind with
       | .lparen =>
         let (args, _, _) ← parseArgs r false
-        e := .call e args true
+        e := .call e args true false
       | .lbracket =>
         next
         let k ← r.expr false
@@ -1558,7 +1563,7 @@ def parseSubscripts (r : Rec) (base : Expr) (noCalls : Bool) : P Expr := do
         if n == kEval then
           -- a direct eval candidate (spec: PerformEval)
           setFn fun f => { f with hasEval := true, argsRef := true, thisRef := true }
-      e := .call e args false
+      e := .call e args false (isEvalIdent e)
     | _ => break
     chainStep
   restoreBudget b0
@@ -1603,7 +1608,7 @@ def parseExprSubscripts (r : Rec) (noIn : Bool) : P (Expr × Cover) := do
     modify fun s => { s with
       yieldPos := if yp != 0 then yp else s.yieldPos, awaitPos := if ap != 0 then ap else s.awaitPos,
       awaitIdentPos := if aip != 0 then aip else s.awaitIdentPos }
-    return (← parseSubscripts r (.call e args false) false, {})
+    return (← parseSubscripts r (.call e args false (isEvalIdent e)) false, {})
   match t.kind with
   | .dot | .qdot | .lbracket | .lparen | .tmpl =>
     checkCover c

@@ -1,5 +1,6 @@
 import ES.Engine
 import ES.Quote
+import ES.Gen
 
 /-!
 # `leanjs`
@@ -55,11 +56,19 @@ def main (args : List String) : IO UInt32 := do
     let src ← IO.FS.readFile f
     let sess ← newSessionIO
     runAndReport sess (sess.runScript src f)
+  | ["compile", "--defs", f, out] =>
+    let src ← IO.FS.readFile f
+    match parseScript src with
+    | .error e => IO.eprintln s!"SyntaxError: {e.msg} (at byte {e.pos})"; return 1
+    | .ok prog =>
+      let name := (f.replace "/-" "/ -").replace "-/" "- /"
+      IO.FS.writeFile out (Gen.emitModule prog s!"Compiled from `{name}`.")
+      return 0
   | ["compile", f, out] =>
     let src ← IO.FS.readFile f
     match compileFile src f with
     | .ok lean => IO.FS.writeFile out lean; return 0
     | .error m => IO.eprintln m; return 1
   | _ =>
-    IO.eprintln "usage: leanjs run file.js | leanjs compile file.js Out.lean"
+    IO.eprintln "usage: leanjs run file.js | leanjs compile [--defs] file.js Out.lean"
     return 2

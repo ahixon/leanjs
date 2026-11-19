@@ -119,9 +119,9 @@ inductive Expr where
   | privIn (name : JSStr) (r : Expr)
   | assign (op : AssignOp) (target : Pattern) (value : Expr)
   | cond (test cons alt : Expr)
-  /-- Calls: `optional` is `callee?.(args)`. Direct `eval` is a call whose callee is
-  `ident "eval"` (decided at runtime, spec: PerformEval). -/
-  | call (callee : Expr) (args : Array Arg) (optional : Bool)
+  /-- Calls: `optional` is `callee?.(args)`; `directEval`: the callee is the identifier `eval`
+  (a direct eval if it is %eval% at runtime, spec: PerformEval). -/
+  | call (callee : Expr) (args : Array Arg) (optional : Bool) (directEval : Bool := false)
   | new (callee : Expr) (args : Array Arg)
   /-- Member access; `optional` is `obj?.prop`. -/
   | member (obj : Expr) (key : MemberKey) (optional : Bool)
