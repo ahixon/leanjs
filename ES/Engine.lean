@@ -147,6 +147,17 @@ def Session.runScript (sess : Session) (src : String) (path : String := "") : Ou
       | .ok v => (.value v, sess)
       | .error e => (.threw e, sess)
 
+/-- Runs an already-parsed script (compiled programs carry their syntax tree), then the jobs. -/
+def Session.runProgram (sess : Session) (prog : Program) : Outcome' × Session :=
+  match sess.run (scriptEvaluation prog) with
+  | (.error m, sess) => (.halted m, sess)
+  | (.ok r, sess) =>
+    match sess.drainJobs with
+    | .error m => (.halted m, sess)
+    | .ok sess => match r with
+      | .ok v => (.value v, sess)
+      | .error e => (.threw e, sess)
+
 /-- Loads, links and evaluates a module graph (sources by path in `sources`), then runs the jobs;
 the outcome is the evaluation promise's: its rejection reason is thrown. -/
 def Session.runModule (sess : Session) (path : String) (sources : Std.HashMap String String) : Outcome' × Session :=
@@ -275,5 +286,21 @@ def createRealmBuiltin : BuiltinFn := fun _ _ _ _ => do
 def test262Builtins : Array BuiltinDef := #[
   ⟨"print", printBuiltin⟩, ⟨"$262.createRealm", createRealmBuiltin⟩,
   ⟨"$262.evalScript", evalScriptBuiltin⟩, ⟨"$262.detachArrayBuffer", detachArrayBufferBuiltin⟩]
+
+/-- `main` of a compiled program: runs it on a fresh engine and prints its output. -/
+def runCompiled (prog : Program) : IO UInt32 := do
+  match newSession test262Builtins test262HostSetup with
+  | .error m => IO.eprintln s!"realm creation failed: {m}"; return 3
+  | .ok sess =>
+    let (r, sess) := sess.runProgram prog
+    for line in sess.state.output do IO.println line
+    match r with
+    | .value _ => return 0
+    | .threw e =>
+      match (sess.run (describeThrown e)).1 with
+      | .ok (.ok s) => IO.eprintln s!"Uncaught {s}"
+      | _ => IO.eprintln "Uncaught exception"
+      return 1
+    | .halted m => IO.eprintln s!"Halted: {m}"; return 3
 
 end ES

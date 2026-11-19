@@ -10,6 +10,11 @@ package leanjs where
 @[default_target]
 lean_lib ES
 
+/-- `leanjs run file.js` / `leanjs compile file.js Out.lean` (JS → Lean over the engine's runtime). -/
+@[default_target]
+lean_exe leanjs where
+  root := `Main
+
 /-- test262 conformance runner: `lake exe test262 [paths] [-v] [-j N] [--update]`. -/
 lean_exe test262 where
   root := `Test262
