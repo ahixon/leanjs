@@ -1,0 +1,162 @@
+import Proofs.Loops
+
+/-!
+# Environment Records' operations as rewriting rules
+
+Each operation on an environment, in terms of the record at that index (`s.envEntry env`), with
+side conditions that mention only the state and the index, so `simp` can apply the rules to any
+state and discharge the conditions by computing the record (after `State.setEnv`s).
+-/
+
+namespace ES
+
+open Std (HashMap)
+
+variable {α : Type}
+
+/-- The record at an index (`default` when out of range). -/
+def State.envEntry (s : State) (env : EnvId) : Env := (s.envs[env]?).getD default
+
+/-- The state with environment `env` replaced. -/
+def State.setEnv (s : State) (env : EnvId) (e : Env) : State := { s with envs := s.envs.modify env fun _ => e }
+
+@[simp] theorem State.setEnv_envs_size (s : State) (env : EnvId) (e : Env) :
+    (s.setEnv env e).envs.size = s.envs.size := by simp [State.setEnv]
+
+@[simp] theorem State.setEnv_fuel (s : State) (env : EnvId) (e : Env) : (s.setEnv env e).fuel = s.fuel := rfl
+
+@[simp] theorem State.setEnv_get? (s : State) (env i : EnvId) (e : Env) :
+    (s.setEnv env e).envs[i]? = if env = i then (s.envs[i]?).map (fun _ => e) else s.envs[i]? := by
+  simp [State.setEnv, Array.getElem?_modify]
+
+@[simp] theorem State.setEnv_envEntry_self (s : State) (env : EnvId) (e : Env) (h : env < s.envs.size) :
+    (s.setEnv env e).envEntry env = e := by
+  simp [State.envEntry, State.setEnv, Array.getElem_modify, h]
+
+@[simp] theorem State.setEnv_setEnv (s : State) (env : EnvId) (e₁ e₂ : Env) :
+    (s.setEnv env e₁).setEnv env e₂ = s.setEnv env e₂ := by
+  simp only [State.setEnv]
+  congr 1
+  apply Array.ext
+  · simp
+  · intro i h1 h2
+    simp only [Array.getElem_modify]
+    split <;> rfl
+
+theorem State.envEntry_of (s : State) (env : EnvId) (h : env < s.envs.size) : s.envEntry env = s.envs[env] := by
+  simp [State.envEntry, Array.getElem?_eq_getElem h]
+
+/-- Declarative and function records (the ones with their own bindings map, not object records). -/
+def Env.isDeclLike : Env → Bool
+  | .decl .. | .func .. => true
+  | _ => false
+
+/-- A record's bindings (declarative, function, module, and the global record's declarative part). -/
+def Env.bindingsMap : Env → HashMap JSStr Binding
+  | .decl b _ | .func b .. | .module b .. | .global _ b _ => b
+  | .object .. => {}
+
+@[simp] theorem Env.isDeclLike_func (b : HashMap JSStr Binding) (o : Option EnvId) (ts : ThisStatus)
+    (tv : Value) (fo : ObjId) (nt : Value) : (Env.func b o ts tv fo nt).isDeclLike = true := rfl
+@[simp] theorem Env.isDeclLike_decl (b : HashMap JSStr Binding) (o : Option EnvId) :
+    (Env.decl b o).isDeclLike = true := rfl
+@[simp] theorem Env.bindingsMap_func (b : HashMap JSStr Binding) (o : Option EnvId) (ts : ThisStatus)
+    (tv : Value) (fo : ObjId) (nt : Value) : (Env.func b o ts tv fo nt).bindingsMap = b := rfl
+@[simp] theorem Env.bindingsMap_decl (b : HashMap JSStr Binding) (o : Option EnvId) :
+    (Env.decl b o).bindingsMap = b := rfl
+@[simp] theorem Env.withBindings_func (b : HashMap JSStr Binding) (o : Option EnvId) (ts : ThisStatus)
+    (tv : Value) (fo : ObjId) (nt : Value) (g : HashMap JSStr Binding → HashMap JSStr Binding) :
+    (Env.func b o ts tv fo nt).withBindings g = .func (g b) o ts tv fo nt := rfl
+@[simp] theorem Env.withBindings_decl (b : HashMap JSStr Binding) (o : Option EnvId)
+    (g : HashMap JSStr Binding → HashMap JSStr Binding) : (Env.decl b o).withBindings g = .decl (g b) o := rfl
+@[simp] theorem Env.outer_func (b : HashMap JSStr Binding) (o : Option EnvId) (ts : ThisStatus)
+    (tv : Value) (fo : ObjId) (nt : Value) : (Env.func b o ts tv fo nt).outer = o := rfl
+@[simp] theorem Env.outer_decl (b : HashMap JSStr Binding) (o : Option EnvId) : (Env.decl b o).outer = o := rfl
+
+theorem readEnv_entry (id : EnvId) (f : Env → α) (s : State) (h : id < s.envs.size) :
+    readEnv id f s = .ok (f (s.envEntry id)) s := by
+  simp [readEnv, h, State.envEntry_of s id h]
+
+/-- `modifyEnv` is setting the record to the modified one. -/
+theorem modifyEnv_eq_setEnv (s : State) (env : EnvId) (g : Env → Env) (h : env < s.envs.size) :
+    modifyEnv env g s = .ok () (s.setEnv env (g (s.envEntry env))) := by
+  simp only [modifyEnv, State.withEnvs_eq, State.setEnv]
+  congr 2
+  apply Array.ext
+  · simp
+  · intro i h1 h2
+    simp only [Array.getElem_modify]
+    split
+    · next heq => subst heq; simp [State.envEntry_of s env h]
+    · rfl
+
+/-- HasBinding(N) on a declarative or function record. -/
+theorem hasBinding_declLike (env : EnvId) (n : JSStr) (s : State) (h : env < s.envs.size)
+    (hk : (s.envEntry env).isDeclLike = true) :
+    hasBinding env n s = .ok ((s.envEntry env).bindingsMap.contains n) s := by
+  simp only [hasBinding, M.bind_eq, M.bind_apply, readEnv_entry env id s h, M.bindRes_ok, id]
+  revert hk
+  cases s.envEntry env <;> simp [Env.isDeclLike, Env.bindingsMap] <;> rfl
+
+/-- CreateMutableBinding(N, D) on a declarative or function record. -/
+theorem createMutableBinding_declLike (env : EnvId) (n : JSStr) (del : Bool) (s : State)
+    (h : env < s.envs.size) (hk : (s.envEntry env).isDeclLike = true) :
+    createMutableBinding env n del s =
+      .ok () (s.setEnv env ((s.envEntry env).withBindings (·.insert n { deletable := del }))) := by
+  simp only [createMutableBinding, M.bind_eq, M.bind_apply, readEnv_entry env id s h, M.bindRes_ok, id]
+  revert hk
+  cases he : s.envEntry env <;> simp only [Env.isDeclLike, reduceCtorEq, false_implies] <;>
+    intro _ <;> rw [modifyEnv_eq_setEnv s env _ h, he]
+
+/-- InitializeBinding(N, V) on a declarative or function record. -/
+theorem initializeBinding_declLike (env : EnvId) (n : JSStr) (v : Value) (s : State)
+    (h : env < s.envs.size) (hk : (s.envEntry env).isDeclLike = true) :
+    initializeBinding env n v s =
+      .ok () (s.setEnv env ((s.envEntry env).withBindings
+        (·.modify n fun bd => { bd with value := some v }))) := by
+  simp only [initializeBinding, M.bind_eq, M.bind_apply, readEnv_entry env id s h, M.bindRes_ok, id]
+  revert hk
+  cases he : s.envEntry env <;> simp only [Env.isDeclLike, reduceCtorEq, false_implies] <;>
+    intro _ <;> rw [modifyEnv_eq_setEnv s env _ h, he]
+
+/-- ResolveBinding when the name is bound in the first record. -/
+theorem resolveBinding_here (env : EnvId) (n : JSStr) (strict : Bool) (s : State)
+    (h : env < s.envs.size) (hk : (s.envEntry env).isDeclLike = true)
+    (hb : (s.envEntry env).bindingsMap.contains n = true) (hf0 : s.fuel ≠ 0) :
+    resolveBinding env n strict s = .ok (.env (some env) n strict) s := by
+  obtain ⟨k, hf⟩ : ∃ k, s.fuel = k + 1 := ⟨s.fuel - 1, by omega⟩
+  simp only [resolveBinding, M.repeatFrom, hf, M.loop]
+  simp only [M.bind_eq, M.bind_apply, hasBinding_declLike env n s h hk, M.bindRes_ok, hb]
+  rfl
+
+/-- Binding an identifier parameter (no default) to a value: InitializeBinding in `e`. -/
+theorem bindElement_ident (m : Nat) (ctx : Ctx) (x : JSStr) (e : EnvId) (v : Value) (s : State)
+    (hm : 2 ≤ m) (h : e < s.envs.size) (hk : (s.envEntry e).isDeclLike = true)
+    (hb : (s.envEntry e).bindingsMap.contains x = true) (hf : s.fuel ≠ 0) :
+    bindElement m ctx (.ident x) none (.init (some e)) (M.pure v) s =
+      .ok () (s.setEnv e ((s.envEntry e).withBindings (·.modify x fun bd => { bd with value := some v }))) := by
+  obtain ⟨m, rfl⟩ : ∃ k, m = k + 2 := ⟨m - 2, by omega⟩
+  simp only [bindElement, targetRefOf, M.bind_eq, M.bind_apply,
+    resolveBinding_here e x ctx.strict s h hk hb hf, M.bindRes_ok]
+  simp only [putTarget, initializeRefBinding]
+  exact initializeBinding_declLike e x v s h hk
+
+/-- allocEnv: the new record is at the old size. -/
+@[simp] theorem State.push_envEntry_new (s : State) (e : Env) :
+    ({ s with envs := s.envs.push e } : State).envEntry s.envs.size = e := by
+  simp [State.envEntry]
+
+/-- Reading an identifier through an empty declarative record into the function record that
+binds it (a function body's top-level lexical environment, then its parameters). -/
+theorem identValue_decl_func (lex env : EnvId) (n : JSStr) (strict : Bool) (s : State) (v : Value)
+    (b : HashMap JSStr Binding) (bd : Binding) (o : Option EnvId) (ts : ThisStatus) (tv : Value) (fo : ObjId)
+    (nt : Value) (hl : lex < s.envs.size) (hL : s.envEntry lex = .decl ∅ (some env))
+    (he : env < s.envs.size) (hE : s.envEntry env = .func b o ts tv fo nt)
+    (hb : b[n]? = some bd) (hv : bd.value = some v) (hf : 2 ≤ s.fuel) :
+    identValue lex n strict s = .ok v s := by
+  obtain ⟨k, hk⟩ : ∃ k, s.fuel = k + 2 := ⟨s.fuel - 2, by omega⟩
+  simp only [identValue, M.repeatFrom, hk, M.loop]
+  simp [M.bind_eq, M.bind_apply, readEnv_entry _ _ s hl, readEnv_entry _ _ s he, hL, hE, hb, hv, M.loopRes,
+    pure, M.pure, M.loop]
+
+end ES

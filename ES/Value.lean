@@ -445,7 +445,7 @@ inductive Res (α : Type) where
 instance {α} : Inhabited (Res α) := ⟨.halt "" default⟩
 
 /-- The evaluation monad. -/
-def M (α : Type) := State → Res α
+abbrev M (α : Type) := State → Res α
 
 namespace M
 

@@ -65,10 +65,20 @@ definitions are stated at `n = height + 1`.
 - Proof prerequisites in place: JSStr literals' equalities decide (`ofString` folds `String.toList`);
   JSStr equality is lawful (`LawfulBEq`, `LawfulHashable`), so `Std.HashMap` lemmas apply to
   environments; calls make no arguments object nothing can reach (`FuncInfo.usesArguments`).
-- Next: a lemma library over states (well-formedness: valid environment and object ids, the realm's
-  intrinsics; read-after-write for the arenas), then per-layer call lemmas — function environment,
-  this binding, FunctionDeclarationInstantiation for simple parameter lists, identifier reads —
-  composing into "calling `add` with Numbers x, y returns x + y", then a whole-program example.
+- Call-proof library: `Proofs/State.lean` (the monad and arena primitives as rewriting rules),
+  `Proofs/Loops.lean` (`foldArr` is `foldList`), `Proofs/Env.lean` (environment operations stated
+  over `State.envEntry`/`State.setEnv`, so `simp` threads the state: HasBinding, CreateMutableBinding,
+  InitializeBinding, ResolveBinding, parameter binding, two-level identifier reads).
+  `Proofs/AddCall.lean` composes them: `add_fdi` (FunctionDeclarationInstantiation binds `a ↦ x`,
+  `b ↦ y`), `add_body` (`evalFunctionBody` returns `x + y`), `add_call` (`callECMA`, with an object
+  as `this`, returns `x + y` and restores the caller's realm and script). No `sorry`.
+- Lessons for `simp`: `M` is an `abbrev` (else `pure x s` does not rewrite); fuel hypotheses read
+  `s.fuel ≠ 0` (simp normalizes `0 < n`); simp cannot discharge `Bool`-valued `isDeclLike`
+  side conditions or literal depths (`2 ≤ 999998`), so specialize those lemmas first; prove a step
+  under `∃` with `refine ⟨?c, ?t, ?h, ?_⟩` and `conv => lhs; simp …`, which assigns the witnesses.
+- Next: a whole-program example (script evaluation instantiates `add`, then `add(1, 2)` goes
+  through `callImpl` and the driver's call request), then lemmas for property get/set on ordinary
+  objects and loops with invariants.
 
 ## Stages
 
