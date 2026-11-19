@@ -23,7 +23,8 @@ def State.setEnv (s : State) (env : EnvId) (e : Env) : State := { s with envs :=
 @[simp] theorem State.setEnv_envs_size (s : State) (env : EnvId) (e : Env) :
     (s.setEnv env e).envs.size = s.envs.size := by simp [State.setEnv]
 
-@[simp] theorem State.setEnv_fuel (s : State) (env : EnvId) (e : Env) : (s.setEnv env e).fuel = s.fuel := rfl
+@[simp] theorem State.setEnv_fuel (s : State) (env : EnvId) (e : Env) : (s.setEnv env e).fuel = s.fuel := by
+  simp only [State.setEnv]
 
 @[simp] theorem State.setEnv_get? (s : State) (env i : EnvId) (e : Env) :
     (s.setEnv env e).envs[i]? = if env = i then (s.envs[i]?).map (fun _ => e) else s.envs[i]? := by
@@ -57,21 +58,29 @@ def Env.bindingsMap : Env → HashMap JSStr Binding
   | .object .. => {}
 
 @[simp] theorem Env.isDeclLike_func (b : HashMap JSStr Binding) (o : Option EnvId) (ts : ThisStatus)
-    (tv : Value) (fo : ObjId) (nt : Value) : (Env.func b o ts tv fo nt).isDeclLike = true := rfl
+    (tv : Value) (fo : ObjId) (nt : Value) : (Env.func b o ts tv fo nt).isDeclLike = true := by
+  simp only [Env.isDeclLike]
 @[simp] theorem Env.isDeclLike_decl (b : HashMap JSStr Binding) (o : Option EnvId) :
-    (Env.decl b o).isDeclLike = true := rfl
+    (Env.decl b o).isDeclLike = true := by
+  simp only [Env.isDeclLike]
 @[simp] theorem Env.bindingsMap_func (b : HashMap JSStr Binding) (o : Option EnvId) (ts : ThisStatus)
-    (tv : Value) (fo : ObjId) (nt : Value) : (Env.func b o ts tv fo nt).bindingsMap = b := rfl
+    (tv : Value) (fo : ObjId) (nt : Value) : (Env.func b o ts tv fo nt).bindingsMap = b := by
+  simp only [Env.bindingsMap]
 @[simp] theorem Env.bindingsMap_decl (b : HashMap JSStr Binding) (o : Option EnvId) :
-    (Env.decl b o).bindingsMap = b := rfl
+    (Env.decl b o).bindingsMap = b := by
+  simp only [Env.bindingsMap]
 @[simp] theorem Env.withBindings_func (b : HashMap JSStr Binding) (o : Option EnvId) (ts : ThisStatus)
     (tv : Value) (fo : ObjId) (nt : Value) (g : HashMap JSStr Binding → HashMap JSStr Binding) :
-    (Env.func b o ts tv fo nt).withBindings g = .func (g b) o ts tv fo nt := rfl
+    (Env.func b o ts tv fo nt).withBindings g = .func (g b) o ts tv fo nt := by
+  simp only [Env.withBindings]
 @[simp] theorem Env.withBindings_decl (b : HashMap JSStr Binding) (o : Option EnvId)
-    (g : HashMap JSStr Binding → HashMap JSStr Binding) : (Env.decl b o).withBindings g = .decl (g b) o := rfl
+    (g : HashMap JSStr Binding → HashMap JSStr Binding) : (Env.decl b o).withBindings g = .decl (g b) o := by
+  simp only [Env.withBindings]
 @[simp] theorem Env.outer_func (b : HashMap JSStr Binding) (o : Option EnvId) (ts : ThisStatus)
-    (tv : Value) (fo : ObjId) (nt : Value) : (Env.func b o ts tv fo nt).outer = o := rfl
-@[simp] theorem Env.outer_decl (b : HashMap JSStr Binding) (o : Option EnvId) : (Env.decl b o).outer = o := rfl
+    (tv : Value) (fo : ObjId) (nt : Value) : (Env.func b o ts tv fo nt).outer = o := by
+  simp only [Env.outer]
+@[simp] theorem Env.outer_decl (b : HashMap JSStr Binding) (o : Option EnvId) : (Env.decl b o).outer = o := by
+  simp only [Env.outer]
 
 theorem readEnv_entry (id : EnvId) (f : Env → α) (s : State) (h : id < s.envs.size) :
     readEnv id f s = .ok (f (s.envEntry id)) s := by

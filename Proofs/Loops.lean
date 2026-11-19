@@ -17,10 +17,10 @@ def foldList : List α → β → (β → α → M β) → M β
   | a :: l, b, f => fun s => bindRes (fun b' => foldList l b' f) (f b a s)
 
 @[simp] theorem foldList_nil (b : β) (f : β → α → M β) (s : State) :
-    foldList [] b f s = .ok b s := rfl
+    foldList [] b f s = .ok b s := Eq.trans rfl rfl
 
 @[simp] theorem foldList_cons (a : α) (l : List α) (b : β) (f : β → α → M β) (s : State) :
-    foldList (a :: l) b f s = bindRes (fun b' => foldList l b' f) (f b a s) := rfl
+    foldList (a :: l) b f s = bindRes (fun b' => foldList l b' f) (f b a s) := Eq.trans rfl rfl
 
 /-- Continuing a loop after a step that returns `inl (g b)` is binding the step's result. -/
 theorem loopRes_bindRes (next : σ → State → Res γ) (g : β → σ) (r : Res β) :
@@ -103,6 +103,6 @@ theorem foldArr_eq (xs : Array α) (init : β) (f : β → α → M β) :
   rw [foldArr_eq]
 
 @[simp] theorem forArr_def (xs : Array α) (f : α → M Unit) :
-    forArr xs f = foldArr xs () (fun _ x => f x) := rfl
+    forArr xs f = foldArr xs () (fun _ x => f x) := Eq.trans rfl rfl
 
 end ES.M
