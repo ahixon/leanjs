@@ -367,6 +367,234 @@ def evalParseContext (ctx : Ctx) (direct : Bool) : M EvalContext := do
       inFunction := true, inMethod := inMethod, inDerivedConstructor := derived,
       inClassFieldInitializer := field }
 
+/-! ## Semantic combinators
+
+Each syntax construct's runtime semantics as a combinator over its sub-terms' denotations
+(docs/compile.md). The interpreter's cases call these with `(evalExpr n · child)`, so a program's
+denotation is a term built from them — which is what `leanjs compile` prints. -/
+
+namespace Sem
+
+/-- An expression's denotation (its value), a reference's, an argument list's. -/
+abbrev CExpr := Ctx → M Value
+abbrev CRef := Ctx → M Ref
+abbrev CArgs := Ctx → M (Array Value)
+
+def this : CExpr := fun ctx => resolveThisBinding ctx.lex
+def ident (x : JSStr) : CExpr := fun ctx => identValue ctx.lex x ctx.strict
+def lit (l : Lit) : CExpr := fun _ => pure (litValue l)
+
+/-- spec: https://tc39.es/ecma262/#sec-template-literals-runtime-semantics-evaluation -/
+def template (cooked : Array (Option JSStr)) (subs : Array CExpr) : CExpr := fun ctx => do
+  let first := (cooked[0]?.bind id).getD JSStr.empty
+  let r ← M.foldArr (Array.range subs.size) first fun acc i => do
+    let v ← subs[i]! ctx
+    let s ← toStr v
+    pure (acc ++ s ++ (cooked[i + 1]?.bind id).getD JSStr.empty)
+  pure (.str r)
+
+/-- A binary operator on two values. spec: https://tc39.es/ecma262/#sec-applystringornumericbinaryoperator -/
+def binaryOp (op : BinOp) (lv rv : Value) : M Value := do
+  match op with
+  | .eq => pure (.bool (← isLooselyEqual lv rv))
+  | .ne => pure (.bool !(← isLooselyEqual lv rv))
+  | .seq => pure (.bool (isStrictlyEqual lv rv))
+  | .sne => pure (.bool !(isStrictlyEqual lv rv))
+  | .lt => pure (.bool ((← isLessThan lv rv true) == some true))
+  | .gt => pure (.bool ((← isLessThan rv lv false) == some true))
+  | .le => pure (.bool ((← isLessThan rv lv false) == some false))
+  | .ge => pure (.bool ((← isLessThan lv rv true) == some false))
+  | .instanceof => pure (.bool (← instanceofOperator lv rv))
+  | .in =>
+    let .obj o := rv | throwType "Cannot use 'in' operator to search for a key in a non-object"
+    pure (.bool (← Obj'.hasProperty o (← toPropertyKey lv)))
+  | op => applyBinaryOp op lv rv
+
+/-- `l op r`: left, then right. -/
+def binary (op : BinOp) (l r : CExpr) : CExpr := fun ctx => do
+  let lv ← l ctx
+  let rv ← r ctx
+  binaryOp op lv rv
+
+/-- spec: https://tc39.es/ecma262/#sec-binary-logical-operators-runtime-semantics-evaluation -/
+def logical (op : LogOp) (l r : CExpr) : CExpr := fun ctx => do
+  let lv ← l ctx
+  match op with
+  | .and => if !toBoolean lv then pure lv else r ctx
+  | .or => if toBoolean lv then pure lv else r ctx
+  | .nullish => if lv.isNullish then r ctx else pure lv
+
+/-- spec: https://tc39.es/ecma262/#sec-conditional-operator-runtime-semantics-evaluation -/
+def cond (t c a : CExpr) : CExpr := fun ctx => do
+  if toBoolean (← t ctx) then c ctx else a ctx
+
+/-- The unary operators other than `delete` and `typeof`, on a value.
+spec: https://tc39.es/ecma262/#sec-unary-operators -/
+def unaryOp (op : UnOp) (v : Value) : M Value := do
+  match op with
+  | .not => pure (.bool !(toBoolean v))
+  | .pos => pure (.num (← toNum v))
+  | .neg =>
+    match ← toNumeric v with
+    | .bigint i => pure (.bigint (-i))
+    | .num x => pure (.num x.neg)
+    | v => pure v
+  | .bitNot =>
+    match ← toNumeric v with
+    | .bigint i => pure (.bigint (Conv.intNot i))
+    | .num x => pure (intV (Conv.intNot (Conv.toInt32 x)))
+    | v => pure v
+  | _ => pure .undefined
+
+def unary (op : UnOp) (e : CExpr) : CExpr := fun ctx => do unaryOp op (← e ctx)
+
+/-- spec: https://tc39.es/ecma262/#sec-typeof-operator-runtime-semantics-evaluation -/
+def typeofRef (r : CRef) : CExpr := fun ctx => do
+  match ← r ctx with
+  | .env none _ _ => pure (.str "undefined")
+  | r => pure (.str (← typeOf (← getRefValue r)))
+
+/-- spec: https://tc39.es/ecma262/#sec-delete-operator-runtime-semantics-evaluation -/
+def deleteRef (r : CRef) : CExpr := fun ctx => do
+  match ← r ctx with
+  | .value _ => pure (.bool true)
+  | .env none _ _ => pure (.bool true)
+  | .env (some env) nm _ => pure (.bool (← deleteBinding env nm))
+  | .prop base kv strict thisV =>
+    if thisV.isSome then throwError .referenceError "Unsupported reference to 'super'"
+    let o ← toObject base
+    let k ← toPropertyKey kv
+    let ok ← Obj'.delete o k
+    if !ok && strict then throwType "Cannot delete property"
+    pure (.bool ok)
+  | .priv .. => M.halt "internal: delete of a private reference"
+
+/-- GetValue of a reference. -/
+def getValue (r : CRef) : CExpr := fun ctx => do getRefValue (← r ctx)
+
+def identRef (x : JSStr) : CRef := fun ctx => resolveBinding ctx.lex x ctx.strict
+
+/-- A non-reference expression as a reference. -/
+def valueRef (e : CExpr) : CRef := fun ctx => do pure (.value (← e ctx))
+
+/-- A property access's key. -/
+inductive Key where
+  | name (k : JSStr)
+  | computed (e : CExpr)
+  | priv (nm : JSStr)
+
+/-- spec: https://tc39.es/ecma262/#sec-property-accessors-runtime-semantics-evaluation -/
+def memberRef (obj : CExpr) (key : Key) (optional : Bool) : CRef := fun ctx => do
+  let base ← obj ctx
+  if optional && base.isNullish then M.throwV sentinelOptional
+  match key with
+  | .name k => pure (.prop base (.str k) ctx.strict none)
+  | .computed ke => do
+    let kv ← ke ctx
+    pure (.prop base kv ctx.strict none)
+  | .priv nm => do pure (.priv base (← resolvePrivate ctx.priv nm))
+
+/-- An optional chain's boundary. -/
+def chain (e : CExpr) : CExpr := fun ctx =>
+  M.tryCatch (e ctx) fun err => if isSentinel err 16 then pure .undefined else M.throwV err
+
+def chainRef (r : CRef) : CRef := fun ctx =>
+  M.tryCatch (r ctx) fun err => if isSentinel err 16 then pure (.value .undefined) else M.throwV err
+
+/-- A call expression used as an assignment target (sloppy web compat): evaluated, then a
+ReferenceError. -/
+def callTargetRef (e : CExpr) : CRef := fun ctx => do
+  let _ ← e ctx
+  throwError .referenceError "Invalid left-hand side in assignment"
+
+/-- An argument. -/
+inductive ArgD where
+  | expr (e : CExpr)
+  | spread (e : CExpr)
+
+/-- ArgumentListEvaluation spec: https://tc39.es/ecma262/#sec-runtime-semantics-argumentlistevaluation -/
+def args (as : Array ArgD) : CArgs := fun ctx => M.foldArr as #[] fun acc a => do
+  match a with
+  | .expr e => pure (acc.push (← e ctx))
+  | .spread e => do
+    let v ← e ctx
+    let xs ← iterableToList v
+    pure (acc ++ xs)
+
+/-- EvaluateCall (callees other than a possible direct `eval`).
+spec: https://tc39.es/ecma262/#sec-evaluatecall -/
+def call (callee : CRef) (argList : CArgs) (optional : Bool) (name : String) : CExpr := fun ctx => do
+  let ref ← callee ctx
+  let func ← getRefValue ref
+  if optional && func.isNullish then M.throwV sentinelOptional
+  let thisV ← refThisValue ref
+  let as ← argList ctx
+  if !(← isCallable func) then throwType s!"{name} is not a function"
+  ES.call func thisV as
+
+/-- spec: https://tc39.es/ecma262/#sec-evaluatenew -/
+def new (c : CExpr) (argList : CArgs) : CExpr := fun ctx => do
+  let cv ← c ctx
+  let as ← argList ctx
+  if !(← isConstructor cv) then throwType "is not a constructor"
+  construct cv as
+
+/-- The comma operator. -/
+def seq (es : Array CExpr) : CExpr := fun ctx => M.foldArr es .undefined fun _ e => e ctx
+
+/-- A function expression (`name`: NamedEvaluation's name). -/
+def func (f : Func) (name : Option PropKey) : CExpr := fun ctx => instantiateFunctionExpr f ctx name
+
+/-- spec: https://tc39.es/ecma262/#sec-postfix-increment-operator-runtime-semantics-evaluation -/
+def update (inc pre : Bool) (target : CRef) : CExpr := fun ctx => do
+  let (oldV, r) ← getRefValueOnce (← target ctx)
+  let old ← toNumeric oldV
+  let nv : Value := match old with
+    | .bigint i => .bigint (if inc then i + 1 else i - 1)
+    | .num x => .num (if inc then Conv.addF x F64.one else Conv.subF x F64.one)
+    | v => v
+  putRefValue r nv
+  pure (if pre then nv else old)
+
+/-- `target = value` (a reference target).
+spec: https://tc39.es/ecma262/#sec-assignment-operators-runtime-semantics-evaluation -/
+def assign (target : CRef) (value : CExpr) : CExpr := fun ctx => do
+  let lref ← target ctx
+  let rv ← value ctx
+  putRefValue lref rv
+  pure rv
+
+/-- `target op= value` -/
+def assignOp (o : BinOp) (target : CRef) (value : CExpr) : CExpr := fun ctx => do
+  let (lv, lref) ← getRefValueOnce (← target ctx)
+  let rv ← value ctx
+  let r ← applyBinaryOp o lv rv
+  putRefValue lref r
+  pure r
+
+/-- `target &&= value` etc. -/
+def assignLogical (o : LogOp) (target : CRef) (value : CExpr) : CExpr := fun ctx => do
+  let (lv, lref) ← getRefValueOnce (← target ctx)
+  let short := match o with
+    | .and => !toBoolean lv
+    | .or => toBoolean lv
+    | .nullish => !lv.isNullish
+  if short then return lv
+  let rv ← value ctx
+  putRefValue lref rv
+  pure rv
+
+def newTarget : CExpr := fun ctx => getNewTarget ctx
+
+/-- spec: https://tc39.es/ecma262/#await -/
+def await (e : CExpr) : CExpr := fun ctx => do
+  let v ← e ctx
+  let r ← ES.await v
+  restoreCtx ctx
+  pure r
+
+end Sem
+
 mutual
 
 /-- Evaluation of an expression to a value (with GetValue applied).
@@ -375,18 +603,11 @@ def evalExpr : Nat → Ctx → Expr → M Value
   | 0, _, _ => tooDeep
   | n + 1, ctx, e => do
     match e with
-    | .this => resolveThisBinding ctx.lex
-    | .ident x => identValue ctx.lex x ctx.strict
-    | .lit l => pure (litValue l)
+    | .this => Sem.this ctx
+    | .ident x => Sem.ident x ctx
+    | .lit l => Sem.lit l ctx
     | .paren e => evalExpr n ctx e
-    | .template cooked _ exprs =>
-      -- spec: https://tc39.es/ecma262/#sec-template-literals-runtime-semantics-evaluation
-      let first := (cooked[0]?.bind id).getD JSStr.empty
-      let r ← M.foldArr (Array.range exprs.size) first fun acc i => do
-        let v ← evalExpr n ctx exprs[i]!
-        let s ← toStr v
-        pure (acc ++ s ++ (cooked[i + 1]?.bind id).getD JSStr.empty)
-      pure (.str r)
+    | .template cooked _ exprs => Sem.template cooked (exprs.map fun e c => evalExpr n c e) ctx
     | .tagged tag cooked raw exprs site =>
       -- spec: https://tc39.es/ecma262/#sec-tagged-templates-runtime-semantics-evaluation
       let ref ← evalRef n ctx tag
@@ -399,26 +620,15 @@ def evalExpr : Nat → Ctx → Expr → M Value
     | .regex p fl => regexpCreateLiteral p fl
     | .array elems => evalArrayLit n ctx elems
     | .object props => evalObjectLit n ctx props
-    | .func f => instantiateFunctionExpr f ctx none
+    | .func f => Sem.func f none ctx
     | .cls c => evalClass n ctx c c.name (c.name.map (.str ·))
-    | .unary op e => evalUnary n ctx op e
-    | .update inc pre target =>
-      -- spec: https://tc39.es/ecma262/#sec-postfix-increment-operator-runtime-semantics-evaluation
-      let (oldV, r) ← getRefValueOnce (← evalTargetRef n ctx target)
-      let old ← toNumeric oldV
-      let nv : Value := match old with
-        | .bigint i => .bigint (if inc then i + 1 else i - 1)
-        | .num x => .num (if inc then Conv.addF x F64.one else Conv.subF x F64.one)
-        | v => v
-      putRefValue r nv
-      pure (if pre then nv else old)
-    | .binary op l r => evalBinary n ctx op l r
-    | .logical op l r =>
-      let lv ← evalExpr n ctx l
-      match op with
-      | .and => if !toBoolean lv then pure lv else evalExpr n ctx r
-      | .or => if toBoolean lv then pure lv else evalExpr n ctx r
-      | .nullish => if lv.isNullish then evalExpr n ctx r else pure lv
+    | .unary op e => match op with
+      | .delete => Sem.deleteRef (evalRef n · e) ctx
+      | .typeof => Sem.typeofRef (evalRef n · e) ctx
+      | op => Sem.unary op (evalExpr n · e) ctx
+    | .update inc pre target => Sem.update inc pre (evalTargetRef n · target) ctx
+    | .binary op l r => Sem.binary op (evalExpr n · l) (evalExpr n · r) ctx
+    | .logical op l r => Sem.logical op (evalExpr n · l) (evalExpr n · r) ctx
     | .privIn name r =>
       -- spec: https://tc39.es/ecma262/#sec-relational-operators-runtime-semantics-evaluation
       let rv ← evalExpr n ctx r
@@ -426,19 +636,16 @@ def evalExpr : Nat → Ctx → Expr → M Value
       let id ← resolvePrivate ctx.priv name
       readObj o fun ob => .bool (ob.privates.any (·.1 == id))
     | .assign op target value => evalAssign n ctx op target value
-    | .cond t c a =>
-      if toBoolean (← evalExpr n ctx t) then evalExpr n ctx c else evalExpr n ctx a
-    | .call callee args optional => evalCall n ctx callee args optional
-    | .new callee args =>
-      -- spec: https://tc39.es/ecma262/#sec-evaluatenew
-      let c ← evalExpr n ctx callee
-      let argList ← evalArgs n ctx args
-      if !(← isConstructor c) then throwType "is not a constructor"
-      construct c argList
-    | .member .. | .superMember _ => do getRefValue (← evalRef n ctx e)
-    | .chain inner =>
-      M.tryCatch (evalExpr n ctx inner) fun err =>
-        if isSentinel err 16 then pure .undefined else M.throwV err
+    | .cond t c a => Sem.cond (evalExpr n · t) (evalExpr n · c) (evalExpr n · a) ctx
+    | .call callee args optional =>
+      match callee with
+      | .ident nm =>
+        if nm == JSStr.ofString "eval" then evalCall n ctx callee args optional
+        else Sem.call (evalRef n · callee) (Sem.args (args.map (argD n))) optional (calleeName callee) ctx
+      | _ => Sem.call (evalRef n · callee) (Sem.args (args.map (argD n))) optional (calleeName callee) ctx
+    | .new callee args => Sem.new (evalExpr n · callee) (Sem.args (args.map (argD n))) ctx
+    | .member .. | .superMember _ => Sem.getValue (evalRef n · e) ctx
+    | .chain inner => Sem.chain (evalExpr n · inner) ctx
     | .superCall args =>
       -- spec: https://tc39.es/ecma262/#sec-super-keyword-runtime-semantics-evaluation
       let nt ← getNewTarget ctx
@@ -451,7 +658,7 @@ def evalExpr : Nat → Ctx → Expr → M Value
       let f ← readEnv thisEnv fun ev => match ev with | .func _ _ _ _ f _ => some f | _ => none
       if let some f := f then initializeInstanceElements result f
       pure result
-    | .newTarget => getNewTarget ctx
+    | .newTarget => Sem.newTarget ctx
     | .importMeta => call (← intrinsicV "%ImportMeta%") .undefined #[]
     | .importCall spec opts =>
       -- spec: https://tc39.es/ecma262/#sec-import-call-runtime-semantics-evaluation
@@ -460,7 +667,7 @@ def evalExpr : Nat → Ctx → Expr → M Value
         | some o => evalExpr n ctx o
         | none => pure .undefined
       call (← intrinsicV "%DynamicImport%") .undefined #[sv, ov]
-    | .seq es => M.foldArr es .undefined fun _ e => evalExpr n ctx e
+    | .seq es => Sem.seq (es.map fun e c => evalExpr n c e) ctx
     | .yield arg delegate =>
       if delegate then evalYieldStar n ctx (arg.getD (.lit .null))
       else
@@ -468,11 +675,14 @@ def evalExpr : Nat → Ctx → Expr → M Value
           | some a => evalExpr n ctx a
           | none => pure .undefined
         generatorYield ctx v
-    | .await e =>
-      let v ← evalExpr n ctx e
-      let r ← await v
-      restoreCtx ctx
-      pure r
+    | .await e => Sem.await (evalExpr n · e) ctx
+
+/-- An argument's denotation. -/
+def argD : Nat → Arg → Sem.ArgD
+  | 0, _ => .expr fun _ => tooDeep
+  | n + 1, a => match a with
+    | .expr e => .expr (evalExpr n · e)
+    | .spread e => .spread (evalExpr n · e)
 
 /-- Evaluation of an expression to a Reference (identifiers, property accesses; other
 expressions evaluate to `Ref.value`). -/
@@ -480,18 +690,14 @@ def evalRef : Nat → Ctx → Expr → M Ref
   | 0, _, _ => tooDeep
   | n + 1, ctx, e => do
     match e with
-    | .ident x => resolveBinding ctx.lex x ctx.strict
+    | .ident x => Sem.identRef x ctx
     | .paren e => evalRef n ctx e
     | .member obj key optional =>
-      -- spec: https://tc39.es/ecma262/#sec-property-accessors-runtime-semantics-evaluation
-      let base ← evalExpr n ctx obj
-      if optional && base.isNullish then M.throwV sentinelOptional
-      match key with
-      | .name k => pure (.prop base (.str k) ctx.strict none)
-      | .computed ke => do
-        let kv ← evalExpr n ctx ke
-        pure (.prop base kv ctx.strict none)
-      | .priv nm => do pure (.priv base (← resolvePrivate ctx.priv nm))
+      let k : Sem.Key := match key with
+        | .name k => .name k
+        | .computed ke => .computed (evalExpr n · ke)
+        | .priv nm => .priv nm
+      Sem.memberRef (evalExpr n · obj) k optional ctx
     | .superMember key =>
       -- spec: https://tc39.es/ecma262/#sec-super-keyword-runtime-semantics-evaluation
       let env ← getThisEnvironment ctx.lex
@@ -507,10 +713,8 @@ def evalRef : Nat → Ctx → Expr → M Ref
         | some h => Obj'.getPrototypeOf h
         | none => pure .undefined
       pure (.prop base kv true (some actualThis))
-    | .chain inner =>
-      M.tryCatch (evalRef n ctx inner) fun err =>
-        if isSentinel err 16 then pure (.value .undefined) else M.throwV err
-    | e => do pure (.value (← evalExpr n ctx e))
+    | .chain inner => Sem.chainRef (evalRef n · inner) ctx
+    | e => Sem.valueRef (evalExpr n · e) ctx
 
 /-- An assignment target's reference: a call expression (allowed as a target in sloppy code
 for web compatibility) is evaluated, then a ReferenceError thrown.
@@ -521,10 +725,8 @@ def evalTargetRef : Nat → Ctx → Expr → M Ref
     let rec isCall : Nat → Expr → Bool
       | 0, _ => false
       | k + 1, e => match e with | .call .. => true | .paren e => isCall k e | _ => false
-    if isCall 64 e then
-      let _ ← evalExpr n ctx e
-      throwError .referenceError "Invalid left-hand side in assignment"
-    evalRef n ctx e
+    if isCall 64 e then Sem.callTargetRef (evalExpr n · e) ctx
+    else evalRef n ctx e
 
 /-- ArgumentListEvaluation spec: https://tc39.es/ecma262/#sec-runtime-semantics-argumentlistevaluation -/
 def evalArgs : Nat → Ctx → Array Arg → M (Array Value)
@@ -591,66 +793,6 @@ def performEval : Nat → Ctx → Value → Bool → M Value
     | .ret v => pure v
     | _ => pure .undefined
 
-/-- The unary operators. spec: https://tc39.es/ecma262/#sec-unary-operators -/
-def evalUnary : Nat → Ctx → UnOp → Expr → M Value
-  | 0, _, _, _ => tooDeep
-  | n + 1, ctx, op, e => do
-    match op with
-    | .delete =>
-      -- spec: https://tc39.es/ecma262/#sec-delete-operator-runtime-semantics-evaluation
-      let r ← evalRef n ctx e
-      match r with
-      | .value _ => pure (.bool true)
-      | .env none _ _ => pure (.bool true)
-      | .env (some env) nm _ => pure (.bool (← deleteBinding env nm))
-      | .prop base kv strict thisV =>
-        if thisV.isSome then throwError .referenceError "Unsupported reference to 'super'"
-        let o ← toObject base
-        let k ← toPropertyKey kv
-        let ok ← Obj'.delete o k
-        if !ok && strict then throwType "Cannot delete property"
-        pure (.bool ok)
-      | .priv .. => M.halt "internal: delete of a private reference"
-    | .typeof =>
-      let r ← evalRef n ctx e
-      match r with
-      | .env none _ _ => pure (.str "undefined")
-      | r => pure (.str (← typeOf (← getRefValue r)))
-    | .void => let _ ← evalExpr n ctx e; pure .undefined
-    | .not => pure (.bool !(toBoolean (← evalExpr n ctx e)))
-    | .pos => pure (.num (← toNum (← evalExpr n ctx e)))
-    | .neg =>
-      match ← toNumeric (← evalExpr n ctx e) with
-      | .bigint i => pure (.bigint (-i))
-      | .num x => pure (.num x.neg)
-      | v => pure v
-    | .bitNot =>
-      match ← toNumeric (← evalExpr n ctx e) with
-      | .bigint i => pure (.bigint (Conv.intNot i))
-      | .num x => pure (intV (Conv.intNot (Conv.toInt32 x)))
-      | v => pure v
-
-/-- The binary operators (evaluation order: left, then right). -/
-def evalBinary : Nat → Ctx → BinOp → Expr → Expr → M Value
-  | 0, _, _, _, _ => tooDeep
-  | n + 1, ctx, op, l, r => do
-    let lv ← evalExpr n ctx l
-    let rv ← evalExpr n ctx r
-    match op with
-    | .eq => pure (.bool (← isLooselyEqual lv rv))
-    | .ne => pure (.bool !(← isLooselyEqual lv rv))
-    | .seq => pure (.bool (isStrictlyEqual lv rv))
-    | .sne => pure (.bool !(isStrictlyEqual lv rv))
-    | .lt => pure (.bool ((← isLessThan lv rv true) == some true))
-    | .gt => pure (.bool ((← isLessThan rv lv false) == some true))
-    | .le => pure (.bool ((← isLessThan rv lv false) == some false))
-    | .ge => pure (.bool ((← isLessThan lv rv true) == some false))
-    | .instanceof => pure (.bool (← instanceofOperator lv rv))
-    | .in =>
-      let .obj o := rv | throwType "Cannot use 'in' operator to search for a key in a non-object"
-      pure (.bool (← Obj'.hasProperty o (← toPropertyKey lv)))
-    | op => applyBinaryOp op lv rv
-
 /-- NamedEvaluation of an expression (anonymous functions and classes get `name`).
 spec: https://tc39.es/ecma262/#sec-runtime-semantics-namedevaluation -/
 def namedEval : Nat → Ctx → Expr → PropKey → M Value
@@ -676,6 +818,15 @@ def evalAssign : Nat → Ctx → AssignOp → Pattern → Expr → M Value
     let rhs : M Value := match nameOf with
       | some nm => if isAnonymousFn value then namedEval n ctx value nm else evalExpr n ctx value
       | none => evalExpr n ctx value
+    let _ := (targetRef, rhs)
+    -- (the target and the right side as denotations)
+    let tD : Sem.CRef := match target with
+      | .ident x => Sem.identRef x
+      | .expr e => (evalTargetRef n · e)
+      | _ => fun _ => pure (.value .undefined)
+    let rD : Sem.CExpr := match target with
+      | .ident x => if isAnonymousFn value then (namedEval n · value (.str x)) else (evalExpr n · value)
+      | _ => (evalExpr n · value)
     match op with
     | .assign =>
       match target with
@@ -683,27 +834,9 @@ def evalAssign : Nat → Ctx → AssignOp → Pattern → Expr → M Value
         let rv ← evalExpr n ctx value
         bindPattern n ctx target rv .assign
         pure rv
-      | _ =>
-        let lref ← targetRef
-        let rv ← rhs
-        putRefValue lref rv
-        pure rv
-    | .op o =>
-      let (lv, lref) ← getRefValueOnce (← targetRef)
-      let rv ← evalExpr n ctx value
-      let r ← applyBinaryOp o lv rv
-      putRefValue lref r
-      pure r
-    | .logical o =>
-      let (lv, lref) ← getRefValueOnce (← targetRef)
-      let short := match o with
-        | .and => !toBoolean lv
-        | .or => toBoolean lv
-        | .nullish => !lv.isNullish
-      if short then return lv
-      let rv ← rhs
-      putRefValue lref rv
-      pure rv
+      | _ => Sem.assign tD rD ctx
+    | .op o => Sem.assignOp o tD (evalExpr n · value) ctx
+    | .logical o => Sem.assignLogical o tD rD ctx
 
 /-- BindingInitialization / DestructuringAssignmentEvaluation of a pattern with a value.
 spec: https://tc39.es/ecma262/#sec-runtime-semantics-bindinginitialization,
