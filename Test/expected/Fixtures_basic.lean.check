@@ -1,4 +1,0 @@
-Test/Fixtures/basic.lean:
-  Lean → IR → JS  : not in verified core — unsupported: recursive definition `factorial`
-  Lean → IR → Lean: not in verified core — unsupported: recursive definition `factorial`
-[exit 0]

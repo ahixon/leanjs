@@ -1,4 +1,0 @@
-Test/Fixtures/doblock.lean:
-  Lean → IR → JS  : not in verified core — unsupported: recursive definition `tryCatch_`
-  Lean → IR → Lean: not in verified core — unsupported: recursive definition `tryCatch_`
-[exit 0]

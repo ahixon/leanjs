@@ -1,4 +1,0 @@
-Test/Fixtures/basic.js:
-  JS → IR → JS    : not in verified core — unsupported: var declaration
-  JS → IR → Lean  : not in verified core — unsupported: var declaration
-[exit 0]

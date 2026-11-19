@@ -8,8 +8,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    # A cold build takes ~20 minutes, most of it LeanJS/JS/Parser/Expression.lean.
-    timeout-minutes: 90
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
 
@@ -27,20 +26,13 @@ jobs:
           restore-keys: |
             lake-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - name: Build
+        run: lake build && lake build test262
 
-      - name: Build library and proofs
+      - name: Purity and spec anchors
+        run: python3 tools/spec.py
+
+      - name: test262 (fails on regressions against Tests/test262-baseline.txt)
         run: |
-          set -o pipefail
-          lake build 2>&1 | tee build.log
-          if grep -q "declaration uses 'sorry'" build.log; then
-            echo "::error::a declaration uses sorry"; exit 1
-          fi
-
-      - name: Build executable
-        run: lake build lean-js
-
-      - name: Run tests
-        run: ./Test/run.sh
+          tools/fetch-test262.sh
+          lake exe test262 test/language test/annexB test/built-ins test/harness -j 4

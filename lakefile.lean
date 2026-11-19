@@ -1,20 +1,32 @@
 import Lake
 open Lake DSL
 
-package «lean-js» where
-  leanOptions := #[
-    ⟨`autoImplicit, false⟩
-  ]
+/-- leanjs: JavaScript in Lean. `ES` is an ECMA-262 engine (parser, interpreter, standard library)
+whose runtime is also the target of the JS → Lean compiler. -/
+package leanjs where
+  leanOptions := #[⟨`autoImplicit, false⟩]
 
+/-- The ECMAScript engine: pure Lean, total functions, no `Float`. -/
 @[default_target]
-lean_lib LeanJS where
-  srcDir := "."
-  roots := #[`LeanJS]
+lean_lib ES
 
-lean_exe «lean-js» where
-  root := `Main
-  supportInterpreter := true
-  -- Recent macOS `dyld` rejects binaries produced by the linker bundled with
-  -- Lean 4.17 ("__DATA_CONST segment missing SG_READ_ONLY flag"), so link
-  -- with the system linker there.
-  moreLinkArgs := if System.Platform.isOSX then #["--ld-path=/usr/bin/ld"] else #[]
+/-- test262 conformance runner: `lake exe test262 [paths] [-v] [-j N] [--update]`. -/
+lean_exe test262 where
+  root := `Test262
+
+/-- Runs a script with the engine: `es file.js` / `es -e 'code'`. -/
+@[default_target]
+lean_exe es where
+  root := `EsMain
+
+/-- Parses every test262 test and checks parse-phase expectations. -/
+lean_exe «es-parse-test» where
+  root := `ParseTest262
+
+/-- RegExp engine tests (corpora from `node ESTests/regex_corpus.js`). -/
+lean_exe «es-regex-test» where
+  root := `ESTests.Regex
+
+/-- Checks of the Number/BigInt/Math/Date algorithms. -/
+lean_exe «es-num-test» where
+  root := `ESTests.Num

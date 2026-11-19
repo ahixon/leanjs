@@ -1,7 +1,0 @@
-[unverified] outside the verified core (unsupported for Lean: named function (`function` declaration or expression; use an arrow function)); using the legacy translator
-let sign := fun x => return "zero"
-let fact := fun n => return if n <= 1 then 1 else n * f (n - 1)
-let noReturn := fun x => x + 1
-let result := #[sign 5, sign (-2), sign 0, fact 5, noReturn 1 == ()]
-result
-[exit 0]

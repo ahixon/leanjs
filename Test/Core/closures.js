@@ -1,7 +1,0 @@
-const makeAdder = (n) => (x) => x + n;
-const add5 = makeAdder(5);
-function apply(f, x) {
-  return f(x);
-}
-const twice = (f) => (x) => f(f(x));
-const result = { a: apply(add5, 10), b: makeAdder("x")("y"), c: twice(add5)(0) };

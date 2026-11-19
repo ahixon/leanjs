@@ -1,4 +1,0 @@
-Test/Fixtures/prototypes.js:
-  JS → IR → JS    : not in verified core — unsupported: assignment
-  JS → IR → Lean  : not in verified core — unsupported: assignment
-[exit 0]

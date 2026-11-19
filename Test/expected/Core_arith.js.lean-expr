@@ -1,8 +1,0 @@
-[unverified] outside the verified core (unsupported for Lean: named function (`function` declaration or expression; use an arrow function)); using the legacy translator
-let add := fun a b => a + b
-let square := fun x => x * x
-let sumOfSquares := fun a b => let s := add (square a) (square b)
-return s
-let result := #[sumOfSquares 3 4, add "a" "b", typeof add, !true, 7 % 3]
-result
-[exit 0]

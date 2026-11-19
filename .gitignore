@@ -1,2 +1,4 @@
-.lake
-build
+/.lake/
+/build/
+/third_party/
+/stats/

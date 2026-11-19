@@ -1,4 +1,0 @@
-Test/Core/basic.lean:
-  Lean → IR → JS  : verified
-  Lean → IR → Lean: verified
-[exit 0]
