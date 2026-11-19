@@ -101,16 +101,25 @@ def toString (s : JSStr) : String := Id.run do
 instance : ToString JSStr := ⟨toString⟩
 instance : Repr JSStr := ⟨fun s _ => repr s.toString⟩
 
-/-- Code-unit equality (a byte loop: `go` is a self tail call, compiled to a C loop). -/
-def beq (s t : JSStr) : Bool :=
-  s.b.size == t.b.size && go s.b t.b 0 s.b.size
-where
-  go (a b : ByteArray) (i : Nat) : Nat → Bool
-    | 0 => true
-    | k + 1 => a.get! i == b.get! i && go a b (i + 1) k
+/-- Code-unit equality: equality of the bytes (lawful, so proofs can use hash map lemmas). -/
+def beq (s t : JSStr) : Bool := s.b == t.b
 
 instance : BEq JSStr := ⟨beq⟩
+
+instance : LawfulBEq JSStr where
+  eq_of_beq {a b} h := by
+    cases a; cases b
+    have h' : _ = _ := eq_of_beq (α := ByteArray) h
+    subst h'; rfl
+  rfl {a} := by cases a; exact beq_self_eq_true (α := ByteArray) _
+
+instance : DecidableEq JSStr := fun a b =>
+  if h : a.b = b.b then .isTrue (by cases a; cases b; simp_all) else .isFalse (by intro e; cases e; exact h rfl)
+
 instance : Hashable JSStr := ⟨fun s => s.b.hash⟩
+
+instance : LawfulHashable JSStr where
+  hash_eq {a b} h := by rw [eq_of_beq h]
 
 /-- Code-unit order (IsLessThan for strings).
 spec: https://tc39.es/ecma262/#sec-islessthan (step 3) -/
