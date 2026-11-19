@@ -753,6 +753,199 @@ def labeled (l : JSStr) (isBreakable : Bool) (body : CStmt) : CStmt := fun ctx =
   | .brk (some l') v => if l' == l then pure (.normal (some (v.getD .undefined))) else pure r
   | r => pure r
 
+/-! ### Literals, `for`, `try`, `switch` -/
+
+/-- An array literal's element. -/
+inductive ElemD where
+  | hole
+  | expr (e : CExpr)
+  | spread (e : CExpr)
+
+/-- spec: https://tc39.es/ecma262/#sec-runtime-semantics-arrayaccumulation -/
+def array (elems : Array ElemD) : CExpr := fun ctx => do
+  let a ← arrayCreate 0
+  let len ← M.foldArr elems 0 fun i el => do
+    match el with
+    | .hole => pure (i + 1)
+    | .expr e =>
+      let v ← e ctx
+      createDataPropertyOrThrow a (PropKey.ofNat i) v
+      pure (i + 1)
+    | .spread e =>
+      let v ← e ctx
+      let xs ← iterableToList v
+      M.foldArr xs i fun j x => do
+        createDataPropertyOrThrow a (PropKey.ofNat j) x
+        pure (j + 1)
+  setProp a (.str kLength) (numV len)
+  pure (.obj a)
+
+/-- A property name: as written, or computed. -/
+inductive KeyD where
+  | name (pn : PropName)
+  | computed (e : CExpr)
+
+def propKey (k : KeyD) : Ctx → M PropKey := fun ctx => do
+  match k with
+  | .computed e => toPropertyKey (← e ctx)
+  | .name pn => pure ((staticPropKey pn).getD (.str JSStr.empty))
+
+/-- An object literal's property definition (`init`'s value gets the key, for NamedEvaluation). -/
+inductive PropD where
+  | init (key : KeyD) (value : PropKey → CExpr)
+  | protoSet (value : CExpr)
+  | shorthand (nm : JSStr)
+  | spread (e : CExpr)
+  | method (key : KeyD) (f : Func)
+
+/-- spec: https://tc39.es/ecma262/#sec-object-initializer-runtime-semantics-evaluation -/
+def object (props : Array PropD) : CExpr := fun ctx => do
+  let o ← newObject
+  M.forArr props fun pd => do
+    match pd with
+    | .protoSet value =>
+      let v ← value ctx
+      match v with
+      | .obj _ | .null => let _ ← Obj'.setPrototypeOf o v
+      | _ => pure ()
+    | .init key value =>
+      let k ← propKey key ctx
+      let v ← value k ctx
+      createDataPropertyOrThrow o k v
+    | .shorthand nm =>
+      let v ← getRefValue (← resolveBinding ctx.lex nm ctx.strict)
+      createDataPropertyOrThrow o (.str nm) v
+    | .spread e =>
+      let v ← e ctx
+      copyDataProperties o v #[]
+    | .method key f =>
+      let k ← propKey key ctx
+      defineMethodOn ctx o k f true
+  pure (.obj o)
+
+/-- A `for` statement's initializer: none, an expression, `var` declarations, or lexical
+declarations (with their declarators, for the loop's bindings). -/
+inductive ForInitD where
+  | none
+  | expr (e : CExpr)
+  | var (decl : CStmt)
+  | lex (kind : VarKind) (ds : Array VarDeclarator) (decl : CStmt)
+
+/-- ForLoopEvaluation and ForBodyEvaluation (with CreatePerIterationEnvironment).
+spec: https://tc39.es/ecma262/#sec-forbodyevaluation -/
+def forS (init : ForInitD) (test update : Option CExpr) (body : CStmt) : CStmt := fun ctx => do
+  let labels := ctx.labels
+  let ctx := inner ctx
+  let needDispose := match init with
+    | .lex k _ _ => k == .using || k == .awaitUsing
+    | _ => false
+  let r ← withDisposeScope needDispose ctx fun ctx => do
+    let (lex, perIter) ← match init with
+      | .var decl => let _ ← decl ctx; pure (ctx.lex, #[])
+      | .lex k ds decl =>
+        let loopEnv ← newDeclEnv (some ctx.lex)
+        let names := ds.foldl (fun acc (d : VarDeclarator) => match d with | .mk p _ => acc ++ boundNames p) #[]
+        let isConst := k == .const || k == .using || k == .awaitUsing
+        M.forArr names fun dn => if isConst then createImmutableBinding loopEnv dn true else createMutableBinding loopEnv dn false
+        let _ ← decl { ctx with lex := loopEnv }
+        pure (loopEnv, if isConst then #[] else names)
+      | .expr e => let _ ← e ctx; pure (ctx.lex, #[])
+      | .none => pure (ctx.lex, #[])
+    let perIteration (cur : EnvId) : M EnvId := do
+      if perIter.isEmpty then return cur
+      let outer ← readEnv cur Env.outer
+      let env ← newDeclEnv outer
+      M.forArr perIter fun bn => do
+        createMutableBinding env bn false
+        let v ← getBindingValue cur bn true
+        initializeBinding env bn v
+      pure env
+    let lex ← perIteration lex
+    M.repeatFrom (lex, Value.undefined) fun (lex, v) => do
+      M.tick
+      let ictx := { ctx with lex }
+      if let some t := test then
+        if !toBoolean (← t ictx) then return .inr (.normal (some v))
+      let r ← body ictx
+      if !loopContinues r labels then return .inr (r.updateEmpty (some v))
+      let v := (r.value?).getD v
+      let lex ← perIteration lex
+      if let some u := update then let _ ← u { ctx with lex }
+      return .inl (lex, v)
+  pure (breakToNormal r)
+
+/-- A catch clause: its parameter (binding its names in a new environment), the binding, the block. -/
+structure CatchD where
+  param : Option Pattern
+  bind : Ctx → Value → M Unit
+  body : CStmt
+
+/-- spec: https://tc39.es/ecma262/#sec-try-statement-runtime-semantics-evaluation -/
+def tryS (blk : CStmt) (handler : Option CatchD) (fin : Option CStmt) : CStmt := fun ctx => do
+  let ctx := inner ctx
+  let b ← M.attempt (blk ctx)
+  let c ← match b, handler with
+    | .error e, some h =>
+      if isSentinel e WK.genReturn then pure b
+      else M.attempt do
+        -- spec: https://tc39.es/ecma262/#sec-runtime-semantics-catchclauseevaluation
+        match h.param with
+        | none => h.body ctx
+        | some p =>
+          let env ← newDeclEnv (some ctx.lex)
+          M.forArr (boundNames p) fun nm => createMutableBinding env nm false
+          let cctx := { ctx with lex := env }
+          h.bind cctx e
+          h.body cctx
+    | b, _ => pure b
+  match fin with
+  | none => match c with
+    | .ok r => pure (r.updateEmpty (some .undefined))
+    | .error e => M.throwV e
+  | some f =>
+    let fr ← f ctx
+    match fr with
+    | .normal _ => match c with
+      | .ok r => pure (r.updateEmpty (some .undefined))
+      | .error e => M.throwV e
+    | fr => pure (fr.updateEmpty (some .undefined))
+
+/-- A switch case: its test (none: `default`) and its statements. -/
+structure CaseD where
+  test : Option CExpr
+  body : CStmt
+
+instance : Inhabited CaseD := ⟨{ test := none, body := fun _ => pure (.normal none) }⟩
+
+/-- spec: https://tc39.es/ecma262/#sec-switch-statement-runtime-semantics-evaluation
+(CaseBlockEvaluation: the first selected case, in source order without the default, else the
+default; statements run from there to the end) -/
+def switch (disc : CExpr) (decls : Array LexScoped) (cases : Array CaseD) : CStmt := fun ctx => do
+  let ctx := inner ctx
+  let sv ← disc ctx
+  let env ← newDeclEnv (some ctx.lex)
+  blockDeclarationInstantiation decls env ctx
+  withDisposeScope (usingKinds decls).1 { ctx with lex := env } fun cctx => do
+    let start ← M.foldArr (Array.range cases.size) none fun found i => do
+      if found.isSome then return found
+      match cases[i]!.test with
+      | some t =>
+        let cv ← t cctx
+        if isStrictlyEqual sv cv then return some i else return none
+      | none => return none
+    let start := start <|> cases.findIdx? (fun c => c.test.isNone)
+    let r ← match start with
+      | none => pure (Compl.normal (some .undefined))
+      | some st =>
+        let r ← M.foldArr ((Array.range cases.size).extract st cases.size) (Compl.normal none) fun acc i => do
+          match acc with
+          | .normal v =>
+            let r ← cases[i]!.body cctx
+            pure (r.updateEmpty v)
+          | acc => pure acc
+        pure (r.updateEmpty (some .undefined))
+    pure (breakToNormal r)
+
 end Sem
 
 mutual
@@ -778,8 +971,8 @@ def evalExpr : Nat → Ctx → Expr → M Value
       if !(← isCallable f) then throwType "tag is not a function"
       call f thisV (#[tmpl] ++ subs)
     | .regex p fl => regexpCreateLiteral p fl
-    | .array elems => evalArrayLit n ctx elems
-    | .object props => evalObjectLit n ctx props
+    | .array elems => Sem.array (amap (elemD n) elems) ctx
+    | .object props => Sem.object (amap (propD n) props) ctx
     | .func f => Sem.func f none ctx
     | .cls c => evalClass n ctx c c.name (c.name.map (.str ·))
     | .unary op e => match op with
@@ -833,6 +1026,29 @@ def evalExpr : Nat → Ctx → Expr → M Value
           | none => pure .undefined
         generatorYield ctx v
     | .await e => Sem.await (evalExpr n · e) ctx
+
+/-- An array literal element's denotation. -/
+def elemD : Nat → ArrElem → Sem.ElemD
+  | 0, _ => .expr fun _ => tooDeep
+  | n + 1, el => match el with
+    | .hole => .hole
+    | .expr e => .expr (evalExpr n · e)
+    | .spread e => .spread (evalExpr n · e)
+
+/-- An object literal property's denotation. -/
+def propD : Nat → PropDef → Sem.PropD
+  | 0, _ => .spread fun _ => tooDeep
+  | n + 1, pd =>
+    let kd (key : PropName) : Sem.KeyD := match key with
+      | .computed e => .computed (evalExpr n · e)
+      | pn => .name pn
+    match pd with
+    | .init _ value true => .protoSet (evalExpr n · value)
+    | .init key value false =>
+      .init (kd key) fun k => if isAnonymousFn value then (namedEval n · value k) else (evalExpr n · value)
+    | .shorthand nm => .shorthand nm
+    | .spread e => .spread (evalExpr n · e)
+    | .method key f => .method (kd key) f
 
 /-- An argument's denotation. -/
 def argD : Nat → Arg → Sem.ArgD
@@ -1122,55 +1338,6 @@ def evalPropName : Nat → Ctx → PropName → M PropKey
     | .priv nm => M.halt s!"internal: private name #{nm} as a property key"
     | pn => pure ((staticPropKey pn).getD (.str JSStr.empty))
 
-/-- ArrayLiteral evaluation. spec: https://tc39.es/ecma262/#sec-runtime-semantics-arrayaccumulation -/
-def evalArrayLit : Nat → Ctx → Array ArrElem → M Value
-  | 0, _, _ => tooDeep
-  | n + 1, ctx, elems => do
-    let a ← arrayCreate 0
-    let len ← M.foldArr elems 0 fun i el => do
-      match el with
-      | .hole => pure (i + 1)
-      | .expr e =>
-        let v ← evalExpr n ctx e
-        createDataPropertyOrThrow a (PropKey.ofNat i) v
-        pure (i + 1)
-      | .spread e =>
-        let v ← evalExpr n ctx e
-        let xs ← iterableToList v
-        M.foldArr xs i fun j x => do
-          createDataPropertyOrThrow a (PropKey.ofNat j) x
-          pure (j + 1)
-    setProp a (.str kLength) (numV len)
-    pure (.obj a)
-
-/-- ObjectLiteral evaluation. spec: https://tc39.es/ecma262/#sec-object-initializer-runtime-semantics-evaluation -/
-def evalObjectLit : Nat → Ctx → Array PropDef → M Value
-  | 0, _, _ => tooDeep
-  | n + 1, ctx, props => do
-    let o ← newObject
-    M.forArr props fun pd => do
-      match pd with
-      | .init key value protoSetter =>
-        if protoSetter then
-          let v ← evalExpr n ctx value
-          match v with
-          | .obj _ | .null => let _ ← Obj'.setPrototypeOf o v
-          | _ => pure ()
-        else
-          let k ← evalPropName n ctx key
-          let v ← if isAnonymousFn value then namedEval n ctx value k else evalExpr n ctx value
-          createDataPropertyOrThrow o k v
-      | .shorthand nm =>
-        let v ← getRefValue (← resolveBinding ctx.lex nm ctx.strict)
-        createDataPropertyOrThrow o (.str nm) v
-      | .spread e =>
-        let v ← evalExpr n ctx e
-        copyDataProperties o v #[]
-      | .method key f =>
-        let k ← evalPropName n ctx key
-        defineMethodOn ctx o k f true
-    pure (.obj o)
-
 /-- ClassDefinitionEvaluation (`binding`: the class binding; `name`: the function's name).
 spec: https://tc39.es/ecma262/#sec-runtime-semantics-classdefinitionevaluation -/
 def evalClass : Nat → Ctx → Class → Option JSStr → Option PropKey → M Value
@@ -1355,10 +1522,14 @@ def evalStmt : Nat → Ctx → Stmt → M Compl
     | .ifS t c a => Sem.ifS (evalExpr n · t) (evalStmt n · c) (a.map fun a c => evalStmt n c a) ctx
     | .whileS t body => Sem.whileS (evalExpr n · t) (evalStmt n · body) ctx
     | .doWhile body t => Sem.doWhile (evalStmt n · body) (evalExpr n · t) ctx
-    | .forS init test update body => do
-      let ctx := Sem.inner ctx
-      let r ← evalFor n ctx init test update body labels
-      pure (Sem.breakToNormal r)
+    | .forS init test update body =>
+      let initD : Sem.ForInitD := match init with
+        | none => .none
+        | some (.expr e) => .expr (evalExpr n · e)
+        | some (.decl .var ds) => .var (evalStmt n · (.varDecl .var ds))
+        | some (.decl k ds) => .lex k ds (evalStmt n · (.varDecl k ds))
+      Sem.forS initD (test.map fun t c => evalExpr n c t) (update.map fun u c => evalExpr n c u)
+        (evalStmt n · body) ctx
     | .forIn lhs rhs body => do
       let ctx := Sem.inner ctx
       let r ← evalForIn n ctx lhs rhs body labels
@@ -1370,37 +1541,10 @@ def evalStmt : Nat → Ctx → Stmt → M Compl
     | .brk l => Sem.brk l ctx
     | .cont l => Sem.cont l ctx
     | .throw e => Sem.throw (evalExpr n · e) ctx
-    | .tryS blk handler fin => evalTry n (Sem.inner ctx) blk handler fin
+    | .tryS blk handler fin =>
+      Sem.tryS (evalStmt n · (.block blk)) (handler.map (catchD n)) (fin.map fun f c => evalStmt n c (.block f)) ctx
     | .switch disc cases =>
-      -- spec: https://tc39.es/ecma262/#sec-switch-statement-runtime-semantics-evaluation
-      let ctx := Sem.inner ctx
-      let sv ← evalExpr n ctx disc
-      let env ← newDeclEnv (some ctx.lex)
-      blockDeclarationInstantiation (lexicallyScoped (caseBodies cases)) env ctx
-      let needDispose := (usingKinds (lexicallyScoped (caseBodies cases))).1
-      withDisposeScope needDispose { ctx with lex := env } fun cctx => do
-        -- (CaseBlockEvaluation: the first selected case, in source order without the default,
-        -- else the default; statements run from there to the end)
-        let start ← M.foldArr (Array.range cases.size) none fun found i => do
-          if found.isSome then return found
-          match cases[i]! with
-          | .mk (some t) _ =>
-            let cv ← evalExpr n cctx t
-            if isStrictlyEqual sv cv then return some i else return none
-          | .mk none _ => return none
-        let start := start <|> cases.findIdx? (fun c => match c with | .mk none _ => true | _ => false)
-        let r ← match start with
-          | none => pure (Compl.normal (some .undefined))
-          | some st =>
-            let r ← M.foldArr ((Array.range cases.size).extract st cases.size) (Compl.normal none) fun acc i => do
-              match acc with
-              | .normal v =>
-                let .mk _ body := cases[i]!
-                let r ← evalStmts n cctx body
-                pure (r.updateEmpty v)
-              | acc => pure acc
-            pure (r.updateEmpty (some .undefined))
-        pure (Sem.breakToNormal r)
+      Sem.switch (evalExpr n · disc) (lexicallyScoped (caseBodies cases)) (amap (caseD n) cases) ctx
     | .labeled l body =>
       let breakable := match body with
         | .labeled .. | .whileS .. | .doWhile .. | .forS .. | .forIn .. | .forOf .. | .switch .. => true
@@ -1430,6 +1574,21 @@ def evalStmt : Nat → Ctx → Stmt → M Compl
         pure (.normal none)
       | _ => pure (.normal none)
 
+/-- A catch clause's denotation. -/
+def catchD : Nat → CatchClause → Sem.CatchD
+  | 0, _ => { param := none, bind := fun _ _ => tooDeep, body := fun _ => tooDeep }
+  | n + 1, .mk param body =>
+    { param := param,
+      bind := fun c v => match param with
+        | some p => bindPattern n c p v (.init (some c.lex))
+        | none => pure (),
+      body := (evalStmt n · (.block body)) }
+
+/-- A switch case's denotation. -/
+def caseD : Nat → SwitchCase → Sem.CaseD
+  | 0, _ => { test := none, body := fun _ => tooDeep }
+  | n + 1, .mk test body => { test := test.map fun t c => evalExpr n c t, body := (evalStmts n · body) }
+
 /-- A declarator's denotation. -/
 def declD : Nat → VarKind → VarDeclarator → Sem.CDecl
   | 0, _, _ => fun _ => tooDeep
@@ -1454,52 +1613,6 @@ spec: https://tc39.es/ecma262/#sec-block-runtime-semantics-evaluation -/
 def evalStmts : Nat → Ctx → Array Stmt → M Compl
   | 0, _, _ => tooDeep
   | n + 1, ctx, ss => Sem.stmts (amap (fun s c => evalStmt n c s) ss) ctx
-
-/-- ForLoopEvaluation and ForBodyEvaluation (with CreatePerIterationEnvironment).
-spec: https://tc39.es/ecma262/#sec-forbodyevaluation -/
-def evalFor : Nat → Ctx → Option ForInit → Option Expr → Option Expr → Stmt → Array JSStr → M Compl
-  | 0, _, _, _, _, _, _ => tooDeep
-  | n + 1, ctx, init, test, update, body, labels => do
-    let needDispose := match init with
-      | some (.decl k _) => k == .using || k == .awaitUsing
-      | _ => false
-    withDisposeScope needDispose ctx fun ctx => do
-      -- (the loop's environment and its per-iteration bindings)
-      let (lex, perIter) ← match init with
-        | some (.decl k ds) =>
-          if k == .var then
-            let _ ← evalStmt n ctx (.varDecl .var ds)
-            pure (ctx.lex, #[])
-          else
-            let loopEnv ← newDeclEnv (some ctx.lex)
-            let names := ds.foldl (fun acc (d : VarDeclarator) => match d with | .mk p _ => acc ++ boundNames p) #[]
-            let isConst := k == .const || k == .using || k == .awaitUsing
-            M.forArr names fun dn => if isConst then createImmutableBinding loopEnv dn true else createMutableBinding loopEnv dn false
-            let _ ← evalStmt n { ctx with lex := loopEnv } (.varDecl k ds)
-            pure (loopEnv, if isConst then #[] else names)
-        | some (.expr e) => let _ ← evalExpr n ctx e; pure (ctx.lex, #[])
-        | none => pure (ctx.lex, #[])
-      let perIteration (cur : EnvId) : M EnvId := do
-        if perIter.isEmpty then return cur
-        let outer ← readEnv cur Env.outer
-        let env ← newDeclEnv outer
-        M.forArr perIter fun bn => do
-          createMutableBinding env bn false
-          let v ← getBindingValue cur bn true
-          initializeBinding env bn v
-        pure env
-      let lex ← perIteration lex
-      M.repeatFrom (lex, Value.undefined) fun (lex, v) => do
-        M.tick
-        let ictx := { ctx with lex }
-        if let some t := test then
-          if !toBoolean (← evalExpr n ictx t) then return .inr (.normal (some v))
-        let r ← evalStmt n ictx body
-        if !loopContinues r labels then return .inr (r.updateEmpty (some v))
-        let v := (r.value?).getD v
-        let lex ← perIteration lex
-        if let some u := update then let _ ← evalExpr n { ctx with lex } u
-        return .inl (lex, v)
 
 /-- The left side's binding for one iteration of for-in/of (ForIn/OfBodyEvaluation steps g-h). -/
 def bindForLhs : Nat → Ctx → ForLhs → Value → M Ctx
@@ -1611,38 +1724,6 @@ def evalForOf : Nat → Ctx → ForLhs → Expr → Stmt → Bool → Array JSSt
         if loopContinues r' labels then return .inl ((r'.value?).getD v)
         close
         return .inr (r'.updateEmpty (some v))
-
-/-- try statements. spec: https://tc39.es/ecma262/#sec-try-statement-runtime-semantics-evaluation -/
-def evalTry : Nat → Ctx → Array Stmt → Option CatchClause → Option (Array Stmt) → M Compl
-  | 0, _, _, _, _ => tooDeep
-  | n + 1, ctx, blk, handler, fin => do
-    let b ← M.attempt (evalStmt n ctx (.block blk))
-    -- catch
-    let c ← match b, handler with
-      | .error e, some (.mk param body) =>
-        if isSentinel e WK.genReturn then pure b
-        else M.attempt do
-          -- spec: https://tc39.es/ecma262/#sec-runtime-semantics-catchclauseevaluation
-          match param with
-          | none => evalStmt n ctx (.block body)
-          | some p =>
-            let env ← newDeclEnv (some ctx.lex)
-            M.forArr (boundNames p) fun nm => createMutableBinding env nm false
-            let cctx := { ctx with lex := env }
-            bindPattern n cctx p e (.init (some env))
-            evalStmt n cctx (.block body)
-      | b, _ => pure b
-    match fin with
-    | none => match c with
-      | .ok r => pure (r.updateEmpty (some .undefined))
-      | .error e => M.throwV e
-    | some f =>
-      let fr ← evalStmt n ctx (.block f)
-      match fr with
-      | .normal _ => match c with
-        | .ok r => pure (r.updateEmpty (some .undefined))
-        | .error e => M.throwV e
-      | fr => pure (fr.updateEmpty (some .undefined))
 
 -- Function bodies
 

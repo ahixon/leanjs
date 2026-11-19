@@ -69,6 +69,8 @@ def genExpr (names : Names) : Nat → Expr → String
     | .member .. | .superMember _ => app "ES.Sem.getValue" [genRef names k e]
     | .chain inner => app "ES.Sem.chain" [genExpr names k inner]
     | .func f => app "ES.Sem.func" [funcRef names f, "none"]
+    | .array els => app "ES.Sem.array" [qArr (genElem names k) els]
+    | .object ps => app "ES.Sem.object" [qArr (genProp names k) ps]
     | .newTarget => "ES.Sem.newTarget"
     | .seq es => app "ES.Sem.seq" [qArr (genExpr names k) es]
     | .await e => app "ES.Sem.await" [genExpr names k e]
@@ -77,6 +79,50 @@ def genExpr (names : Names) : Nat → Expr → String
       | .assign, .obj .. | .assign, .arr .. => fb
       | _, _ => genAssign names k op target value
     | _ => fb
+
+/-- `ES.elemD (n + k) el` -/
+def genElem (names : Names) : Nat → ArrElem → String
+  | 0, el => s!"(ES.elemD {d 0} {qArrElem quoteDepth el})"
+  | k + 1, el => match el with
+    | .hole => "ES.Sem.ElemD.hole"
+    | .expr e => app "ES.Sem.ElemD.expr" [genExpr names k e]
+    | .spread e => app "ES.Sem.ElemD.spread" [genExpr names k e]
+
+/-- `ES.propD (n + k) pd` -/
+def genProp (names : Names) : Nat → PropDef → String
+  | 0, pd => s!"(ES.propD {d 0} {qPropDef quoteDepth pd})"
+  | k + 1, pd =>
+    let kd (key : PropName) : String := match key with
+      | .computed e => app "ES.Sem.KeyD.computed" [genExpr names k e]
+      | pn => app "ES.Sem.KeyD.name" [qPropName quoteDepth pn]
+    match pd with
+    | .init _ value true => app "ES.Sem.PropD.protoSet" [genExpr names k value]
+    | .init key value false =>
+      let v := if ES.isAnonymousFn value then s!"(ES.namedEval {d k} · {qExpr quoteDepth value} k)"
+        else genExpr names k value
+      app "ES.Sem.PropD.init" [kd key, s!"(fun k => {v})"]
+    | .shorthand nm => app "ES.Sem.PropD.shorthand" [qStr nm]
+    | .spread e => app "ES.Sem.PropD.spread" [genExpr names k e]
+    | .method key f => app "ES.Sem.PropD.method" [kd key, funcRef names f]
+
+/-- `ES.catchD (n + k) c` -/
+def genCatch (names : Names) : Nat → CatchClause → String
+  | 0, c => s!"(ES.catchD {d 0} {qCatch quoteDepth c})"
+  | k + 1, .mk param body =>
+    let bind := match param with
+      | some p => s!"(fun c v => ES.bindPattern {d k} c {qPattern quoteDepth p} v (.init (some c.lex)))"
+      | none => "(fun _ _ => pure ())"
+    "{ param := " ++ qOpt (qPattern quoteDepth) param ++ ", bind := " ++ bind ++ ", body := " ++
+      genStmt names k (.block body) ++ " : ES.Sem.CatchD }"
+
+/-- `ES.caseD (n + k) c` -/
+def genCase (names : Names) : Nat → SwitchCase → String
+  | 0, c => s!"(ES.caseD {d 0} {qCase quoteDepth c})"
+  | k + 1, .mk test body =>
+    let b := match k with
+      | 0 => s!"(ES.evalStmts {d 0} · {qArr (qStmt quoteDepth) body})"
+      | j + 1 => app "ES.Sem.stmts" [qArr (genStmt names j) body]
+    "{ test := " ++ qOpt (genExpr names k) test ++ ", body := " ++ b ++ " : ES.Sem.CaseD }"
 
 /-- `ES.argD (n + k) a` -/
 def genArg (names : Names) : Nat → Arg → String
@@ -146,6 +192,21 @@ def genStmt (names : Names) : Nat → Stmt → String
     | .brk l => app "ES.Sem.brk" [qOpt qStr l]
     | .cont l => app "ES.Sem.cont" [qOpt qStr l]
     | .throw e => app "ES.Sem.throw" [genExpr names k e]
+    | .forS init test update body =>
+      let initD := match init with
+        | none => "ES.Sem.ForInitD.none"
+        | some (.expr e) => app "ES.Sem.ForInitD.expr" [genExpr names k e]
+        | some (.decl .var ds) => app "ES.Sem.ForInitD.var" [genStmt names k (.varDecl .var ds)]
+        | some (.decl kd ds) =>
+          app "ES.Sem.ForInitD.lex" [qVarKind kd, qArr (qDeclarator quoteDepth) ds, genStmt names k (.varDecl kd ds)]
+      app "ES.Sem.forS" [initD, qOpt (genExpr names k) test, qOpt (genExpr names k) update, genStmt names k body]
+    | .tryS blk h fin =>
+      app "ES.Sem.tryS" [genStmt names k (.block blk), qOpt (genCatch names k) h,
+        qOpt (fun f => genStmt names k (.block f)) fin]
+    | .switch disc cases =>
+      app "ES.Sem.switch" [genExpr names k disc,
+        app "ES.lexicallyScoped" [app "ES.caseBodies" [qArr (qCase quoteDepth) cases]],
+        qArr (genCase names k) cases]
     | .labeled l b =>
       let breakable := match b with
         | .labeled .. | .whileS .. | .doWhile .. | .forS .. | .forIn .. | .forOf .. | .switch .. => true
@@ -245,6 +306,26 @@ def parenDepth (s : String) : Nat :=
 (at most 3 steps per level of the tree: e.g. expression → assignment → target). -/
 def depthFor (quoted : String) : Nat := 3 * parenDepth quoted + 8
 
+/-- Generated code for reading: within `open ES`, names without the `ES.` prefix and strings as
+literals (the `String → JSStr` coercion elaborates to the same `JSStr.ofString` term, which the
+`rfl` theorems check). -/
+def tidy (code : String) : String := Id.run do
+  -- (ES.JSStr.ofString "…") → "…"
+  let parts := code.splitOn "(ES.JSStr.ofString "
+  let mut out := parts.head!
+  for p in parts.tail! do
+    -- p starts with the string literal, then ")"
+    let chars := p.toList
+    let mut i := 1
+    let mut esc := false
+    for c in chars.drop 1 do
+      i := i + 1
+      if esc then esc := false
+      else if c == '\\' then esc := true
+      else if c == '"' then break
+    out := out ++ String.ofList (chars.take i) ++ String.ofList (chars.drop (i + 1))
+  return out.replace "(ES." "(" |>.replace " ES." " " |>.replace "[ES." "[" |>.replace "#[ES." "#["
+
 /-- A Lean module with, for the program and each of its functions, the syntax tree, the
 generated denotation, and its theorem. -/
 def emitModule (prog : Program) (title : String) : String := Id.run do
@@ -278,12 +359,12 @@ namespace Compiled
     | .stmts body =>
       let H := depthFor (qArr (qStmt quoteDepth) body)
       out := out ++ s!"def {nm}_stmts : Array ES.Stmt := {qArr (qStmt quoteDepth) body}\n\n"
-      out := out ++ s!"/-- The body of `{nm}`. -/\ndef {nm} (n : Nat) : ES.Sem.CStmt :=\n  {genStmts names H body}\n\n"
+      out := out ++ s!"/-- The body of `{nm}`. -/\ndef {nm} (n : Nat) : Sem.CStmt :=\n  {tidy (genStmts names H body)}\n\n"
       out := out ++ s!"set_option maxRecDepth 100000 in\ntheorem {nm}_eq (n : Nat) : {nm} n = (ES.evalStmts (n + {H}) · {nm}_stmts) := by\n  funext c; rfl\n\n"
     | .expr _ => pure ()
   let H := depthFor (qArr (qStmt quoteDepth) prog.body)
   out := out ++ s!"def script_stmts : Array ES.Stmt := {qArr (qStmt quoteDepth) prog.body}\n\n"
-  out := out ++ s!"/-- The script's top-level code. -/\ndef script (n : Nat) : ES.Sem.CStmt :=\n  {genStmts names H prog.body}\n\n"
+  out := out ++ s!"/-- The script's top-level code. -/\ndef script (n : Nat) : Sem.CStmt :=\n  {tidy (genStmts names H prog.body)}\n\n"
   out := out ++ s!"set_option maxRecDepth 100000 in\ntheorem script_eq (n : Nat) : script n = (ES.evalStmts (n + {H}) · script_stmts) := by\n  funext c; rfl\n\n"
   out := out ++ s!"def program : ES.Program :=\n  \{ body := script_stmts, isModule := false, strict := {qBool prog.strict}, source := {qLeanString prog.source} }\n\n"
   out := out ++ "end Compiled

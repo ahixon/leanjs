@@ -54,9 +54,16 @@ definitions are stated at `n = height + 1`.
 - What makes `rfl` work: the interpreter maps sub-terms with `amap` (List.map), not `Array.map`
   (well-founded recursion does not unfold); syntactic decisions are AST data (`Expr.call`'s
   `directEval` flag), not string comparisons; theorems are stated at a symbolic depth `n + k`.
-- Next: combinators for the constructs still falling back to the interpreter (patterns, object and
-  array literals, classes, for-in/of, try, switch); lemmas for calls (the driver running a
-  function object's body) and for property access on ordinary objects; a whole-program example.
+- Covered by combinators: identifiers, literals, templates, operators, conditionals, property
+  access, calls, `new`, assignment (not destructuring), function expressions, array and object
+  literals, sequences, `await`; blocks, declarations (identifier targets), `if`, `while`,
+  `do-while`, `for`, `return`, `throw`, `break`/`continue`, labels, `try`, `switch`.
+  `examples/constructs.js` generates no interpreter fallbacks.
+- Still falling back to the interpreter (correct, but opaque in generated code): destructuring
+  patterns, classes, `for-in`/`for-of`, `with`, tagged templates, regex literals, `yield`, `super`,
+  dynamic `import()`, direct `eval`.
+- Next: lemmas for calls (the driver running a function object's body) and for property access on
+  ordinary objects; a whole-program example.
 
 ## Stages
 

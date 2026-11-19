@@ -234,9 +234,11 @@ def newSession (hostDefs : Array BuiltinDef) (hostSetup : M Unit) (fuel : Nat :=
 def test262Setups (host : M Unit) : Array (M Unit) := #[coreSetup, engineSetup, Builtins.Text.setup,
   Builtins.Collections.setup, Builtins.Library.setup, host]
 
+/-- `print(...args)`: one line, the arguments' strings separated by spaces (test262 passes one). -/
 def printBuiltin : BuiltinFn := fun _ _ args _ => do
-  let s ← toStr (arg args 0)
-  modify fun st => { st with output := st.output.push s.toString }
+  let parts ← M.mapArr (if args.isEmpty then #[Value.undefined] else args) toStr
+  let line := " ".intercalate (parts.toList.map (·.toString))
+  modify fun st => { st with output := st.output.push line }
   pure .undefined
 
 /-- `$262.evalScript(src)` in the $262 object's realm. -/
