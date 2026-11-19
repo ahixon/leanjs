@@ -593,6 +593,142 @@ def await (e : CExpr) : CExpr := fun ctx => do
   restoreCtx ctx
   pure r
 
+/-! ### Statements -/
+
+/-- A statement's denotation. -/
+abbrev CStmt := Ctx → M Compl
+
+/-- A declarator's effect. -/
+abbrev CDecl := Ctx → M Unit
+
+/-- A loop's or switch's `break` without a label completes it normally. -/
+def breakToNormal : Compl → Compl
+  | .brk none v => .normal (some (v.getD .undefined))
+  | c => c
+
+/-- (a statement's own label set; its parts see none) -/
+@[inline] def inner (ctx : Ctx) : Ctx := { ctx with labels := #[] }
+
+/-- spec: https://tc39.es/ecma262/#sec-expression-statement-runtime-semantics-evaluation -/
+def exprStmt (e : CExpr) : CStmt := fun ctx => do pure (.normal (some (← e (inner ctx))))
+
+/-- `var x = v` spec: https://tc39.es/ecma262/#sec-variable-statement-runtime-semantics-evaluation -/
+def declVar (x : JSStr) (v : CExpr) : CDecl := fun ctx => do
+  let lhs ← resolveBinding ctx.lex x ctx.strict
+  let val ← v ctx
+  putRefValue lhs val
+
+/-- `let x`, `let x = v`, `const x = v`, `using x = v`
+spec: https://tc39.es/ecma262/#sec-let-and-const-declarations-runtime-semantics-evaluation -/
+def declLex (kind : VarKind) (x : JSStr) (v : Option CExpr) : CDecl := fun ctx => do
+  let lhs ← resolveBinding ctx.lex x ctx.strict
+  match v with
+  | none => initializeRefBinding lhs .undefined
+  | some v =>
+    let val ← v ctx
+    initializeRefBinding lhs val
+    if kind == .using || kind == .awaitUsing then
+      match ctx.disposeCap with
+      | some cap => addDisposableResource cap val (kind == .awaitUsing)
+      | none => M.halt "internal: using declaration outside a disposal scope"
+
+def varDecl (ds : Array CDecl) : CStmt := fun ctx => do
+  let ctx := inner ctx
+  M.forArr ds fun d => d ctx
+  pure (.normal none)
+
+/-- A statement list: UpdateEmpty of each statement's completion with the last value.
+spec: https://tc39.es/ecma262/#sec-block-runtime-semantics-evaluation -/
+def stmts (ss : Array CStmt) : CStmt := fun ctx =>
+  M.repeatFrom ((0 : Nat), (none : Option Value)) fun (i, v) => do
+    if h : i < ss.size then
+      let r ← ss[i] ctx
+      match r with
+      | .normal rv => return .inl (i + 1, rv <|> v)
+      | r => return .inr (r.updateEmpty v)
+    else return .inr (.normal v)
+
+/-- A block (its lexical declarations instantiated in a new environment).
+spec: https://tc39.es/ecma262/#sec-block-runtime-semantics-evaluation -/
+def block (decls : Array LexScoped) (body : Array CStmt) : CStmt := fun ctx => do
+  let ctx := inner ctx
+  if decls.isEmpty then stmts body ctx
+  else
+    let env ← newDeclEnv (some ctx.lex)
+    blockDeclarationInstantiation decls env ctx
+    withDisposeScope (usingKinds decls).1 { ctx with lex := env } fun c => stmts body c
+
+def empty : CStmt := fun _ => pure (.normal none)
+
+/-- spec: https://tc39.es/ecma262/#sec-return-statement-runtime-semantics-evaluation -/
+def ret (e : Option CExpr) : CStmt := fun ctx => do
+  let ctx := inner ctx
+  let v ← match e with
+    | some e => e ctx
+    | none => pure .undefined
+  if ctx.isAsync && ctx.isGen && e.isSome then
+    let v ← ES.await v
+    restoreCtx ctx
+    return .ret v
+  pure (.ret v)
+
+/-- spec: https://tc39.es/ecma262/#sec-if-statement-runtime-semantics-evaluation -/
+def ifS (t : CExpr) (c : CStmt) (a : Option CStmt) : CStmt := fun ctx => do
+  let ctx := inner ctx
+  let r ← if toBoolean (← t ctx) then c ctx
+    else match a with
+      | some a => a ctx
+      | none => pure (.normal none)
+  pure (r.updateEmpty (some .undefined))
+
+/-- spec: https://tc39.es/ecma262/#sec-runtime-semantics-whileloopevaluation -/
+def whileS (t : CExpr) (body : CStmt) : CStmt := fun ctx => do
+  let labels := ctx.labels
+  let ctx := inner ctx
+  let r ← M.repeatFrom (Value.undefined) fun v => do
+    M.tick
+    if !toBoolean (← t ctx) then return .inr (Compl.normal (some v))
+    let r ← body ctx
+    if !loopContinues r labels then return .inr (r.updateEmpty (some v))
+    return .inl ((r.value?).getD v)
+  pure (breakToNormal r)
+
+/-- spec: https://tc39.es/ecma262/#sec-runtime-semantics-dowhileloopevaluation -/
+def doWhile (body : CStmt) (t : CExpr) : CStmt := fun ctx => do
+  let labels := ctx.labels
+  let ctx := inner ctx
+  let r ← M.repeatFrom (Value.undefined) fun v => do
+    M.tick
+    let r ← body ctx
+    if !loopContinues r labels then return .inr (r.updateEmpty (some v))
+    let v := (r.value?).getD v
+    if !toBoolean (← t ctx) then return .inr (Compl.normal (some v))
+    return .inl v
+  pure (breakToNormal r)
+
+def brk (l : Option JSStr) : CStmt := fun _ => pure (.brk l none)
+def cont (l : Option JSStr) : CStmt := fun _ => pure (.cont l none)
+
+/-- spec: https://tc39.es/ecma262/#sec-throw-statement-runtime-semantics-evaluation -/
+def throw (e : CExpr) : CStmt := fun ctx => do M.throwV (← e (inner ctx))
+
+/-- A function declaration's evaluation (Annex B.3.2.1: copy a block function to its var binding). -/
+def funDecl (f : Func) : CStmt := fun ctx => do
+  if ctx.annexB.contains f.info.id then
+    if let some nm := f.name then
+      let v ← getBindingValue ctx.lex nm false
+      setMutableBinding ctx.var nm v false
+  pure (.normal none)
+
+/-- spec: https://tc39.es/ecma262/#sec-runtime-semantics-labelledevaluation (`isBreakable`: the
+body is an iteration/switch/labelled statement, which sees the label set) -/
+def labeled (l : JSStr) (isBreakable : Bool) (body : CStmt) : CStmt := fun ctx => do
+  let labels := ctx.labels
+  let r ← body { ctx with labels := if isBreakable then labels.push l else #[] }
+  match r with
+  | .brk (some l') v => if l' == l then pure (.normal (some (v.getD .undefined))) else pure r
+  | r => pure r
+
 end Sem
 
 mutual
@@ -1181,106 +1317,42 @@ def evalStmt : Nat → Ctx → Stmt → M Compl
   | 0, _, _ => tooDeep
   | n + 1, ctx, st => do
     let labels := ctx.labels
-    let ctx := { ctx with labels := #[] }
     match st with
-    | .expr e => pure (.normal (some (← evalExpr n ctx e)))
+    | .expr e => Sem.exprStmt (evalExpr n · e) ctx
     | .varDecl kind ds =>
-      M.forArr ds fun d => do
-        let .mk target init := d
-        match kind, target, init with
-        | .var, _, none => pure ()
-        | .var, .ident x, some ie =>
-          -- spec: https://tc39.es/ecma262/#sec-variable-statement-runtime-semantics-evaluation
-          let lhs ← resolveBinding ctx.lex x ctx.strict
-          let v ← if isAnonymousFn ie then namedEval n ctx ie (.str x) else evalExpr n ctx ie
-          putRefValue lhs v
-        | .var, p, some ie =>
-          let v ← evalExpr n ctx ie
-          bindPattern n ctx p v (.init none)
-        | _, .ident x, none =>
-          let lhs ← resolveBinding ctx.lex x ctx.strict
-          initializeRefBinding lhs .undefined
-        | _, .ident x, some ie =>
-          -- spec: https://tc39.es/ecma262/#sec-let-and-const-declarations-runtime-semantics-evaluation
-          let lhs ← resolveBinding ctx.lex x ctx.strict
-          let v ← if isAnonymousFn ie then namedEval n ctx ie (.str x) else evalExpr n ctx ie
-          initializeRefBinding lhs v
-          if kind == .using || kind == .awaitUsing then
-            match ctx.disposeCap with
-            | some cap => addDisposableResource cap v (kind == .awaitUsing)
-            | none => M.halt "internal: using declaration outside a disposal scope"
-        | _, p, some ie =>
-          let v ← evalExpr n ctx ie
-          bindPattern n ctx p v (.init (some ctx.lex))
-        | _, _, none => pure ()
-      pure (.normal none)
-    | .funDecl f =>
-      -- (Annex B.3.2.1 step: copy the block's binding to the var binding)
-      if ctx.annexB.contains f.info.id then
-        if let some nm := f.name then
-          let v ← getBindingValue ctx.lex nm false
-          setMutableBinding ctx.var nm v false
-      pure (.normal none)
+      Sem.varDecl (ds.map (declD n kind)) ctx
+    | .funDecl f => Sem.funDecl f ctx
     | .classDecl c =>
+      let ctx := Sem.inner ctx
       let nm := c.name.getD "default"
       let v ← evalClass n ctx c (some nm) (some (.str nm))
       initializeBinding ctx.lex nm v
       pure (.normal none)
-    | .block body =>
-      let decls := lexicallyScoped body
-      if decls.isEmpty then evalStmts n ctx body
-      else
-        let env ← newDeclEnv (some ctx.lex)
-        blockDeclarationInstantiation decls env ctx
-        withDisposeScope (usingKinds decls).1 { ctx with lex := env } fun c => evalStmts n c body
-    | .empty | .debugger => pure (.normal none)
-    | .ret e =>
-      let v ← match e with
-        | some e => evalExpr n ctx e
-        | none => pure .undefined
-      if ctx.isAsync && ctx.isGen && e.isSome then
-        let v ← await v
-        restoreCtx ctx
-        return .ret v
-      pure (.ret v)
-    | .ifS t c a =>
-      let r ← if toBoolean (← evalExpr n ctx t) then evalStmt n ctx c
-        else match a with
-          | some a => evalStmt n ctx a
-          | none => pure (.normal none)
-      pure (r.updateEmpty (some .undefined))
-    | .whileS t body =>
-      let r ← M.repeatFrom (Value.undefined) fun v => do
-        M.tick
-        if !toBoolean (← evalExpr n ctx t) then return .inr (Compl.normal (some v))
-        let r ← evalStmt n ctx body
-        if !loopContinues r labels then return .inr (r.updateEmpty (some v))
-        return .inl ((r.value?).getD v)
-      pure (breakToNormal r)
-    | .doWhile body t =>
-      let r ← M.repeatFrom (Value.undefined) fun v => do
-        M.tick
-        let r ← evalStmt n ctx body
-        if !loopContinues r labels then return .inr (r.updateEmpty (some v))
-        let v := (r.value?).getD v
-        if !toBoolean (← evalExpr n ctx t) then return .inr (Compl.normal (some v))
-        return .inl v
-      pure (breakToNormal r)
+    | .block body => Sem.block (lexicallyScoped body) (body.map fun s c => evalStmt n c s) ctx
+    | .empty | .debugger => Sem.empty ctx
+    | .ret e => Sem.ret (e.map fun e c => evalExpr n c e) ctx
+    | .ifS t c a => Sem.ifS (evalExpr n · t) (evalStmt n · c) (a.map fun a c => evalStmt n c a) ctx
+    | .whileS t body => Sem.whileS (evalExpr n · t) (evalStmt n · body) ctx
+    | .doWhile body t => Sem.doWhile (evalStmt n · body) (evalExpr n · t) ctx
     | .forS init test update body => do
+      let ctx := Sem.inner ctx
       let r ← evalFor n ctx init test update body labels
-      pure (breakToNormal r)
+      pure (Sem.breakToNormal r)
     | .forIn lhs rhs body => do
+      let ctx := Sem.inner ctx
       let r ← evalForIn n ctx lhs rhs body labels
-      pure (breakToNormal r)
+      pure (Sem.breakToNormal r)
     | .forOf lhs rhs body isAwait => do
+      let ctx := Sem.inner ctx
       let r ← evalForOf n ctx lhs rhs body isAwait labels
-      pure (breakToNormal r)
-    | .brk l => pure (.brk l none)
-    | .cont l => pure (.cont l none)
-    | .throw e => M.throwV (← evalExpr n ctx e)
-    | .tryS blk handler fin => evalTry n ctx blk handler fin
+      pure (Sem.breakToNormal r)
+    | .brk l => Sem.brk l ctx
+    | .cont l => Sem.cont l ctx
+    | .throw e => Sem.throw (evalExpr n · e) ctx
+    | .tryS blk handler fin => evalTry n (Sem.inner ctx) blk handler fin
     | .switch disc cases =>
       -- spec: https://tc39.es/ecma262/#sec-switch-statement-runtime-semantics-evaluation
+      let ctx := Sem.inner ctx
       let sv ← evalExpr n ctx disc
       let env ← newDeclEnv (some ctx.lex)
       blockDeclarationInstantiation (lexicallyScoped (caseBodies cases)) env ctx
@@ -1307,25 +1379,24 @@ def evalStmt : Nat → Ctx → Stmt → M Compl
                 pure (r.updateEmpty v)
               | acc => pure acc
             pure (r.updateEmpty (some .undefined))
-        pure (breakToNormal r)
+        pure (Sem.breakToNormal r)
     | .labeled l body =>
-      -- spec: https://tc39.es/ecma262/#sec-runtime-semantics-labelledevaluation
-      let inner := match body with
-        | .labeled .. | .whileS .. | .doWhile .. | .forS .. | .forIn .. | .forOf .. | .switch .. => labels.push l
-        | _ => #[]
-      let r ← evalStmt n { ctx with labels := inner } body
-      match r with
-      | .brk (some l') v => if l' == l then pure (.normal (some (v.getD .undefined))) else pure r
-      | r => pure r
+      let breakable := match body with
+        | .labeled .. | .whileS .. | .doWhile .. | .forS .. | .forIn .. | .forOf .. | .switch .. => true
+        | _ => false
+      Sem.labeled l breakable (evalStmt n · body) ctx
     | .with obj body =>
       -- spec: https://tc39.es/ecma262/#sec-with-statement-runtime-semantics-evaluation
+      let ctx := Sem.inner ctx
       let v ← evalExpr n ctx obj
       let o ← toObject v
       let env ← allocEnv (.object o true (some ctx.lex))
       let r ← evalStmt n { ctx with lex := env } body
       pure (r.updateEmpty (some .undefined))
     | .importDecl _ => pure (.normal none)
-    | .exportDecl d => match d with
+    | .exportDecl d =>
+      let ctx := Sem.inner ctx
+      match d with
       | .decl s => evalStmt n ctx s
       | .defaultFunc _ => pure (.normal none)
       | .defaultClass c =>
@@ -1337,23 +1408,31 @@ def evalStmt : Nat → Ctx → Stmt → M Compl
         initializeBinding ctx.lex "*default*" v
         pure (.normal none)
       | _ => pure (.normal none)
-where
-  breakToNormal : Compl → Compl
-    | .brk none v => .normal (some (v.getD .undefined))
-    | c => c
+
+/-- A declarator's denotation. -/
+def declD : Nat → VarKind → VarDeclarator → Sem.CDecl
+  | 0, _, _ => fun _ => tooDeep
+  | n + 1, kind, .mk target init =>
+    let rhs (x : JSStr) (ie : Expr) : Sem.CExpr :=
+      if isAnonymousFn ie then (namedEval n · ie (.str x)) else (evalExpr n · ie)
+    match kind, target, init with
+    | .var, _, none => fun _ => pure ()
+    | .var, .ident x, some ie => Sem.declVar x (rhs x ie)
+    | .var, p, some ie => fun ctx => do
+      let v ← evalExpr n ctx ie
+      bindPattern n ctx p v (.init none)
+    | k, .ident x, none => Sem.declLex k x none
+    | k, .ident x, some ie => Sem.declLex k x (some (rhs x ie))
+    | _, p, some ie => fun ctx => do
+      let v ← evalExpr n ctx ie
+      bindPattern n ctx p v (.init (some ctx.lex))
+    | _, _, none => fun _ => pure ()
 
 /-- A statement list: UpdateEmpty of each statement's completion with the last value.
 spec: https://tc39.es/ecma262/#sec-block-runtime-semantics-evaluation -/
 def evalStmts : Nat → Ctx → Array Stmt → M Compl
   | 0, _, _ => tooDeep
-  | n + 1, ctx, ss =>
-    M.repeatFrom ((0 : Nat), (none : Option Value)) fun (i, v) => do
-      if h : i < ss.size then
-        let r ← evalStmt n ctx ss[i]
-        match r with
-        | .normal rv => return .inl (i + 1, rv <|> v)
-        | r => return .inr (r.updateEmpty v)
-      else return .inr (.normal v)
+  | n + 1, ctx, ss => Sem.stmts (ss.map fun s c => evalStmt n c s) ctx
 
 /-- ForLoopEvaluation and ForBodyEvaluation (with CreatePerIterationEnvironment).
 spec: https://tc39.es/ecma262/#sec-forbodyevaluation -/
