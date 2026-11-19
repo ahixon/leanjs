@@ -1761,6 +1761,10 @@ def functionDeclarationInstantiation : Nat → ObjId → FuncData → EnvId → 
       d.thisMode != .lexical && !paramNames.contains "arguments" &&
       !(!hasParamExprs && (functionNames.contains "arguments" || lexNames.contains "arguments"))
     let argumentsNeeded := argumentsNeeded && code.kind != .classField && code.kind != .classStaticBlock
+    -- (an arguments object nothing can reach is not made: the code does not mention `arguments`
+    -- and has no direct eval — FuncInfo.usesArguments covers both; the binding would be
+    -- unobservable)
+    let argumentsNeeded := argumentsNeeded && code.info.usesArguments
     -- 19-20.
     let paramEnv ← if strict || !hasParamExprs then pure env else newDeclEnv (some env)
     -- 21.
