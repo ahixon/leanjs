@@ -58,8 +58,12 @@ def toUnits (s : JSStr) : Array UInt16 := Id.run do
   for i in [0:s.length] do a := a.push (s.get i)
   return a
 
-def ofString (str : String) : JSStr :=
-  str.foldl (fun acc c => acc.pushCodePoint c.toNat) ⟨ByteArray.emptyWithCapacity (2 * str.utf8ByteSize)⟩
+/-- A list of characters, UTF-16 encoded. -/
+def ofList (cs : List Char) : JSStr := cs.foldl (fun acc c => acc.pushCodePoint c.toNat) empty
+
+/-- A Lean string, UTF-16 encoded. (Through `String.toList` and `List.foldl`, so that it unfolds
+definitionally on string literals: proofs can decide equalities of JSStr literals.) -/
+def ofString (str : String) : JSStr := ofList str.toList
 
 instance : Coe String JSStr := ⟨ofString⟩
 
