@@ -62,8 +62,13 @@ definitions are stated at `n = height + 1`.
 - Still falling back to the interpreter (correct, but opaque in generated code): destructuring
   patterns, classes, `for-in`/`for-of`, `with`, tagged templates, regex literals, `yield`, `super`,
   dynamic `import()`, direct `eval`.
-- Next: lemmas for calls (the driver running a function object's body) and for property access on
-  ordinary objects; a whole-program example.
+- Proof prerequisites in place: JSStr literals' equalities decide (`ofString` folds `String.toList`);
+  JSStr equality is lawful (`LawfulBEq`, `LawfulHashable`), so `Std.HashMap` lemmas apply to
+  environments; calls make no arguments object nothing can reach (`FuncInfo.usesArguments`).
+- Next: a lemma library over states (well-formedness: valid environment and object ids, the realm's
+  intrinsics; read-after-write for the arenas), then per-layer call lemmas — function environment,
+  this binding, FunctionDeclarationInstantiation for simple parameter lists, identifier reads —
+  composing into "calling `add` with Numbers x, y returns x + y", then a whole-program example.
 
 ## Stages
 
