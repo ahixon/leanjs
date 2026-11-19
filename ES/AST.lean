@@ -68,6 +68,30 @@ inductive FuncKind where
   | classStaticBlock
   deriving Inhabited, BEq, Repr
 
+/-- FunctionDeclarationInstantiation's static facts (computed once, `ES.analyzeFDI`, instead of
+at each call; in proofs they are literal data of the syntax tree).
+spec: https://tc39.es/ecma262/#sec-functiondeclarationinstantiation (steps 5-18) -/
+structure FDIInfo where
+  /-- BoundNames of the formal parameters -/
+  paramNames : Array JSStr := #[]
+  hasDuplicates : Bool := false
+  /-- TopLevelVarDeclaredNames of the body -/
+  varNames : Array JSStr := #[]
+  /-- The body has top-level function declarations (functionsToInitialize is not empty). -/
+  hasFunctions : Bool := false
+  /-- Their names (functionNames) -/
+  functionNames : Array JSStr := #[]
+  /-- The body has top-level lexical declarations. -/
+  hasLexical : Bool := false
+  lexNames : Array JSStr := #[]
+  /-- argumentsObjectNeeded (and something can reach it: `FuncInfo.usesArguments`) -/
+  argumentsNeeded : Bool := false
+  /-- Annex B.3.2.1 applies (sloppy code with block-level function declarations). -/
+  hasAnnexB : Bool := false
+  /-- The body has top-level `using` declarations (a disposal scope). -/
+  usesDispose : Bool := false
+  deriving Inhabited
+
 /-- Static facts about a function computed by the parser (the static semantics the runtime asks
 for at each call). -/
 structure FuncInfo where
@@ -92,6 +116,8 @@ structure FuncInfo where
   paramsHaveExpressions : Bool := false
   /-- An id unique within the parsed source (for caches keyed by function code). -/
   id : Nat := 0
+  /-- FunctionDeclarationInstantiation's static facts. -/
+  fdi : FDIInfo := {}
   deriving Inhabited
 
 mutual

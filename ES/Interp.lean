@@ -1435,7 +1435,8 @@ def evalClass : Nat → Ctx → Class → Option JSStr → Option PropKey → M 
         let fdef : FieldDef := { name := nm, init := initF }
         if isStatic then pure (ip, sp, inf, se.push (.inl fdef)) else pure (ip, sp, inf.push fdef, se)
       | .staticBlock body span =>
-        let code : Func := .mk none .classStaticBlock false false #[] (.stmts body) { strict := true, span }
+        let code : Func := .mk none .classStaticBlock false false #[] (.stmts body)
+          { strict := true, span, fdi := analyzeFDI .classStaticBlock true false false #[] (.stmts body) }
         let fp ← intrinsic "%Function.prototype%"
         let fo ← ordinaryFunctionCreate fp code classEnv classPriv cctx false
         makeMethod fo f
@@ -1736,35 +1737,25 @@ def functionDeclarationInstantiation : Nat → ObjId → FuncData → EnvId → 
     let code := d.code
     let strict := code.strict
     let formals := code.params
-    -- 5.
-    let paramNames := formals.foldl (fun acc (p : Param) => match p with | .mk t _ _ => acc ++ boundNames t) #[]
-    -- 6-8.
-    let hasDuplicates := (paramNames.foldl (fun (acc : HashSet JSStr × Bool) nm =>
-      (acc.1.insert nm, acc.2 || acc.1.contains nm)) ({}, false)).2
+    -- 5-18. (the static facts, computed once: FuncInfo.fdi)
+    let fi := code.info.fdi
+    let paramNames := fi.paramNames
+    let hasDuplicates := fi.hasDuplicates
     let simple := code.info.simpleParams
     let hasParamExprs := code.info.paramsHaveExpressions
     let body := match code.body with | .stmts b => b | .expr _ => #[]
-    -- 9-11.
-    let varDecls := topLevelVarScoped body
-    let varNames := varDecls.foldl (fun (acc : Array JSStr) dd => acc ++ dd.names) #[]
-    let lexDecls := topLevelLexicallyScoped body
-    let lexNames := lexDecls.foldl (fun (acc : Array JSStr) dd => acc ++ dd.names) #[]
-    -- 12-14.
-    let (functionNames, functionsToInit) := varDecls.reverse.foldl (fun (names, fs) dd =>
-      match dd with
-      | .func fn => match fn.name with
-        | some nm => if names.contains nm then (names, fs) else (#[nm] ++ names, #[fn] ++ fs)
-        | none => (names, fs)
-      | .pat _ => (names, fs)) ((#[] : Array JSStr), (#[] : Array Func))
-    -- 15-18.
-    let argumentsNeeded :=
-      d.thisMode != .lexical && !paramNames.contains "arguments" &&
-      !(!hasParamExprs && (functionNames.contains "arguments" || lexNames.contains "arguments"))
-    let argumentsNeeded := argumentsNeeded && code.kind != .classField && code.kind != .classStaticBlock
-    -- (an arguments object nothing can reach is not made: the code does not mention `arguments`
-    -- and has no direct eval — FuncInfo.usesArguments covers both; the binding would be
-    -- unobservable)
-    let argumentsNeeded := argumentsNeeded && code.info.usesArguments
+    let varNames := fi.varNames
+    let lexNames := fi.lexNames
+    let functionNames := fi.functionNames
+    let functionsToInit : Array Func := if fi.hasFunctions then
+        (topLevelVarScoped body).reverse.foldl (fun (names, fs) dd => match dd with
+          | .func fn => match fn.name with
+            | some nm => if names.contains nm then (names, fs) else (#[nm] ++ names, #[fn] ++ fs)
+            | none => (names, fs)
+          | .pat _ => (names, fs)) ((#[] : Array JSStr), (#[] : Array Func)) |>.2
+      else #[]
+    let lexDecls := if fi.hasLexical then topLevelLexicallyScoped body else #[]
+    let argumentsNeeded := fi.argumentsNeeded
     -- 19-20.
     let paramEnv ← if strict || !hasParamExprs then pure env else newDeclEnv (some env)
     -- 21.
@@ -1810,7 +1801,7 @@ def functionDeclarationInstantiation : Nat → ObjId → FuncData → EnvId → 
             initializeBinding varEnv vn iv
         pure varEnv
     -- 28. (Annex B.3.2.1)
-    let annexB := if strict then #[] else annexBFunctions body (paramNames ++ lexNames)
+    let annexB := if fi.hasAnnexB then annexBFunctions body (paramNames ++ lexNames) else #[]
     M.forArr annexB fun af => do
       let some fname := af.name | pure ()
       if fname != JSStr.ofString "arguments" && !(← hasBinding varEnv fname) then
@@ -1846,7 +1837,7 @@ def evalFunctionBody : Nat → ObjId → FuncData → EnvId → Array Value → 
         else evalExpr n ctx e
       | _, _ => evalExpr n ctx e
     | .stmts body =>
-      let r ← withDisposeScope (usingKinds (topLevelLexicallyScoped body)).1 ctx fun c => evalStmts n c body
+      let r ← withDisposeScope d.code.info.fdi.usesDispose ctx fun c => evalStmts n c body
       match r with
       | .ret v => pure v
       | _ => pure .undefined

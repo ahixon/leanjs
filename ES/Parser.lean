@@ -1,5 +1,6 @@
 import ES.Lexer
 import ES.Regex
+import ES.Decls
 import Std.Data.HashSet
 
 /-!
@@ -958,13 +959,13 @@ def parseFunctionRest (r : Rec) (spec : FnSpec) : P Func := do
   let f := (← get).fn
   let stop := (← get).prevEnd
   restoreCtx sv
+  let pe := params.any (fun p => match p with | .mk t i _ => i.isSome || patHasExpr astFuel t)
   let info : FuncInfo := {
     strict, span := { start := spec.start, stop }, simpleParams := isSimpleParams params,
     expectedArgs := expectedArgs params, hasDirectEval := f.hasEval,
     usesArguments := f.argsRef || f.hasEval, usesThis := f.arrowThis || f.hasEval,
-    paramsHaveExpressions := params.any (fun p => match p with
-      | .mk t i _ => i.isSome || patHasExpr astFuel t),
-    id }
+    paramsHaveExpressions := pe, id,
+    fdi := analyzeFDI spec.kind strict (f.argsRef || f.hasEval) pe params (.stmts body) }
   return .mk spec.name spec.kind spec.isAsync spec.isGen params (.stmts body) info
 
 /-- An arrow function's body, after `=>` (the parameters are already refined).
@@ -1001,13 +1002,13 @@ def parseArrowBody (r : Rec) (params : Array Param) (isAsync : Bool) (start : Na
   setFn fun p => { p with
     argsRef := p.argsRef || f.argsRef, thisRef := p.thisRef || f.thisRef,
     arrowThis := p.arrowThis || f.thisRef, hasEval := p.hasEval || f.hasEval }
+  let pe := params.any (fun p => match p with | .mk t i _ => i.isSome || patHasExpr astFuel t)
   let info : FuncInfo := {
     strict, span := { start, stop }, simpleParams := isSimpleParams params,
     expectedArgs := expectedArgs params, hasDirectEval := f.hasEval,
     usesArguments := f.argsRef || f.hasEval, usesThis := f.thisRef || f.hasEval,
-    paramsHaveExpressions := params.any (fun p => match p with
-      | .mk t i _ => i.isSome || patHasExpr astFuel t),
-    id }
+    paramsHaveExpressions := pe, id,
+    fdi := analyzeFDI .arrow strict (f.argsRef || f.hasEval) pe params body }
   return .mk none .arrow isAsync false params body info
 
 /-- Refines a cover's items (`(a, b = 1, ...c)` or `async(…)`) to arrow parameters. -/

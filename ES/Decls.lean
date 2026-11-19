@@ -219,4 +219,42 @@ where
 /-- The ids of a list of functions (to recognize them when their declarations are evaluated). -/
 def funcIds (fs : Array Func) : HashSet Nat := fs.foldl (fun acc f => acc.insert f.info.id) {}
 
+/-- Whether a body's lexical declarations include `using`/`await using` ones (and an `await using`). -/
+def usingKinds (decls : Array LexScoped) : Bool × Bool :=
+  decls.foldl (fun (u, a) d => match d with
+    | .binding .using _ => (true, a)
+    | .binding .awaitUsing _ => (true, true)
+    | _ => (u, a)) (false, false)
+
+/-- FunctionDeclarationInstantiation's static facts for a function.
+spec: https://tc39.es/ecma262/#sec-functiondeclarationinstantiation (steps 5-18) -/
+def analyzeFDI (kind : FuncKind) (strict usesArguments paramsHaveExpressions : Bool)
+    (params : Array Param) (body : FuncBody) : FDIInfo :=
+  -- 5-6.
+  let paramNames := params.foldl (fun acc (p : Param) => match p with | .mk t _ _ => acc ++ boundNames t) #[]
+  let hasDuplicates := (paramNames.foldl (fun (acc : HashSet JSStr × Bool) nm =>
+    (acc.1.insert nm, acc.2 || acc.1.contains nm)) ({}, false)).2
+  let stmts := match body with | .stmts b => b | .expr _ => #[]
+  -- 9-11.
+  let varDecls := topLevelVarScoped stmts
+  let varNames := varDecls.foldl (fun (acc : Array JSStr) dd => acc ++ dd.names) #[]
+  let lexDecls := topLevelLexicallyScoped stmts
+  let lexNames := lexDecls.foldl (fun (acc : Array JSStr) dd => acc ++ dd.names) #[]
+  -- 12-14.
+  let functionNames := varDecls.reverse.foldl (fun names dd => match dd with
+    | .func fn => match fn.name with
+      | some nm => if names.contains nm then names else #[nm] ++ names
+      | none => names
+    | .pat _ => names) (#[] : Array JSStr)
+  let hasFunctions := varDecls.any fun dd => match dd with | .func _ => true | _ => false
+  -- 15-18. (thisMode is lexical exactly for arrow functions)
+  let argumentsNeeded :=
+    kind != .arrow && !paramNames.contains "arguments" &&
+    !(!paramsHaveExpressions && (functionNames.contains "arguments" || lexNames.contains "arguments")) &&
+    kind != .classField && kind != .classStaticBlock && usesArguments
+  { paramNames, hasDuplicates, varNames, hasFunctions, functionNames,
+    hasLexical := !lexDecls.isEmpty, lexNames, argumentsNeeded,
+    hasAnnexB := !strict && !(annexBFunctions stmts (paramNames ++ lexNames)).isEmpty,
+    usesDispose := (usingKinds lexDecls).1 }
+
 end ES

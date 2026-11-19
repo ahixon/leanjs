@@ -82,11 +82,18 @@ def qFuncKind : FuncKind → String
 
 def qSpan (s : Span) : String := s!"\{ start := {s.start}, stop := {s.stop} : ES.Span }"
 
+def qFDI (f : FDIInfo) : String :=
+  s!"\{ paramNames := {qArr qStr f.paramNames}, hasDuplicates := {qBool f.hasDuplicates}, " ++
+  s!"varNames := {qArr qStr f.varNames}, hasFunctions := {qBool f.hasFunctions}, " ++
+  s!"functionNames := {qArr qStr f.functionNames}, hasLexical := {qBool f.hasLexical}, " ++
+  s!"lexNames := {qArr qStr f.lexNames}, argumentsNeeded := {qBool f.argumentsNeeded}, " ++
+  s!"hasAnnexB := {qBool f.hasAnnexB}, usesDispose := {qBool f.usesDispose} : ES.FDIInfo }"
+
 def qInfo (i : FuncInfo) : String :=
   s!"\{ strict := {qBool i.strict}, span := {qSpan i.span}, simpleParams := {qBool i.simpleParams}, " ++
   s!"expectedArgs := {i.expectedArgs}, hasDirectEval := {qBool i.hasDirectEval}, " ++
   s!"usesArguments := {qBool i.usesArguments}, usesThis := {qBool i.usesThis}, " ++
-  s!"paramsHaveExpressions := {qBool i.paramsHaveExpressions}, id := {i.id} : ES.FuncInfo }"
+  s!"paramsHaveExpressions := {qBool i.paramsHaveExpressions}, id := {i.id}, fdi := {qFDI i.fdi} : ES.FuncInfo }"
 
 def qImport : ImportDecl → String
   | .mk d ns named m attrs ph =>

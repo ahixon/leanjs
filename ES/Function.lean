@@ -247,14 +247,6 @@ def regexpCreateLiteral (pattern flags : JSStr) : M Value := do
 
 /-! ## Explicit resource management -/
 
-/-- Whether a statement list declares `using`/`await using` bindings directly (and whether any of
-them is `await using`). -/
-def usingKinds (decls : Array LexScoped) : Bool × Bool :=
-  decls.foldl (fun (u, a) d => match d with
-    | .binding .using _ => (true, a)
-    | .binding .awaitUsing _ => (true, true)
-    | _ => (u, a)) (false, false)
-
 /-- The async wrapper GetDisposeMethod makes of a sync `[Symbol.dispose]`. -/
 def asyncDisposeFromSync : BuiltinFn := fun self thisV _ _ => do
   let s ← builtinSlots self
