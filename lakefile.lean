@@ -15,6 +15,10 @@ lean_lib ES
 lean_exe leanjs where
   root := `Main
 
+/-- Theorems about programs (over definitions `leanjs compile --defs` generates). -/
+lean_lib Proofs where
+  globs := #[.submodules `Proofs]
+
 /-- test262 conformance runner: `lake exe test262 [paths] [-v] [-j N] [--update]`. -/
 lean_exe test262 where
   root := `Test262

@@ -45,6 +45,19 @@ Denotations carry the interpreter's structural depth `n` (it makes recursion tot
 height `h`, `denote n t` is the same for every `n > h` (a lemma: fuel monotonicity); generated
 definitions are stated at `n = height + 1`.
 
+## Status
+
+- Done: expression and statement combinators (`ES.Sem` in `ES/Interp.lean`); the generator
+  (`ES/Gen.lean`, `leanjs compile --defs`), whose `_eq` theorems are proved by `rfl`; a first
+  lemma library (`Proofs/Basic.lean`) and a worked proof (`Proofs/Add.lean`: `add` returns the sum
+  of two Numbers, for the generated definition and for the interpreter on `add`'s syntax tree).
+- What makes `rfl` work: the interpreter maps sub-terms with `amap` (List.map), not `Array.map`
+  (well-founded recursion does not unfold); syntactic decisions are AST data (`Expr.call`'s
+  `directEval` flag), not string comparisons; theorems are stated at a symbolic depth `n + k`.
+- Next: combinators for the constructs still falling back to the interpreter (patterns, object and
+  array literals, classes, for-in/of, try, switch); lemmas for calls (the driver running a
+  function object's body) and for property access on ordinary objects; a whole-program example.
+
 ## Stages
 
 1. Expressions: move each `evalExpr` case into an `ES.Sem` combinator; the interpreter calls them.
