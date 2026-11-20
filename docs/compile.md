@@ -133,8 +133,11 @@ definitions are stated at `n = height + 1`.
   effect-free elements is a new `ArrayObj` with those elements); `putRefValue_element` (`a[k] = v`),
   `getRefValue_element`. Example: `Proofs/ArrayWriteEx.lean` — `let a = [1, 2, 3]; a[1] = 5;
   return a[0] + a[1] + a[2]` returns 9 (`f_spec`, `f_interp_spec`).
-- Next: the full calls of `sumFor`/`total`/`f` (as for `sum`), writes past the end (through the
-  prototype chain), and loops that write.
+- A loop that writes: `Proofs/Double.lean` — `double(a)` (`a[i] = a[i] + a[i]` over `a.length`) leaves
+  every element doubled (`double_spec`, `double_interp_spec`); the invariant is about the heap
+  (`ArrayObj A len (dbl xs k)`: elements below `k` doubled), `arrayObj_congr` ignores indices past `len`.
+- Next: the full calls of `sumFor`/`total`/`f`/`double` (as for `sum`), and writes past the end (through
+  the prototype chain).
 
 ## Stages
 

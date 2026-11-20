@@ -324,4 +324,10 @@ theorem getRefValue_element (A : ObjId) (len : Nat) (xs : Nat → Value) (k : Na
   exact getRefValue_index A k strict t (xs k) true true true (by simp only [intBound]; omega) hs hkd
     (by rw [key_eq]; exact hel k hk)
 
+/-- `ArrayObj` depends only on the elements below `len`. -/
+theorem arrayObj_congr (A : ObjId) (len : Nat) (xs ys : Nat → Value) (t : State) (h : ∀ j < len, xs j = ys j)
+    (hA : ArrayObj A len xs t) : ArrayObj A len ys t := by
+  obtain ⟨a1, a2, a3, a4, a5, a6⟩ := hA
+  exact ⟨a1, a2, a3, a4, fun j hj => by rw [← h j hj]; exact a5 j hj, a6⟩
+
 end ES
