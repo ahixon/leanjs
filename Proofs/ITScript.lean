@@ -1,4 +1,4 @@
-import Proofs.DTScript
+import Proofs.Script
 import Proofs.IotaCall
 import Proofs.ITGen
 
@@ -8,8 +8,8 @@ import Proofs.ITGen
 Run as the engine runs a script (ScriptEvaluation, its two call requests answered by the driver), it
 evaluates to 10 = 0 + 1 + 2 + 3 + 4: `iota(5)` builds a new array (its writes go through
 `Array.prototype`'s chain, assumed to have no index property below 5), `b` is bound to it, and
-`total(b)` sums it. GlobalDeclarationInstantiation is as for examples/double_total.js
-(`Proofs/DTScript.lean`), with `iota` in place of `double`.
+`total(b)` sums it. The declarations and ScriptEvaluation are the generic `Script.script_value` and
+`Script.instAll_facts`.
 -/
 
 open ES ES.Conv SumProof SumForProof TotalProof
@@ -20,215 +20,14 @@ open DTScript (createMutableBinding_global initializeBinding_global identValue_g
 
 namespace ITScript
 
-theorem varScoped : topLevelVarScoped ITGen.script_stmts = #[.func ITGen.total_func, .func ITGen.iota_func] := by
-  rfl
 theorem lexScoped : topLevelLexicallyScoped ITGen.script_stmts = #[.binding .let (.ident "b")] := by
   have hv : (VarKind.let == VarKind.var) = false := by decide
   simp [topLevelLexicallyScoped, stmtLexScoped, ITGen.script_stmts, hv]
-theorem annexB : annexBFunctions ITGen.script_stmts #[JSStr.ofString "b"] = #[] := by rfl
-theorem names_b : (LexScoped.binding .let (.ident "b")).names = #[JSStr.ofString "b"] := by rfl
 
-theorem ne_ti : (JSStr.ofString "total" = JSStr.ofString "iota") = False := by simp; decide
-theorem ne_it : (JSStr.ofString "iota" = JSStr.ofString "total") = False := by simp; decide
 
 theorem simple_total : Inst.SimpleFn ITGen.total_func "total" := ⟨rfl, rfl, rfl, rfl, rfl⟩
 theorem simple_iota : Inst.SimpleFn ITGen.iota_func "iota" := ⟨rfl, rfl, rfl, rfl, rfl⟩
 
-section
-variable (t : State) (ge : EnvId) (g : ObjId) (gb : HashMap JSStr Binding) (gtv : Value) (ctx : Ctx) (fp : ObjId)
-
-/-- After `let b`'s binding is created (uninitialized) in the global record. -/
-def stL : State := t.setEnv ge (.global g (gb.insert "b" { deletable := false }) gtv)
-/-- After `total`'s function object is created and bound on the global object. -/
-def stT : State :=
-  let u := Inst.instStateFn ITGen.total_func "total" (stL t ge g gb gtv) ge ctx.script fp
-  let p : Property := .data (.obj (stL t ge g gb gtv).heap.size) true true false
-  (u.setProp g (.str "total") p).setProp g (.str "total") p
-/-- After `iota`'s, the state GlobalDeclarationInstantiation ends in. -/
-def stI : State :=
-  let u := Inst.instStateFn ITGen.iota_func "iota" (stT t ge g gb gtv ctx fp) ge ctx.script fp
-  let p : Property := .data (.obj (stT t ge g gb gtv ctx fp).heap.size) true true false
-  (u.setProp g (.str "iota") p).setProp g (.str "iota") p
-
-theorem stT_heap_size : (stT t ge g gb gtv ctx fp).heap.size = t.heap.size + 2 := by
-  simp [stT, stL, Inst.instStateFn_size]
-theorem stI_heap_size : (stI t ge g gb gtv ctx fp).heap.size = t.heap.size + 4 := by
-  simp [stI, Inst.instStateFn_size, stT_heap_size]
-theorem stI_envs : (stI t ge g gb gtv ctx fp).envs = (stL t ge g gb gtv).envs := by
-  simp [stI, stT, Inst.instStateFn_envs]
-theorem stI_fuel : (stI t ge g gb gtv ctx fp).fuel = t.fuel := by
-  simp [stI, stT, stL, Inst.instStateFn_fuel]
-theorem stI_realms : (stI t ge g gb gtv ctx fp).realms = t.realms := by
-  simp [stI, stT, stL, Inst.instStateFn_realms]
-theorem stI_curRealm : (stI t ge g gb gtv ctx fp).curRealm = t.curRealm := by
-  simp [stI, stT, stL, State.curRealm, Inst.instStateFn_realms, Inst.instStateFn_realm]
-theorem stT_curRealm : (stT t ge g gb gtv ctx fp).curRealm = t.curRealm := by
-  simp [stT, stL, State.curRealm, Inst.instStateFn_realms, Inst.instStateFn_realm]
-
-end
-
-theorem gdi (t : State) (ge : EnvId) (g : ObjId) (ctx : Ctx) (gb : HashMap JSStr Binding) (gtv : Value)
-    (fp : ObjId) (hstrict : ctx.strict = false) (hge : ge < t.envs.size)
-    (hE : t.envEntry ge = .global g gb gtv) (hgbb : gb.contains "b" = false) (hgbt : gb.contains "total" = false)
-    (hgbd : gb.contains "iota" = false)
-    (hgs : g < t.heap.size) (hk : (t.objEntry g).kind = .ordinary) (hx : (t.objEntry g).extensible = true)
-    (hpb : (t.objEntry g).props.get? (.str "b") = none) (hpt : (t.objEntry g).props.get? (.str "total") = none)
-    (hpd : (t.objEntry g).props.get? (.str "iota") = none)
-    (hfp : t.curRealm.intrinsics["%Function.prototype%"]? = some fp) :
-    globalDeclarationInstantiation ITGen.script_stmts ge g ctx t =
-      .ok (AddScript.gdiCtx ctx) (stI t ge g gb gtv (AddScript.gdiCtx ctx) fp) := by
-  have hk' : (t.objEntry g).kind.isPlain = true := by rw [hk]; rfl
-  have hnt : ITGen.total_func.name = some (JSStr.ofString "total") := rfl
-  have hnd : ITGen.iota_func.name = some (JSStr.ofString "iota") := rfl
-  let c := AddScript.gdiCtx ctx
-  -- `b`
-  have hcm := createMutableBinding_global ge "b" false t g gb gtv hge hE
-  -- `total`
-  let tL := stL t ge g gb gtv
-  have hiT := Inst.instantiate_fn ITGen.total_func "total" simple_total tL ge c fp (by simp [tL, stL]; exact hfp)
-  let uT := Inst.instStateFn ITGen.total_func "total" tL ge c.script fp
-  have hgL : g < tL.heap.size := by simp [tL, stL]; exact hgs
-  have huT : uT.objEntry g = t.objEntry g := by
-    simp only [uT]; rw [Inst.instStateFn_entry_lt _ _ _ _ _ _ _ hgL]; simp [tL, stL]
-  have hcgT := AddScript.createGlobalFunctionBinding_new uT g "total" (.obj tL.heap.size)
-    (by simp only [uT]; rw [Inst.instStateFn_size]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt hgL))
-    (by rw [huT]; exact hk) (by rw [huT]; exact hx)
-    (by rw [huT]; exact hpt)
-  -- `iota`
-  let tT := stT t ge g gb gtv c fp
-  have hiD := Inst.instantiate_fn ITGen.iota_func "iota" simple_iota tT ge c fp
-    (by rw [stT_curRealm]; exact hfp)
-  let uD := Inst.instStateFn ITGen.iota_func "iota" tT ge c.script fp
-  have hgT : g < tT.heap.size := by simp only [tT]; rw [stT_heap_size]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt hgs)
-  have hTg : tT.objEntry g = ((t.objEntry g).withProps (·.insert (.str "total")
-      (.data (.obj tL.heap.size) true true false))).withProps (·.insert (.str "total")
-      (.data (.obj tL.heap.size) true true false)) := by
-    have hgu : g < uT.heap.size := by
-      simp only [uT]; rw [Inst.instStateFn_size]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt hgL)
-    simp only [tT, stT]
-    rw [State.setProp_entry_self _ _ _ _ (by simpa using hgu), State.setProp_entry_self _ _ _ _ hgu, huT]
-  have huD : uD.objEntry g = tT.objEntry g := by simp only [uD]; rw [Inst.instStateFn_entry_lt _ _ _ _ _ _ _ hgT]
-  have hne : PropKey.str (JSStr.ofString "total") ≠ PropKey.str (JSStr.ofString "iota") := by
-    intro h; injection h with h; revert h; decide
-  have hcgD := AddScript.createGlobalFunctionBinding_new uD g "iota" (.obj tT.heap.size)
-    (by simp only [uD]; rw [Inst.instStateFn_size]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt hgT))
-    (by rw [huD, hTg, Obj.withProps_kind, Obj.withProps_kind]; exact hk)
-    (by rw [huD, hTg, Obj.withProps_extensible, Obj.withProps_extensible]; exact hx)
-    (by rw [huD, hTg, Obj.withProps_props, Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ hne,
-        PropMap.get?_insert_ne _ _ _ _ hne]
-        exact hpd)
-  have hctx : ({ ctx with strict := false, annexB := funcIds #[] } : Ctx) = c := by
-    cases ctx; simp_all [c, AddScript.gdiCtx]
-  have hcm' : createMutableBinding ge "b" false t = .ok () tL := hcm
-  have hcgT' : createGlobalFunctionBinding g "total" (.obj tL.heap.size) false
-      (Inst.instStateFn ITGen.total_func "total" tL ge c.script fp) = .ok () tT := hcgT
-  have hcgD' : createGlobalFunctionBinding g "iota" (.obj tT.heap.size) false
-      (Inst.instStateFn ITGen.iota_func "iota" tT ge c.script fp) = .ok () (stI t ge g gb gtv c fp) :=
-    hcgD
-  have hk1 : (VarKind.let == VarKind.const) = false := by decide
-  have hk2 : (VarKind.let == VarKind.using) = false := by decide
-  have hk3 : (VarKind.let == VarKind.awaitUsing) = false := by decide
-  simp only [globalDeclarationInstantiation, varScoped, lexScoped, hstrict]
-  simp [names_b, annexB, globalDeclRecHas, readEnv_entry _ _ _ hge, hE, hgbb, hgbt, hgbd, hasRestrictedGlobalProperty,
-    canDeclareGlobalFunction, Obj'.getOwnProperty_entry _ _ _ hgs hk', Obj'.isExtensible_entry _ _ hgs hk', hx, hpb,
-    hpt, hpd, hnt, hnd, VarScoped.names, M.bind_eq, M.bind_apply, M.bindRes_ok, ne_ti, ne_it, LexScoped.isConstant, pure, M.pure, funcNameKey, hctx, hcm', hk1, hk2, hk3, hiT, hcgT', hiD, hcgD']
-  exact ⟨rfl, rfl⟩
-
-/-- What GlobalDeclarationInstantiation leaves: `b` declared (uninitialized) in the global record,
-`total` (object `t.heap.size`) and `iota` (object `t.heap.size + 2`) bound on the global object. -/
-theorem stI_facts (t : State) (ge : EnvId) (g : ObjId) (gb : HashMap JSStr Binding) (gtv : Value) (c : Ctx)
-    (fp : ObjId) (hge : ge < t.envs.size) (hgs : g < t.heap.size) :
-    let u := stI t ge g gb gtv c fp
-    u.envEntry ge = .global g (gb.insert "b" { deletable := false }) gtv ∧ u.envs.size = t.envs.size ∧
-    (∀ e, e ≠ ge → u.envEntry e = t.envEntry e) ∧
-    (u.objEntry g).kind = (t.objEntry g).kind ∧
-    (u.objEntry g).props.get? (.str "total") = some (.data (.obj t.heap.size) true true false) ∧
-    (u.objEntry g).props.get? (.str "iota") = some (.data (.obj (t.heap.size + 2)) true true false) ∧
-    (u.objEntry t.heap.size).kind = .func (Inst.fnData ITGen.total_func (stL t ge g gb gtv) ge c.script) ∧
-    (u.objEntry (t.heap.size + 2)).kind =
-      .func (Inst.fnData ITGen.iota_func (stT t ge g gb gtv c fp) ge c.script) ∧
-    u.heap.size = t.heap.size + 4 ∧ u.fuel = t.fuel ∧ u.realms = t.realms ∧
-    (u.objEntry g).proto = (t.objEntry g).proto ∧
-    (∀ j, j < 10 ^ 10 → (u.objEntry g).props.get? (PropKey.ofNat j) = (t.objEntry g).props.get? (PropKey.ofNat j)) ∧
-    (∀ x, x < t.heap.size → x ≠ g → u.objEntry x = t.objEntry x) := by
-  intro u
-  have hLs : (stL t ge g gb gtv).heap.size = t.heap.size := by simp [stL]
-  have hTs : (stT t ge g gb gtv c fp).heap.size = t.heap.size + 2 := stT_heap_size _ _ _ _ _ _ _
-  obtain ⟨tL, htL⟩ : ∃ x, stL t ge g gb gtv = x := ⟨_, rfl⟩
-  obtain ⟨tT, htT⟩ : ∃ x, stT t ge g gb gtv c fp = x := ⟨_, rfl⟩
-  rw [htL] at hLs; rw [htT] at hTs
-  have hu : u = ((Inst.instStateFn ITGen.iota_func "iota" tT ge c.script fp).setProp g (.str "iota")
-      (.data (.obj tT.heap.size) true true false)).setProp g (.str "iota") (.data (.obj tT.heap.size) true true false) := by
-    simp only [u, stI, htT]
-  have hT : tT = ((Inst.instStateFn ITGen.total_func "total" tL ge c.script fp).setProp g (.str "total")
-      (.data (.obj tL.heap.size) true true false)).setProp g (.str "total") (.data (.obj tL.heap.size) true true false) := by
-    rw [← htT]; simp only [stT, htL]
-  have hLe : tL.envEntry ge = .global g (gb.insert "b" { deletable := false }) gtv := by
-    rw [← htL]; exact State.setEnv_envEntry_self _ _ _ hge
-  have hLo : ∀ o, tL.objEntry o = t.objEntry o := by intro o; rw [← htL]; simp [stL]
-  -- environments
-  have hTenvs : tT.envs = tL.envs := by rw [hT]; simp [Inst.instStateFn_envs]
-  have huenvs : u.envs = tL.envs := by rw [hu]; simp [Inst.instStateFn_envs, hTenvs]
-  have hLenvs : tL.envs.size = t.envs.size := by rw [← htL]; simp [stL]
-  -- the global object
-  have hgL : g < tL.heap.size := by rw [hLs]; exact hgs
-  have hgUT : g < (Inst.instStateFn ITGen.total_func "total" tL ge c.script fp).heap.size := by
-    rw [Inst.instStateFn_size]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt hgL)
-  have hgT : g < tT.heap.size := by rw [hTs]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt hgs)
-  have hgUD : g < (Inst.instStateFn ITGen.iota_func "iota" tT ge c.script fp).heap.size := by
-    rw [Inst.instStateFn_size]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt hgT)
-  have hTg : tT.objEntry g = ((t.objEntry g).withProps (·.insert (.str "total")
-      (.data (.obj tL.heap.size) true true false))).withProps (·.insert (.str "total")
-      (.data (.obj tL.heap.size) true true false)) := by
-    rw [hT, State.setProp_entry_self _ _ _ _ (by simpa using hgUT), State.setProp_entry_self _ _ _ _ hgUT,
-      Inst.instStateFn_entry_lt _ _ _ _ _ _ _ hgL, hLo]
-  have hug : u.objEntry g = ((tT.objEntry g).withProps (·.insert (.str "iota")
-      (.data (.obj tT.heap.size) true true false))).withProps (·.insert (.str "iota")
-      (.data (.obj tT.heap.size) true true false)) := by
-    rw [hu, State.setProp_entry_self _ _ _ _ (by simpa using hgUD), State.setProp_entry_self _ _ _ _ hgUD,
-      Inst.instStateFn_entry_lt _ _ _ _ _ _ _ hgT]
-  have hne : PropKey.str (JSStr.ofString "iota") ≠ PropKey.str (JSStr.ofString "total") := by
-    intro h; injection h with h; revert h; decide
-  -- the function objects
-  have hfT : t.heap.size < tT.heap.size := by rw [hTs]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)
-  have hgfT : g ≠ t.heap.size := Nat.ne_of_lt hgs
-  have hgfD : g ≠ t.heap.size + 2 := Nat.ne_of_lt (Nat.lt_succ_of_lt (Nat.lt_succ_of_lt hgs))
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · simp only [State.envEntry, huenvs]; exact hLe
-  · rw [huenvs, hLenvs]
-  · intro e he
-    simp only [State.envEntry, huenvs]; rw [← htL]; simp only [stL]
-    exact State.setEnv_envEntry_ne _ _ _ _ (Ne.symm he)
-  · rw [hug, Obj.withProps_kind, Obj.withProps_kind, hTg, Obj.withProps_kind, Obj.withProps_kind]
-  · rw [hug, Obj.withProps_props, Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ hne,
-      PropMap.get?_insert_ne _ _ _ _ hne, hTg, Obj.withProps_props, Obj.withProps_props, hLs]
-    simp
-  · rw [hug, Obj.withProps_props, Obj.withProps_props, hTs]; simp
-  · rw [hu, State.setProp_entry_ne _ _ _ _ _ hgfT, State.setProp_entry_ne _ _ _ _ _ hgfT,
-      Inst.instStateFn_entry_lt _ _ _ _ _ _ _ hfT, hT, State.setProp_entry_ne _ _ _ _ _ hgfT,
-      State.setProp_entry_ne _ _ _ _ _ hgfT, ← hLs, Inst.instStateFn_func, htL]
-  · rw [hu, State.setProp_entry_ne _ _ _ _ _ hgfD, State.setProp_entry_ne _ _ _ _ _ hgfD, ← hTs,
-      Inst.instStateFn_func, htT]
-  · simp only [u]; exact stI_heap_size _ _ _ _ _ _ _
-  · simp only [u]; exact stI_fuel _ _ _ _ _ _ _
-  · simp only [u]; exact stI_realms _ _ _ _ _ _ _
-  · rw [hug, Obj.withProps_proto, Obj.withProps_proto, hTg, Obj.withProps_proto, Obj.withProps_proto]
-  · intro j hj
-    have hi := name_ne_index "iota" (by decide) j hj
-    have ht := name_ne_index "total" (by decide) j hj
-    rw [hug, Obj.withProps_props, Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ hi,
-      PropMap.get?_insert_ne _ _ _ _ hi, hTg, Obj.withProps_props, Obj.withProps_props,
-      PropMap.get?_insert_ne _ _ _ _ ht, PropMap.get?_insert_ne _ _ _ _ ht]
-  · intro x hx hxg
-    have hxL : x < tL.heap.size := by rw [hLs]; exact hx
-    have hxT : x < tT.heap.size := by rw [hTs]; exact Nat.lt_of_lt_of_le hx (Nat.le_add_right _ _)
-    rw [hu, State.setProp_entry_ne _ _ _ _ _ (Ne.symm hxg), State.setProp_entry_ne _ _ _ _ _ (Ne.symm hxg),
-      Inst.instStateFn_entry_lt _ _ _ _ _ _ _ hxT, hT, State.setProp_entry_ne _ _ _ _ _ (Ne.symm hxg),
-      State.setProp_entry_ne _ _ _ _ _ (Ne.symm hxg), Inst.instStateFn_entry_lt _ _ _ _ _ _ _ hxL, hLo]
-
-theorem stT_realm (t : State) (ge : EnvId) (g : ObjId) (gb : HashMap JSStr Binding) (gtv : Value) (c : Ctx)
-    (fp : ObjId) : (stT t ge g gb gtv c fp).realm = t.realm := by
-  simp [stT, stL, Inst.instStateFn_realm]
 theorem total_same : ITGen.total_func = TotalGen.total_func := rfl
 theorem isIota_it : IotaCall.IsIota ITGen.iota_func := ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
@@ -320,6 +119,11 @@ theorem psum10 : psum (fun j => j) 5 = 10 := by decide
 
 /-! ## The whole script -/
 
+open Script
+
+/-- The script's declarations. -/
+def fs : List (Func × JSStr) := [(ITGen.total_func, "total"), (ITGen.iota_func, "iota")]
+
 /-- **The whole program** (examples/iota_total.js), run as the engine runs a script: ScriptEvaluation,
 with its two call requests answered by the driver, evaluates to 10. Started from a realm whose global
 object is an ordinary extensible object without `b`, `total` or `iota`, and in which no object on
@@ -336,43 +140,46 @@ theorem it_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
     (hfp : s.curRealm.intrinsics["%Function.prototype%"]? = some fp)
     (hP : ∀ j < 5, AbsentChain s 2 s.curRealm.arrayProto (PropKey.ofNat j)) (hf : 30 ≤ s.fuel) :
     ∃ s', (runM eng (scriptEvaluation ITGen.program) s cs).1 = .ok (num 10) s' := by
-  -- ScriptEvaluation's first steps: the script record and its context
   let ge := s.curRealm.globalEnv
   let g := s.curRealm.globalObj
-  let t : State := { s with scripts := s.scripts.push { prog := ITGen.program, realm := s.realm, path := "" }, script := s.scripts.size }
-  let ctx0 : Ctx := { lex := ge, var := ge, strict := false, realm := s.realm, script := s.scripts.size }
-  have htr : t.curRealm = s.curRealm := rfl
-  have hge' : ge < t.envs.size := hge
-  have hE' : t.envEntry ge = .global g gb gtv := hE
-  have hgs' : g < t.heap.size := hgs
-  have htf : t.fuel = s.fuel := rfl
-  have hto : ∀ x, t.objEntry x = s.objEntry x := fun _ => rfl
-  -- GlobalDeclarationInstantiation
-  have hgdi := gdi t ge g ctx0 gb gtv fp rfl hge' hE' hgbb hgbt hgbi hgs' hk hx hpb hpt hpi (by rw [htr]; exact hfp)
-  let c := AddScript.gdiCtx ctx0
-  obtain ⟨hE1, hz1, -, hgk1, hpt1, hpi1, hfTk, hfIk, hsz1, hfu1, hrl1, hgp1, hgj1, ho1⟩ :=
-    stI_facts t ge g gb gtv c fp hge' hgs'
-  obtain ⟨u, hu⟩ : ∃ u, stI t ge g gb gtv c fp = u := ⟨_, rfl⟩
-  rw [hu] at hgdi hE1 hz1 hgk1 hpt1 hpi1 hfTk hfIk hsz1 hfu1 hrl1 hgp1 hgj1 ho1
-  let fT := t.heap.size
-  let fI := t.heap.size + 2
-  obtain ⟨dT, hdT⟩ : ∃ d, Inst.fnData ITGen.total_func (stL t ge g gb gtv) ge c.script = d := ⟨_, rfl⟩
-  obtain ⟨dI, hdI⟩ : ∃ d, Inst.fnData ITGen.iota_func (stT t ge g gb gtv c fp) ge c.script = d := ⟨_, rfl⟩
-  rw [hdT] at hfTk; rw [hdI] at hfIk
-  have hir : dI.realm = s.realm := by rw [← hdI, Inst.fnData_realm, stT_realm]
-  have htrl : dT.realm = s.realm := by rw [← hdT, Inst.fnData_realm]; simp [stL]; rfl
-  have hcodeI : IotaCall.IsIota dI.code := by rw [← hdI, Inst.fnData_code]; exact isIota_it
-  have hcodeT : dT.code = TotalGen.total_func := by rw [← hdT, Inst.fnData_code]; exact total_same
-  have hclsI : dI.isClassCtor = false := by rw [← hdI, Inst.fnData_isClassCtor]
-  have hclsT : dT.isClassCtor = false := by rw [← hdT, Inst.fnData_isClassCtor]
-  have hmI : dI.thisMode = .global := by rw [← hdI, Inst.fnData_thisMode]
-  have hmT : dT.thisMode = .global := by rw [← hdT, Inst.fnData_thisMode]
-  have hgeu : ge < u.envs.size := by rw [hz1]; exact hge'
-  have hgu : g < u.heap.size := by rw [hsz1]; exact Nat.lt_of_lt_of_le hgs' (Nat.le_add_right _ _)
-  have hfTu : fT < u.heap.size := by show t.heap.size < u.heap.size; rw [hsz1]; omega
-  have hfIu : fI < u.heap.size := by show t.heap.size + 2 < u.heap.size; rw [hsz1]; omega
-  have hku : (u.objEntry g).kind = .ordinary := by rw [hgk1]; exact hk
+  let c := scriptCtx s false
+  -- the state after the declarations (`Script.instAll_facts`)
+  obtain ⟨t0, ht0⟩ : ∃ x, (scriptStart s ITGen.program).setEnv ge (.global g (insertLets gb ["b"]) gtv) = x :=
+    ⟨_, rfl⟩
+  have ho0 : ∀ x, t0.objEntry x = s.objEntry x := by intro x; rw [← ht0, State.setEnv_objEntry]; rfl
+  have hz0 : t0.heap.size = s.heap.size := by rw [← ht0, State.setEnv_heap_size]; rfl
+  have hge0 : ge < t0.envs.size := by rw [← ht0, State.setEnv_envs_size]; exact hge
+  have hgood : GoodG g fp t0 := ⟨by rw [hz0]; exact hgs, by rw [ho0]; exact hk, by rw [ho0]; exact hx,
+    by rw [← ht0, State.setEnv_curRealm]; exact hfp⟩
+  obtain ⟨⟨-, hku, -, -⟩, heu, hfuu, hru, hrlu, hszu, hou, hpru, hkeep, hnames, hfuns⟩ :=
+    instAll_facts ge g s.scripts.size fp fs t0 hgood (by decide)
+  obtain ⟨u, hu⟩ : ∃ x, instAll ge g s.scripts.size fp fs t0 = x := ⟨_, rfl⟩
+  rw [hu] at hku heu hfuu hru hrlu hszu hou hpru hkeep hnames hfuns
+  have hrl0 : t0.realm = s.realm := by rw [← ht0, State.setEnv_realm]; rfl
+  have hr0 : t0.realms = s.realms := by rw [← ht0, State.setEnv_realms]; rfl
+  have hfu0 : t0.fuel = s.fuel := by rw [← ht0, State.setEnv_fuel]; rfl
+  let fT := s.heap.size
+  let fI := s.heap.size + 2
+  obtain ⟨dT, hfTk, hcT, hrT, hmT, hclsT⟩ := hfuns 0 (by decide)
+  obtain ⟨dI, hfIk, hcI, hrI, hmI, hclsI⟩ := hfuns 1 (by decide)
+  rw [hz0] at hfTk hfIk hszu hnames
+  simp only [fs, List.length_cons, List.length_nil] at hszu
+  simp only [Nat.mul_zero, Nat.add_zero, Nat.mul_one] at hfTk hfIk
+  have hpt1 : (u.objEntry g).props.get? (.str "total") = some (.data (.obj fT) true true false) := hnames 0 (by decide)
+  have hpi1 : (u.objEntry g).props.get? (.str "iota") = some (.data (.obj fI) true true false) := hnames 1 (by decide)
+  have hcodeT : dT.code = TotalGen.total_func := hcT.trans total_same
+  have hcodeI : IotaCall.IsIota dI.code := by rw [hcI]; exact isIota_it
+  have hir : dI.realm = s.realm := hrI.trans hrl0
+  have htrl : dT.realm = s.realm := hrT.trans hrl0
   let gbL := gb.insert "b" { deletable := false }
+  have hE1 : u.envEntry ge = .global g gbL gtv := by
+    have h1 : u.envEntry ge = t0.envEntry ge := by simp only [State.envEntry, heu]
+    rw [h1, ← ht0, State.setEnv_envEntry_self _ _ _ (show ge < (scriptStart s ITGen.program).envs.size from hge)]
+    simp [insertLets, gbL]
+  have hgeu : ge < u.envs.size := by rw [heu]; exact hge0
+  have hgu : g < u.heap.size := by rw [hszu]; exact Nat.lt_of_lt_of_le hgs (Nat.le_add_right _ _)
+  have hfTu : fT < u.heap.size := by show s.heap.size < u.heap.size; rw [hszu]; omega
+  have hfIu : fI < u.heap.size := by show s.heap.size + 2 < u.heap.size; rw [hszu]; omega
   have hLb : (JSStr.ofString "b" ∈ gbL) = True := by simp [gbL]
   have hLi : gbL.contains "iota" = false := by simp [gbL, Std.HashMap.contains_insert, hgbi, ne_bi]
   have hLi' : gbL[JSStr.ofString "iota"]? = none := by
@@ -382,35 +189,39 @@ theorem it_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
   have hLim : (JSStr.ofString "iota" ∈ gbL) = False := by simp [Std.HashMap.mem_iff_contains, hLi]
   -- `let b = iota(5)` asks for its call
   obtain ⟨K3, h3, hK3⟩ := let_call_req c u ge g fI gbL gtv dI rfl rfl hgeu hE1 hLb hLi hLi' hLim hgu hku hpi1 hfIu
-    hfIk (by rw [hfu1, htf]; omega)
-  obtain ⟨K, hreq, hK⟩ := body_req 999956 c u _ K3 rfl (by rw [hfu1, htf]; omega) h3
-  have hscript : evalStmts evalDepth (AddScript.gdiCtx ctx0) ITGen.script_stmts u = ITGen.script 999956 c u := by
-    rw [ITGen.script_eq]; rfl
-  -- the call of `iota`, answered by the driver
+    hfIk (by rw [hfuu, hfu0]; omega)
+  obtain ⟨K, hreq, hK⟩ := body_req 999956 c u _ K3 rfl (by rw [hfuu, hfu0]; omega) h3
+  -- the call of `iota`
   obtain ⟨u', hu'⟩ : ∃ x, ({ u with fuel := u.fuel - 1 } : State) = x := ⟨_, rfl⟩
-  have hr' : u'.realms = s.realms := by rw [← hu']; exact hrl1
+  have hr' : u'.realms = s.realms := by rw [← hu']; exact hru.trans hr0
   have hgeI : (u'.realms[dI.realm]!).globalEnv = ge := by rw [hr', hir]; rfl
   have hz' : u'.envs = u.envs := by rw [← hu']
-  have hou : ∀ x, u'.objEntry x = u.objEntry x := fun x => by rw [← hu']; rfl
+  have hou' : ∀ x, u'.objEntry x = u.objEntry x := fun x => by rw [← hu']; rfl
   have hPI : ∀ j < 5, AbsentChain u' 2 (u'.realms[dI.realm]!).arrayProto (PropKey.ofNat j) := by
     intro j hj
     have hap : (u'.realms[dI.realm]!).arrayProto = s.curRealm.arrayProto := by rw [hr', hir]; rfl
     rw [hap]
     refine absentChain_mono_key s u' _ (fun x hx => ?_) ?_ 2 _ (hP j hj)
-    · rw [hou x]
+    · rw [hou' x]
       by_cases hxg : x = g
-      · subst hxg; exact ⟨by rw [hgk1]; rfl, by rw [hgp1]; rfl, by rw [hgj1 j (by omega)]; rfl⟩
-      · rw [ho1 x hx hxg]; exact ⟨rfl, rfl, rfl⟩
-    · rw [← hu']; show s.heap.size ≤ u.heap.size; rw [hsz1]; exact Nat.le_add_right _ _
+      · subst hxg
+        refine ⟨by rw [hku, hk], by rw [hpru, ho0], ?_⟩
+        rw [hkeep _ (fun p hp => ?_), ho0]
+        simp only [fs, List.mem_cons, List.mem_nil_iff, or_false] at hp
+        rcases hp with rfl | rfl
+        · exact Ne.symm (name_ne_index "total" (by decide) j (by omega))
+        · exact Ne.symm (name_ne_index "iota" (by decide) j (by omega))
+      · rw [hou x (by rw [hz0]; exact hx) hxg, ho0]; exact ⟨rfl, rfl, rfl⟩
+    · rw [← hu']; show s.heap.size ≤ u.heap.size; rw [hszu]; exact Nat.le_add_right _ _
   obtain ⟨s3, hcallI, -, -, hA3, hz3, he3, hhs3, ho3, hr3, hfu3⟩ := IotaCall.iota_call fI dI u' 5 g gbL gtv
     hcodeI hclsI hmI (by rw [hgeI, hz']; exact hgeu) (by rw [hgeI]; simp only [State.envEntry, hz']; exact hE1)
-    (by decide) hPI (by rw [← hu']; simp only; rw [hfu1, htf]; omega)
+    (by decide) hPI (by rw [← hu']; simp only; rw [hfuu, hfu0]; omega)
   let A := u.heap.size
   have hAu : u'.heap.size = A := by rw [← hu']
   rw [hAu] at hcallI hA3 hhs3
   have himplI : callImpl eng (.obj fI) .undefined #[.num l5] u = .ok (.obj A) s3 := by
-    rw [l5_eq, callImpl_func eng fI dI _ _ u hfIu hfIk (by rw [hfu1, htf]; omega), hu']; exact hcallI
-  -- `b` is initialized, in the state `iota` left
+    rw [l5_eq, callImpl_func eng fI dI _ _ u hfIu hfIk (by rw [hfuu, hfu0]; omega), hu']; exact hcallI
+  -- `b` is initialized
   have hge3 : ge < s3.envs.size := Nat.lt_of_lt_of_le (by rw [hz']; exact hgeu) hz3
   have hE3 : s3.envEntry ge = .global g gbL gtv := by
     rw [he3 ge (by rw [hz']; exact hgeu)]; simp only [State.envEntry, hz']; exact hE1
@@ -421,10 +232,10 @@ theorem it_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
   have hEw : w.envEntry ge = .global g (gb2 gb A) gtv := by rw [← hw]; exact State.setEnv_envEntry_self _ _ _ hge3
   have hgew : ge < w.envs.size := by rw [← hw, State.setEnv_envs_size]; exact hge3
   have how : ∀ x, x < A → w.objEntry x = u.objEntry x := by
-    intro x hx; rw [← hw, State.setEnv_objEntry, ho3 x (by rw [hAu]; exact hx), hou]
+    intro x hx; rw [← hw, State.setEnv_objEntry, ho3 x (by rw [hAu]; exact hx), hou']
   have hhw : w.heap.size = A + 1 := by rw [← hw, State.setEnv_heap_size, hhs3]
   have hfw : w.fuel + 6 = s.fuel - 1 := by
-    rw [← hw, State.setEnv_fuel]; rw [← hu'] at hfu3; simp only at hfu3; rw [hfu1, htf] at hfu3; omega
+    rw [← hw, State.setEnv_fuel]; rw [← hu'] at hfu3; simp only at hfu3; rw [hfuu, hfu0] at hfu3; omega
   have hAw : ArrayObj A 5 (fun j => num j) w := by
     obtain ⟨a1, a2, a3, a4, a5, a6⟩ := hA3
     exact ⟨by rw [← hw, State.setEnv_heap_size]; exact a1, by rw [← hw, State.setEnv_objEntry]; exact a2,
@@ -439,9 +250,10 @@ theorem it_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
     (by rw [how g hgu]; exact hpt1) (by rw [hhw]; exact Nat.lt_succ_of_lt hfTu) (by rw [how fT hfTu]; exact hfTk)
     (by omega)
   obtain ⟨K', hK1, hK'⟩ := hK _ s3 w _ K4 hK3' h4 hK4
-  -- the call of `total`, answered by the driver
+  -- the call of `total`
   obtain ⟨w', hw'⟩ : ∃ x, ({ w with fuel := w.fuel - 1 } : State) = x := ⟨_, rfl⟩
-  have hgeT : (w'.realms[dT.realm]!).globalEnv = ge := by rw [← hw']; show (w.realms[dT.realm]!).globalEnv = ge; rw [hrw, htrl]; rfl
+  have hgeT : (w'.realms[dT.realm]!).globalEnv = ge := by
+    rw [← hw']; show (w.realms[dT.realm]!).globalEnv = ge; rw [hrw, htrl]; rfl
   have hzw' : w'.envs = w.envs := by rw [← hw']
   obtain ⟨s4, hcallT, -, -⟩ := TotalCall.total_call fT dT w' A 5 (fun j => j) g (gb2 gb A) gtv hcodeT hclsT hmT
     (by rw [hgeT, hzw']; exact hgew) (by rw [hgeT]; simp only [State.envEntry, hzw']; exact hEw)
@@ -452,19 +264,26 @@ theorem it_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
     rw [callImpl_func eng fT dT _ _ w (by rw [hhw]; exact Nat.lt_succ_of_lt hfTu) (by rw [how fT hfTu]; exact hfTk)
       (by omega), hw']
     exact hcallT
-  -- the script, with the driver
-  have hbody : ITGen.program.body = ITGen.script_stmts := rfl
-  have hstr : ITGen.program.strict = false := rfl
-  refine ⟨s4, ?_⟩
-  simp only [runM, callDepth, scriptEvaluation, M.bind_eq, M.bind_apply, M.readS_apply, M.bindRes_ok, M.modify_apply,
-    hbody, hstr]
-  rw [hgdi]
-  simp only [M.bindRes_ok, M.bind_apply, hscript, hreq, M.bindRes_req]
-  rw [drive_call_ok eng 3999 _ _ _ _ _ cs _ _ himplI]
+  -- the script (`Script.script_value`), with the driver
+  refine ⟨s4, script_value eng s cs ITGen.program fs ["b"] gb gtv fp _ s4 rfl rfl
+    (by rw [show ITGen.program.body = ITGen.script_stmts from rfl, lexScoped]; rfl) rfl
+    (by intro p hp; simp only [fs, List.mem_cons, List.mem_nil_iff, or_false] at hp
+        rcases hp with rfl | rfl
+        · exact simple_total
+        · exact simple_iota)
+    (by decide) hge hE
+    (by intro p hp; simp only [fs, List.mem_cons, List.mem_nil_iff, or_false] at hp; rcases hp with rfl | rfl <;> assumption)
+    (by simpa using hgbb) hgs hk hx
+    (by intro p hp; simp only [fs, List.mem_cons, List.mem_nil_iff, or_false] at hp; rcases hp with rfl | rfl <;> assumption)
+    (by simpa using hpb) hfp ?_⟩
+  have hu0 : scriptState s ITGen.program fs ["b"] gb gtv fp = u := by rw [← hu, ← ht0]; rfl
+  have hscript : evalStmts evalDepth (scriptCtx s false) ITGen.program.body u = ITGen.script 999956 c u := by
+    rw [ITGen.script_eq]; rfl
+  rw [hu0, hscript, hreq, M.bindRes_req]
+  refine drivesTo_call eng _ _ _ u _ _ s3 _ s4 himplI ?_
   simp only [hK1, M.bindRes_req]
-  rw [drive_call_ok eng 3999 _ _ _ _ _ cs _ _ himplT]
-  simp only [hK', M.bindRes_ok, Option.getD_some, psum10]
-  simp only [pure, M.pure, drive_ok]
-  rfl
+  refine drivesTo_call eng _ _ _ w _ _ s4 _ s4 himplT ?_
+  simp only [hK', M.bindRes_ok, psum10]
+  exact drivesTo_ok eng _ s4
 
 end ITScript

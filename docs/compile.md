@@ -164,7 +164,15 @@ definitions are stated at `n = height + 1`.
   (`let_call_req`); the assumption that `Array.prototype`'s chain has no index property below 5 is
   about the starting state and is carried through GlobalDeclarationInstantiation, which changes the
   global object only at the keys `total` and `iota`, no index keys (`absentChain_mono_key`,
-  `name_ne_index`). Declarations as in `Proofs/DTScript.lean`, with `iota` in place of `double`.
+  `name_ne_index`).
+- Scripts in general: `Proofs/Script.lean`. For a non-strict script whose top level declares simple
+  functions `fs` (distinct names) and `let` bindings `lets`, without Annex B functions:
+  `gdi_simple` (GlobalDeclarationInstantiation ends in `instAll … fs (lets declared)`), `instAll_facts`
+  (function `i` is object `heap.size + 2 i` with that code and realm, bound under its name; nothing else
+  that existed changes), and `script_value` (the script's value is what its body, run from
+  `scriptState`, drives to: `DrivesTo`, with `drivesTo_call` per answered call and `drivesTo_ok`).
+  The loops are folds with an abstract step (`foldList_const`, `foldList_lets`, `foldList_fnsToInit`,
+  `foldList_fns`). `ITScript.it_script` now uses them; a script proof is its statements and calls only.
 
 ## Stages
 
