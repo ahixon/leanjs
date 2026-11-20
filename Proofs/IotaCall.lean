@@ -17,10 +17,19 @@ theorem lexIota : topLevelLexicallyScoped IotaGen.iota_stmts = #[.binding .let (
   have hv : (VarKind.let == VarKind.var) = false := by decide
   simp [topLevelLexicallyScoped, stmtLexScoped, IotaGen.iota_stmts, hv]
 
+/-- The facts about a function's code that `iota`'s proofs use (its source span and id may differ). -/
+def IsIota (c : Func) : Prop :=
+  c.body = .stmts IotaGen.iota_stmts ∧ c.params = #[.mk (.ident "n") none false] ∧ c.strict = false ∧
+  c.isAsync = false ∧ c.isGenerator = false ∧ c.kind = .normal ∧
+  c.info.fdi = { paramNames := #["n"], hasDuplicates := false, varNames := #[], hasFunctions := false, functionNames := #[], hasLexical := true, lexNames := #["a"], argumentsNeeded := false, hasAnnexB := false, usesDispose := false } ∧
+  c.info.paramsHaveExpressions = false
+
+theorem isIota_iota : IsIota IotaGen.iota_func := ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+
 theorem ne_an' : (JSStr.ofString "a" = JSStr.ofString "n") = False := by simp; decide
 
 theorem iota_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (N : Nat) (tv : Value)
-    (hcode : d.code = IotaGen.iota_func) (henv : env < s.envs.size)
+    (hcode : IsIota d.code) (henv : env < s.envs.size)
     (hE : s.envEntry env = .func ∅ (some d.env) .initialized tv f .undefined)
     (hf : s.fuel ≠ 0) :
     ∃ ctx s', functionDeclarationInstantiation 999999 f d env #[num N] s = .ok ctx s' ∧
@@ -41,22 +50,15 @@ theorem iota_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (N : Nat) 
     have := bindElement_ident 999998 ctx x env v (s.setEnv env (.func b (some d.env) .initialized tv f .undefined))
       (by omega) (by simpa using henv) (by simp [henv]) (by simpa [henv] using hb) (by simpa using hf)
     simpa [henv] using this
-  have hbody : IotaGen.iota_func.body = .stmts IotaGen.iota_stmts := rfl
-  have hparams : IotaGen.iota_func.params = #[.mk (.ident "n") none false] := rfl
-  have hstr : IotaGen.iota_func.strict = false := rfl
-  have hasync : IotaGen.iota_func.isAsync = false := rfl
-  have hgen : IotaGen.iota_func.isGenerator = false := rfl
-  have hkind : IotaGen.iota_func.kind = .normal := rfl
-  have hfdi : IotaGen.iota_func.info.fdi = { paramNames := #["n"], hasDuplicates := false, varNames := #[], hasFunctions := false, functionNames := #[], hasLexical := true, lexNames := #["a"], argumentsNeeded := false, hasAnnexB := false, usesDispose := false } := rfl
+  obtain ⟨hbody, hparams, hstr, hasync, hgen, hkind, hfdi, hphe⟩ := hcode
   have hk1 : (VarKind.let == VarKind.const) = false := by decide
   have hk2 : (VarKind.let == VarKind.using) = false := by decide
   have hk3 : (VarKind.let == VarKind.awaitUsing) = false := by decide
-  have hphe : IotaGen.iota_func.info.paramsHaveExpressions = false := rfl
   refine ⟨?c, ?t, ?h, ?_⟩
   case h =>
     conv =>
       lhs
-      simp only [functionDeclarationInstantiation, hcode, hbody, hparams, hstr, hfdi, hasync, hgen, hkind, hphe]
+      simp only [functionDeclarationInstantiation, hbody, hparams, hstr, hfdi, hasync, hgen, hkind, hphe]
       simp [hr, hasBinding_declLike, createMutableBinding_declLike, hbe, newDeclEnv, pure,
         M.pure, hE, henv, hf, lexIota, MoreCalls.names_a, -allocEnv_apply, allocEnv_eq, LexScoped.isConstant,
         State.pushEnv_entry_at, State.setEnv_envEntry_self, hk1, hk2, hk3]
@@ -72,7 +74,7 @@ theorem iota_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (N : Nat) 
 
 /-- `iota`'s body as a call runs it: returns the next object, the array `0, …, N − 1`. -/
 theorem iota_body (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (N : Nat) (tv : Value)
-    (hcode : d.code = IotaGen.iota_func) (henv : env < s.envs.size)
+    (hcode : IsIota d.code) (henv : env < s.envs.size)
     (hE : s.envEntry env = .func ∅ (some d.env) .initialized tv f .undefined) (hN : N < 2 ^ 26)
     (hP : ∀ j < N, AbsentChain s 2 s.curRealm.arrayProto (PropKey.ofNat j)) (hf : N + 12 ≤ s.fuel) :
     ∃ s', evalFunctionBody evalDepth f d env #[num N] s = .ok (.obj s.heap.size) s' ∧
@@ -95,8 +97,8 @@ theorem iota_body (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (N : Nat)
   refine ⟨s2, ?_, hA, Nat.le_trans (Nat.le_of_lt hlt1) hz,
     fun e he hee => (hfe e (Nat.lt_trans he hlt1) (Nat.ne_of_lt he)).trans (hfe1 e he hee),
     hhs, fun x hx => (ho x hx).trans (ho1 x), hrr.trans hr1, by rw [hfu, hfu1]⟩
-  have hbd : d.code.body = .stmts IotaGen.iota_stmts := by rw [hcode]; rfl
-  have hdisp : d.code.info.fdi.usesDispose = false := by rw [hcode]; rfl
+  have hbd : d.code.body = .stmts IotaGen.iota_stmts := hcode.1
+  have hdisp : d.code.info.fdi.usesDispose = false := by rw [hcode.2.2.2.2.2.2.1]
   simp only [evalDepth, evalFunctionBody, M.bind_eq, M.bind_apply, hfdi, M.bindRes_ok, hbd, hdisp, withDisposeScope]
   simp [hbody, pure, M.pure]
 
@@ -106,7 +108,7 @@ theorem iota_body (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (N : Nat)
 `N + 1` fuel. -/
 theorem iota_call (f : ObjId) (d : FuncData) (s : State) (N : Nat) (go : ObjId)
     (gb : Std.HashMap JSStr Binding) (gtv : Value)
-    (hcode : d.code = IotaGen.iota_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .global)
+    (hcode : IsIota d.code) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .global)
     (hge : (s.realms[d.realm]!).globalEnv < s.envs.size)
     (hgE : s.envEntry (s.realms[d.realm]!).globalEnv = .global go gb gtv) (hN : N < 2 ^ 26)
     (hP : ∀ j < N, AbsentChain s 2 (s.realms[d.realm]!).arrayProto (PropKey.ofNat j)) (hf : N + 12 ≤ s.fuel) :
@@ -119,7 +121,7 @@ theorem iota_call (f : ObjId) (d : FuncData) (s : State) (N : Nat) (go : ObjId)
     (Q := fun t => ArrayObj s.heap.size N (fun j => num j) t ∧ s.envs.size ≤ t.envs.size ∧
       (∀ e, e < s.envs.size → t.envEntry e = s.envEntry e) ∧ t.heap.size = s.heap.size + 1 ∧
       (∀ x, x < s.heap.size → t.objEntry x = s.objEntry x) ∧ t.realms = s.realms ∧ t.fuel + N + 1 = s.fuel)
-    f d s _ _ go gb gtv hcls hmode (by rw [hcode]; rfl) (by rw [hcode]; rfl) hge hgE
+    f d s _ _ go gb gtv hcls hmode hcode.2.2.2.1 hcode.2.2.2.2.1 hge hgE
     (fun t hlt hEt hold hheap hfu hrl hrlm => by
       have ho : ∀ x, t.objEntry x = s.objEntry x := by intro x; simp [State.objEntry, hheap]
       have hPt : ∀ j < N, AbsentChain t 2 t.curRealm.arrayProto (PropKey.ofNat j) := fun j hj => by

@@ -54,6 +54,28 @@ theorem absentChain_mono (s t : State) (k : PropKey) (hobj : ∀ x, x < s.heap.s
     | obj p => rw [hpr] at hrest; exact ih p hrest
     | _ => trivial
 
+/-- The same when the chain's objects keep only their kind, prototype and the key `k`'s property. -/
+theorem absentChain_mono_key (s t : State) (k : PropKey)
+    (hobj : ∀ x, x < s.heap.size → (t.objEntry x).kind = (s.objEntry x).kind ∧
+      (t.objEntry x).proto = (s.objEntry x).proto ∧ (t.objEntry x).props.get? k = (s.objEntry x).props.get? k)
+    (hsz : s.heap.size ≤ t.heap.size) : ∀ n o, AbsentChain s n o k → AbsentChain t n o k := by
+  intro n
+  induction n with
+  | zero => intro o h; simp [AbsentChain] at h
+  | succ n ih =>
+    intro o ⟨hlt, hk, hp, hrest⟩
+    obtain ⟨h1, h2, h3⟩ := hobj o hlt
+    refine ⟨Nat.lt_of_lt_of_le hlt hsz, by rw [h1]; exact hk, by rw [h3]; exact hp, ?_⟩
+    rw [h2]
+    cases hpr : (s.objEntry o).proto with
+    | obj p => rw [hpr] at hrest; exact ih p hrest
+    | _ => trivial
+
+/-- A name that does not start with a digit is no index key. -/
+theorem name_ne_index (nm : String) (hnm : ¬ (48 ≤ (JSStr.ofString nm).get 0 ∧ (JSStr.ofString nm).get 0 ≤ 57))
+    (j : Nat) (hj : j < 10 ^ 10) : PropKey.str (JSStr.ofString nm) ≠ PropKey.ofNat j := by
+  intro h; simp only [PropKey.ofNat] at h; injection h with h; rw [h] at hnm; exact hnm (JSStr.get_zero_ofNat j hj)
+
 /-- [[Set]] of a key no object on the chain has: the receiver's [[DefineOwnProperty]] of a new data
 property. -/
 theorem set_absent (s : State) (k : PropKey) (v : Value) (recv : ObjId) (s' : State)

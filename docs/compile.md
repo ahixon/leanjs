@@ -157,7 +157,14 @@ definitions are stated at `n = height + 1`.
   holding 0, …, n − 1 (`iota_spec`, `iota_interp_spec`), assuming `Array.prototype`'s chain has no index
   property below `n`; the invariant (`HeapI`) keeps the objects that existed before the call unchanged,
   so that assumption, made about the starting state, holds at every write (`absentChain_mono`).
-- Next: the full call of `iota`, and a script using its result.
+- The full call of `iota` (`Proofs/IotaCall.lean`, `iota_call`): returns the new array and states what it
+  leaves alone (the caller's environments, older objects, the realms) and the fuel it used.
+- A script using a call's result: `Proofs/ITScript.lean` — examples/iota_total.js
+  (`let b = iota(5); total(b);`) evaluates to 10 (`it_script`). The `let` initializer is a call
+  (`let_call_req`); the assumption that `Array.prototype`'s chain has no index property below 5 is
+  about the starting state and is carried through GlobalDeclarationInstantiation, which changes the
+  global object only at the keys `total` and `iota`, no index keys (`absentChain_mono_key`,
+  `name_ne_index`). Declarations as in `Proofs/DTScript.lean`, with `iota` in place of `double`.
 
 ## Stages
 
