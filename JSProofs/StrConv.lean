@@ -1,5 +1,4 @@
 import JSProofs.Basic
-import Std.Tactic.BVDecide
 
 /-!
 # From Lean strings to String values and back
@@ -21,7 +20,18 @@ theorem push_size (s : JSStr) (u : UInt16) : (s.push u).b.size = s.b.size + 2 :=
   simp [push, ByteArray.size_push]
 
 theorem bytes_join (u : UInt16) : (u.toUInt8.toUInt16 ||| ((u >>> 8).toUInt8.toUInt16 <<< 8)) = u := by
-  bv_decide
+  apply UInt16.toNat_inj.mp
+  simp only [UInt16.toNat_or, UInt16.toNat_shiftLeft, UInt8.toNat_toUInt16, UInt16.toNat_toUInt8, UInt16.toNat_shiftRight]
+  have hu := u.toNat_lt
+  have h8 : UInt16.toNat 8 % 16 = 8 := rfl
+  rw [h8]
+  generalize u.toNat = n at hu ⊢
+  have hq : n >>> 8 < 2 ^ 8 := by rw [Nat.shiftRight_eq_div_pow]; omega
+  rw [Nat.mod_eq_of_lt hq]
+  have hs : (n >>> 8) <<< 8 < 2 ^ 16 := by rw [Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]; omega
+  rw [Nat.mod_eq_of_lt hs, Nat.or_comm, ← Nat.shiftLeft_add_eq_or_of_lt (Nat.mod_lt _ (by decide)),
+    Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
+  omega
 
 theorem get!_push_lt (b : ByteArray) (x : UInt8) (j : Nat) (hj : j < b.size) : (b.push x).get! j = b.get! j := by
   cases b with | mk d =>
