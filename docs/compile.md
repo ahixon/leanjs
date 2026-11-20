@@ -247,6 +247,11 @@ definitions are stated at `n = height + 1`.
   every `N < 2^26`, i.e. (`reps_eq`, via `JSStr.ofList_append`) `JSStr.ofString (String.join (List.replicate N "ab"))`
   (`rep_call_string`); `reps_length`: `2N` code units; `reps_five`: "ababababab"; `rp_script`: `rep(5).length`
   evaluates to 10.
+- Numbers in strings: `Proofs/Strings.lean` — Number::toString of a natural number below 2^53 is its decimal
+  digits (`toStringDec_ofSmallInt`, `numberToJSStr_nat`), and `"…" + x` appends it (`applyBinaryOp_add_str_num`).
+  `Proofs/ListStr.lean` — examples/list.js (`s = s + i + ","` in a loop): `list_call_string`: `list(N)` returns
+  `String.join ((List.range N).map fun k => toString k ++ ",")` for every `N < 2^26` (`lst_eq`); `ls_script`:
+  `list(4)` evaluates to "0,1,2,3,".
 
 ## Stages
 
