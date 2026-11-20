@@ -122,7 +122,19 @@ definitions are stated at `n = height + 1`.
   GetValue of `a[k]` and `a.key` (`getRefValue_index`, `getRefValue_name`). `Proofs/Total.lean`:
   `total(a)` (a `for` loop over `a.length` adding `a[i]`) returns the sum of the elements, for arrays
   of fewer than 2^26 naturals below 2^26 (`total_spec`, `total_interp_spec`).
-- Next: the full calls of `sumFor`/`total` (as for `sum`), arrays created by literals, and writes.
+- Index keys: `Proofs/StrIndex.lean` — `(JSStr.ofNat n).toArrayIndex? = some n` (the array exotic
+  [[DefineOwnProperty]] parses its key): `JSStr.ofString` on characters below 256 as bytes,
+  `toIndex?`'s loop as a fold over digits, the toolchain's `Nat.ofDigitChars_toDigits`; digit keys are
+  not `"length"`. Numbers: `Conv.ofNat k = ofSmallInt k`, `toNat?`/`truncInt`/`toUint32` of small
+  naturals (Proofs/NumInt.lean).
+- Array creation and writes: `Proofs/ArrayWrite.lean` — `ArrayObj` (elements, writable `length`,
+  nothing beyond); the exotic [[DefineOwnProperty]] appending at `length` and redefining an element,
+  [[Set]] of an element, ArraySetLength to the current length; `array_literal` (an array literal of
+  effect-free elements is a new `ArrayObj` with those elements); `putRefValue_element` (`a[k] = v`),
+  `getRefValue_element`. Example: `Proofs/ArrayWriteEx.lean` — `let a = [1, 2, 3]; a[1] = 5;
+  return a[0] + a[1] + a[2]` returns 9 (`f_spec`, `f_interp_spec`).
+- Next: the full calls of `sumFor`/`total`/`f` (as for `sum`), writes past the end (through the
+  prototype chain), and loops that write.
 
 ## Stages
 
