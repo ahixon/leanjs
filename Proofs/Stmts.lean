@@ -99,4 +99,27 @@ theorem let_req (x : JSStr) (e : Sem.CExpr) (c : Ctx) (u : State) (ge g : Nat) (
   simp [hK0, initializeRefBinding, initializeBinding_global ge x v w g gbw gtv hgew hEw hbw, hlu, hla, pure, M.pure,
     M.bind_eq, M.bind_apply, M.bindRes_ok, M.foldList_nil]
 
+/-- **A method call `e.m(e₁, …, eₙ)`**: `e` evaluates (without effects) to an ordinary object `O` whose own
+data property `m` is the function `fo`; the arguments evaluate without effects. Asks the driver to call
+`fo` with `this = O`; when it returns `v`, the call expression's value is `v`. -/
+theorem method_call_req (c : Ctx) (w : State) (e : Sem.CExpr) (O fo : ObjId) (m : JSStr) (d : FuncData)
+    (desc : CalleeDesc) (ps : List (Sem.CExpr × Value)) (he : e c w = .ok (.obj O) w)
+    (hev : ∀ p ∈ ps, p.1 c w = .ok p.2 w) (hstr : c.strict = false)
+    (hO : O < w.heap.size) (hOk : (w.objEntry O).kind.isPlain = true) (wr en cf : Bool)
+    (hm : (w.objEntry O).props.get? (.str m) = some (.data (.obj fo) wr en cf))
+    (hfs : fo < w.heap.size) (hfk : (w.objEntry fo).kind = .func d) :
+    ∃ K, Sem.call (Sem.memberRef e (.name m) false) (Sem.args (ps.map fun p => Sem.ArgD.expr p.1).toArray) false desc
+        c w = .req (.call (.obj fo) (.obj O) (ps.map Prod.snd).toArray) w K ∧ ∀ v t, K (.normal v) t = .ok v t := by
+  have ha := args_pure c w ps hev
+  have hget := getRefValue_prop O m false w
+  rw [Obj'.get_entry_data O _ _ w hO hOk (by simp [hm, isOwnData])] at hget
+  refine ⟨?K, ?h, ?_⟩
+  case h =>
+    conv =>
+      lhs
+      simp [Sem.call, Sem.memberRef, he, hstr, Value.isNullish, hget, ownDataValue, hm, refThisValue, ha, isCallable,
+        readObj_entry' _ _ _ hfs, hfk, ES.call, pure, M.pure, M.bind_eq, M.bind_apply, M.bindRes_ok]
+  intro v t
+  simp [M.pure, pure]
+
 end Stmts

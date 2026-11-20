@@ -139,4 +139,18 @@ theorem resolveBinding_global_obj (env : EnvId) (n : JSStr) (strict : Bool) (s :
   simp [M.loop, resolveBody, M.bind_eq, M.bind_apply, hasBinding, readEnv_entry _ _ _ h, hE, hb, hbm,
     Obj'.hasProperty_entry_own _ _ _ hgs hk, hp, pure, M.pure]
 
+/-- An identifier bound on the global object (as a data property), not in the declarative part. -/
+theorem identValue_global_obj (env : EnvId) (n : JSStr) (strict : Bool) (s : State) (g : ObjId)
+    (b : HashMap JSStr Binding) (tv : Value) (v : Value) (w e c : Bool) (h : env < s.envs.size)
+    (hE : s.envEntry env = .global g b tv) (hb : b.contains n = false) (hbm : (n ∈ b) = False)
+    (hb' : b[n]? = none) (hgs : g < s.heap.size) (hk : (s.objEntry g).kind.isPlain = true)
+    (hp : (s.objEntry g).props.get? (.str n) = some (.data v w e c)) (hf : 2 ≤ s.fuel) :
+    identValue env n strict s = .ok v s := by
+  obtain ⟨k, hk1⟩ : ∃ k, s.fuel = k + 2 := ⟨s.fuel - 2, by omega⟩
+  have hr := resolveBinding_global_obj env n strict s g b tv _ h hE hb hbm hgs hk hp (by omega)
+  rw [identValue_loop, hk1]
+  simp [M.loop, identBody, M.bind_eq, M.bind_apply, readEnv_entry _ _ _ h, hE, hr, getRefValue, getBindingValue, hb',
+    Obj'.hasProperty_entry_own _ _ _ hgs hk, hp, getProp, Obj'.get_entry_data _ _ _ _ hgs hk, ownDataValue,
+    isOwnData, pure, M.pure]
+
 end Global

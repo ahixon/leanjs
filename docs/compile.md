@@ -186,6 +186,13 @@ definitions are stated at `n = height + 1`.
   `runsTo_req1`), `StmtsRun` (one `RunsTo` fact per statement) and `stmts_run` (the list's completion,
   UpdateEmpty), `runs_funDecl`, `script_runs`. The three script proofs list their statements' facts
   instead of unrolling `Sem.stmts` by hand.
+- Objects with methods: `Proofs/Method.lean` — examples/method.js (`function inc() { this.n = this.n + 1;
+  return this.n; } let o = { n: 0, inc: inc }; o.inc(); o.inc();`) evaluates to 2 (`me_script`). New
+  pieces: `this` through the body's declarative record (`resolveThis_decl`), writing an own writable data
+  property (`putRefValue_own`), the call with an object as `this` (`Calls.callECMA_obj`, `inc_call`:
+  afterwards exactly `O.n = k + 1`), an object literal of data properties (`let_obj`, `cdp_ordinary`), a
+  method call `e.m(…)` (`Stmts.method_call_req`), names bound on the global object
+  (`Global.identValue_global_obj`).
 
 ## Stages
 
