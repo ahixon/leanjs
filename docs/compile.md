@@ -136,8 +136,12 @@ definitions are stated at `n = height + 1`.
 - A loop that writes: `Proofs/Double.lean` — `double(a)` (`a[i] = a[i] + a[i]` over `a.length`) leaves
   every element doubled (`double_spec`, `double_interp_spec`); the invariant is about the heap
   (`ArrayObj A len (dbl xs k)`: elements below `k` doubled), `arrayObj_congr` ignores indices past `len`.
-- Next: the full calls of `sumFor`/`total`/`f`/`double` (as for `sum`), and writes past the end (through
-  the prototype chain).
+- Full calls: `Proofs/Calls.lean` — `callECMA_undef`: a plain call `g(args)` of a sloppy function
+  returns `v` if its body does from any state the call sets up (fresh function environment, heap and
+  existing environments unchanged), with a property of the final state carried through the heap.
+  `Proofs/TotalCall.lean` (`total_call`), `Proofs/MoreCalls.lean` (`sumFor_call`, `double_call` — the
+  array afterwards holds every element doubled — and `f_call`), each via its FDI and body lemmas.
+- Next: writes past the end (through the prototype chain), and a whole script calling these.
 
 ## Stages
 

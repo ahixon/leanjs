@@ -351,7 +351,7 @@ and afterwards `A` holds `2 · xs j` at every index `j < len`. -/
 theorem double_spec (n : Nat) (ctx : Ctx) (L F A : EnvId) (len : Nat) (xs : Nat → Nat) (hlex : ctx.lex = L)
     (hstr : ctx.strict = false) (hlen : len < 2 ^ 26) (hx : ∀ j < len, xs j < 2 ^ 26) (s0 : State)
     (hS : ShapeBD L F A s0) (hA : ArrayObj A len (fun j => num (xs j)) s0) (hf : len + 10 ≤ s0.fuel) :
-    ∃ c s', DoubleGen.double n ctx s0 = .ok c s' ∧
+    ∃ w s', DoubleGen.double n ctx s0 = .ok (.normal (some w)) s' ∧
       ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' := by
   have hA0 : ArrayObj A len (dbl xs 0) s0 := by
     have : dbl xs 0 = fun j => num (xs j) := by funext j; simp [dbl]
@@ -360,7 +360,7 @@ theorem double_spec (n : Nat) (ctx : Ctx) (L F A : EnvId) (len : Nat) (xs : Nat 
   subst hc
   simp only [initD, testD, updD, bodyD] at hfor
   obtain ⟨j, hj⟩ : ∃ j, s0.fuel = j + 3 := ⟨s0.fuel - 3, by omega⟩
-  refine ⟨Compl.normal (some w), s1, ?_, arrayObj_congr A len _ _ s1 (fun j hj => by simp [dbl, hj]) hA1⟩
+  refine ⟨w, s1, ?_, arrayObj_congr A len _ _ s1 (fun j hj => by simp [dbl, hj]) hA1⟩
   simp only [DoubleGen.double, Sem.stmts, M.repeatFrom, hj, M.loop]
   simp [M.bind_eq, M.bind_apply, hfor, Sem.breakToNormal, pure, M.pure]
 
@@ -368,7 +368,7 @@ theorem double_spec (n : Nat) (ctx : Ctx) (L F A : EnvId) (len : Nat) (xs : Nat 
 theorem double_interp_spec (n : Nat) (ctx : Ctx) (L F A : EnvId) (len : Nat) (xs : Nat → Nat) (hlex : ctx.lex = L)
     (hstr : ctx.strict = false) (hlen : len < 2 ^ 26) (hx : ∀ j < len, xs j < 2 ^ 26) (s0 : State)
     (hS : ShapeBD L F A s0) (hA : ArrayObj A len (fun j => num (xs j)) s0) (hf : len + 10 ≤ s0.fuel) :
-    ∃ c s', evalStmts (n + 35) ctx DoubleGen.double_stmts s0 = .ok c s' ∧
+    ∃ w s', evalStmts (n + 35) ctx DoubleGen.double_stmts s0 = .ok (.normal (some w)) s' ∧
       ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' := by
   rw [← congrFun (DoubleGen.double_eq n) ctx]
   exact double_spec n ctx L F A len xs hlex hstr hlen hx s0 hS hA hf
