@@ -203,6 +203,13 @@ definitions are stated at `n = height + 1`.
 - Control flow for all inputs: `Proofs/Max.lean` — `max(a, b)` (`if (a < b) { return b; } return a;`) returns
   `max x y` for every pair of integers below 2^26 in absolute value (`max_spec` by cases on `x < y`;
   `max_call`); examples/max.js (`let m = max(3, 7); max(m, 5);`) evaluates to 7 (`mx_script`).
+- Exceptions: `Proofs/Throw.lean` — `check(x)` (`if (x < 0) { throw x; } return x;`) returns `x` for every
+  integer `x ≥ 0` and throws `x` for every `x < 0` (`check_call_ok`, `check_call_err`; `Calls.callECMA_undef_err`);
+  the driver passes a callee's throw to the call's continuation (`drive_call_err`, `Script.drivesTo_call_err`,
+  `Runs.runsTo_call_err`); `try_req`: the `try` statement asks for the call, and on the throw runs the
+  `catch` clause (a new record with `e`, `bindPattern_ident_init`; assigning the global `let r`,
+  `setMutableBinding_global_decl`). examples/throw.js (`let r = 0; try { r = check(0 - 7); } catch (e) {
+  r = 0 - e; } r;`) evaluates to 7 (`th_script`).
 
 ## Stages
 

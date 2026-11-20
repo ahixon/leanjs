@@ -39,4 +39,9 @@ variable {α β : Type}
 
 @[simp] theorem Sem.binaryOp_add (l r : Value) : Sem.binaryOp .add l r = applyBinaryOp .add l r := Eq.trans rfl rfl
 
+@[simp] theorem applyBinaryOp_sub_num (x y : F64) (s : State) :
+    applyBinaryOp .sub (.num x) (.num y) s = .ok (.num (Conv.subF x y)) s := Eq.trans rfl rfl
+
+@[simp] theorem Sem.binaryOp_sub (l r : Value) : Sem.binaryOp .sub l r = applyBinaryOp .sub l r := Eq.trans rfl rfl
+
 end ES

@@ -55,6 +55,15 @@ theorem runsTo_call {β : Type} (eng : Engine) (f t : Value) (args : Array Value
   show Script.DrivesTo eng (.req (.call f t args) w (fun o s => M.bindRes k (K o s))) v s'
   exact Script.drivesTo_call eng f t args w _ x w1 v s' h (hk α k v s' hd)
 
+/-- A call request the engine answers with a throw `e`, then the continuation's throw case. -/
+theorem runsTo_call_err {β : Type} (eng : Engine) (f t : Value) (args : Array Value) (w : State)
+    (K : Outcome → State → Res β) (e : Value) (w1 : State) (b : β) (w' : State)
+    (h : callImpl eng f t args w = .err e w1) (hk : RunsTo eng (K (.throw e) w1) b w') :
+    RunsTo eng (.req (.call f t args) w K) b w' := by
+  intro α k v s' hd
+  show Script.DrivesTo eng (.req (.call f t args) w (fun o s => M.bindRes k (K o s))) v s'
+  exact Script.drivesTo_call_err eng f t args w _ e w1 v s' h (hk α k v s' hd)
+
 /-- A request for one call whose continuation finishes with `b`. -/
 theorem runsTo_req1 {β : Type} (eng : Engine) (f t : Value) (args : Array Value) (w : State)
     (K : Outcome → State → Res β) (x : Value) (w1 : State) (b : β) (w2 : State)

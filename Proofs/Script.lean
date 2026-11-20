@@ -352,6 +352,13 @@ theorem drivesTo_call {α : Type} (eng : Engine) (f t : Value) (args : Array Val
     DrivesTo eng (.req (.call f t args) s k) v s' := by
   intro cs; simp only [callDepth] at hk ⊢; rw [drive_call_ok eng 3999 _ _ _ _ _ cs _ _ h]; exact hk cs
 
+/-- A call request whose callee throws `e`: driving continues with the continuation's throw case. -/
+theorem drivesTo_call_err {α : Type} (eng : Engine) (f t : Value) (args : Array Value) (s : State)
+    (k : Outcome → State → Res α) (e : Value) (s1 : State) (v : α) (s' : State)
+    (h : callImpl eng f t args s = .err e s1) (hk : DrivesTo eng (k (.throw e) s1) v s') :
+    DrivesTo eng (.req (.call f t args) s k) v s' := by
+  intro cs; simp only [callDepth] at hk ⊢; rw [drive_call_err eng 3999 _ _ _ _ _ cs _ _ h]; exact hk cs
+
 /-- What ScriptEvaluation makes of the body's completion. -/
 def complValue : Compl → M Value := fun c => match c with
   | .normal v => pure (v.getD .undefined)
