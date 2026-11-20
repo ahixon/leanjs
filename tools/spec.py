@@ -7,7 +7,7 @@
 Spec anchors are comments of the form `spec: <url>#<fragment>` placed above the Lean definition
 that implements that spec step. Purity rules for the engine (ES/): no `partial`, no `sorry`,
 no `unsafe`, no `@[implemented_by]` (use `@[csimp]` with a proof), no `Float`.
-Proofs (Proofs/): no `sorry`, `admit`, `native_decide`, or new axioms.
+Proofs (JSProofs/): no `sorry`, `admit`, `native_decide`, or new axioms.
 """
 import re
 import sys
@@ -34,7 +34,7 @@ def strip_comments(src: str) -> str:
     return re.sub(r"--.*", "", src)
 
 
-PROOFS = sorted((ROOT / "Proofs").rglob("*.lean"))
+PROOFS = sorted((ROOT / "JSProofs").rglob("*.lean"))
 PROOF_FORBIDDEN = {
     r"\bsorry\b": "proofs must be complete",
     r"\badmit\b": "proofs must be complete",
