@@ -233,4 +233,100 @@ theorem State.setEnv_envEntry_ne (s : State) (env i : EnvId) (e : Env) (h : env 
     (s.setEnv env e).envEntry i = s.envEntry i := by
   simp [State.envEntry, State.setEnv, Array.getElem?_modify, h]
 
+/-! ## Walking environment chains (one record per step of the lookup loop) -/
+
+/-- One step of `identValue`'s walk. -/
+def identBody (n : JSStr) (strict : Bool) : EnvId → M (EnvId ⊕ Value) := fun e => do
+  let r ← readEnv e fun ev => match ev with
+    | .decl b o | .func b o .. => match b.get? n with
+      | some bd => Sum.inr (Sum.inl bd.value)
+      | none => match o with
+        | some o => Sum.inl o
+        | none => Sum.inr (Sum.inr ())
+    | _ => Sum.inr (Sum.inr ())
+  match r with
+  | .inl o => return .inl o
+  | .inr (.inl (some v)) => return .inr v
+  | .inr (.inl none) => tdzError n
+  | .inr (.inr ()) => return .inr (← getRefValue (← resolveBinding e n strict))
+
+theorem identValue_loop (env : EnvId) (n : JSStr) (strict : Bool) (s : State) :
+    identValue env n strict s = M.loop (identBody n strict) s.fuel env s := rfl
+
+/-- A declarative record without the name: the walk continues at its outer record. -/
+theorem identBody_skip (k : Nat) (env o : EnvId) (n : JSStr) (strict : Bool) (s : State)
+    (b : HashMap JSStr Binding) (h : env < s.envs.size) (hE : s.envEntry env = .decl b (some o))
+    (hn : b[n]? = none) :
+    M.loop (identBody n strict) (k + 1) env s = M.loop (identBody n strict) k o s := by
+  simp [M.loop, identBody, M.bind_eq, M.bind_apply, readEnv_entry _ _ _ h, hE, hn, pure, M.pure]
+
+/-- A declarative or function record with the (initialized) binding: the walk ends with its value. -/
+theorem identBody_found (k : Nat) (env : EnvId) (n : JSStr) (strict : Bool) (s : State) (bd : Binding) (v : Value)
+    (h : env < s.envs.size) (hk : (s.envEntry env).isDeclLike = true)
+    (hb : (s.envEntry env).bindingsMap[n]? = some bd) (hv : bd.value = some v) :
+    M.loop (identBody n strict) (k + 1) env s = .ok v s := by
+  revert hk hb
+  cases hE : s.envEntry env <;> simp [Env.isDeclLike, Env.bindingsMap] <;> intro hb <;>
+    simp [M.loop, identBody, M.bind_eq, M.bind_apply, readEnv_entry _ _ _ h, hE, hb, hv, pure, M.pure]
+
+/-- One step of `resolveBinding`'s walk. -/
+def resolveBody (n : JSStr) (strict : Bool) : Option EnvId → M (Option EnvId ⊕ Ref) := fun e => do
+  match e with
+  | none => return .inr (.env none n strict)
+  | some e =>
+    if ← hasBinding e n then return .inr (.env (some e) n strict)
+    return .inl (← readEnv e Env.outer)
+
+theorem resolveBinding_loop (env : EnvId) (n : JSStr) (strict : Bool) (s : State) :
+    resolveBinding env n strict s = M.loop (resolveBody n strict) s.fuel (some env) s := rfl
+
+theorem resolveBody_skip (k : Nat) (env o : EnvId) (n : JSStr) (strict : Bool) (s : State)
+    (b : HashMap JSStr Binding) (h : env < s.envs.size) (hE : s.envEntry env = .decl b (some o))
+    (hn : b[n]? = none) :
+    M.loop (resolveBody n strict) (k + 1) (some env) s = M.loop (resolveBody n strict) k (some o) s := by
+  have hc : b.contains n = false := by simp [Std.HashMap.contains_eq_isSome_getElem?, hn]
+  simp [M.loop, resolveBody, M.bind_eq, M.bind_apply, hasBinding_declLike _ _ _ h (by rw [hE]; rfl), hE, hc,
+    readEnv_entry _ _ _ h, pure, M.pure, Env.bindingsMap]
+
+theorem resolveBody_found (k : Nat) (env : EnvId) (n : JSStr) (strict : Bool) (s : State)
+    (h : env < s.envs.size) (hk : (s.envEntry env).isDeclLike = true)
+    (hb : (s.envEntry env).bindingsMap.contains n = true) :
+    M.loop (resolveBody n strict) (k + 1) (some env) s = .ok (.env (some env) n strict) s := by
+  simp [M.loop, resolveBody, M.bind_eq, M.bind_apply, hasBinding_declLike _ _ _ h hk, hb, pure, M.pure]
+
+/-- Reading a name in the first record, or after skipping one or two declarative records without it. -/
+theorem identValue_skip0 (env : EnvId) (n : JSStr) (strict : Bool) (s : State) (bd : Binding) (v : Value)
+    (h : env < s.envs.size) (hk : (s.envEntry env).isDeclLike = true)
+    (hb : (s.envEntry env).bindingsMap[n]? = some bd) (hv : bd.value = some v) (hf : s.fuel ≠ 0) :
+    identValue env n strict s = .ok v s := by
+  obtain ⟨k, hk1⟩ : ∃ k, s.fuel = k + 1 := ⟨s.fuel - 1, by omega⟩
+  rw [identValue_loop, hk1, identBody_found k env n strict s bd v h hk hb hv]
+
+theorem identValue_skip1 (e1 env : EnvId) (n : JSStr) (strict : Bool) (s : State) (b1 : HashMap JSStr Binding)
+    (bd : Binding) (v : Value) (h1 : e1 < s.envs.size) (hE1 : s.envEntry e1 = .decl b1 (some env))
+    (hn1 : b1[n]? = none) (h : env < s.envs.size) (hk : (s.envEntry env).isDeclLike = true)
+    (hb : (s.envEntry env).bindingsMap[n]? = some bd) (hv : bd.value = some v) (hf : 2 ≤ s.fuel) :
+    identValue e1 n strict s = .ok v s := by
+  obtain ⟨k, hk1⟩ : ∃ k, s.fuel = k + 2 := ⟨s.fuel - 2, by omega⟩
+  rw [identValue_loop, hk1, identBody_skip _ e1 env n strict s b1 h1 hE1 hn1,
+    identBody_found k env n strict s bd v h hk hb hv]
+
+theorem identValue_skip2 (e1 e2 env : EnvId) (n : JSStr) (strict : Bool) (s : State) (b1 b2 : HashMap JSStr Binding)
+    (bd : Binding) (v : Value) (h1 : e1 < s.envs.size) (hE1 : s.envEntry e1 = .decl b1 (some e2))
+    (hn1 : b1[n]? = none) (h2 : e2 < s.envs.size) (hE2 : s.envEntry e2 = .decl b2 (some env))
+    (hn2 : b2[n]? = none) (h : env < s.envs.size) (hk : (s.envEntry env).isDeclLike = true)
+    (hb : (s.envEntry env).bindingsMap[n]? = some bd) (hv : bd.value = some v) (hf : 3 ≤ s.fuel) :
+    identValue e1 n strict s = .ok v s := by
+  obtain ⟨k, hk1⟩ : ∃ k, s.fuel = k + 3 := ⟨s.fuel - 3, by omega⟩
+  rw [identValue_loop, hk1, identBody_skip _ e1 e2 n strict s b1 h1 hE1 hn1, identBody_skip _ e2 env n strict s b2 h2 hE2 hn2,
+    identBody_found k env n strict s bd v h hk hb hv]
+
+theorem resolveBinding_skip1 (e1 env : EnvId) (n : JSStr) (strict : Bool) (s : State) (b1 : HashMap JSStr Binding)
+    (h1 : e1 < s.envs.size) (hE1 : s.envEntry e1 = .decl b1 (some env)) (hn1 : b1[n]? = none)
+    (h : env < s.envs.size) (hk : (s.envEntry env).isDeclLike = true)
+    (hb : (s.envEntry env).bindingsMap.contains n = true) (hf : 2 ≤ s.fuel) :
+    resolveBinding e1 n strict s = .ok (.env (some env) n strict) s := by
+  obtain ⟨k, hk1⟩ : ∃ k, s.fuel = k + 2 := ⟨s.fuel - 2, by omega⟩
+  rw [resolveBinding_loop, hk1, resolveBody_skip _ e1 env n strict s b1 h1 hE1 hn1, resolveBody_found k env n strict s h hk hb]
+
 end ES
