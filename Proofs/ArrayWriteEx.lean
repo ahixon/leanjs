@@ -47,7 +47,7 @@ theorem f_spec (n : Nat) (ctx : Ctx) (L : EnvId) (o : Option EnvId) (b : Std.Has
   have hr : resolveBinding L "a" false s0 = .ok (.env (some L) "a" false) s0 :=
     resolveBinding_here L _ false s0 hl (by rw [hE]; rfl)
       (by rw [hE]; simp [Env.bindingsMap, Std.HashMap.contains_eq_isSome_getElem?, hb]) (by omega)
-  obtain ⟨t1, hlit, hA1, he1, hf1, -, -, -⟩ := array_literal { ctx with labels := #[], lex := L, strict := false, isGen := false } ps
+  obtain ⟨t1, hlit, hA1, he1, hf1, -, -, -, -⟩ := array_literal { ctx with labels := #[], lex := L, strict := false, isGen := false } ps
     (fun p hp u => ps_ev p hp _ u)
     (by simp [ps]) s0
   simp only [ps, List.map_cons, List.map_nil, List.length_cons, List.length_nil] at hlit hA1

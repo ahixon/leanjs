@@ -247,7 +247,7 @@ theorem let_b (c : Ctx) (u : State) (ge g : Nat) (gb : HashMap JSStr Binding) (g
   have hil : (Sem.inner c).lex = ge := hlex
   have his : (Sem.inner c).strict = false := hstr
   have hr := resolveBinding_global_decl ge "b" false u g gb gtv hge hE hbm hf
-  obtain ⟨t1, hlit, hA1, he1, hf1, hz1, ho1, hr1⟩ := array_literal (Sem.inner c) ps (fun p hp u => ps_ev p hp _ u)
+  obtain ⟨t1, hlit, hA1, he1, hf1, hz1, ho1, hr1, -⟩ := array_literal (Sem.inner c) ps (fun p hp u => ps_ev p hp _ u)
     (by simp [ps]) u
   simp only [ps, List.map_cons, List.map_nil, List.length_cons, List.length_nil] at hlit hA1
   have hl1 : ge < t1.envs.size := by rw [he1]; exact hge

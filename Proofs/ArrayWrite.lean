@@ -23,6 +23,18 @@ def ArrayObj (A : ObjId) (len : Nat) (xs : Nat → Value) (t : State) : Prop :=
   (∀ j < len, (t.objEntry A).props.get? (PropKey.ofNat j) = some (.data (xs j) true true true)) ∧
   (∀ j, len ≤ j → j < 4294967295 → (t.objEntry A).props.get? (PropKey.ofNat j) = none)
 
+@[simp] theorem Obj.withProps_proto (ob : Obj) (f : PropMap → PropMap) : (ob.withProps f).proto = ob.proto := by
+  simp only [Obj.withProps]
+
+theorem setProp_proto (s : State) (o : ObjId) (k : PropKey) (p : Property) (x : ObjId) :
+    ((s.setProp o k p).objEntry x).proto = (s.objEntry x).proto := by
+  by_cases h : o = x
+  · subst h
+    by_cases hs : o < s.heap.size
+    · rw [State.setProp_entry_self _ _ _ _ hs, Obj.withProps_proto]
+    · simp [State.setProp, State.objEntry, Array.getElem?_modify, hs]
+  · rw [State.setProp_entry_ne _ _ _ _ _ h]
+
 theorem ofNat_key_ne_length (j : Nat) (hj : j < 10 ^ 10) : (PropKey.ofNat j == .str kLength) = false := by
   have h := JSStr.ofNat_ne_length j hj
   simp only [PropKey.ofNat, kLength_eq]
@@ -187,7 +199,8 @@ theorem setProp_length_same (A : ObjId) (len : Nat) (xs : Nat → Value) (t : St
     (hA : ArrayObj A len xs t) (hlen : len < 2 ^ 26) :
     ∃ t', setProp A (.str kLength) (numV len) true t = .ok () t' ∧ ArrayObj A len xs t' ∧
       t'.envs = t.envs ∧ t'.fuel = t.fuel ∧ t'.heap.size = t.heap.size ∧
-      (∀ o, o ≠ A → t'.objEntry o = t.objEntry o) ∧ t'.realms = t.realms := by
+      (∀ o, o ≠ A → t'.objEntry o = t.objEntry o) ∧ t'.realms = t.realms ∧
+      (t'.objEntry A).proto = (t.objEntry A).proto := by
   have hA' := hA
   obtain ⟨hs, hk, hx, hl, hel, hnone⟩ := hA
   have hlb : len < intBound := by simp only [intBound]; omega
@@ -195,7 +208,7 @@ theorem setProp_length_same (A : ObjId) (len : Nat) (xs : Nat → Value) (t : St
   have hd : maxDepth = 19996 + 4 := by decide
   have hlk : (PropKey.str kLength == PropKey.str kLength) = true := by simp
   refine ⟨t.setProp A (.str kLength) (.data (.num (ofSmallInt len)) true false false), ?_, ?_, by simp, by simp,
-    by simp, fun o ho => State.setProp_entry_ne _ _ _ _ _ (Ne.symm ho), by simp⟩
+    by simp, fun o ho => State.setProp_entry_ne _ _ _ _ _ (Ne.symm ho), by simp, setProp_proto _ _ _ _ _⟩
   · simp only [setProp, M.bind_eq, M.bind_apply, hnv]
     unfold Obj'.set; rw [hd, set_array_own _ A _ _ t _ _ _ hs hk hl, ES.defineOwnProperty]
     simp only [M.bind_eq, M.bind_apply, objKind, readObj_entry' _ _ _ hs, hk, M.bindRes_ok, hlk, ↓reduceIte]
@@ -248,12 +261,13 @@ theorem fold_elems (A : ObjId) (ctx : Ctx) :
       ∃ t', M.foldList (ps.map fun p => Sem.ElemD.expr p.1) i (arrayStep A ctx) t = .ok (i + ps.length) t' ∧
         ArrayObj A (i + ps.length) (fun j => if j < i then xs j else ((ps.map Prod.snd)[j - i]?).getD .undefined) t' ∧
         t'.envs = t.envs ∧ t'.fuel = t.fuel ∧ t'.heap.size = t.heap.size ∧
-        (∀ o, o ≠ A → t'.objEntry o = t.objEntry o) ∧ t'.realms = t.realms := by
+        (∀ o, o ≠ A → t'.objEntry o = t.objEntry o) ∧ t'.realms = t.realms ∧
+        (t'.objEntry A).proto = (t.objEntry A).proto := by
   intro ps
   induction ps with
   | nil =>
     intro i xs t _ _ hA
-    refine ⟨t, by simp, ?_, rfl, rfl, rfl, fun _ _ => rfl, rfl⟩
+    refine ⟨t, by simp, ?_, rfl, rfl, rfl, fun _ _ => rfl, rfl, rfl⟩
     have : (fun j => if j < i then xs j else (([] : List Value)[j - i]?).getD Value.undefined) = fun j =>
         if j < i then xs j else .undefined := by funext j; simp
     obtain ⟨h1, h2, h3, h4, h5, h6⟩ := hA
@@ -264,10 +278,10 @@ theorem fold_elems (A : ObjId) (ctx : Ctx) :
     have hrest : ∀ q ∈ ps, ∀ u, q.1 ctx u = .ok q.2 u := fun q h => hev q (List.mem_cons_of_mem _ h)
     have happ := createDataPropertyOrThrow_append A i xs p.2 t hA (by simp at hb; omega)
     have hA1 := arrayObj_append A i xs p.2 t hA (by simp at hb; omega)
-    obtain ⟨t', hf, hA', he', hfu', hz', ho', hr'⟩ := ih (i + 1) _ _ hrest (by simp at hb; omega) hA1
+    obtain ⟨t', hf, hA', he', hfu', hz', ho', hr', hp'⟩ := ih (i + 1) _ _ hrest (by simp at hb; omega) hA1
     refine ⟨t', ?_, ?_, by rw [he']; simp, by rw [hfu']; simp, by rw [hz']; simp, fun o ho => by
       rw [ho' o ho, State.setProp_entry_ne _ _ _ _ _ (Ne.symm ho), State.setProp_entry_ne _ _ _ _ _ (Ne.symm ho)],
-      by rw [hr']; simp⟩
+      by rw [hr']; simp, by rw [hp', setProp_proto, setProp_proto]⟩
     · simp only [List.map_cons, M.foldList_cons, arrayStep, M.bind_eq, M.bind_apply, hp, M.bindRes_ok, happ,
         pure, M.pure]
       rw [hf]; simp; omega
@@ -292,12 +306,13 @@ theorem array_literal (ctx : Ctx) (ps : List (Sem.CExpr × Value)) (hev : ∀ p 
     ∃ t', Sem.array (ps.map fun p => Sem.ElemD.expr p.1).toArray ctx t = .ok (.obj t.heap.size) t' ∧
       ArrayObj t.heap.size ps.length (fun j => ((ps.map Prod.snd)[j]?).getD .undefined) t' ∧
       t'.envs = t.envs ∧ t'.fuel = t.fuel ∧ t'.heap.size = t.heap.size + 1 ∧
-      (∀ o, o < t.heap.size → t'.objEntry o = t.objEntry o) ∧ t'.realms = t.realms := by
-  obtain ⟨t1, hf, hA1, he1, hfu1, hz1, ho1, hr1⟩ := fold_elems t.heap.size ctx ps 0 (fun _ => .undefined) (emptyArrayState t) hev
+      (∀ o, o < t.heap.size → t'.objEntry o = t.objEntry o) ∧ t'.realms = t.realms ∧
+      (t'.objEntry t.heap.size).proto = .obj t.curRealm.arrayProto := by
+  obtain ⟨t1, hf, hA1, he1, hfu1, hz1, ho1, hr1, hp1⟩ := fold_elems t.heap.size ctx ps 0 (fun _ => .undefined) (emptyArrayState t) hev
     (by simpa using hb) (arrayObj_empty t _)
   have hA1' : ArrayObj t.heap.size ps.length (fun j => ((ps.map Prod.snd)[j]?).getD .undefined) t1 := by
     simpa using hA1
-  obtain ⟨t2, hs2, hA2, he2, hfu2, hz2, ho2, hr2⟩ := setProp_length_same t.heap.size ps.length _ t1 hA1' hb
+  obtain ⟨t2, hs2, hA2, he2, hfu2, hz2, ho2, hr2, hp2⟩ := setProp_length_same t.heap.size ps.length _ t1 hA1' hb
   have hE : (emptyArrayState t).envs = t.envs := by simp [emptyArrayState]
   have hF : (emptyArrayState t).fuel = t.fuel := by simp [emptyArrayState]
   refine ⟨t2, ?_, hA2, by rw [he2, he1, hE], by rw [hfu2, hfu1, hF], by rw [hz2, hz1]; simp [emptyArrayState],
@@ -306,7 +321,8 @@ theorem array_literal (ctx : Ctx) (ps : List (Sem.CExpr × Value)) (hev : ∀ p 
       rw [ho2 o hne, ho1 o hne]
       simp only [emptyArrayState]
       rw [State.setProp_entry_ne _ _ _ _ _ (Ne.symm hne), State.allocObj_entry_lt _ _ _ ho],
-    by rw [hr2, hr1]; simp [emptyArrayState]⟩
+    by rw [hr2, hr1]; simp [emptyArrayState],
+    by rw [hp2, hp1]; simp only [emptyArrayState]; rw [setProp_proto, State.allocObj_entry_new]⟩
   rw [array_eq]
   simp only [M.bind_eq, M.bind_apply, arrayCreate_zero, M.bindRes_ok, M.foldArr_toArray]
   simp only [Nat.zero_add] at hf

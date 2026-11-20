@@ -150,7 +150,14 @@ definitions are stated at `n = height + 1`.
   function), the global record's declarative part (`createMutableBinding_global`,
   `initializeBinding_global`, `resolveBinding_global_decl`, `identValue_global_decl`), `call_req` (a
   statement `f(b)` asking the driver for the call).
-- Next: writes past the end (through the prototype chain).
+- Writes past the end: `Proofs/ArrayAppend.lean` — `a[len] = v` (`putRefValue_append`): OrdinarySet walks
+  the prototype chain (`AbsentChain`: ordinary objects, functions, arrays — `Array.prototype` is an
+  array — none with the index) and the array's [[DefineOwnProperty]] appends and moves `length`.
+  `Proofs/Iota.lean` — `iota(n)` (`let a = []; for (…) { a[i] = i; } return a;`) returns a new array
+  holding 0, …, n − 1 (`iota_spec`, `iota_interp_spec`), assuming `Array.prototype`'s chain has no index
+  property below `n`; the invariant (`HeapI`) keeps the objects that existed before the call unchanged,
+  so that assumption, made about the starting state, holds at every write (`absentChain_mono`).
+- Next: the full call of `iota`, and a script using its result.
 
 ## Stages
 

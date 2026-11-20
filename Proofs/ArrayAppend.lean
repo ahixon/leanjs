@@ -40,6 +40,20 @@ def AbsentChain (s : State) : Nat → ObjId → PropKey → Prop
       | .obj p => AbsentChain s n p k
       | _ => True
 
+/-- The chain's objects all existed in `s`: a later state that leaves those objects alone keeps it. -/
+theorem absentChain_mono (s t : State) (k : PropKey) (hobj : ∀ x, x < s.heap.size → t.objEntry x = s.objEntry x)
+    (hsz : s.heap.size ≤ t.heap.size) : ∀ n o, AbsentChain s n o k → AbsentChain t n o k := by
+  intro n
+  induction n with
+  | zero => intro o h; simp [AbsentChain] at h
+  | succ n ih =>
+    intro o ⟨hlt, hk, hp, hrest⟩
+    refine ⟨Nat.lt_of_lt_of_le hlt hsz, by rw [hobj o hlt]; exact hk, by rw [hobj o hlt]; exact hp, ?_⟩
+    rw [hobj o hlt]
+    cases hpr : (s.objEntry o).proto with
+    | obj p => rw [hpr] at hrest; exact ih p hrest
+    | _ => trivial
+
 /-- [[Set]] of a key no object on the chain has: the receiver's [[DefineOwnProperty]] of a new data
 property. -/
 theorem set_absent (s : State) (k : PropKey) (v : Value) (recv : ObjId) (s' : State)
