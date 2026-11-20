@@ -97,7 +97,18 @@ definitions are stated at `n = height + 1`.
   GetValue/PutValue of `o.key` follow (`getRefValue_prop`, `putRefValue_prop`). Example:
   `shadowing` (assigning an inherited writable property gives the object its own and leaves the
   prototype unchanged). Not covered yet: accessors (getters/setters are calls), exotic objects.
-- Next: loops with invariants, and a larger example.
+- Loops: `M.loop_inv` (Proofs/Loops.lean: invariant, postcondition, decreasing measure) and the
+  `while` rule `whileS_inv` (Proofs/While.lean; `whileIter` is one iteration as `Sem.whileS` runs it).
+  Integer Numbers: `Proofs/NumInt.lean` — below 2^53 the engine's `addF`/`ltF` are `Int` `+`/`<`
+  (`addF_int`, `ltF_int`, zero included). Environments: reading a binding in the first record or
+  through to the function record, assigning a `let` binding (`setMutableBinding_decl`).
+- A loop example: `Proofs/Sum.lean` — `function sum(n) { let s = 0; let i = 0; while (i < n) { s = s + i;
+  i = i + 1; } return s; }` (examples/sum.js): the body returns N(N−1)/2 for every natural N < 2^26
+  (`sum_spec`, and `sum_interp_spec` for the interpreter on the syntax tree). Invariant: after k
+  iterations `i = k`, `s = tri k`; one lemma per iteration kind (`iter_cont`, `iter_exit`), with
+  intermediate states as opaque variables.
+- Next: the call of `sum` (FunctionDeclarationInstantiation with lexical declarations), `for` loops,
+  and objects in loops (arrays).
 
 ## Stages
 

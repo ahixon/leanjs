@@ -168,4 +168,39 @@ theorem identValue_decl_func (lex env : EnvId) (n : JSStr) (strict : Bool) (s : 
   simp [M.bind_eq, M.bind_apply, readEnv_entry _ _ s hl, readEnv_entry _ _ s he, hL, hE, hb, hv, M.loopRes,
     pure, M.pure, M.loop]
 
+/-- Reading an identifier bound (and initialized) in the first record, a declarative one. -/
+theorem identValue_decl_here (lex : EnvId) (n : JSStr) (strict : Bool) (s : State) (v : Value)
+    (b : HashMap JSStr Binding) (o : Option EnvId) (bd : Binding) (hl : lex < s.envs.size)
+    (hL : s.envEntry lex = .decl b o) (hb : b[n]? = some bd) (hv : bd.value = some v) (hf : s.fuel ≠ 0) :
+    identValue lex n strict s = .ok v s := by
+  obtain ⟨k, hk⟩ : ∃ k, s.fuel = k + 1 := ⟨s.fuel - 1, by omega⟩
+  simp only [identValue, M.repeatFrom, hk, M.loop]
+  simp [M.bind_eq, M.bind_apply, readEnv_entry _ _ s hl, hL, hb, hv, pure, M.pure]
+
+/-- Reading an identifier through a declarative record that does not bind it into the function
+record that does. -/
+theorem identValue_decl_outer (lex env : EnvId) (n : JSStr) (strict : Bool) (s : State) (v : Value)
+    (bL : HashMap JSStr Binding) (b : HashMap JSStr Binding) (bd : Binding) (o : Option EnvId) (ts : ThisStatus)
+    (tv : Value) (fo : ObjId) (nt : Value) (hl : lex < s.envs.size) (hL : s.envEntry lex = .decl bL (some env))
+    (hn : bL[n]? = none) (he : env < s.envs.size) (hE : s.envEntry env = .func b o ts tv fo nt)
+    (hb : b[n]? = some bd) (hv : bd.value = some v) (hf : 2 ≤ s.fuel) :
+    identValue lex n strict s = .ok v s := by
+  obtain ⟨k, hk⟩ : ∃ k, s.fuel = k + 2 := ⟨s.fuel - 2, by omega⟩
+  simp only [identValue, M.repeatFrom, hk, M.loop]
+  simp [M.bind_eq, M.bind_apply, readEnv_entry _ _ s hl, readEnv_entry _ _ s he, hL, hE, hn, hb, hv,
+    pure, M.pure, M.loop]
+
+/-- SetMutableBinding of an initialized mutable binding of a declarative record. -/
+theorem setMutableBinding_decl (env : EnvId) (n : JSStr) (v : Value) (strict : Bool) (s : State)
+    (b : HashMap JSStr Binding) (o : Option EnvId) (bd : Binding) (h : env < s.envs.size)
+    (hE : s.envEntry env = .decl b o) (hb : b[n]? = some bd) (hv : bd.value.isSome = true)
+    (hm : bd.mutable = true) :
+    setMutableBinding env n v strict s =
+      .ok () (s.setEnv env (.decl (b.modify n fun bd => { bd with value := some v }) o)) := by
+  cases hvv : bd.value with
+  | none => simp [hvv] at hv
+  | some w =>
+    simp [setMutableBinding, M.bind_eq, M.bind_apply, readEnv_entry _ _ s h, hE, declSetMutable, hb, hvv, hm, -modifyEnv_apply,
+      modifyEnv_eq_setEnv _ _ _ h]
+
 end ES

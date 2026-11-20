@@ -105,4 +105,23 @@ theorem foldArr_eq (xs : Array α) (init : β) (f : β → α → M β) :
 @[simp] theorem forArr_def (xs : Array α) (f : α → M Unit) :
     forArr xs f = foldArr xs () (fun _ x => f x) := Eq.trans rfl rfl
 
+/-- **The loop rule.** An invariant `I` holds before each iteration; each iteration either continues
+(the invariant holds again and the measure `V` decreases) or exits with a result satisfying `Q`.
+Then a loop allowed more iterations than the measure exits with such a result. -/
+theorem loop_inv {α σ : Type} (body : σ → M (σ ⊕ α)) (I : σ → State → Prop) (Q : α → State → Prop)
+    (V : σ → State → Nat)
+    (hstep : ∀ st s, I st s →
+      (∃ st' s', body st s = .ok (.inl st') s' ∧ I st' s' ∧ V st' s' < V st s) ∨
+      (∃ a s', body st s = .ok (.inr a) s' ∧ Q a s')) :
+    ∀ (n : Nat) (st : σ) (s : State), I st s → V st s < n → ∃ a s', loop body n st s = .ok a s' ∧ Q a s' := by
+  intro n
+  induction n with
+  | zero => intro st s _ h; omega
+  | succ n ih =>
+    intro st s hI hV
+    rcases hstep st s hI with ⟨st', s', hb, hI', hV'⟩ | ⟨a, s', hb, hQ⟩
+    · obtain ⟨a, s'', hl, hQ⟩ := ih st' s' hI' (by omega)
+      exact ⟨a, s'', by simp only [loop, hb, loopRes_inl]; exact hl, hQ⟩
+    · exact ⟨a, s', by simp only [loop, hb, loopRes_inr], hQ⟩
+
 end ES.M
