@@ -404,4 +404,31 @@ theorem script_value (eng : Engine) (s : State) (cs : Conts) (prog : Program) (f
   simp only [M.bindRes_ok, M.bind_apply]
   exact hbody cs
 
+/-- **A script's evaluation, as its body**: for a non-strict script declaring the simple functions `fs` and the
+lets `lets`, evaluating it is running its body from `scriptState` (then its completion's value) — whatever the body
+does (host requests included). -/
+theorem scriptEvaluation_body (s : State) (prog : Program) (fs : List (Func × JSStr))
+    (lets : List JSStr) (gb : HashMap JSStr Binding) (gtv : Value) (fp : ObjId)
+    (hstr : prog.strict = false)
+    (hvar : topLevelVarScoped prog.body = (fs.map fun p => VarScoped.func p.1).toArray)
+    (hlexd : topLevelLexicallyScoped prog.body = (lets.map fun x => LexScoped.binding .let (.ident x)).toArray)
+    (hann : annexBFunctions prog.body lets.toArray = #[])
+    (hsimple : ∀ p ∈ fs, Inst.SimpleFn p.1 p.2) (hnd : (fs.map Prod.snd).Nodup)
+    (hge : s.curRealm.globalEnv < s.envs.size)
+    (hE : s.envEntry s.curRealm.globalEnv = .global s.curRealm.globalObj gb gtv)
+    (hgbf : ∀ p ∈ fs, gb.contains p.2 = false) (hgbl : ∀ x ∈ lets, gb.contains x = false)
+    (hgs : s.curRealm.globalObj < s.heap.size) (hk : (s.objEntry s.curRealm.globalObj).kind = .ordinary)
+    (hx : (s.objEntry s.curRealm.globalObj).extensible = true)
+    (hpf : ∀ p ∈ fs, (s.objEntry s.curRealm.globalObj).props.get? (.str p.2) = none)
+    (hpl : ∀ x ∈ lets, (s.objEntry s.curRealm.globalObj).props.get? (.str x) = none)
+    (hfp : s.curRealm.intrinsics["%Function.prototype%"]? = some fp) :
+    scriptEvaluation prog "" s = M.bindRes complValue
+      (evalStmts evalDepth (scriptCtx s false) prog.body (scriptState s prog fs lets gb gtv fp)) := by
+  have hgdi := gdi_simple prog.body fs lets (scriptStart s prog) s.curRealm.globalEnv s.curRealm.globalObj
+    { lex := s.curRealm.globalEnv, var := s.curRealm.globalEnv, strict := false, realm := s.realm, script := s.scripts.size } gb gtv fp hvar hlexd hann hsimple hnd rfl hge hE hgbf hgbl hgs hk hx hpf hpl hfp
+  simp only [scriptEvaluation, M.bind_eq, M.bind_apply, M.readS_apply, M.bindRes_ok, M.modify_apply, hstr]
+  rw [show ({ s with scripts := s.scripts.push { prog := prog, realm := s.realm, path := "" }, script := s.scripts.size } : State) = scriptStart s prog from rfl, hgdi]
+  simp only [M.bindRes_ok, M.bind_apply]
+  rfl
+
 end Script

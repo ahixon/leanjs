@@ -88,6 +88,44 @@ theorem instExpr (fn : Func) (t : State) (ctx : Ctx) (fp : ObjId) (hstr : fn.str
     PropMap.get?_insert_ne _ _ _ _ AddScript.kLength_ne_kName, hgen, hasync, hkn, hkind, AddScript.step_ctor, hlegacy,
     Inst.instStateFn, pure, M.pure]
 
+/-- The state after creating an arrow function `fn` (the next object; its `length` and `name`). -/
+def arrowData (fn : Func) (t : State) (env : EnvId) (sc : Nat) : FuncData :=
+  { code := fn, env, privEnv := #[], thisMode := .lexical, realm := t.realm, script := sc, source := (t.scripts[sc]?.map (·.prog.source)).getD "" }
+
+def arrowState (fn : Func) (t : State) (env : EnvId) (sc : Nat) (fp : ObjId) : State :=
+  let fo := t.heap.size
+  let d := arrowData fn t env sc
+  ((t.allocObj { proto := .obj fp, kind := .func d }).setProp fo (.str kLength)
+    (.data (numV fn.info.expectedArgs) false false true)).setProp fo (.str kName) (.data (.str JSStr.empty) false false true)
+
+/-- **An arrow function expression** (not async or a generator), in a context without private names: the function
+object (lexical `this`, environment the current lexical environment), allocated after the existing objects. -/
+theorem instArrow (fn : Func) (t : State) (ctx : Ctx) (fp : ObjId) (hasync : fn.isAsync = false)
+    (hgen : fn.isGenerator = false) (hkind : fn.kind = .arrow) (hpriv : ctx.priv = #[])
+    (hfp : t.curRealm.intrinsics["%Function.prototype%"]? = some fp) :
+    instantiateFunctionExpr fn ctx none t = .ok (.obj t.heap.size) (arrowState fn t ctx.lex ctx.script fp) := by
+  have hka : (FuncKind.arrow == FuncKind.arrow) = true := by decide
+  have hkn : (FuncKind.arrow == FuncKind.normal) = false := by decide
+  have hproto : intrinsic (functionProtoName fn) t = .ok fp t := by
+    simp [intrinsic, hfp, functionProtoName, hasync, hgen]
+  have hcreate : ordinaryFunctionCreate fp fn ctx.lex #[] ctx true t =
+      .ok t.heap.size ((t.allocObj { proto := .obj fp, kind := .func (arrowData fn t ctx.lex ctx.script) }).setProp
+        t.heap.size (.str kLength) (.data (numV fn.info.expectedArgs) false false true)) := by
+    simp [ordinaryFunctionCreate, alloc_eq, setOwn_eq, pure, M.pure, arrowData, -alloc_apply]
+  cases hn : fn.name with
+  | some x =>
+    simp only [instantiateFunctionExpr, M.bind_eq, M.bind_apply, hproto, M.bindRes_ok, hn, hkind, hpriv, hka]
+    simp only [hcreate, M.bindRes_ok]
+    simp [Inst.step_name_fn JSStr.empty, State.setProp_entry_self, State.allocObj_entry_new,
+      PropMap.get?_insert_ne _ _ _ _ AddScript.kLength_ne_kName, hgen, hasync, hkn, hkind, addLegacyFunctionProps,
+      arrowState, pure, M.pure]
+  | none =>
+    simp only [instantiateFunctionExpr, M.bind_eq, M.bind_apply, hproto, M.bindRes_ok, hn, hkind, hpriv, hka]
+    simp only [hcreate, M.bindRes_ok]
+    simp [Inst.step_name_fn JSStr.empty, State.setProp_entry_self, State.allocObj_entry_new,
+      PropMap.get?_insert_ne _ _ _ _ AddScript.kLength_ne_kName, hgen, hasync, hkn, hkind, addLegacyFunctionProps,
+      arrowState, pure, M.pure]
+
 /-! ## The closure's body -/
 
 /-- The captured record after `n = v`. -/
