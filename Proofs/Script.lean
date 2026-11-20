@@ -290,7 +290,7 @@ theorem instAll_facts (ge g sc fp : Nat) :
       (∀ i (h : i < fs.length), (u.objEntry g).props.get? (.str fs[i].2) =
         some (.data (.obj (t.heap.size + 2 * i)) true true false)) ∧
       (∀ i (h : i < fs.length), ∃ d, (u.objEntry (t.heap.size + 2 * i)).kind = .func d ∧ d.code = fs[i].1 ∧
-        d.realm = t.realm ∧ d.thisMode = .global ∧ d.isClassCtor = false) := by
+        d.realm = t.realm ∧ d.thisMode = .global ∧ d.isClassCtor = false ∧ d.privEnv = #[]) := by
   intro fs
   induction fs with
   | nil =>
@@ -326,12 +326,12 @@ theorem instAll_facts (ge g sc fp : Nat) :
       cases i with
       | zero =>
         refine ⟨Inst.fnData fn t ge sc, ?_, Inst.fnData_code _ _ _ _, Inst.fnData_realm _ _ _ _,
-          Inst.fnData_thisMode _ _ _ _, Inst.fnData_isClassCtor _ _ _ _⟩
+          Inst.fnData_thisMode _ _ _ _, Inst.fnData_isClassCtor _ _ _ _, Inst.fnData_privEnv _ _ _ _⟩
         simp only [Nat.mul_zero, Nat.add_zero]
         rw [hou _ (by rw [hz1]; omega) (Ne.symm (Nat.ne_of_lt hgt)), hf1]
       | succ j =>
-        obtain ⟨d, hd1, hd2, hd3, hd4, hd5⟩ := hdu j (by simpa using h)
-        refine ⟨d, ?_, by simpa using hd2, hd3.trans hrl1, hd4, hd5⟩
+        obtain ⟨d, hd1, hd2, hd3, hd4, hd5, hd6⟩ := hdu j (by simpa using h)
+        refine ⟨d, ?_, by simpa using hd2, hd3.trans hrl1, hd4, hd5, hd6⟩
         rw [hz1] at hd1
         have : t.heap.size + 2 * (j + 1) = t.heap.size + 2 + 2 * j := by omega
         rw [this]; exact hd1

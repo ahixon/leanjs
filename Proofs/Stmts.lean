@@ -122,4 +122,30 @@ theorem method_call_req (c : Ctx) (w : State) (e : Sem.CExpr) (O fo : ObjId) (m 
   intro v t
   simp [M.pure, pure]
 
+/-- **A call `x(e₁, …, eₙ)` of a function bound by `let`** in the global record's declarative part (`x` holds
+the function `fo`): asks the driver to call `fo` with `this` undefined. -/
+theorem call_decl_req (c : Ctx) (w : State) (ge g fo : Nat) (x : JSStr) (gb : HashMap JSStr Binding) (gtv : Value)
+    (d : FuncData) (bd : Binding) (ps : List (Sem.CExpr × Value)) (hev : ∀ p ∈ ps, p.1 c w = .ok p.2 w)
+    (hlex : c.lex = ge) (hstr : c.strict = false) (hge : ge < w.envs.size) (hE : w.envEntry ge = .global g gb gtv)
+    (hbm : (x ∈ gb) = True) (hb : gb[x]? = some bd) (hv : bd.value = some (.obj fo))
+    (hfs : fo < w.heap.size) (hfk : (w.objEntry fo).kind = .func d) (hf : w.fuel ≠ 0) :
+    ∃ K, Sem.call (Sem.identRef x) (Sem.args (ps.map fun p => Sem.ArgD.expr p.1).toArray) false (CalleeDesc.ident x)
+        c w = .req (.call (.obj fo) .undefined (ps.map Prod.snd).toArray) w K ∧ ∀ v t, K (.normal v) t = .ok v t := by
+  have hr := resolveBinding_global_decl ge x false w g gb gtv hge hE hbm hf
+  have ha := args_pure c w ps hev
+  have hbn : ∀ hm : x ∈ gb, gb[x]'hm = bd := fun hm => by
+    have := Std.HashMap.getElem?_eq_some_getElem (m := gb) hm
+    rw [hb] at this; exact (Option.some.inj this).symm
+  cases bd with | mk val mu st de =>
+  simp only at hv; subst hv
+  refine ⟨?K, ?h, ?_⟩
+  case h =>
+    conv =>
+      lhs
+      simp [Sem.call, Sem.identRef, hlex, hstr, hr, getRefValue, getBindingValue, readEnv_entry _ _ _ hge, hE, hbn,
+        hbm, refThisValue, ha, isCallable, readObj_entry' _ _ _ hfs, hfk, ES.call, pure, M.pure, M.bind_eq,
+        M.bind_apply, M.bindRes_ok]
+  intro v t
+  simp [M.pure, pure]
+
 end Stmts

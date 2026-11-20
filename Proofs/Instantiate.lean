@@ -25,6 +25,10 @@ theorem fnData_realm (fn : Func) (t : State) (ge : EnvId) (sc : Nat) : (fnData f
   simp only [fnData]
 theorem fnData_code (fn : Func) (t : State) (ge : EnvId) (sc : Nat) : (fnData fn t ge sc).code = fn := by
   simp only [fnData]
+theorem fnData_privEnv (fn : Func) (t : State) (ge : EnvId) (sc : Nat) : (fnData fn t ge sc).privEnv = #[] := by
+  simp only [fnData]
+theorem fnData_env (fn : Func) (t : State) (ge : EnvId) (sc : Nat) : (fnData fn t ge sc).env = ge := by
+  simp only [fnData]
 theorem fnData_isClassCtor (fn : Func) (t : State) (ge : EnvId) (sc : Nat) :
     (fnData fn t ge sc).isClassCtor = false := by simp only [fnData]
 theorem fnData_thisMode (fn : Func) (t : State) (ge : EnvId) (sc : Nat) :

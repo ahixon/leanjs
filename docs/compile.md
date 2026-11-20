@@ -193,6 +193,13 @@ definitions are stated at `n = height + 1`.
   afterwards exactly `O.n = k + 1`), an object literal of data properties (`let_obj`, `cdp_ordinary`), a
   method call `e.m(…)` (`Stmts.method_call_req`), names bound on the global object
   (`Global.identValue_global_obj`).
+- Closures: `Proofs/Closure.lean` — examples/closure.js (`function make() { let n = 0; return function () {
+  n = n + 1; return n; }; } let c = make(); c(); c();`) evaluates to 2 (`cl_script`). New pieces: an
+  anonymous function expression (`instExpr`: its environment is the current lexical one), `make`'s call
+  returning the closure with its environment `L` holding `n = 0` (`make_call`), reaching `n` from the
+  closure's body through its block and function records (`identValue_captured`, `resolveBinding_captured`),
+  the closure's call updating `n` in `L` after `make` has returned (`fn1_call`), and calling a function
+  stored by a global `let` (`Stmts.call_decl_req`). `Script.instAll_facts` also states `d.privEnv = #[]`.
 
 ## Stages
 

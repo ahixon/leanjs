@@ -315,7 +315,7 @@ theorem me_script (eng : Engine) (s : State) (cs : Conts) (gb : Std.HashMap JSSt
   rw [hu] at hku heu hfuu hszu hnames hfuns
   have hfu0 : t0.fuel = s.fuel := by rw [← ht0, State.setEnv_fuel]; rfl
   let fI := s.heap.size
-  obtain ⟨dI, hfIk, hcI, -, hmI, hclsI⟩ := hfuns 0 (by decide)
+  obtain ⟨dI, hfIk, hcI, -, hmI, hclsI, -⟩ := hfuns 0 (by decide)
   rw [hz0] at hfIk hszu hnames
   simp only [fs, List.length_cons, List.length_nil] at hszu
   simp only [Nat.mul_zero, Nat.add_zero] at hfIk
