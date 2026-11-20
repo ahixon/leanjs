@@ -1,6 +1,7 @@
 import Proofs.Object
 import Proofs.AddCall
 import Proofs.ScriptGen
+import Proofs.Driver
 
 /-!
 # A whole program: `function add(a, b) { return a + b } add(1, 2);` evaluates to 3
@@ -109,6 +110,27 @@ theorem createGlobalFunctionBinding_new (t : State) (g : ObjId) (n : JSStr) (v :
     Obj'.defineOwnProperty_entry _ _ _ _ hgs hk', ordinaryDefineOwnProperty_new _ _ _ _ _ _ _ hgs hx hp, setProp,
     Obj'.set_entry_own, State.setProp_entry_self, hgs, hk, ordinaryDefineOwnProperty_value, pure, M.pure]
 
+@[simp] theorem funcDataOf_code (t : State) (ge : EnvId) (ctx : Ctx) :
+    (funcDataOf t ge ctx).code = ScriptGen.add_func := by simp only [funcDataOf]
+@[simp] theorem funcDataOf_realm (t : State) (ge : EnvId) (ctx : Ctx) :
+    (funcDataOf t ge ctx).realm = t.realm := by simp only [funcDataOf]
+@[simp] theorem funcDataOf_thisMode (t : State) (ge : EnvId) (ctx : Ctx) :
+    (funcDataOf t ge ctx).thisMode = .global := by simp only [funcDataOf]
+@[simp] theorem funcDataOf_isClassCtor (t : State) (ge : EnvId) (ctx : Ctx) :
+    (funcDataOf t ge ctx).isClassCtor = false := by simp only [funcDataOf]
+
+/-- The function object's kind after InstantiateFunctionObject. -/
+theorem instState_func (t : State) (ge : EnvId) (ctx : Ctx) (fp : ObjId) :
+    ((instState t ge ctx fp).objEntry t.heap.size).kind = .func (funcDataOf t ge ctx) := by
+  have hne2 : t.heap.size + 1 ≠ t.heap.size := Nat.succ_ne_self _
+  simp only [instState]
+  rw [State.setProp_entry_self, Obj.withProps_kind, State.setProp_entry_self, Obj.withProps_kind,
+    State.setProp_entry_self, Obj.withProps_kind, State.setProp_entry_ne _ _ _ _ _ hne2, State.allocObj_entry_lt,
+    State.setProp_entry_self, Obj.withProps_kind, State.setProp_entry_self, Obj.withProps_kind,
+    State.allocObj_entry_new]
+  all_goals simp
+  all_goals exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)
+
 theorem instState_size (t : State) (ge : EnvId) (ctx : Ctx) (fp : ObjId) :
     (instState t ge ctx fp).heap.size = t.heap.size + 2 := by
   simp [instState]
@@ -158,5 +180,143 @@ theorem gdi (t : State) (ge : EnvId) (g : ObjId) (ctx : Ctx) (gb : HashMap JSStr
     Obj'.getOwnProperty_entry _ _ _ hgs hk', Obj'.isExtensible_entry _ _ hgs hk', hx, hp, hname, VarScoped.names,
     pure, M.pure, funcNameKey, hctx, instantiate_add _ _ _ fp hfp, hcg]
   rfl
+
+/-! ## Stage 2: the statements run up to the call -/
+
+/-- The Numbers 1 and 2 as the generated code writes them. -/
+abbrev one : F64 := F64.fin false 4503599627370496 (-52)
+abbrev two : F64 := F64.fin false 4503599627370496 (-51)
+
+/-- The script's statements, with `add` bound on the global object to the function object `fo`:
+the function declaration does nothing (it was instantiated), and `add(1, 2)` asks the driver to call
+`fo` with `this` undefined. When the call returns `v`, the statements complete normally with `v`. -/
+theorem body_req (n : Nat) (u : State) (ge g fo : Nat) (ctx : Ctx) (gb : HashMap JSStr Binding) (gtv : Value)
+    (d : FuncData) (hlex : ctx.lex = ge) (hstrict : ctx.strict = false) (hann : ctx.annexB = funcIds #[])
+    (hge : ge < u.envs.size) (hE : u.envEntry ge = .global g gb gtv) (hgb : gb.contains "add" = false)
+    (hgb' : gb[JSStr.ofString "add"]? = none) (hgs : g < u.heap.size) (hk : (u.objEntry g).kind = .ordinary)
+    (hp : (u.objEntry g).props.get? (.str "add") = some (.data (.obj fo) true true false))
+    (hfs : fo < u.heap.size) (hfk : (u.objEntry fo).kind = .func d) (hf : 3 ≤ u.fuel) :
+    ∃ K, ScriptGen.script n ctx u = .req (.call (.obj fo) .undefined #[.num one, .num two]) u K ∧
+      ∀ v t, K (.normal v) t = .ok (.normal (some v)) t := by
+  obtain ⟨k, hk3⟩ : ∃ k, u.fuel = k + 3 := ⟨u.fuel - 3, by omega⟩
+  have hk' : (u.objEntry g).kind.isPlain = true := by rw [hk]; rfl
+  have hann0 : (funcIds #[]).contains ScriptGen.add_func.info.id = false := by simp [funcIds]
+  have hgbm : (JSStr.ofString "add" ∈ gb) = False := by simp [Std.HashMap.mem_iff_contains, hgb]
+  refine ⟨?K, ?h, ?_⟩
+  case h =>
+    conv =>
+      lhs
+      simp [ScriptGen.script, Sem.stmts, M.repeatFrom, hk3, M.loop, Sem.funDecl, hann, hann0, Sem.exprStmt,
+        Sem.call, Sem.identRef, hlex, hstrict, resolveBinding, hasBinding, readEnv_entry _ _ _ hge, hE, hgb,
+        Obj'.hasProperty_entry_own _ _ _ hgs hk', hp, getRefValue, getBindingValue, hgb', getProp,
+        Obj'.get_entry_data _ _ _ _ hgs hk', refThisValue, Sem.args, Sem.lit, litValue, isCallable,
+        readObj_entry' _ _ _ hfs, hfk, ES.call, pure, M.pure, Sem.inner, hgbm]
+  intro v t
+  simp [M.pure, pure, M.loopRes_inr]
+
+/-! ## Stage 3: the whole script, with the driver -/
+
+/-- The script's `add` is the same function as examples/add.js's (same source text). -/
+theorem same_func : ScriptGen.add_func = AddGen.add_func := rfl
+
+section gdiState
+variable (t : State) (ge : EnvId) (g : ObjId) (ctx : Ctx) (fp : ObjId)
+
+theorem gdiState_envs : (gdiState t ge g ctx fp).envs = t.envs := by simp [gdiState]
+theorem gdiState_fuel : (gdiState t ge g ctx fp).fuel = t.fuel := by simp [gdiState, instState]
+theorem gdiState_realms : (gdiState t ge g ctx fp).realms = t.realms := by simp [gdiState, instState]
+theorem gdiState_realm : (gdiState t ge g ctx fp).realm = t.realm := by simp [gdiState, instState]
+theorem gdiState_size : (gdiState t ge g ctx fp).heap.size = t.heap.size + 2 := by
+  simp [gdiState, instState_size]
+
+theorem gdiState_global (hgs : g < t.heap.size) :
+    ((gdiState t ge g ctx fp).objEntry g).kind = (t.objEntry g).kind ∧
+      ((gdiState t ge g ctx fp).objEntry g).props.get? (.str "add") =
+        some (.data (.obj t.heap.size) true true false) := by
+  have hgA : g < (instState t ge (gdiCtx ctx) fp).heap.size := by
+    rw [instState_size]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt hgs)
+  simp [gdiState, State.setProp_entry_self, hgA, instState_entry_lt _ _ _ _ _ hgs]
+
+theorem gdiState_func (hgs : g < t.heap.size) :
+    ((gdiState t ge g ctx fp).objEntry t.heap.size).kind = .func (funcDataOf t ge (gdiCtx ctx)) := by
+  have hne : g ≠ t.heap.size := Nat.ne_of_lt hgs
+  rw [gdiState, State.setProp_entry_ne _ _ _ _ _ hne, State.setProp_entry_ne _ _ _ _ _ hne, instState_func]
+
+end gdiState
+
+/-- The engine's Number addition: 1 + 2 = 3. -/
+theorem one_add_two : Conv.addF one two = Conv.ofNat 3 := by decide
+
+/-- **The whole program.** Run as the engine runs a script (ScriptEvaluation, its requests answered
+by the driver), `function add(a, b) { return a + b } add(1, 2);` completes with the Number 3:
+in any state whose current realm has an ordinary, extensible global object without an `add`
+property, `%Function.prototype%`, and some fuel. -/
+theorem add_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Binding) (gtv : Value) (fp : ObjId)
+    (hge : s.curRealm.globalEnv < s.envs.size)
+    (hE : s.envEntry s.curRealm.globalEnv = .global s.curRealm.globalObj gb gtv)
+    (hgb : gb.contains "add" = false) (hgb' : gb[JSStr.ofString "add"]? = none)
+    (hgs : s.curRealm.globalObj < s.heap.size) (hk : (s.objEntry s.curRealm.globalObj).kind = .ordinary)
+    (hx : (s.objEntry s.curRealm.globalObj).extensible = true)
+    (hp : (s.objEntry s.curRealm.globalObj).props.get? (.str "add") = none)
+    (hfp : s.curRealm.intrinsics["%Function.prototype%"]? = some fp) (hf : 4 ≤ s.fuel) :
+    ∃ s', (runM eng (scriptEvaluation ScriptGen.program) s cs).1 = .ok (.num (Conv.ofNat 3)) s' := by
+  rw [← one_add_two]
+  -- ScriptEvaluation's first steps: the script record and its context
+  let ge := s.curRealm.globalEnv
+  let g := s.curRealm.globalObj
+  let t : State := { s with scripts := s.scripts.push { prog := ScriptGen.program, realm := s.realm, path := "" }, script := s.scripts.size }
+  let ctx0 : Ctx := { lex := ge, var := ge, strict := false, realm := s.realm, script := s.scripts.size }
+  have htr : t.curRealm = s.curRealm := rfl
+  have hge' : ge < t.envs.size := hge
+  have hE' : t.envEntry ge = .global g gb gtv := hE
+  have hgs' : g < t.heap.size := hgs
+  -- stage 1
+  have hgdi := gdi t ge g ctx0 gb gtv fp rfl hge' hE' hgb hgs' hk hx hp (by rw [htr]; exact hfp)
+  obtain ⟨u, hu⟩ : ∃ u, gdiState t ge g ctx0 fp = u := ⟨_, rfl⟩
+  rw [hu] at hgdi
+  let fo := t.heap.size
+  let d := funcDataOf t ge (gdiCtx ctx0)
+  obtain ⟨hgk, hgp⟩ := gdiState_global t ge g ctx0 fp hgs'
+  rw [hu] at hgk hgp
+  have hfk : (u.objEntry fo).kind = .func d := by rw [← hu]; exact gdiState_func t ge g ctx0 fp hgs'
+  have hue : u.envs = s.envs := by rw [← hu, gdiState_envs]
+  have hur : u.realms = s.realms := by rw [← hu, gdiState_realms]
+  have hufuel : u.fuel = s.fuel := by rw [← hu, gdiState_fuel]
+  have husize : u.heap.size = s.heap.size + 2 := by rw [← hu, gdiState_size]
+  have hgu : g < u.heap.size := by rw [husize]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt hgs)
+  have hfu : fo < u.heap.size := by rw [husize]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)
+  have hgeu : ge < u.envs.size := by rw [hue]; exact hge
+  have hEu : u.envEntry ge = .global g gb gtv := by simp only [State.envEntry, hue]; exact hE
+  -- stage 2
+  obtain ⟨K, hreq, hK⟩ := body_req 999968 u ge g fo (gdiCtx ctx0) gb gtv d rfl rfl rfl hgeu hEu hgb hgb' hgu
+    (by rw [hgk]; exact hk) hgp hfu hfk (by rw [hufuel]; omega)
+  have hscript : evalStmts evalDepth (gdiCtx ctx0) ScriptGen.script_stmts u = ScriptGen.script 999968 (gdiCtx ctx0) u := by
+    rw [ScriptGen.script_eq]; rfl
+  -- stage 3: the call, answered by the driver
+  obtain ⟨u', hu'⟩ : ∃ u', ({ u with fuel := u.fuel - 1 } : State) = u' := ⟨_, rfl⟩
+  have hu'r : u'.realms = s.realms := by rw [← hu']; exact hur
+  have hu'e : u'.envs = s.envs := by rw [← hu']; exact hue
+  have hu'f : u'.fuel = s.fuel - 1 := by rw [← hu', hufuel]
+  have hcode : d.code = AddGen.add_func := by rw [funcDataOf_code, same_func]
+  have hdr : d.realm = s.realm := by rw [funcDataOf_realm]
+  have hrealm : (u'.realms[d.realm]!).globalEnv = ge := by rw [hu'r, hdr]; rfl
+  obtain ⟨s'', hcall, -, -, -⟩ := AddCall.add_call_undef fo d u' one two g gb gtv hcode
+    (funcDataOf_isClassCtor _ _ _) (funcDataOf_thisMode _ _ _)
+    (by rw [hrealm, hu'e]; exact hge)
+    (by rw [hrealm]; simp only [State.envEntry, hu'e]; exact hE)
+    (by rw [hu'f]; omega)
+  have himpl : callImpl eng (.obj fo) .undefined #[.num one, .num two] u = .ok (.num (Conv.addF one two)) s'' := by
+    rw [callImpl_func eng fo d _ _ u hfu hfk (by rw [hufuel]; omega), hu']
+    exact hcall
+  have hbody : ScriptGen.program.body = ScriptGen.script_stmts := rfl
+  have hstr : ScriptGen.program.strict = false := rfl
+  refine ⟨s'', ?_⟩
+  simp only [runM, callDepth, scriptEvaluation, M.bind_eq, M.bind_apply, M.readS_apply, M.bindRes_ok, M.modify_apply,
+    hbody, hstr]
+  rw [hgdi]
+  simp only [M.bindRes_ok, M.bind_apply, hscript, hreq, M.bindRes_req]
+  rw [drive_call_ok eng 3999 _ _ _ _ _ cs _ _ himpl]
+  simp only [hK, M.bindRes_ok, Option.getD_some]
+  simp only [pure, M.pure, drive_ok]
 
 end AddScript

@@ -76,9 +76,22 @@ definitions are stated at `n = height + 1`.
   `s.fuel ≠ 0` (simp normalizes `0 < n`); simp cannot discharge `Bool`-valued `isDeclLike`
   side conditions or literal depths (`2 ≤ 999998`), so specialize those lemmas first; prove a step
   under `∃` with `refine ⟨?c, ?t, ?h, ?_⟩` and `conv => lhs; simp …`, which assigns the witnesses.
-- Next: a whole-program example (script evaluation instantiates `add`, then `add(1, 2)` goes
-  through `callImpl` and the driver's call request), then lemmas for property get/set on ordinary
-  objects and loops with invariants.
+- A whole program: `Proofs/AddScript.lean`'s `add_script` — run as the engine runs a script
+  (ScriptEvaluation, the driver answering the call request), `function add(a, b) { return a + b }
+  add(1, 2);` (examples/add_call.js) completes with the Number 3, from any state whose realm has an
+  ordinary extensible global object without `add`, `%Function.prototype%`, and some fuel. Built from
+  `Proofs/Object.lean` (property maps, the heap, ordinary objects' internal methods via `Obj'.*`) and
+  `Proofs/Driver.lean` (`drive` answering a call).
+- Keeping proofs cheap (the whole library builds in about a second):
+  - simp lemmas are never proved by plain `rfl` (`Eq.trans rfl rfl`): `simp` applies `rfl` lemmas as
+    definitional steps, and the kernel then checked whole goals by evaluating terms (JSStr byte arrays),
+    taking minutes and gigabytes;
+  - states are written with named updates (`State.setProp`, `State.allocObj`, `instState`, `gdiState`)
+    that `simp` does not unfold, never with `{ s with heap := … }` chains;
+  - intermediate states in a long proof are opaque variables (`obtain ⟨u, hu⟩ : ∃ u, f … = u`), not
+    `let`s, which the elaborator unfolds;
+  - key and string inequalities are proved facts (`PropMap.get?_insert_ne`), never decided in place.
+- Next: lemmas for property get/set through prototypes, loops with invariants, and a larger example.
 
 ## Stages
 

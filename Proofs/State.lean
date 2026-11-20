@@ -29,6 +29,17 @@ variable {α β : Type}
 @[simp] theorem M.map_apply (f : α → β) (x : M α) (s : State) :
     (f <$> x) s = M.bindRes (fun a => M.pure (f a)) (x s) := Eq.trans rfl rfl
 
+/-- A request passes through a bind: the continuation is extended. -/
+@[simp] theorem M.bindRes_req (f : α → M β) (r : Req) (s : State) (k : Outcome → State → Res α) :
+    M.bindRes f (.req r s k) = .req r s (fun o s' => M.bindRes f (k o s')) := Eq.trans rfl rfl
+
+@[simp] theorem M.loopRes_req {σ : Type} (next : σ → State → Res β) (r : Req) (s : State)
+    (k : Outcome → State → Res (σ ⊕ β)) :
+    M.loopRes next (.req r s k) = .req r s (fun o s' => M.loopRes next (k o s')) := Eq.trans rfl rfl
+
+@[simp] theorem M.loopRes_inl {σ : Type} (next : σ → State → Res β) (st : σ) (s : State) :
+    M.loopRes next (.ok (.inl st) s) = next st s := Eq.trans rfl rfl
+
 /-- `attempt` of a computation that returns normally. -/
 theorem M.attempt_ok (x : M α) (s s' : State) (a : α) (h : x s = .ok a s') :
     M.attempt x s = .ok (.ok a) s' := by

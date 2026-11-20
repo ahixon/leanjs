@@ -128,4 +128,52 @@ theorem add_call (f : ObjId) (d : FuncData) (o : ObjId) (s : State) (x y : F64)
     simp [M.bind_apply, hnew, hbind, hasync, hgen, hbody, M.attempt, M.tryCatch_apply, pure, M.pure, s1]
   · simp [hfuel4, s3, s2, s1]
 
+/-- The [[Call]] of `add` with `this` undefined (a plain call `add(x, y)`): a sloppy function's
+`this` is then the global environment's this value. Returns `x + y`. -/
+theorem add_call_undef (f : ObjId) (d : FuncData) (s : State) (x y : F64) (go : ObjId)
+    (gb : Std.HashMap JSStr Binding) (gtv : Value)
+    (hcode : d.code = AddGen.add_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .global)
+    (hge : (s.realms[d.realm]!).globalEnv < s.envs.size)
+    (hgE : s.envEntry (s.realms[d.realm]!).globalEnv = .global go gb gtv)
+    (hf : 2 ≤ s.fuel) :
+    ∃ s', callECMA f d .undefined #[.num x, .num y] s = .ok (.num (Conv.addF x y)) s' ∧
+      s'.realm = s.realm ∧ s'.script = s.script ∧ s'.fuel = s.fuel := by
+  let ge := (s.realms[d.realm]!).globalEnv
+  let s1 : State := { s with realm := d.realm, script := d.script }
+  let env := s.envs.size
+  let E0 : Env := .func {} (some d.env) .uninitialized .undefined f .undefined
+  let s2 : State := { s1 with envs := s1.envs.push E0 }
+  let s3 := s2.setEnv env (.func {} (some d.env) .initialized gtv f .undefined)
+  have hgl : (ThisMode.global == ThisMode.lexical) = false := by decide
+  have hgs : (ThisMode.global == ThisMode.strict) = false := by decide
+  have hnew : newFunctionEnv f d .undefined s1 = .ok env s2 := by
+    simp [hgl, newFunctionEnv, hmode, s2, s1, E0, env]
+  have henv2 : env < s2.envs.size := by simp [s2, s1, env]
+  have hge2 : ge < s2.envs.size := by simp [s2, s1]; exact Nat.lt_succ_of_lt hge
+  have hgE2 : s2.envEntry ge = .global go gb gtv := by
+    have hne : ge ≠ s.envs.size := Nat.ne_of_lt hge
+    simp only [State.envEntry] at hgE ⊢
+    simp [s2, s1, Array.getElem?_push, hne, ge] at hgE ⊢
+    exact hgE
+  have hbind : ordinaryCallBindThis d env .undefined s2 = .ok () s3 := by
+    simp only [ordinaryCallBindThis, hmode]
+    have hnn : (Value.undefined).isNullish = true := rfl
+    have hui : (ThisStatus.uninitialized == ThisStatus.initialized) = false := by decide
+    have hrl : (s2.realms[d.realm]!).globalEnv = ge := rfl
+    simp [hgl, hgs, hnn, hui, M.bind_eq, M.bind_apply, bindThisValue, readEnv_entry _ _ _ henv2, pure, M.pure,
+      modifyEnv_eq_setEnv _ _ _ henv2, s3, hrl, readEnv_entry _ _ _ hge2, hgE2]
+    simp [hui, State.envEntry, s2, s1, E0, env, modifyEnv, State.setEnv]
+  have henv3 : env < s3.envs.size := by simp [s3, s2, s1, env]
+  have hE3 : s3.envEntry env = .func ∅ (some d.env) .initialized gtv f .undefined := by
+    simp [s3, henv2]
+  obtain ⟨s4, hbody, -, hfuel4⟩ :=
+    add_body f d env s3 x y gtv hcode henv3 hE3 (by simp [s3, s2, s1]; omega)
+  have hasync : d.code.isAsync = false := by rw [hcode]; rfl
+  have hgen : d.code.isGenerator = false := by rw [hcode]; rfl
+  refine ⟨{ s4 with realm := s.realm, script := s.script }, ?_, rfl, rfl, ?_⟩
+  · simp only [callECMA, hcls, inCallee, M.bind_eq, M.bind_apply, M.readS_apply, M.bindRes_ok,
+      M.modify_apply]
+    simp [M.bind_apply, hnew, hbind, hasync, hgen, hbody, M.attempt, M.tryCatch_apply, pure, M.pure, s1]
+  · simp [hfuel4, s3, s2, s1]
+
 end AddCall
