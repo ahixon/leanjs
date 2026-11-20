@@ -160,6 +160,44 @@ theorem set_chain (s : State) (k : PropKey) (v : Value) (recv : ObjId)
         | _ =>
           simp [ordLookup, hp, hpr, writableOrAbsent, pure, M.pure, getOwnProperty_entry _ recv k s hr hrk, hrn, hdef]
 
+/-- [[Set]] that finds a setter on the chain: a request to call it with the receiver and the value; when the call
+returns (whatever it returns), the result is `true` and nothing else changes. -/
+theorem set_chain_setter (s : State) (k : PropKey) (v : Value) (recv : ObjId) (g sf : Value) (e c : Bool)
+    (hsf : sf.isUndefined = false) :
+    ∀ (n : Nat) (o : ObjId) (m : Nat), PlainChain s n o k → 2 * n + 1 ≤ m →
+      ordLookup s n o k = some (.accessor g sf e c) →
+      ∃ K, ES.set m o k v (.obj recv) s = .req (.call sf (.obj recv) #[v]) s K ∧ ∀ x t, K (.normal x) t = .ok true t := by
+  intro n
+  induction n with
+  | zero => intro o m h; simp [PlainChain] at h
+  | succ n ih =>
+    intro o m ⟨hlt, hk, hrest⟩ hm hl
+    obtain ⟨j, rfl⟩ : ∃ j, m = j + 3 := ⟨m - 3, by omega⟩
+    rw [ES.set]
+    simp only [M.bind_eq, M.bind_apply, objKind, readObj_entry' _ _ _ hlt, M.bindRes_ok]
+    cases hkd : (s.objEntry o).kind <;> simp [hkd, Kind.isPlain] at hk <;>
+    · rw [ES.ordinarySet]
+      simp only [M.bind_eq, M.bind_apply, getOwnProperty_entry _ o k s hlt (by simp [hkd]), M.bindRes_ok]
+      cases hp : (s.objEntry o).props.get? k with
+      | some p =>
+        simp only [ordLookup, hp, Option.some.injEq] at hl
+        subst hl
+        refine ⟨fun o t => M.bindRes (fun (_ : Value) => (pure true : M Bool))
+          (match o with | .normal v | .ret v => .ok v t | .throw e => .err e t), ?_, fun x t => rfl⟩
+        show (if sf.isUndefined = true then pure false else (call sf (.obj recv) #[v]).bind fun _ => pure true) s = _
+        rw [hsf]; rfl
+      | none =>
+        have hr' := hrest hp
+        simp only [M.bind_apply, getPrototypeOf_plain _ o s hlt (by simp [hkd]), M.bindRes_ok]
+        cases hpr : (s.objEntry o).proto with
+        | obj p =>
+          rw [hpr] at hr'
+          have hl' : ordLookup s n p k = some (.accessor g sf e c) := by simpa [ordLookup, hp, hpr] using hl
+          obtain ⟨K, hK, hKx⟩ := ih p (j + 1) hr' (by omega) hl'
+          simp only [hpr, hK, M.bindRes_req]
+          exact ⟨_, rfl, fun x t => by simp [hKx]⟩
+        | _ => simp [ordLookup, hp, hpr] at hl
+
 /-! ## At `maxDepth` (`Obj'.*`), and through references -/
 
 theorem Obj'.hasProperty_chain (s : State) (k : PropKey) (n : Nat) (o : ObjId) (hc : PlainChain s n o k)
@@ -203,6 +241,20 @@ theorem putRefValue_prop (o : ObjId) (key : JSStr) (strict : Bool) (v : Value) (
     | some p => cases p <;> simp [noAccessor, writableOrAbsent]
   simp [putRefValue, toPropertyKey, M.bind_eq, M.bind_apply, pure, M.pure,
     Obj'.set_chain s _ v o hr hrk hrn hrx n o hc hn hna, hw]
+
+/-- PutValue of `o.key = v` when the chain from `o` finds a setter for `key`: a request to call it with `o` and
+`v`; when it returns, the assignment is done and nothing else changed. -/
+theorem putRefValue_setter (o : ObjId) (key : JSStr) (strict : Bool) (v : Value) (s : State) (n : Nat)
+    (g sf : Value) (e c : Bool) (hsf : sf.isUndefined = false) (hc : PlainChain s n o (.str key)) (hn : n ≤ 9999)
+    (hl : ordLookup s n o (.str key) = some (.accessor g sf e c)) :
+    ∃ K, putRefValue (.prop (.obj o) (.str key) strict none) v s = .req (.call sf (.obj o) #[v]) s K ∧
+      ∀ x t, K (.normal x) t = .ok () t := by
+  obtain ⟨K, hK, hKx⟩ := set_chain_setter s (.str key) v o g sf e c hsf n o maxDepth hc
+    (by simp only [maxDepth]; omega) hl
+  have hs : Obj'.set o (.str key) v (.obj o) s = .req (.call sf (.obj o) #[v]) s K := hK
+  simp only [putRefValue, toPropertyKey, M.bind_eq, M.bind_apply, pure, M.pure, M.bindRes_ok, Option.getD_none, hs,
+    M.bindRes_req]
+  exact ⟨_, rfl, fun x t => by simp [hKx]⟩
 
 /-! ## Example: assignment shadows an inherited property -/
 

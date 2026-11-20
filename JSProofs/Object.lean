@@ -54,14 +54,16 @@ theorem readObj_entry {α : Type} (o : ObjId) (f : Obj → α) (s : State) (h : 
     readObj o f s = .ok (f (s.objEntry o)) s := by
   simp [readObj, h, State.objEntry_of s o h]
 
-/-- Ordinary objects and ECMAScript function objects: every essential internal method is the
-ordinary one. -/
+/-- Ordinary objects, ECMAScript function objects, and embedders' objects with internal slots: every essential
+internal method is the ordinary one. -/
 def Kind.isPlain : Kind → Bool
-  | .ordinary | .func _ => true
+  | .ordinary | .func _ | .internal _ _ => true
   | _ => false
 
 @[simp] theorem Kind.isPlain_ordinary : Kind.ordinary.isPlain = true := by simp only [Kind.isPlain]
 @[simp] theorem Kind.isPlain_func (d : FuncData) : (Kind.func d).isPlain = true := by simp only [Kind.isPlain]
+@[simp] theorem Kind.isPlain_internal (t : String) (v : Array Value) : (Kind.internal t v).isPlain = true := by
+  simp only [Kind.isPlain]
 
 theorem readObj_some {α : Type} (o : ObjId) (f : Obj → α) (s : State) (ob : Obj) (h : s.heap[o]? = some ob) :
     readObj o f s = .ok (f ob) s := by
