@@ -216,6 +216,10 @@ definitions are stated at `n = height + 1`.
   own); `runsTo_call_nested` (the script-level bridge). `twice(x)` (`return add(x, x);`) runs to `x + x` for
   every small integer (`twice_call`); examples/twice.js (`twice(21);`) evaluates to 42 (`tw_script`).
   `Script.instAll_facts` also states `d.env = ge`.
+- Prototype methods: `Proofs/ProtoM.lean` — examples/proto.js (`let p = { inc: inc }; let o = { __proto__: p, n: 0 };
+  o.inc(); o.inc();`) evaluates to 2 (`pm_script`): [[SetPrototypeOf]] of a fresh object with its cycle check
+  (`setPrototypeOf_fresh`; realm assumption: `Object.prototype` ordinary, prototype null), the method found on
+  the prototype (`get_inc_proto` via `Obj'.get_chain`; `method_call_get_req`), `inc`'s call as in Method.lean.
 
 ## Stages
 
