@@ -175,6 +175,12 @@ definitions are stated at `n = height + 1`.
   `foldList_fns`). `DTScript.dt_script` and `ITScript.it_script` use them; a script proof is its
   statements and calls only. The global record's declarative part and the call statement `f(b)` are in
   `Proofs/Global.lean`.
+- Statements in general: `Proofs/Stmts.lean` — `call_expr_req` (a call `f(e₁, …, eₙ)` of a function bound
+  on the global object, arguments evaluating without effects: `args_pure`) asks the driver for the call;
+  `exprStmt_req` and `let_req` wrap any expression that asks for one call as a statement or a global
+  `let`. `Proofs/AddTwice.lean` — examples/add_twice.js (`let r = add(1, 2); add(r, 4);`) evaluates to 7
+  (`at_script`), from these and the script lemmas alone, with `add`'s call stating what it leaves alone
+  (`AddTwice.add_call`).
 
 ## Stages
 

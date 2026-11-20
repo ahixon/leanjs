@@ -14,7 +14,7 @@ evaluates to 10 = 0 + 1 + 2 + 3 + 4: `iota(5)` builds a new array (its writes go
 
 open ES ES.Conv SumProof SumForProof TotalProof
 open Std (HashMap)
-open Global (createMutableBinding_global initializeBinding_global identValue_global_decl
+open Global (resolveBinding_global_obj createMutableBinding_global initializeBinding_global identValue_global_decl
   resolveBinding_global_decl call_req gb2 gb2_b gb2_mem_b gb2_contains gb2_get gb2_mem isArray_of_arrayObj ne_bt l5
   callOf)
 
@@ -35,18 +35,6 @@ theorem isIota_it : IotaCall.IsIota ITGen.iota_func := ⟨rfl, rfl, rfl, rfl, rf
 
 theorem ne_bi : (JSStr.ofString "b" = JSStr.ofString "iota") = False := by simp; decide
 theorem l5_eq : l5 = ofSmallInt 5 := by decide
-
-/-- `resolveBinding` of a name bound on the global object (not in the declarative part). -/
-theorem resolveBinding_global_obj (env : EnvId) (n : JSStr) (strict : Bool) (s : State) (g : ObjId)
-    (b : HashMap JSStr Binding) (tv : Value) (p : Property) (h : env < s.envs.size)
-    (hE : s.envEntry env = .global g b tv) (hb : b.contains n = false) (hbm : (n ∈ b) = False)
-    (hgs : g < s.heap.size) (hk : (s.objEntry g).kind.isPlain = true) (hp : (s.objEntry g).props.get? (.str n) = some p)
-    (hf : s.fuel ≠ 0) :
-    resolveBinding env n strict s = .ok (.env (some env) n strict) s := by
-  obtain ⟨k, hk1⟩ : ∃ k, s.fuel = k + 1 := ⟨s.fuel - 1, by omega⟩
-  rw [resolveBinding_loop, hk1]
-  simp [M.loop, resolveBody, M.bind_eq, M.bind_apply, hasBinding, readEnv_entry _ _ _ h, hE, hb, hbm,
-    Obj'.hasProperty_entry_own _ _ _ hgs hk, hp, pure, M.pure]
 
 abbrev letIota : Sem.CStmt := Sem.varDecl #[Sem.declLex VarKind.let "b" (some (Sem.call (Sem.identRef "iota")
   (Sem.args #[Sem.ArgD.expr (Sem.lit (Lit.num l5))]) false (CalleeDesc.ident "iota")))]

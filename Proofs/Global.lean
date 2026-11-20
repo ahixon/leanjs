@@ -127,4 +127,16 @@ theorem isArray_of_arrayObj (A : ObjId) (len : Nat) (xs : Nat → Nat) (t : Stat
   exact ⟨a1, a2, ⟨true, false, false, by rw [← kLength_eq]; exact a4⟩,
     fun j hj => ⟨true, true, true, by rw [key_eq]; exact a5 j hj⟩⟩
 
+/-- `resolveBinding` of a name bound on the global object (not in the declarative part). -/
+theorem resolveBinding_global_obj (env : EnvId) (n : JSStr) (strict : Bool) (s : State) (g : ObjId)
+    (b : HashMap JSStr Binding) (tv : Value) (p : Property) (h : env < s.envs.size)
+    (hE : s.envEntry env = .global g b tv) (hb : b.contains n = false) (hbm : (n ∈ b) = False)
+    (hgs : g < s.heap.size) (hk : (s.objEntry g).kind.isPlain = true) (hp : (s.objEntry g).props.get? (.str n) = some p)
+    (hf : s.fuel ≠ 0) :
+    resolveBinding env n strict s = .ok (.env (some env) n strict) s := by
+  obtain ⟨k, hk1⟩ : ∃ k, s.fuel = k + 1 := ⟨s.fuel - 1, by omega⟩
+  rw [resolveBinding_loop, hk1]
+  simp [M.loop, resolveBody, M.bind_eq, M.bind_apply, hasBinding, readEnv_entry _ _ _ h, hE, hb, hbm,
+    Obj'.hasProperty_entry_own _ _ _ hgs hk, hp, pure, M.pure]
+
 end Global

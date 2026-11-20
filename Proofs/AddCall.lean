@@ -29,7 +29,8 @@ theorem add_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (x y : F64)
     ∃ ctx s', functionDeclarationInstantiation 999999 f d env #[.num x, .num y] s = .ok ctx s' ∧
       s'.envEntry env = .func (paramBindings x y) (some d.env) .initialized tv f .undefined ∧
       ctx.lex = s.envs.size ∧ s'.envEntry ctx.lex = .decl ∅ (some env) ∧ ctx.var = env ∧
-      ctx.strict = false ∧ ctx.isGen = false ∧ ctx.fn = some f ∧ s'.envs.size = s.envs.size + 1 ∧ s'.fuel = s.fuel := by
+      ctx.strict = false ∧ ctx.isGen = false ∧ ctx.fn = some f ∧ s'.envs.size = s.envs.size + 1 ∧ s'.fuel = s.fuel ∧
+      s'.heap = s.heap ∧ s'.realms = s.realms ∧ (∀ e, e < s.envs.size → e ≠ env → s'.envEntry e = s.envEntry e) := by
   have hr : Array.range 2 = [0, 1].toArray := by decide
   have hbe : ∀ ctx x v b, b.contains x = true →
       bindElement 999998 ctx (.ident x) none (.init (some env)) (M.pure v)
@@ -52,6 +53,8 @@ theorem add_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (x y : F64)
   have hne : env ≠ s.envs.size := Nat.ne_of_lt henv
   simp [State.envEntry, State.setEnv, Array.getElem?_push, Array.getElem_push, Array.getElem_modify, henv, hne,
     paramBindings]
+  intro e he hee
+  simp [Nat.ne_of_lt he, Array.getElem?_modify, Ne.symm hee]
 
 /-- `add`'s body, run as a call runs it (FunctionDeclarationInstantiation, then the statements):
 called with Numbers `x` and `y` in a fresh function environment, it returns `x + y`. -/
@@ -60,8 +63,9 @@ theorem add_body (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (x y : F64
     (hE : s.envEntry env = .func ∅ (some d.env) .initialized tv f .undefined)
     (hf : 2 ≤ s.fuel) :
     ∃ s', evalFunctionBody evalDepth f d env #[.num x, .num y] s = .ok (.num (Conv.addF x y)) s' ∧
-      s'.envs.size = s.envs.size + 1 ∧ s'.fuel = s.fuel := by
-  obtain ⟨ctx, s', hfdi, hB, hlex, hL, hvar, hstrict, hgen, hfn, hsize, hfuel⟩ :=
+      s'.envs.size = s.envs.size + 1 ∧ s'.fuel = s.fuel ∧ s'.heap = s.heap ∧ s'.realms = s.realms ∧
+      (∀ e, e < s.envs.size → e ≠ env → s'.envEntry e = s.envEntry e) := by
+  obtain ⟨ctx, s', hfdi, hB, hlex, hL, hvar, hstrict, hgen, hfn, hsize, hfuel, hheap, hrl, hfe⟩ :=
     add_fdi f d env s x y tv hcode henv hE (by omega)
   have hl' : ctx.lex < s'.envs.size := by rw [hlex, hsize]; exact Nat.lt_succ_self _
   have he' : env < s'.envs.size := by rw [hsize]; exact Nat.lt_succ_of_lt henv
@@ -83,7 +87,7 @@ theorem add_body (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (x y : F64
     simp [paramBindings, Std.HashMap.getElem_modify, Std.HashMap.getElem_insert, hab]
   obtain ⟨k, hk⟩ : ∃ k, s'.fuel = k + 1 := ⟨s'.fuel - 1, by omega⟩
   have hbody := AddProof.add_interp_spec 999976 k ctx s' x y ha hb hgen hk
-  refine ⟨s', ?_, hsize, hfuel⟩
+  refine ⟨s', ?_, hsize, hfuel, hheap, hrl, hfe⟩
   have hbd : d.code.body = .stmts AddGen.add_stmts := by rw [hcode]; rfl
   have hdisp : d.code.info.fdi.usesDispose = false := by rw [hcode]; rfl
   simp only [evalDepth, evalFunctionBody, M.bind_eq, M.bind_apply, hfdi, M.bindRes_ok, hbd, hdisp,
@@ -118,7 +122,7 @@ theorem add_call (f : ObjId) (d : FuncData) (o : ObjId) (s : State) (x y : F64)
   have henv3 : env < s3.envs.size := by simp [s3, s2, s1, env]
   have hE3 : s3.envEntry env = .func ∅ (some d.env) .initialized (.obj o) f .undefined := by
     simp [s3, henv2]
-  obtain ⟨s4, hbody, -, hfuel4⟩ :=
+  obtain ⟨s4, hbody, -, hfuel4, -, -, -⟩ :=
     add_body f d env s3 x y (.obj o) hcode henv3 hE3 (by simp [s3, s2, s1]; omega)
   have hasync : d.code.isAsync = false := by rw [hcode]; rfl
   have hgen : d.code.isGenerator = false := by rw [hcode]; rfl
