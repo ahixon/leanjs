@@ -39,3 +39,8 @@ lean_exe «es-regex-test» where
 /-- Checks of the Number/BigInt/Math/Date algorithms. -/
 lean_exe «es-num-test» where
   root := `ESTests.Num
+
+/-- Host requests with an embedder stub (nested calls, throws, generators, jobs). -/
+lean_exe «es-host-test» where
+  root := `ESTests.Host
+  moreLinkArgs := if System.Platform.isOSX then #["-Wl,-stack_size,0x40000000"] else #[]

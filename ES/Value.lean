@@ -430,6 +430,12 @@ inductive Req where
   /-- Resume the coroutine (generator or async body) `co`: the continuation gets
   `normal v` when it yields `v`, `ret v` when it completes with `v`, `throw e` when it throws. -/
   | resume (co : ObjId) (o : Outcome)
+  /-- A call of a host operation (a host-provided built-in, e.g. a DOM member `name` with its `this` value and
+  arguments): answered by the embedder outside the engine, which resumes with its result or exception. -/
+  | host (name : String) (thisV : Value) (args : Array Value)
+  /-- Continue the innermost frame suspended at a host request with the host's answer `o` (the driver's frame
+  stack, `Conts.frames`). -/
+  | resumeFrame (o : Outcome)
   deriving Inhabited
 
 /-- The result of running a computation. -/

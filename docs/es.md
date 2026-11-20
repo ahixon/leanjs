@@ -35,7 +35,12 @@ state alive across a step.
 
 All runtime semantics are written in `M α := State → Res α`. `Res` is `ok`, `err` (a throw
 completion: the thrown value), `halt` (engine failure: out of fuel, unimplemented — not catchable),
-or `req r s k`: a request `r` (call, construct, yield, await, resume) with its continuation `k`.
+or `req r s k`: a request `r` (call, construct, yield, await, resume, host) with its continuation `k`.
+- Host operations (an embedder's built-ins, e.g. Zippy's DOM members) return `req (.host name this args)`. The
+  driver passes it up to the embedder through every suspended call: each frame on the way pushes its callee's
+  continuation on `Conts.frames` and passes the request up with a continuation that asks for `resumeFrame`,
+  which pops the frame and finishes it. The embedder answers and drives the continuation (Zippy's
+  docs/lean-engine.md).
 
 - Built-ins and abstract operations call functions with `call f this args` (a request), so they
   never depend on the interpreter. Getters, proxy traps, `valueOf` etc. all go through it.

@@ -16,8 +16,27 @@ namespace ES
 open ES (F64)
 open Std (HashMap)
 
-/-- Suspended coroutine bodies by coroutine object id. -/
-abbrev Conts := HashMap ObjId (Outcome → State → Res Value)
+/-- A frame suspended at a host request: the continuation of its callee, and how the frame finishes once the
+callee does (a call or construct: `none`; the resumption of coroutine `co`: `some co`). -/
+structure Frame where
+  coro : Option ObjId
+  k : Outcome → State → Res Value
+
+/-- What the driver keeps between requests: suspended coroutine bodies by coroutine object id, and the stack of
+frames suspended at a host request (innermost pushed first; Zippy's docs/lean-engine.md). -/
+structure Conts where
+  coros : HashMap ObjId (Outcome → State → Res Value) := {}
+  frames : Array Frame := #[]
+
+instance : Inhabited Conts := ⟨{}⟩
+
+namespace Conts
+@[inline] def get? (cs : Conts) (co : ObjId) : Option (Outcome → State → Res Value) := cs.coros.get? co
+@[inline] def insert (cs : Conts) (co : ObjId) (k : Outcome → State → Res Value) : Conts :=
+  { cs with coros := cs.coros.insert co k }
+@[inline] def erase (cs : Conts) (co : ObjId) : Conts := { cs with coros := cs.coros.erase co }
+@[inline] def push (cs : Conts) (f : Frame) : Conts := { cs with frames := cs.frames.push f }
+end Conts
 
 /-- The call depth limit (nested JS calls). -/
 def callDepth : Nat := 4000
@@ -246,26 +265,17 @@ def driveWith (eng : Engine) (canCall : Bool)
       match makeError .rangeError "Maximum call stack size exceeded" s with
       | .ok e s' => driveWith eng canCall sub (k (.throw e) s') cs
       | _ => (.halt "internal: could not create RangeError" s, cs)
-    match r with
-    | .call f t args =>
-      if !canCall then overflow () else
-      let (r', cs) := sub (callImpl eng f t args s) cs
-      match outcomeOf r' with
-      | .inl (o, s') => driveWith eng canCall sub (k o s') cs
-      | .inr (m, s') => (.halt m s', cs)
-    | .construct f args nt =>
-      if !canCall then overflow () else
-      let (r', cs) := sub (constructImpl eng f args nt s) cs
-      match outcomeOf r' with
-      | .inl (o, s') => driveWith eng canCall sub (k o s') cs
-      | .inr (m, s') => (.halt m s', cs)
-    | .resume co o =>
-      if !canCall then overflow () else
-      let r0 : Res Value := match cs.get? co with
-        | some c => c o s
-        | none => startCoroutine co s
-      let cs := cs.erase co
-      let (r', cs) := sub r0 cs
+    -- (a callee's result: on to the continuation, or, when it suspended at a host request, push the frame and
+    -- pass the request up; Zippy's docs/lean-engine.md)
+    let finishCall (r' : Res Value) (cs : Conts) : Res α × Conts :=
+      match r' with
+      | .req (.host n th a) s' kc => (.req (.host n th a) s' (fun o s3 => .req (.resumeFrame o) s3 k), cs.push ⟨none, kc⟩)
+      | _ =>
+        match outcomeOf r' with
+        | .inl (o, s') => driveWith eng canCall sub (k o s') cs
+        | .inr (m, s') => (.halt m s', cs)
+    -- (a resumed coroutine's result)
+    let finishCoro (co : ObjId) (r' : Res Value) (cs : Conts) : Res α × Conts :=
       match r' with
       | .ok v s' => driveWith eng canCall sub (k (.ret v) s') cs
       | .err e s' => driveWith eng canCall sub (k (.throw e) s') cs
@@ -279,8 +289,36 @@ def driveWith (eng : Engine) (canCall : Bool)
         | .err _ s2 => (.halt "await on a value whose PromiseResolve throws is not implemented" s2, cs)
         | .halt m s2 => (.halt m s2, cs)
         | .req _ s2 _ => (.halt "internal: request escaped" s2, cs)
+      | .req (.host n th a) s' kc =>
+        (.req (.host n th a) s' (fun o s3 => .req (.resumeFrame o) s3 k), cs.push ⟨some co, kc⟩)
       | .req _ s' _ => (.halt "internal: request escaped a coroutine" s', cs)
-    | .yield _ | .await _ => (.req r s k, cs)
+    match r with
+    | .call f t args =>
+      if !canCall then overflow () else
+      let (r', cs) := sub (callImpl eng f t args s) cs
+      finishCall r' cs
+    | .construct f args nt =>
+      if !canCall then overflow () else
+      let (r', cs) := sub (constructImpl eng f args nt s) cs
+      finishCall r' cs
+    | .resume co o =>
+      if !canCall then overflow () else
+      let r0 : Res Value := match cs.get? co with
+        | some c => c o s
+        | none => startCoroutine co s
+      let cs := cs.erase co
+      let (r', cs) := sub r0 cs
+      finishCoro co r' cs
+    | .resumeFrame o =>
+      match cs.frames.back? with
+      | none => (.halt "internal: no frame suspended at a host request" s, cs)
+      | some fr =>
+        let cs := { cs with frames := cs.frames.pop }
+        let (r', cs) := sub (fr.k o s) cs
+        match fr.coro with
+        | none => finishCall r' cs
+        | some co => finishCoro co r' cs
+    | .yield _ | .await _ | .host .. => (.req r s k, cs)
 
 /-- Runs `r` to completion (or to a suspension of the coroutine it belongs to) with `d` levels
 of calls available. -/
@@ -379,6 +417,60 @@ def runJobs (eng : Engine) (s : State) (cs : Conts) : Except String State × Con
         let s := { s with jobs := #[], jobHead := 0 }
         (.ok s, cs)
   go s.fuel s cs
+
+/-! ## Embedding: host requests (Zippy's docs/lean-engine.md) -/
+
+/-- A host built-in: its call is a request the embedder answers (its result, or its exception). -/
+def hostFn (name : String) : BuiltinFn := fun _ thisV args _ s =>
+  .req (.host name thisV args) s fun o s' => match o with
+    | .normal v | .ret v => .ok v s'
+    | .throw e => .err e s'
+
+/-- How an embedder answers a host request `name(this, args)`: with its own state `σ` and the engine's state, an
+outcome and both states after. -/
+abbrev HostAnswer (σ : Type) := σ → String → Value → Array Value → State → σ × Outcome × State
+
+/-- The state a result ends in. -/
+def Res.stateOf {α : Type} : Res α → State
+  | .ok _ s | .err _ s | .halt _ s | .req _ s _ => s
+
+/-- Drives `r` (at the call depth limit), answering the host requests it passes up with `answer` and driving
+on; at most `n` host requests. -/
+def driveHost {σ α : Type} (eng : Engine) (answer : HostAnswer σ) : Nat → σ → Res α → Conts → Res α × Conts × σ
+  | 0, h, r, cs => (.halt "out of fuel (host requests)" r.stateOf, cs, h)
+  | n + 1, h, r, cs =>
+    match drive eng callDepth r cs with
+    | (.req (.host nm t a) s k, cs) =>
+      let (h, o, s) := answer h nm t a s
+      driveHost eng answer n h (k o s) cs
+    | (r, cs) => (r, cs, h)
+
+/-- Runs a computation, its host requests answered (at most as many as the fuel). -/
+def runMHost {σ α : Type} (eng : Engine) (answer : HostAnswer σ) (h : σ) (m : M α) (s : State) (cs : Conts) :
+    Res α × Conts × σ :=
+  driveHost eng answer s.fuel h (m s) cs
+
+/-- `runJobs` with the jobs' host requests answered. -/
+def runJobsHost {σ : Type} (eng : Engine) (answer : HostAnswer σ) (h : σ) (s : State) (cs : Conts) :
+    Except String State × Conts × σ :=
+  let rec go : Nat → σ → State → Conts → Except String State × Conts × σ
+    | 0, h, _, cs => (.error "out of fuel (jobs)", cs, h)
+    | k + 1, h, s, cs =>
+      if hj : s.jobHead < s.jobs.size then
+        let (f, args) := s.jobs[s.jobHead]
+        let s := { s with jobHead := s.jobHead + 1 }
+        match runMHost eng answer h (call f .undefined args) s cs with
+        | (.ok _ s, cs, h) => go k h s cs
+        | (.err e s, cs, h) =>
+          let msg := match e with | .str m => m.toString | _ => "uncaught exception in a job"
+          let s := { s with output := s.output.push s!"Uncaught (in job): {msg}" }
+          go k h s cs
+        | (.halt m _, cs, h) => (.error m, cs, h)
+        | (.req _ s _, cs, h) => go k h s cs
+      else
+        let s := { s with jobs := #[], jobHead := 0 }
+        (.ok s, cs, h)
+  go s.fuel h s cs
 
 def interpBuiltins : Array BuiltinDef := #[⟨"AwaitResume", awaitResume⟩]
 

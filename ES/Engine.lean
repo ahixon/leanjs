@@ -129,6 +129,21 @@ def Session.drainJobs (sess : Session) : Except String Session :=
   | (.ok s, cs) => .ok { sess with state := s, conts := cs }
   | (.error m, _) => .error m
 
+/-- `Session.run` for an embedder: host requests answered by `answer` (Zippy's docs/lean-engine.md). -/
+def Session.runWith {σ α : Type} (sess : Session) (answer : HostAnswer σ) (h : σ) (m : M α) :
+    Except String (Except Value α) × Session × σ :=
+  match runMHost sess.eng answer h m sess.state sess.conts with
+  | (.ok a s, cs, h) => (.ok (.ok a), { sess with state := s, conts := cs }, h)
+  | (.err e s, cs, h) => (.ok (.error e), { sess with state := s, conts := cs }, h)
+  | (.halt m s, cs, h) => (.error m, { sess with state := s, conts := cs }, h)
+  | (.req _ s _, cs, h) => (.error "internal: unanswered request at top level", { sess with state := s, conts := cs }, h)
+
+/-- `Session.drainJobs` with host requests answered. -/
+def Session.drainJobsWith {σ : Type} (sess : Session) (answer : HostAnswer σ) (h : σ) : Except String (Session × σ) :=
+  match runJobsHost sess.eng answer h sess.state sess.conts with
+  | (.ok s, cs, h) => .ok ({ sess with state := s, conts := cs }, h)
+  | (.error m, _, _) => .error m
+
 /-- Parses a script and evaluates it (a SyntaxError is thrown as an error object of the
 current realm). -/
 def evalScriptSource (src : String) (path : String := "") : M Value := do
@@ -146,6 +161,18 @@ def Session.runScript (sess : Session) (src : String) (path : String := "") : Ou
     | .ok sess => match r with
       | .ok v => (.value v, sess)
       | .error e => (.threw e, sess)
+
+/-- `Session.runScript` for an embedder: the script's and its jobs' host requests answered by `answer`. -/
+def Session.runScriptWith {σ : Type} (sess : Session) (answer : HostAnswer σ) (h : σ) (src : String)
+    (path : String := "") : Outcome' × Session × σ :=
+  match sess.runWith answer h (evalScriptSource src path) with
+  | (.error m, sess, h) => (.halted m, sess, h)
+  | (.ok r, sess, h) =>
+    match sess.drainJobsWith answer h with
+    | .error m => (.halted m, sess, h)
+    | .ok (sess, h) => match r with
+      | .ok v => (.value v, sess, h)
+      | .error e => (.threw e, sess, h)
 
 /-- Runs an already-parsed script (compiled programs carry their syntax tree), then the jobs. -/
 def Session.runProgram (sess : Session) (prog : Program) : Outcome' × Session :=
