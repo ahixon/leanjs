@@ -138,7 +138,7 @@ theorem callECMA_undef_runs (eng : Engine) (m : Nat) {Q : State → Prop} (f : O
 
 /-! ## At the top: a call whose callee makes calls -/
 
-theorem drivesTo_call_nested (eng : Engine) (f t : Value) (args : Array Value) (s : State) (k : Outcome → State → Res α)
+theorem drivesTo_call_nested (eng : Engine) {α : Type} (f t : Value) (args : Array Value) (s : State) (k : Outcome → State → Res α)
     (x : Value) (s1 : State) (v : α) (s' : State)
     (h : ∀ cs, (drive eng 3999 (callImpl eng f t args s) cs).1 = .ok x s1)
     (hk : Script.DrivesTo eng (k (.normal x) s1) v s') : Script.DrivesTo eng (.req (.call f t args) s k) v s' := by
