@@ -210,6 +210,12 @@ definitions are stated at `n = height + 1`.
   `catch` clause (a new record with `e`, `bindPattern_ident_init`; assigning the global `let r`,
   `setMutableBinding_global_decl`). examples/throw.js (`let r = 0; try { r = check(0 - 7); } catch (e) {
   r = 0 - e; } r;`) evaluates to 7 (`th_script`).
+- Nested calls: `Proofs/Nested.lean` — `Runs eng n r b w'` (inductive: `r` ends in `.ok b w'`, each call request's
+  callee driven one level deeper), closed under binding and handlers (`runs_bind`, `runs_tryCatch`), giving
+  what driving yields (`drive_of_runs`); `callECMA_undef_runs` (a call whose body runs, making calls of its
+  own); `runsTo_call_nested` (the script-level bridge). `twice(x)` (`return add(x, x);`) runs to `x + x` for
+  every small integer (`twice_call`); examples/twice.js (`twice(21);`) evaluates to 42 (`tw_script`).
+  `Script.instAll_facts` also states `d.env = ge`.
 
 ## Stages
 

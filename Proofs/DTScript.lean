@@ -147,8 +147,8 @@ theorem dt_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
   have hfu0 : t0.fuel = s.fuel := by rw [← ht0, State.setEnv_fuel]; rfl
   let fT := s.heap.size
   let fD := s.heap.size + 2
-  obtain ⟨dT, hfTk, hcT, hrT, hmT, hclsT, -⟩ := hfuns 0 (by decide)
-  obtain ⟨dD, hfDk, hcD, hrD, hmD, hclsD, -⟩ := hfuns 1 (by decide)
+  obtain ⟨dT, hfTk, hcT, hrT, hmT, hclsT, -, -⟩ := hfuns 0 (by decide)
+  obtain ⟨dD, hfDk, hcD, hrD, hmD, hclsD, -, -⟩ := hfuns 1 (by decide)
   rw [hz0] at hfTk hfDk hszu hnames
   simp only [fs, List.length_cons, List.length_nil] at hszu
   simp only [Nat.mul_zero, Nat.add_zero, Nat.mul_one] at hfTk hfDk

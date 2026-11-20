@@ -436,7 +436,7 @@ theorem cl_script (eng : Engine) (s : State) (cs : Conts) (gb : Std.HashMap JSSt
   have hrl0 : t0.realm = s.realm := by rw [← ht0, State.setEnv_realm]; rfl
   have hr0 : t0.realms = s.realms := by rw [← ht0, State.setEnv_realms]; rfl
   let fM := s.heap.size
-  obtain ⟨dM, hfMk, hcM, hrM, hmM, hclsM, hpM⟩ := hfuns 0 (by decide)
+  obtain ⟨dM, hfMk, hcM, hrM, hmM, hclsM, hpM, -⟩ := hfuns 0 (by decide)
   rw [hz0] at hfMk hszu hnames
   simp only [fs, List.length_cons, List.length_nil] at hszu
   simp only [Nat.mul_zero, Nat.add_zero] at hfMk

@@ -89,7 +89,7 @@ theorem at_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
   have hr0 : t0.realms = s.realms := by rw [← ht0, State.setEnv_realms]; rfl
   have hfu0 : t0.fuel = s.fuel := by rw [← ht0, State.setEnv_fuel]; rfl
   let fA := s.heap.size
-  obtain ⟨dA, hfAk, hcA, hrA, hmA, hclsA, -⟩ := hfuns 0 (by decide)
+  obtain ⟨dA, hfAk, hcA, hrA, hmA, hclsA, -, -⟩ := hfuns 0 (by decide)
   rw [hz0] at hfAk hszu hnames
   simp only [fs, List.length_cons, List.length_nil] at hszu
   simp only [Nat.mul_zero, Nat.add_zero] at hfAk
