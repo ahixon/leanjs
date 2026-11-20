@@ -21,6 +21,15 @@ def fnData (fn : Func) (t : State) (ge : EnvId) (sc : Nat) : FuncData :=
   { code := fn, env := ge, thisMode := .global,
     source := (Option.map (fun x => x.prog.source) t.scripts[sc]?).getD "", realm := t.realm, script := sc }
 
+theorem fnData_realm (fn : Func) (t : State) (ge : EnvId) (sc : Nat) : (fnData fn t ge sc).realm = t.realm := by
+  simp only [fnData]
+theorem fnData_code (fn : Func) (t : State) (ge : EnvId) (sc : Nat) : (fnData fn t ge sc).code = fn := by
+  simp only [fnData]
+theorem fnData_isClassCtor (fn : Func) (t : State) (ge : EnvId) (sc : Nat) :
+    (fnData fn t ge sc).isClassCtor = false := by simp only [fnData]
+theorem fnData_thisMode (fn : Func) (t : State) (ge : EnvId) (sc : Nat) :
+    (fnData fn t ge sc).thisMode = .global := by simp only [fnData]
+
 /-- The state after InstantiateFunctionObject. -/
 def instStateFn (fn : Func) (nm : JSStr) (t : State) (ge : EnvId) (sc : Nat) (fp : ObjId) : State :=
   let fo := t.heap.size

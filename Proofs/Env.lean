@@ -217,6 +217,18 @@ theorem newDeclEnv_eq (o : Option EnvId) (s : State) :
 
 @[simp] theorem State.pushEnv_size (s : State) (e : Env) : (s.pushEnv e).envs.size = s.envs.size + 1 := by
   simp [State.pushEnv]
+@[simp] theorem State.setEnv_realms (s : State) (e : EnvId) (v : Env) : (s.setEnv e v).realms = s.realms := by
+  simp only [State.setEnv]
+@[simp] theorem State.setEnv_realm (s : State) (e : EnvId) (v : Env) : (s.setEnv e v).realm = s.realm := by
+  simp only [State.setEnv]
+@[simp] theorem State.setEnv_scripts (s : State) (e : EnvId) (v : Env) : (s.setEnv e v).scripts = s.scripts := by
+  simp only [State.setEnv]
+@[simp] theorem State.setEnv_heap (s : State) (e : EnvId) (v : Env) : (s.setEnv e v).heap = s.heap := by
+  simp only [State.setEnv]
+@[simp] theorem State.setEnv_curRealm (s : State) (e : EnvId) (v : Env) : (s.setEnv e v).curRealm = s.curRealm := by
+  simp only [State.curRealm, State.setEnv_realms, State.setEnv_realm]
+@[simp] theorem State.pushEnv_realms (s : State) (v : Env) : (s.pushEnv v).realms = s.realms := by
+  simp only [State.pushEnv]
 @[simp] theorem State.pushEnv_fuel (s : State) (e : Env) : (s.pushEnv e).fuel = s.fuel := by
   simp only [State.pushEnv]
 @[simp] theorem State.pushEnv_entry_new (s : State) (e : Env) : (s.pushEnv e).envEntry s.envs.size = e := by

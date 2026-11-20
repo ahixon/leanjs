@@ -44,13 +44,25 @@ theorem dbl_succ (xs : Nat → Nat) (k : Nat) :
     · simp [h, h2, show j < k + 1 by omega]
     · simp [h, h2, show ¬ j < k + 1 by omega]
 
+/-- What running `double`'s code changes: environments are only added, the existing ones stay, and
+every object other than the array `A` stays (none is allocated). -/
+def Frame (A : ObjId) (t t' : State) : Prop :=
+  t.envs.size ≤ t'.envs.size ∧ (∀ e < t.envs.size, t'.envEntry e = t.envEntry e) ∧
+  t'.heap.size = t.heap.size ∧ (∀ o, o ≠ A → t'.objEntry o = t.objEntry o) ∧ t'.realms = t.realms
+
+theorem Frame.refl (A : ObjId) (t : State) : Frame A t t := ⟨Nat.le_refl _, fun _ _ => rfl, rfl, fun _ _ => rfl, rfl⟩
+
+theorem Frame.trans {A : ObjId} {t u v : State} (h1 : Frame A t u) (h2 : Frame A u v) : Frame A t v :=
+  ⟨Nat.le_trans h1.1 h2.1, fun e he => (h2.2.1 e (Nat.lt_of_lt_of_le he h1.1)).trans (h1.2.1 e he),
+    h2.2.2.1.trans h1.2.2.1, fun o ho => (h2.2.2.2.1 o ho).trans (h1.2.2.2.1 o ho), h2.2.2.2.2.trans h1.2.2.2.2⟩
+
 /-- One iteration that continues: element `k` is doubled; `i = k + 1` in the fresh copy `E'`. -/
 theorem iterD_cont (ctx : Ctx) (labels : Array JSStr) (E L F A : EnvId) (len k : Nat) (xs : Nat → Nat)
     (hstr : ctx.strict = false) (hk : k < len) (hlen : len < 2 ^ 26) (hx : ∀ j < len, xs j < 2 ^ 26) (t : State)
     (v : Value) (hS : ShapeD E L F A (some (num k)) t) (hA : ArrayObj A len (dbl xs k) t) (hf : 5 ≤ t.fuel) :
     ∃ E' v' t', forIter testD updD bodyD labels ctx #["i"] (E, v) t = .ok (.inl (E', v')) t' ∧
       ShapeD E' L F A (some (num ((k : Int) + 1))) t' ∧ ArrayObj A len (dbl xs (k + 1)) t' ∧
-      t'.fuel = t.fuel - 1 := by
+      t'.fuel = t.fuel - 1 ∧ Frame A t t' := by
   obtain ⟨hE, hL, hF, hEL, hEF, hLF, ⟨bE, bdi, hEE, hbi, hiv, him, hbn⟩, ⟨bL, hLE, hln⟩,
     ⟨bF, o, ts, tv, fo, nt, bn, hFE, hbF, hbnv⟩⟩ := hS
   have hA' := hA
@@ -155,7 +167,18 @@ theorem iterD_cont (ctx : Ctx) (labels : Array JSStr) (E L F A : EnvId) (len k :
       fun j hj => by rw [o4]; exact a5 j hj, fun j hj hjb => by rw [o4]; exact a6 j hj hjb⟩
   have hpe : putRefValue (.env (some E') "i" false) (num ((k : Int) + 1)) t3 = .ok () t4 := by
     simp [putRefValue, hset_i]
-  refine ⟨E', num (2 * (xs k : Int)), t4, ?_, hS4, hA4, f4⟩
+  have hfr : Frame A t t4 := by
+    have o4 : ∀ x, t4.objEntry x = t2.objEntry x := by
+      intro x; rw [← ht4, State.setEnv_objEntry, ← ht3, State.setEnv_objEntry, State.pushEnv_objEntry]
+    have h4 : t4.heap.size = t2.heap.size := by
+      rw [← ht4, State.setEnv_heap_size, ← ht3, State.setEnv_heap_size, State.pushEnv_heap_size]
+    refine ⟨by rw [z4]; exact Nat.le_succ _, fun e he => ?_, ?_, fun o ho => ?_, ?_⟩
+    · rw [e4 e (by rw [← hE', z2]; exact Nat.ne_of_lt he) (by rw [z2]; exact he), e2]
+    · rw [h4, ← ht2, ← ht1]; simp [State.setProp]
+    · rw [o4, ← ht2, State.setProp_entry_ne _ _ _ _ _ (Ne.symm ho), ← ht1]; rfl
+    · rw [← ht4, State.setEnv_realms, ← ht3, State.setEnv_realms, State.pushEnv_realms, ← ht2, State.setProp_realms,
+        ← ht1]
+  refine ⟨E', num (2 * (xs k : Int)), t4, ?_, hS4, hA4, f4, hfr⟩
   obtain ⟨j, hj⟩ : ∃ j, t1.fuel = j + 2 := ⟨t1.fuel - 2, by omega⟩
   simp only [forIter, M.bind_eq, M.bind_apply, htick, M.bindRes_ok, testD, Sem.binary, Sem.ident, hstr, ri, ra,
     Sem.getValue, Sem.memberRef, Value.isNullish, Bool.and_false, Bool.false_eq_true, ↓reduceIte, rlen]
@@ -171,7 +194,7 @@ theorem iterD_exit (ctx : Ctx) (labels : Array JSStr) (E L F A : EnvId) (len : N
     (hS : ShapeD E L F A (some (num len)) t) (hA : ArrayObj A len (dbl xs len) t) (hf : 4 ≤ t.fuel) :
     ∃ t', forIter testD updD bodyD labels ctx #["i"] (E, v) t = .ok (.inr (.normal (some v))) t' ∧
       ShapeD E L F A (some (num len)) t' ∧ t'.fuel = t.fuel - 1 ∧
-      (∀ o, t'.objEntry o = t.objEntry o) ∧ t'.heap.size = t.heap.size := by
+      (∀ o, t'.objEntry o = t.objEntry o) ∧ t'.heap.size = t.heap.size ∧ Frame A t t' := by
   obtain ⟨hAs, hAk, -, hAl, -, -⟩ := hA
   have hS' := hS
   obtain ⟨hE, hL, hF, -, -, -, ⟨bE, bdi, hEE, hbi, hiv, -, hbn⟩, ⟨bL, hLE, hln⟩,
@@ -195,7 +218,8 @@ theorem iterD_exit (ctx : Ctx) (labels : Array JSStr) (E L F A : EnvId) (len : N
   have rlen : getRefValue (.prop (.obj A) (.str (JSStr.ofString "length")) false none) t1 = .ok (num len) t1 :=
     getRefValue_name A _ false t1 _ true false false hA1 (by rw [oA]; exact hAk) (by rw [oA, ← kLength_eq]; exact hAl)
   have hlt : ltF (ofSmallInt len) (ofSmallInt len) = false := by rw [ltF_int _ _ hNb hNb]; simp
-  refine ⟨t1, ?_, by rw [← ht1]; exact hS', f1, oA, by rw [← ht1]⟩
+  refine ⟨t1, ?_, by rw [← ht1]; exact hS', f1, oA, by rw [← ht1],
+    ⟨Nat.le_of_eq z1.symm, fun e _ => e1 e, by rw [← ht1], fun o _ => oA o, by rw [← ht1]⟩⟩
   simp only [forIter, M.bind_eq, M.bind_apply, htick, M.bindRes_ok, testD, Sem.binary, Sem.ident, hstr, ri, ra,
     Sem.getValue, Sem.memberRef, Value.isNullish, Bool.and_false, Bool.false_eq_true, ↓reduceIte, rlen]
   simp [Sem.binaryOp, isLessThan, M.bind_eq, M.bind_apply, hlt, ofSmallInt_eq_nan, toBoolean, pure, M.pure, rlen]
@@ -207,32 +231,34 @@ theorem loopD_spec (ctx : Ctx) (labels : Array JSStr) (L F A : EnvId) (len : Nat
     (hf : len + 5 ≤ t.fuel) :
     ∃ c t', M.loop (forIter testD updD bodyD labels ctx #["i"]) t.fuel (E0, .undefined) t = .ok c t' ∧
       (∃ w, c = Compl.normal (some w)) ∧ (∃ E, ShapeD E L F A (some (num len)) t') ∧
-      ArrayObj A len (dbl xs len) t' ∧ t'.fuel + len + 1 = t.fuel := by
+      ArrayObj A len (dbl xs len) t' ∧ t'.fuel + len + 1 = t.fuel ∧ Frame A t t' := by
   let N := len
   let I : EnvId × Value → State → Prop := fun st u =>
-    ∃ k, k ≤ N ∧ ShapeD st.1 L F A (some (num k)) u ∧ ArrayObj A len (dbl xs k) u ∧ u.fuel + k = t.fuel
+    ∃ k, k ≤ N ∧ ShapeD st.1 L F A (some (num k)) u ∧ ArrayObj A len (dbl xs k) u ∧ u.fuel + k = t.fuel ∧
+      Frame A t u
   let Q : Compl → State → Prop := fun c u =>
     (∃ w, c = Compl.normal (some w)) ∧ (∃ E, ShapeD E L F A (some (num N)) u) ∧ ArrayObj A len (dbl xs N) u ∧
-      u.fuel + N + 1 = t.fuel
+      u.fuel + N + 1 = t.fuel ∧ Frame A t u
   let V : EnvId × Value → State → Nat := fun _ u => u.fuel + N - t.fuel
   have hstep : ∀ st u, I st u →
       (∃ st' u', forIter testD updD bodyD labels ctx #["i"] st u = .ok (.inl st') u' ∧ I st' u' ∧ V st' u' < V st u) ∨
       (∃ c u', forIter testD updD bodyD labels ctx #["i"] st u = .ok (.inr c) u' ∧ Q c u') := by
-    intro ⟨E, v⟩ u ⟨k, hk, hSu, hAu, hfu⟩
+    intro ⟨E, v⟩ u ⟨k, hk, hSu, hAu, hfu, hfru⟩
     by_cases hkN : k < N
-    · obtain ⟨E', v', u', h, hS', hA', hf'⟩ := iterD_cont ctx labels E L F A len k xs hstr hkN hlen hx u v hSu hAu
+    · obtain ⟨E', v', u', h, hS', hA', hf', hfr'⟩ := iterD_cont ctx labels E L F A len k xs hstr hkN hlen hx u v hSu hAu
         (by omega)
       have hc : ((k + 1 : Nat) : Int) = (k : Int) + 1 := by omega
-      exact Or.inl ⟨(E', v'), u', h, ⟨k + 1, hkN, by rw [hc]; exact hS', hA', by omega⟩, by simp only [V]; omega⟩
+      exact Or.inl ⟨(E', v'), u', h, ⟨k + 1, hkN, by rw [hc]; exact hS', hA', by omega, hfru.trans hfr'⟩, by simp only [V]; omega⟩
     · have hkN' : k = N := by omega
       subst hkN'
-      obtain ⟨u', h, hS', hf', ho', hz'⟩ := iterD_exit ctx labels E L F A k xs hstr hlen u v hSu hAu (by omega)
+      obtain ⟨u', h, hS', hf', ho', hz', hfr'⟩ := iterD_exit ctx labels E L F A k xs hstr hlen u v hSu hAu (by omega)
       have hA' : ArrayObj A k (dbl xs k) u' := by
         obtain ⟨a1, a2, a3, a4, a5, a6⟩ := hAu
         exact ⟨by rw [hz']; exact a1, by rw [ho']; exact a2, by rw [ho']; exact a3, by rw [ho']; exact a4,
           fun j hj => by rw [ho']; exact a5 j hj, fun j hj hjb => by rw [ho']; exact a6 j hj hjb⟩
-      exact Or.inr ⟨_, u', h, ⟨v, rfl⟩, ⟨E, hS'⟩, hA', by omega⟩
-  exact M.loop_inv _ I Q V hstep t.fuel (E0, .undefined) t ⟨0, Nat.zero_le _, hS, hA, by simp⟩ (by simp only [V]; omega)
+      exact Or.inr ⟨_, u', h, ⟨v, rfl⟩, ⟨E, hS'⟩, hA', by omega, hfru.trans hfr'⟩
+  exact M.loop_inv _ I Q V hstep t.fuel (E0, .undefined) t ⟨0, Nat.zero_le _, hS, hA, by simp, Frame.refl A t⟩
+    (by simp only [V]; omega)
 
 /-- The environments before the loop: `L` binds `s` (value `sv`), not `i` or `a`; `F` binds `a` to `A`. -/
 def ShapeBD (L F A : Nat) (t : State) : Prop :=
@@ -246,7 +272,8 @@ theorem forD_spec (ctx : Ctx) (L F A : EnvId) (len : Nat) (xs : Nat → Nat) (hl
     (hstr : ctx.strict = false) (hlen : len < 2 ^ 26) (hx : ∀ j < len, xs j < 2 ^ 26) (t : State)
     (hS : ShapeBD L F A t) (hA : ArrayObj A len (dbl xs 0) t) (hf : len + 8 ≤ t.fuel) :
     ∃ c t', Sem.forS initD testD updD bodyD ctx t = .ok (Sem.breakToNormal c) t' ∧
-      (∃ w, c = Compl.normal (some w)) ∧ ArrayObj A len (dbl xs len) t' := by
+      (∃ w, c = Compl.normal (some w)) ∧ ArrayObj A len (dbl xs len) t' ∧ Frame A t t' ∧
+      t'.fuel + len + 1 = t.fuel := by
   obtain ⟨hL, hF, hLF, ⟨bL, hLE, hln⟩, hFn⟩ := hS
   have h1 : (VarKind.let == VarKind.using) = false := by decide
   have h2 : (VarKind.let == VarKind.awaitUsing) = false := by decide
@@ -330,10 +357,21 @@ theorem forD_spec (ctx : Ctx) (L F A : EnvId) (len : Nat) (xs : Nat → Nat) (hl
     obtain ⟨a1, a2, a3, a4, a5, a6⟩ := hA
     exact ⟨by rw [z4]; exact a1, by rw [o4]; exact a2, by rw [o4]; exact a3, by rw [o4]; exact a4,
       fun j hj => by rw [o4]; exact a5 j hj, fun j hj hjb => by rw [o4]; exact a6 j hj hjb⟩
-  obtain ⟨c, t5, hloop, hc, -, hA5, hf5⟩ := loopD_spec { Sem.inner ctx with strict := false } ctx.labels L F A len xs
+  have hfr4 : Frame A t t4 := by
+    refine ⟨by rw [← ht4, State.setEnv_envs_size, State.pushEnv_size, z3]; omega, fun e he => ?_,
+      by rw [← ht4, State.setEnv_heap_size, State.pushEnv_heap_size, ← ht3, State.setEnv_heap_size, ← ht2,
+        State.setEnv_heap_size, ← ht1, State.pushEnv_heap_size], fun o _ => ?_, ?_⟩
+    · have he3 : e < t3.envs.size := by rw [z3]; exact Nat.lt_succ_of_lt he
+      have hne : E1 ≠ e := by rw [← hE1, z3]; exact Ne.symm (Nat.ne_of_lt (Nat.lt_succ_of_lt he))
+      rw [← ht4, State.setEnv_envEntry_ne _ _ _ _ hne, State.pushEnv_entry_lt _ _ _ he3, e3 e he]
+    · rw [← ht4, State.setEnv_objEntry, State.pushEnv_objEntry, ← ht3, State.setEnv_objEntry, ← ht2,
+        State.setEnv_objEntry, ← ht1, State.pushEnv_objEntry]
+    · rw [← ht4, State.setEnv_realms, State.pushEnv_realms, ← ht3, State.setEnv_realms, ← ht2, State.setEnv_realms,
+        ← ht1, State.pushEnv_realms]
+  obtain ⟨c, t5, hloop, hc, -, hA5, hf5, hfr5⟩ := loopD_spec { Sem.inner ctx with strict := false } ctx.labels L F A len xs
     rfl hlen hx E1 t4 hS4 hA4 (by omega)
   rw [f4] at hloop
-  refine ⟨c, t5, ?_, hc, hA5⟩
+  refine ⟨c, t5, ?_, hc, hA5, hfr4.trans hfr5, by rw [← f4]; exact hf5⟩
   have hil : (Sem.inner ctx).lex = L := hlex
   simp only [hil, hE0, ht1]
   simp only [boundNames_ident, List.foldl_toArray', List.foldl_cons, List.foldl_nil, Array.foldl_toList,
@@ -352,15 +390,15 @@ theorem double_spec (n : Nat) (ctx : Ctx) (L F A : EnvId) (len : Nat) (xs : Nat 
     (hstr : ctx.strict = false) (hlen : len < 2 ^ 26) (hx : ∀ j < len, xs j < 2 ^ 26) (s0 : State)
     (hS : ShapeBD L F A s0) (hA : ArrayObj A len (fun j => num (xs j)) s0) (hf : len + 10 ≤ s0.fuel) :
     ∃ w s', DoubleGen.double n ctx s0 = .ok (.normal (some w)) s' ∧
-      ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' := by
+      ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' ∧ Frame A s0 s' ∧ s'.fuel + len + 1 = s0.fuel := by
   have hA0 : ArrayObj A len (dbl xs 0) s0 := by
     have : dbl xs 0 = fun j => num (xs j) := by funext j; simp [dbl]
     rw [this]; exact hA
-  obtain ⟨c, s1, hfor, ⟨w, hc⟩, hA1⟩ := forD_spec ctx L F A len xs hlex hstr hlen hx s0 hS hA0 (by omega)
+  obtain ⟨c, s1, hfor, ⟨w, hc⟩, hA1, hfr1, hfu1⟩ := forD_spec ctx L F A len xs hlex hstr hlen hx s0 hS hA0 (by omega)
   subst hc
   simp only [initD, testD, updD, bodyD] at hfor
   obtain ⟨j, hj⟩ : ∃ j, s0.fuel = j + 3 := ⟨s0.fuel - 3, by omega⟩
-  refine ⟨w, s1, ?_, arrayObj_congr A len _ _ s1 (fun j hj => by simp [dbl, hj]) hA1⟩
+  refine ⟨w, s1, ?_, arrayObj_congr A len _ _ s1 (fun j hj => by simp [dbl, hj]) hA1, hfr1, hfu1⟩
   simp only [DoubleGen.double, Sem.stmts, M.repeatFrom, hj, M.loop]
   simp [M.bind_eq, M.bind_apply, hfor, Sem.breakToNormal, pure, M.pure]
 
@@ -369,7 +407,7 @@ theorem double_interp_spec (n : Nat) (ctx : Ctx) (L F A : EnvId) (len : Nat) (xs
     (hstr : ctx.strict = false) (hlen : len < 2 ^ 26) (hx : ∀ j < len, xs j < 2 ^ 26) (s0 : State)
     (hS : ShapeBD L F A s0) (hA : ArrayObj A len (fun j => num (xs j)) s0) (hf : len + 10 ≤ s0.fuel) :
     ∃ w s', evalStmts (n + 35) ctx DoubleGen.double_stmts s0 = .ok (.normal (some w)) s' ∧
-      ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' := by
+      ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' ∧ Frame A s0 s' ∧ s'.fuel + len + 1 = s0.fuel := by
   rw [← congrFun (DoubleGen.double_eq n) ctx]
   exact double_spec n ctx L F A len xs hlex hstr hlen hx s0 hS hA hf
 

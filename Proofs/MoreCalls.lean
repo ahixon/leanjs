@@ -88,7 +88,7 @@ theorem double_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (A : Obj
     (hf : s.fuel ≠ 0) :
     ∃ ctx s', functionDeclarationInstantiation 999999 f d env #[.obj A] s = .ok ctx s' ∧
       ctx.lex = s.envs.size ∧ ctx.strict = false ∧ ctx.isGen = false ∧
-      ShapeBD s.envs.size env A s' ∧ s'.fuel = s.fuel ∧ s'.heap = s.heap ∧
+      ShapeBD s.envs.size env A s' ∧ s'.fuel = s.fuel ∧ s'.heap = s.heap ∧ s'.realms = s.realms ∧
       (∀ e, e < s.envs.size → e ≠ env → s'.envEntry e = s.envEntry e) := by
   have hr : Array.range 1 = [0].toArray := by decide
   have hbe : ∀ ctx x v b, b.contains x = true →
@@ -114,7 +114,7 @@ theorem double_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (A : Obj
         State.pushEnv_entry_at, State.setEnv_envEntry_self, hk1, hk2, hk3]
   have hne : s.envs.size ≠ env := Nat.ne_of_gt henv
   have hne' : env ≠ s.envs.size := Nat.ne_of_lt henv
-  refine ⟨rfl, rfl, rfl, ?_, by simp, by simp [State.setEnv, State.pushEnv], ?_⟩
+  refine ⟨rfl, rfl, rfl, ?_, by simp, by simp [State.setEnv, State.pushEnv], by simp [State.setEnv, State.pushEnv], ?_⟩
   · refine ⟨by simp, by simp; exact Nat.lt_succ_of_lt henv, hne, ?_, ?_⟩
     · simp [State.pushEnv_entry_at]
     · simp [State.setEnv_envEntry_ne _ _ _ _ hne, State.pushEnv_entry_lt, State.setEnv_envEntry_self,
@@ -191,7 +191,7 @@ theorem sumFor_call (f : ObjId) (d : FuncData) (s : State) (N : Nat) (go : ObjId
       s'.realm = s.realm ∧ s'.script = s.script :=
   let ⟨s', h1, h2, h3, _⟩ := Calls.callECMA_undef (Q := fun _ => True) f d s _ _ go gb gtv hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) hge hgE
-    (fun t hlt hEt _ _ hfu =>
+    (fun t hlt hEt _ _ hfu _ =>
       let ⟨t', ht'⟩ := sumFor_body f d s.envs.size t N gtv hcode hlt hEt hN (by omega)
       ⟨t', ht', trivial⟩)
   ⟨s', h1, h2, h3⟩
@@ -210,11 +210,18 @@ theorem double_body (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (A : Ob
     (hlen : len < 2 ^ 26) (hx : ∀ j < len, xs j < 2 ^ 26) (hA : ArrayObj A len (fun j => num (xs j)) s)
     (hf : len + 12 ≤ s.fuel) :
     ∃ s', evalFunctionBody evalDepth f d env #[.obj A] s = .ok .undefined s' ∧
-      ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' := by
-  obtain ⟨ctx, s', hfdi, hlex, hstr, hgen, hS, hfuel, hheap, -⟩ := double_fdi f d env s A tv hcode henv hE (by omega)
-  obtain ⟨w, s'', hbody, hA''⟩ := double_interp_spec 999964 ctx s.envs.size env A len xs hlex hstr hlen hx s' hS
+      ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' ∧
+      s.envs.size ≤ s'.envs.size ∧ (∀ e < s.envs.size, e ≠ env → s'.envEntry e = s.envEntry e) ∧
+      s'.heap.size = s.heap.size ∧ (∀ o, o ≠ A → s'.objEntry o = s.objEntry o) ∧ s'.fuel + len + 1 = s.fuel ∧
+      s'.realms = s.realms := by
+  obtain ⟨ctx, s', hfdi, hlex, hstr, hgen, hS, hfuel, hheap, hrl, hfe⟩ := double_fdi f d env s A tv hcode henv hE (by omega)
+  obtain ⟨w, s'', hbody, hA'', hfr, hfu⟩ := double_interp_spec 999964 ctx s.envs.size env A len xs hlex hstr hlen hx s' hS
     (arrayObj_of_heap A len _ s s' hheap hA) (by omega)
-  refine ⟨s'', ?_, hA''⟩
+  have hL := hS.1
+  refine ⟨s'', ?_, hA'', Nat.le_of_lt (Nat.lt_of_lt_of_le hL hfr.1),
+    fun e he hne => (hfr.2.1 e (Nat.lt_trans he hL)).trans (hfe e he hne),
+    hfr.2.2.1.trans (by rw [hheap]), fun o ho => (hfr.2.2.2.1 o ho).trans (by simp [State.objEntry, hheap]),
+    by rw [hfu, hfuel], hfr.2.2.2.2.trans hrl⟩
   have hbd : d.code.body = .stmts DoubleGen.double_stmts := hcode.1
   have hdisp : d.code.info.fdi.usesDispose = false := by rw [hcode.2.2.2.2.2.2.1]
   simp only [evalDepth, evalFunctionBody, M.bind_eq, M.bind_apply, hfdi, M.bindRes_ok, hbd, hdisp, withDisposeScope]
@@ -229,14 +236,24 @@ theorem double_call (f : ObjId) (d : FuncData) (s : State) (A : ObjId) (len : Na
     (hlen : len < 2 ^ 26) (hx : ∀ j < len, xs j < 2 ^ 26) (hA : ArrayObj A len (fun j => num (xs j)) s)
     (hf : len + 12 ≤ s.fuel) :
     ∃ s', callECMA f d .undefined #[.obj A] s = .ok .undefined s' ∧ s'.realm = s.realm ∧ s'.script = s.script ∧
-      ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' := by
-  obtain ⟨s', h1, h2, h3, t', hQ, hh⟩ := Calls.callECMA_undef
-    (Q := fun t => ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) t) f d s _ _ go gb gtv hcls hmode
-    hcode.2.2.2.1 hcode.2.2.2.2.1 hge hgE
-    (fun t hlt hEt _ hheap hfu =>
-      double_body f d s.envs.size t A len xs gtv hcode hlt hEt hlen hx (arrayObj_of_heap A len _ s t hheap hA)
-        (by omega))
-  exact ⟨s', h1, h2, h3, arrayObj_of_heap A len _ t' s' hh hQ⟩
+      ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' ∧ Frame A s s' ∧ s'.fuel + len + 1 = s.fuel := by
+  obtain ⟨s', h1, h2, h3, t', hQ, hh, hen, hfe, hrs⟩ := Calls.callECMA_undef
+    (Q := fun t => ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) t ∧ Frame A s t ∧ t.fuel + len + 1 = s.fuel)
+    f d s _ _ go gb gtv
+    hcls hmode hcode.2.2.2.1 hcode.2.2.2.2.1 hge hgE
+    (fun t hlt hEt hold hheap hfu hrl => by
+      obtain ⟨t', hb, hA', hz, hfe, hh', ho, hfu', hrl'⟩ := double_body f d s.envs.size t A len xs gtv hcode hlt hEt hlen hx
+        (arrayObj_of_heap A len _ s t hheap hA) (by omega)
+      refine ⟨t', hb, hA', ⟨Nat.le_trans (Nat.le_of_lt hlt) hz,
+        fun e he => (hfe e (Nat.lt_trans he hlt) (Nat.ne_of_lt he)).trans (hold e he),
+        hh'.trans (by rw [hheap]), fun o hoA => (ho o hoA).trans (by simp [State.objEntry, hheap]),
+        hrl'.trans hrl⟩,
+        by rw [hfu', hfu]⟩)
+  obtain ⟨hQA, ⟨hQ1, hQ2, hQ3, hQ4, hQ6⟩, hQ5⟩ := hQ
+  exact ⟨s', h1, h2, h3, arrayObj_of_heap A len _ t' s' hh hQA,
+    ⟨by rw [hen]; exact hQ1, fun e he => by simp only [State.envEntry, hen]; exact hQ2 e he,
+      by rw [hh]; exact hQ3, fun o ho => by simp only [State.objEntry, hh]; exact hQ4 o ho, by rw [hrs]; exact hQ6⟩,
+    by rw [hfe]; exact hQ5⟩
 
 /-- `f`'s body as a call runs it: returns 9. -/
 theorem f_body (fo : ObjId) (d : FuncData) (env : EnvId) (s : State) (tv : Value)
@@ -260,7 +277,7 @@ theorem f_call (fo : ObjId) (d : FuncData) (s : State) (go : ObjId) (gb : Std.Ha
     ∃ s', callECMA fo d .undefined #[] s = .ok (.num (ofSmallInt 9)) s' ∧ s'.realm = s.realm ∧ s'.script = s.script :=
   let ⟨s', h1, h2, h3, _⟩ := Calls.callECMA_undef (Q := fun _ => True) fo d s _ _ go gb gtv hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) hge hgE
-    (fun t hlt hEt _ _ hfu =>
+    (fun t hlt hEt _ _ hfu _ =>
       let ⟨t', ht'⟩ := f_body fo d s.envs.size t gtv hcode hlt hEt (by omega)
       ⟨t', ht', trivial⟩)
   ⟨s', h1, h2, h3⟩

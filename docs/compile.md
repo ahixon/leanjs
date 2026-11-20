@@ -141,7 +141,16 @@ definitions are stated at `n = height + 1`.
   existing environments unchanged), with a property of the final state carried through the heap.
   `Proofs/TotalCall.lean` (`total_call`), `Proofs/MoreCalls.lean` (`sumFor_call`, `double_call` — the
   array afterwards holds every element doubled — and `f_call`), each via its FDI and body lemmas.
-- Next: writes past the end (through the prototype chain), and a whole script calling these.
+- A whole script with two calls and state between them: `Proofs/DTScript.lean` — examples/double_total.js
+  (`let b = [3, 4, 5]; double(b); total(b);`) evaluates to 24 as ScriptEvaluation runs it, both call
+  requests answered by the driver (`dt_script`). What makes the second call provable is a frame
+  property of the first: `double_call` also states `Frame A s s'` (environments only added, objects
+  other than the array and the realms unchanged) and the fuel it used, so `total` and `b` still resolve
+  afterwards. Generic pieces: `Inst.instantiate_fn` (InstantiateFunctionObject for any simple
+  function), the global record's declarative part (`createMutableBinding_global`,
+  `initializeBinding_global`, `resolveBinding_global_decl`, `identValue_global_decl`), `call_req` (a
+  statement `f(b)` asking the driver for the call).
+- Next: writes past the end (through the prototype chain).
 
 ## Stages
 
