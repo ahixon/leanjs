@@ -200,6 +200,9 @@ definitions are stated at `n = height + 1`.
   closure's body through its block and function records (`identValue_captured`, `resolveBinding_captured`),
   the closure's call updating `n` in `L` after `make` has returned (`fn1_call`), and calling a function
   stored by a global `let` (`Stmts.call_decl_req`). `Script.instAll_facts` also states `d.privEnv = #[]`.
+- Control flow for all inputs: `Proofs/Max.lean` — `max(a, b)` (`if (a < b) { return b; } return a;`) returns
+  `max x y` for every pair of integers below 2^26 in absolute value (`max_spec` by cases on `x < y`;
+  `max_call`); examples/max.js (`let m = max(3, 7); max(m, 5);`) evaluates to 7 (`mx_script`).
 
 ## Stages
 
