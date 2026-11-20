@@ -23,6 +23,15 @@ theorem lexF : topLevelLexicallyScoped ArrayWriteGen.f_stmts = #[.binding .let (
 
 theorem names_a : (LexScoped.binding .let (.ident "a")).names = #[JSStr.ofString "a"] := by rfl
 
+/-- The facts about a function's code that `double`'s proofs use (its source span and id may differ). -/
+def IsDouble (c : Func) : Prop :=
+  c.body = .stmts DoubleGen.double_stmts ∧ c.params = #[.mk (.ident "a") none false] ∧ c.strict = false ∧
+  c.isAsync = false ∧ c.isGenerator = false ∧ c.kind = .normal ∧
+  c.info.fdi = { paramNames := #["a"], hasDuplicates := false, varNames := #[], hasFunctions := false, functionNames := #[], hasLexical := false, lexNames := #[], argumentsNeeded := false, hasAnnexB := false, usesDispose := false } ∧
+  c.info.paramsHaveExpressions = false
+
+theorem isDouble_double : IsDouble DoubleGen.double_func := ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+
 theorem ne_sn' : (JSStr.ofString "s" = JSStr.ofString "n") = False := by simp; decide
 
 theorem sumFor_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (N : Nat) (tv : Value)
@@ -74,7 +83,7 @@ theorem sumFor_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (N : Nat
       State.setEnv_envEntry_ne _ _ _ _ (Ne.symm hee)]
 
 theorem double_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (A : ObjId) (tv : Value)
-    (hcode : d.code = DoubleGen.double_func) (henv : env < s.envs.size)
+    (hcode : IsDouble d.code) (henv : env < s.envs.size)
     (hE : s.envEntry env = .func ∅ (some d.env) .initialized tv f .undefined)
     (hf : s.fuel ≠ 0) :
     ∃ ctx s', functionDeclarationInstantiation 999999 f d env #[.obj A] s = .ok ctx s' ∧
@@ -91,22 +100,15 @@ theorem double_fdi (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (A : Obj
     have := bindElement_ident 999998 ctx x env v (s.setEnv env (.func b (some d.env) .initialized tv f .undefined))
       (by omega) (by simpa using henv) (by simp [henv]) (by simpa [henv] using hb) (by simpa using hf)
     simpa [henv] using this
-  have hbody : DoubleGen.double_func.body = .stmts DoubleGen.double_stmts := rfl
-  have hparams : DoubleGen.double_func.params = #[.mk (.ident "a") none false] := rfl
-  have hstr : DoubleGen.double_func.strict = false := rfl
-  have hasync : DoubleGen.double_func.isAsync = false := rfl
-  have hgen : DoubleGen.double_func.isGenerator = false := rfl
-  have hkind : DoubleGen.double_func.kind = .normal := rfl
-  have hfdi : DoubleGen.double_func.info.fdi = { paramNames := #["a"], hasDuplicates := false, varNames := #[], hasFunctions := false, functionNames := #[], hasLexical := false, lexNames := #[], argumentsNeeded := false, hasAnnexB := false, usesDispose := false } := rfl
+  obtain ⟨hbody, hparams, hstr, hasync, hgen, hkind, hfdi, hphe⟩ := hcode
   have hk1 : (VarKind.let == VarKind.const) = false := by decide
   have hk2 : (VarKind.let == VarKind.using) = false := by decide
   have hk3 : (VarKind.let == VarKind.awaitUsing) = false := by decide
-  have hphe : DoubleGen.double_func.info.paramsHaveExpressions = false := rfl
   refine ⟨?c, ?t, ?h, ?_⟩
   case h =>
     conv =>
       lhs
-      simp only [functionDeclarationInstantiation, hcode, hbody, hparams, hstr, hfdi, hasync, hgen, hkind, hphe]
+      simp only [functionDeclarationInstantiation, hbody, hparams, hstr, hfdi, hasync, hgen, hkind, hphe]
       simp [hr, hasBinding_declLike, createMutableBinding_declLike, hbe, newDeclEnv, pure,
         M.pure, hE, henv, hf, -allocEnv_apply, allocEnv_eq, LexScoped.isConstant,
         State.pushEnv_entry_at, State.setEnv_envEntry_self, hk1, hk2, hk3]
@@ -203,7 +205,7 @@ theorem arrayObj_of_heap (A : ObjId) (len : Nat) (xs : Nat → Value) (t u : Sta
 
 /-- `double`'s body as a call runs it: returns `undefined`, every element doubled. -/
 theorem double_body (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (A : ObjId) (len : Nat) (xs : Nat → Nat)
-    (tv : Value) (hcode : d.code = DoubleGen.double_func) (henv : env < s.envs.size)
+    (tv : Value) (hcode : IsDouble d.code) (henv : env < s.envs.size)
     (hE : s.envEntry env = .func ∅ (some d.env) .initialized tv f .undefined)
     (hlen : len < 2 ^ 26) (hx : ∀ j < len, xs j < 2 ^ 26) (hA : ArrayObj A len (fun j => num (xs j)) s)
     (hf : len + 12 ≤ s.fuel) :
@@ -213,15 +215,15 @@ theorem double_body (f : ObjId) (d : FuncData) (env : EnvId) (s : State) (A : Ob
   obtain ⟨w, s'', hbody, hA''⟩ := double_interp_spec 999964 ctx s.envs.size env A len xs hlex hstr hlen hx s' hS
     (arrayObj_of_heap A len _ s s' hheap hA) (by omega)
   refine ⟨s'', ?_, hA''⟩
-  have hbd : d.code.body = .stmts DoubleGen.double_stmts := by rw [hcode]; rfl
-  have hdisp : d.code.info.fdi.usesDispose = false := by rw [hcode]; rfl
+  have hbd : d.code.body = .stmts DoubleGen.double_stmts := hcode.1
+  have hdisp : d.code.info.fdi.usesDispose = false := by rw [hcode.2.2.2.2.2.2.1]
   simp only [evalDepth, evalFunctionBody, M.bind_eq, M.bind_apply, hfdi, M.bindRes_ok, hbd, hdisp, withDisposeScope]
   simp [hbody, pure, M.pure]
 
 /-- **The [[Call]] of `double`**: returns `undefined`, and afterwards the array holds every element doubled. -/
 theorem double_call (f : ObjId) (d : FuncData) (s : State) (A : ObjId) (len : Nat) (xs : Nat → Nat) (go : ObjId)
     (gb : Std.HashMap JSStr Binding) (gtv : Value)
-    (hcode : d.code = DoubleGen.double_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .global)
+    (hcode : IsDouble d.code) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .global)
     (hge : (s.realms[d.realm]!).globalEnv < s.envs.size)
     (hgE : s.envEntry (s.realms[d.realm]!).globalEnv = .global go gb gtv)
     (hlen : len < 2 ^ 26) (hx : ∀ j < len, xs j < 2 ^ 26) (hA : ArrayObj A len (fun j => num (xs j)) s)
@@ -230,7 +232,7 @@ theorem double_call (f : ObjId) (d : FuncData) (s : State) (A : ObjId) (len : Na
       ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) s' := by
   obtain ⟨s', h1, h2, h3, t', hQ, hh⟩ := Calls.callECMA_undef
     (Q := fun t => ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) t) f d s _ _ go gb gtv hcls hmode
-    (by rw [hcode]; rfl) (by rw [hcode]; rfl) hge hgE
+    hcode.2.2.2.1 hcode.2.2.2.2.1 hge hgE
     (fun t hlt hEt _ hheap hfu =>
       double_body f d s.envs.size t A len xs gtv hcode hlt hEt hlen hx (arrayObj_of_heap A len _ s t hheap hA)
         (by omega))
