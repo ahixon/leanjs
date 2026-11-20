@@ -225,6 +225,14 @@ definitions are stated at `n = height + 1`.
   (`Nested.Runs`) to `tsum k`, by induction on `k`: the body either returns 0 (`sum_spec_base`) or asks for
   `sum(k - 1)` and adds (`sum_spec_step`; `subF_nz` in NumInt), the inner call by the induction hypothesis one
   level down. `rc_script`: `sum(10)` evaluates to 55.
+- Constructors: `Proofs/Construct.lean` — [[Construct]] of a sloppy non-class function (`constructECMA_ord`: a fresh
+  ordinary object with prototype `F.prototype`, the body run with `this` bound to it, the object returned when the
+  body returns a non-object), `constructImpl_func`, and `.construct` requests for `DrivesTo`/`RunsTo`.
+  `Proofs/Ctor.lean` — examples/ctor.js (`function Counter() { this.n = 0; } Counter.prototype.inc = inc;
+  let c = new Counter(); c.inc(); c.inc();`) evaluates to 2 (`ct_script`): a declared function's `prototype` object
+  (`bindFn_proto`), `this.n = 0` creating `n` after looking up the chain (`ctr_construct`; realm assumption:
+  `Object.prototype` has no `n` or `inc`), the assignment to `Counter.prototype.inc` (`set_proto_inc`), `new`
+  as a request (`new_req`).
 
 ## Stages
 
