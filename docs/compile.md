@@ -263,3 +263,9 @@ definitions are stated at `n = height + 1`.
 2. Statements, patterns, classes, function bodies likewise.
 3. The generator: per-function definitions + `_eq` theorems (`leanjs compile --defs`).
 4. Lemma library and a worked example (a sorting function, an object with invariants).
+- Runs with host steps (Zippy's docs/lean-engine.md): `JSProofs/HostRuns.lean` — `HR eng answer n h r b w h' k`: a run
+  whose host requests (from any depth: `Req.host`, passed up through the frame stack) are answered by an
+  embedder's `answer` over its own state (`drives`: no host requests; `host`; `call`: a callee so running, then
+  the continuation). `hr_sound`: the embedder's loop (`driveHostAt`) gives that result, given fuel for the host
+  steps (`call_ctx`: a caller's loop runs its callee's, via `finK`, `drive_call`, `drive_resumeFrame`;
+  `pop_push`); `runMHost_of_hr` at the entry point; `hr_of_runs`/`hr_of_drivesTo` lift every existing proof.

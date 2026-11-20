@@ -434,16 +434,21 @@ abbrev HostAnswer (σ : Type) := σ → String → Value → Array Value → Sta
 def Res.stateOf {α : Type} : Res α → State
   | .ok _ s | .err _ s | .halt _ s | .req _ s _ => s
 
-/-- Drives `r` (at the call depth limit), answering the host requests it passes up with `answer` and driving
+/-- Drives `r` with `d` levels of calls, answering the host requests it passes up with `answer` and driving
 on; at most `n` host requests. -/
-def driveHost {σ α : Type} (eng : Engine) (answer : HostAnswer σ) : Nat → σ → Res α → Conts → Res α × Conts × σ
+def driveHostAt {σ α : Type} (eng : Engine) (answer : HostAnswer σ) (d : Nat) :
+    Nat → σ → Res α → Conts → Res α × Conts × σ
   | 0, h, r, cs => (.halt "out of fuel (host requests)" r.stateOf, cs, h)
   | n + 1, h, r, cs =>
-    match drive eng callDepth r cs with
+    match drive eng d r cs with
     | (.req (.host nm t a) s k, cs) =>
       let (h, o, s) := answer h nm t a s
-      driveHost eng answer n h (k o s) cs
+      driveHostAt eng answer d n h (k o s) cs
     | (r, cs) => (r, cs, h)
+
+/-- `driveHostAt` at the call depth limit. -/
+def driveHost {σ α : Type} (eng : Engine) (answer : HostAnswer σ) : Nat → σ → Res α → Conts → Res α × Conts × σ :=
+  driveHostAt eng answer callDepth
 
 /-- Runs a computation, its host requests answered (at most as many as the fuel). -/
 def runMHost {σ α : Type} (eng : Engine) (answer : HostAnswer σ) (h : σ) (m : M α) (s : State) (cs : Conts) :
