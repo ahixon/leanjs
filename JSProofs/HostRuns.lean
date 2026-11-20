@@ -270,6 +270,35 @@ theorem callImpl_builtin (eng : Engine) (fo : ObjId) (bd : BuiltinData) (fn : Bu
 section
 variable (eng : Engine) {σ : Type} (answer : HostAnswer σ)
 
+/-- A loop's step as a bind: on to `next` (`inl`), or done (`inr`). -/
+theorem loopRes_eq_bindRes {τ α : Type} (next : τ → State → Res α) :
+    ∀ r : Res (τ ⊕ α), M.loopRes next r = M.bindRes (fun x s => match x with
+      | .inl st => next st s
+      | .inr a => .ok a s) r
+  | .ok (.inl _) _ => rfl
+  | .ok (.inr _) _ => rfl
+  | .err _ _ => rfl
+  | .halt _ _ => rfl
+  | .req r s k => by
+    simp only [M.loopRes, M.bindRes]
+    congr 1; funext o s'; exact loopRes_eq_bindRes next (k o s')
+
+/-- **A loop iteration that goes on**, then the rest of the loop. -/
+theorem hr_loopRes {τ α : Type} (next : τ → State → Res α) {n : Nat} {h : σ} {r : Res (τ ⊕ α)} {st : τ}
+    {w1 : State} {h1 : σ} {k1 : Nat} (hr : HR eng answer n h r (.inl st) w1 h1 k1) {b : α} {w2 : State} {h2 : σ}
+    {k2 : Nat} (hn : HR eng answer n h1 (next st w1) b w2 h2 k2) :
+    HR eng answer n h (M.loopRes next r) b w2 h2 (k1 + k2) := by
+  rw [loopRes_eq_bindRes]; exact hr_bind eng answer _ hr hn
+
+/-- **The loop's last iteration.** -/
+theorem hr_loopRes_done {τ α : Type} (next : τ → State → Res α) {n : Nat} {h : σ} {r : Res (τ ⊕ α)} {a : α}
+    {w : State} {h1 : σ} {k : Nat} (hr : HR eng answer n h r (.inr a) w h1 k) :
+    HR eng answer n h (M.loopRes next r) a w h1 k := by
+  rw [loopRes_eq_bindRes]
+  simpa using hr_bind eng answer (fun x s => match x with
+      | .inl st => next st s
+      | .inr a => .ok a s) hr (.ok n h1 a w)
+
 end
 
 end HostRuns
