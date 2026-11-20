@@ -98,7 +98,7 @@ theorem total_call (f : ObjId) (d : FuncData) (s : State) (A : ObjId) (len : Nat
       s'.realm = s.realm ∧ s'.script = s.script :=
   let ⟨s', h1, h2, h3, _⟩ := Calls.callECMA_undef (Q := fun _ => True) f d s _ _ go gb gtv hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) hge hgE
-    (fun t hlt hEt _ hheap hfu _ =>
+    (fun t hlt hEt _ hheap hfu _ _ =>
       let ⟨t', ht'⟩ := total_body f d s.envs.size t A len xs gtv hcode hlt hEt hlen hx
         (isArray_of_heap A len xs s t hheap hA) (by omega)
       ⟨t', ht', trivial⟩)

@@ -20,7 +20,7 @@ theorem callECMA_undef {Q : State → Prop} (f : ObjId) (d : FuncData) (s : Stat
     (hgE : s.envEntry (s.realms[d.realm]!).globalEnv = .global go gb gtv)
     (hbody : ∀ t : State, s.envs.size < t.envs.size →
       t.envEntry s.envs.size = .func ∅ (some d.env) .initialized gtv f .undefined →
-      (∀ e, e < s.envs.size → t.envEntry e = s.envEntry e) → t.heap = s.heap → t.fuel = s.fuel → t.realms = s.realms →
+      (∀ e, e < s.envs.size → t.envEntry e = s.envEntry e) → t.heap = s.heap → t.fuel = s.fuel → t.realms = s.realms → t.realm = d.realm →
       ∃ t', evalFunctionBody evalDepth f d s.envs.size args t = .ok v t' ∧ Q t') :
     ∃ s', callECMA f d .undefined args s = .ok v s' ∧ s'.realm = s.realm ∧ s'.script = s.script ∧
       ∃ t', Q t' ∧ s'.heap = t'.heap ∧ s'.envs = t'.envs ∧ s'.fuel = t'.fuel ∧ s'.realms = t'.realms := by
@@ -58,7 +58,7 @@ theorem callECMA_undef {Q : State → Prop} (f : ObjId) (d : FuncData) (s : Stat
     rw [State.setEnv_envEntry_ne _ _ _ _ hne]
     simp [State.envEntry, s2, s1, Array.getElem?_push, Nat.ne_of_lt he]
   obtain ⟨s4, hb, hQ⟩ : ∃ t', evalFunctionBody evalDepth f d env args s3 = .ok v t' ∧ Q t' :=
-    hbody s3 henv3 hE3 hold (by simp [s3, s2, s1, State.setEnv]) (by simp [s3, s2, s1]) (by simp [s3, s2, s1])
+    hbody s3 henv3 hE3 hold (by simp [s3, s2, s1, State.setEnv]) (by simp [s3, s2, s1]) (by simp [s3, s2, s1]) (by simp [s3, s2, s1])
   refine ⟨{ s4 with realm := s.realm, script := s.script }, ?_, rfl, rfl, s4, hQ, rfl, rfl, rfl, rfl⟩
   simp only [callECMA, hcls, inCallee, M.bind_eq, M.bind_apply, M.readS_apply, M.bindRes_ok, M.modify_apply]
   simp [M.bind_apply, hnew, hbind, hasync, hgen, hb, M.attempt, M.tryCatch_apply, pure, M.pure, s1]

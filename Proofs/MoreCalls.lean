@@ -191,7 +191,7 @@ theorem sumFor_call (f : ObjId) (d : FuncData) (s : State) (N : Nat) (go : ObjId
       s'.realm = s.realm ∧ s'.script = s.script :=
   let ⟨s', h1, h2, h3, _⟩ := Calls.callECMA_undef (Q := fun _ => True) f d s _ _ go gb gtv hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) hge hgE
-    (fun t hlt hEt _ _ hfu _ =>
+    (fun t hlt hEt _ _ hfu _ _ =>
       let ⟨t', ht'⟩ := sumFor_body f d s.envs.size t N gtv hcode hlt hEt hN (by omega)
       ⟨t', ht', trivial⟩)
   ⟨s', h1, h2, h3⟩
@@ -241,7 +241,7 @@ theorem double_call (f : ObjId) (d : FuncData) (s : State) (A : ObjId) (len : Na
     (Q := fun t => ArrayObj A len (fun j => num ((2 * xs j : Nat) : Int)) t ∧ Frame A s t ∧ t.fuel + len + 1 = s.fuel)
     f d s _ _ go gb gtv
     hcls hmode hcode.2.2.2.1 hcode.2.2.2.2.1 hge hgE
-    (fun t hlt hEt hold hheap hfu hrl => by
+    (fun t hlt hEt hold hheap hfu hrl _ => by
       obtain ⟨t', hb, hA', hz, hfe, hh', ho, hfu', hrl'⟩ := double_body f d s.envs.size t A len xs gtv hcode hlt hEt hlen hx
         (arrayObj_of_heap A len _ s t hheap hA) (by omega)
       refine ⟨t', hb, hA', ⟨Nat.le_trans (Nat.le_of_lt hlt) hz,
@@ -277,7 +277,7 @@ theorem f_call (fo : ObjId) (d : FuncData) (s : State) (go : ObjId) (gb : Std.Ha
     ∃ s', callECMA fo d .undefined #[] s = .ok (.num (ofSmallInt 9)) s' ∧ s'.realm = s.realm ∧ s'.script = s.script :=
   let ⟨s', h1, h2, h3, _⟩ := Calls.callECMA_undef (Q := fun _ => True) fo d s _ _ go gb gtv hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) hge hgE
-    (fun t hlt hEt _ _ hfu _ =>
+    (fun t hlt hEt _ _ hfu _ _ =>
       let ⟨t', ht'⟩ := f_body fo d s.envs.size t gtv hcode hlt hEt (by omega)
       ⟨t', ht', trivial⟩)
   ⟨s', h1, h2, h3⟩

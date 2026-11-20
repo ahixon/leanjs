@@ -2,6 +2,7 @@ import Proofs.SumFor
 import Proofs.Total
 import Proofs.ArrayAppend
 import Proofs.IotaGen
+import Proofs.Double
 
 /-!
 # A loop that builds an array: `iota(n)` returns `[0, 1, …, n − 1]`
@@ -15,6 +16,7 @@ function iota(n) { let a = []; for (let i = 0; i < n; i = i + 1) { a[i] = i; } r
 -/
 
 open ES ES.Conv SumProof
+open DoubleProof (Frame Frame.refl Frame.trans)
 
 namespace IotaProof
 
@@ -71,7 +73,8 @@ theorem iterI_cont (ctx : Ctx) (labels : Array JSStr) (E L F : EnvId) (N : Nat) 
     (hRA : R.heap.size ≤ A) (t : State) (v : Value)
     (hS : ShapeI E L F N A (some (num k)) t) (hH : HeapI R A P k t) (hf : 5 ≤ t.fuel) :
     ∃ E' v' t', forIter SumForProof.testD SumForProof.updD bodyD labels ctx #["i"] (E, v) t = .ok (.inl (E', v')) t' ∧
-      ShapeI E' L F N A (some (num ((k : Int) + 1))) t' ∧ HeapI R A P (k + 1) t' ∧ t'.fuel = t.fuel - 1 := by
+      ShapeI E' L F N A (some (num ((k : Int) + 1))) t' ∧ HeapI R A P (k + 1) t' ∧ t'.fuel = t.fuel - 1 ∧
+      Frame A t t' := by
   obtain ⟨hE, hL, hF, hEL, hEF, hLF, ⟨bE, bdi, hEE, hbi, hiv, him, hba, hbn⟩, ⟨bL, bda, hLE, hla, hav, hln⟩,
     ⟨bF, o, ts, tv, fo, nt, bn, hFE, hbF, hbnv⟩⟩ := hS
   have hkb : (k : Int).natAbs < intBound := by simp only [intBound]; omega
@@ -161,7 +164,17 @@ theorem iterI_cont (ctx : Ctx) (labels : Array JSStr) (E L F : EnvId) (N : Nat) 
     · rw [← ht4, State.setEnv_heap_size, ← ht3, State.setEnv_heap_size, State.pushEnv_heap_size]
   have hpe : putRefValue (.env (some E') "i" false) (num ((k : Int) + 1)) t3 = .ok () t4 := by
     simp [putRefValue, hset_i]
-  refine ⟨E', num k, t4, ?_, hS4, hH4, f4⟩
+  have hfr : Frame A t t4 := by
+    refine ⟨by rw [z4]; exact Nat.le_succ _, fun e he => ?_, ?_, fun o ho => ?_, ?_⟩
+    · rw [e4 e (by rw [← hE', z2]; exact Nat.ne_of_lt he) (by rw [z2]; exact he), e2]
+    · rw [← ht4, State.setEnv_heap_size, ← ht3, State.setEnv_heap_size, State.pushEnv_heap_size, ← ht2, ← ht1]
+      simp [appendState, State.setProp]
+    · rw [← ht4, State.setEnv_objEntry, ← ht3, State.setEnv_objEntry, State.pushEnv_objEntry, ← ht2]
+      simp only [appendState]
+      rw [State.setProp_entry_ne _ _ _ _ _ (Ne.symm ho), State.setProp_entry_ne _ _ _ _ _ (Ne.symm ho), ← ht1]; rfl
+    · rw [← ht4, State.setEnv_realms, ← ht3, State.setEnv_realms, State.pushEnv_realms, ← ht2]
+      simp only [appendState, State.setProp_realms]; rw [← ht1]
+  refine ⟨E', num k, t4, ?_, hS4, hH4, f4, hfr⟩
   obtain ⟨j, hj⟩ : ∃ j, t1.fuel = j + 2 := ⟨t1.fuel - 2, by omega⟩
   simp only [forIter, M.bind_eq, M.bind_apply, htick, M.bindRes_ok, SumForProof.testD, Sem.binary, Sem.ident, hstr, ri, rn]
   simp [Sem.binaryOp, isLessThan, M.bind_eq, M.bind_apply, hlt, ofSmallInt_eq_nan, toBoolean, pure, M.pure, bodyD,
@@ -174,7 +187,7 @@ theorem iterI_exit (ctx : Ctx) (labels : Array JSStr) (E L F : EnvId) (N : Nat) 
     (hN : N < 2 ^ 26) (t : State) (v : Value) (hS : ShapeI E L F N A (some (num N)) t) (hf : 4 ≤ t.fuel) :
     ∃ t', forIter SumForProof.testD SumForProof.updD bodyD labels ctx #["i"] (E, v) t = .ok (.inr (.normal (some v))) t' ∧
       ShapeI E L F N A (some (num N)) t' ∧ t'.fuel = t.fuel - 1 ∧ (∀ x, t'.objEntry x = t.objEntry x) ∧
-      t'.heap.size = t.heap.size := by
+      t'.heap.size = t.heap.size ∧ Frame A t t' := by
   have hS' := hS
   obtain ⟨hE, hL, hF, -, -, -, ⟨bE, bdi, hEE, hbi, hiv, -, -, hbn⟩, ⟨bL, -, hLE, -, -, hln⟩,
     ⟨bF, o, ts, tv, fo, nt, bn, hFE, hbF, hbnv⟩⟩ := hS
@@ -193,7 +206,8 @@ theorem iterI_exit (ctx : Ctx) (labels : Array JSStr) (E L F : EnvId) (N : Nat) 
     identValue_skip2 E L F _ false t1 bE bL bn _ h1E (by rw [e1]; exact hEE) hbn h1L
       (by rw [e1]; exact hLE) hln h1F (by rw [e1, hFE]; rfl) (by rw [e1, hFE]; exact hbF) hbnv (by omega)
   have hlt : ltF (ofSmallInt N) (ofSmallInt N) = false := by rw [ltF_int _ _ hNb hNb]; simp
-  refine ⟨t1, ?_, by rw [← ht1]; exact hS', f1, fun x => by rw [← ht1]; rfl, by rw [← ht1]⟩
+  refine ⟨t1, ?_, by rw [← ht1]; exact hS', f1, fun x => by rw [← ht1]; rfl, by rw [← ht1],
+    ⟨Nat.le_of_eq z1.symm, fun e _ => e1 e, by rw [← ht1], fun o _ => by rw [← ht1]; rfl, by rw [← ht1]⟩⟩
   simp only [forIter, M.bind_eq, M.bind_apply, htick, M.bindRes_ok, SumForProof.testD, Sem.binary, Sem.ident, hstr,
     ri, rn]
   simp [Sem.binaryOp, isLessThan, M.bind_eq, M.bind_apply, hlt, ofSmallInt_eq_nan, toBoolean, pure, M.pure]
@@ -206,28 +220,30 @@ theorem loopI_spec (ctx : Ctx) (labels : Array JSStr) (L F : EnvId) (N : Nat) (A
     ∃ c t', M.loop (forIter SumForProof.testD SumForProof.updD bodyD labels ctx #["i"]) t.fuel (E0, .undefined) t =
         .ok c t' ∧
       (∃ w, c = Compl.normal (some w)) ∧ (∃ E, ShapeI E L F N A (some (num N)) t') ∧ HeapI R A P N t' ∧
-      t'.fuel + N + 1 = t.fuel := by
+      t'.fuel + N + 1 = t.fuel ∧ Frame A t t' := by
   let I : EnvId × Value → State → Prop := fun st u =>
-    ∃ k, k ≤ N ∧ ShapeI st.1 L F N A (some (num k)) u ∧ HeapI R A P k u ∧ u.fuel + k = t.fuel
+    ∃ k, k ≤ N ∧ ShapeI st.1 L F N A (some (num k)) u ∧ HeapI R A P k u ∧ u.fuel + k = t.fuel ∧ Frame A t u
   let Q : Compl → State → Prop := fun c u =>
     (∃ w, c = Compl.normal (some w)) ∧ (∃ E, ShapeI E L F N A (some (num N)) u) ∧ HeapI R A P N u ∧
-      u.fuel + N + 1 = t.fuel
+      u.fuel + N + 1 = t.fuel ∧ Frame A t u
   let V : EnvId × Value → State → Nat := fun _ u => u.fuel + N - t.fuel
   have hstep : ∀ st u, I st u →
       (∃ st' u', forIter SumForProof.testD SumForProof.updD bodyD labels ctx #["i"] st u = .ok (.inl st') u' ∧
         I st' u' ∧ V st' u' < V st u) ∨
       (∃ c u', forIter SumForProof.testD SumForProof.updD bodyD labels ctx #["i"] st u = .ok (.inr c) u' ∧ Q c u') := by
-    intro ⟨E, v⟩ u ⟨k, hk, hSu, hHu, hfu⟩
+    intro ⟨E, v⟩ u ⟨k, hk, hSu, hHu, hfu, hfru⟩
     by_cases hkN : k < N
-    · obtain ⟨E', v', u', h, hS', hH', hf'⟩ := iterI_cont ctx labels E L F N A P k R hstr hkN hN hP hRA u v hSu hHu
+    · obtain ⟨E', v', u', h, hS', hH', hf', hfr'⟩ := iterI_cont ctx labels E L F N A P k R hstr hkN hN hP hRA u v hSu hHu
         (by omega)
       have hc : ((k + 1 : Nat) : Int) = (k : Int) + 1 := by omega
-      exact Or.inl ⟨(E', v'), u', h, ⟨k + 1, hkN, by rw [hc]; exact hS', hH', by omega⟩, by simp only [V]; omega⟩
+      exact Or.inl ⟨(E', v'), u', h, ⟨k + 1, hkN, by rw [hc]; exact hS', hH', by omega, hfru.trans hfr'⟩, by simp only [V]; omega⟩
     · have hkN' : k = N := by omega
       subst hkN'
-      obtain ⟨u', h, hS', hf', ho', hz'⟩ := iterI_exit ctx labels E L F k A hstr hN u v hSu (by omega)
-      exact Or.inr ⟨_, u', h, ⟨v, rfl⟩, ⟨E, hS'⟩, heapI_of R A P k u u' ho' hz' hHu, by omega⟩
-  exact M.loop_inv _ I Q V hstep t.fuel (E0, .undefined) t ⟨0, Nat.zero_le _, hS, hH, by simp⟩ (by simp only [V]; omega)
+      obtain ⟨u', h, hS', hf', ho', hz', hfr'⟩ := iterI_exit ctx labels E L F k A hstr hN u v hSu (by omega)
+      exact Or.inr ⟨_, u', h, ⟨v, rfl⟩, ⟨E, hS'⟩, heapI_of R A P k u u' ho' hz' hHu, by omega,
+        hfru.trans hfr'⟩
+  exact M.loop_inv _ I Q V hstep t.fuel (E0, .undefined) t ⟨0, Nat.zero_le _, hS, hH, by simp, Frame.refl A t⟩
+    (by simp only [V]; omega)
 
 /-- The environments before the loop: `L` binds `a` to `A`, not `i` or `n`; `F` binds `n = N`. -/
 def ShapeBI (L F : EnvId) (N : Nat) (A : ObjId) (t : State) : Prop :=
@@ -243,7 +259,7 @@ theorem forI_spec (ctx : Ctx) (L F : EnvId) (N : Nat) (A P : ObjId) (R : State) 
     (hRA : R.heap.size ≤ A) (t : State) (hS : ShapeBI L F N A t) (hH : HeapI R A P 0 t) (hf : N + 8 ≤ t.fuel) :
     ∃ c t', Sem.forS SumForProof.initD SumForProof.testD SumForProof.updD bodyD ctx t = .ok (Sem.breakToNormal c) t' ∧
       (∃ w, c = Compl.normal (some w)) ∧ (∃ E, ShapeI E L F N A (some (num N)) t') ∧ HeapI R A P N t' ∧
-      t'.fuel + N + 1 = t.fuel := by
+      t'.fuel + N + 1 = t.fuel ∧ Frame A t t' := by
   obtain ⟨hL, hF, hLF, ⟨bL, bda, hLE, hla, hav, hln, hli⟩, hFn⟩ := hS
   have h1 : (VarKind.let == VarKind.using) = false := by decide
   have h2 : (VarKind.let == VarKind.awaitUsing) = false := by decide
@@ -319,10 +335,21 @@ theorem forI_spec (ctx : Ctx) (L F : EnvId) (N : Nat) (A P : ObjId) (R : State) 
         State.setEnv_objEntry, ← ht1, State.pushEnv_objEntry]
     · rw [← ht4, State.setEnv_heap_size, State.pushEnv_heap_size, ← ht3, State.setEnv_heap_size, ← ht2,
         State.setEnv_heap_size, ← ht1, State.pushEnv_heap_size]
-  obtain ⟨c, t5, hloop, hc, hS5, hH5, hf5⟩ := loopI_spec { Sem.inner ctx with strict := false } ctx.labels L F N A P R
+  have hfr4 : Frame A t t4 := by
+    refine ⟨by rw [← ht4, State.setEnv_envs_size, State.pushEnv_size, z3]; omega, fun e he => ?_,
+      by rw [← ht4, State.setEnv_heap_size, State.pushEnv_heap_size, ← ht3, State.setEnv_heap_size, ← ht2,
+        State.setEnv_heap_size, ← ht1, State.pushEnv_heap_size], fun o _ => ?_, ?_⟩
+    · have he3 : e < t3.envs.size := by rw [z3]; exact Nat.lt_succ_of_lt he
+      have hne : E1 ≠ e := by rw [← hE1, z3]; exact Ne.symm (Nat.ne_of_lt (Nat.lt_succ_of_lt he))
+      rw [← ht4, State.setEnv_envEntry_ne _ _ _ _ hne, State.pushEnv_entry_lt _ _ _ he3, e3 e he]
+    · rw [← ht4, State.setEnv_objEntry, State.pushEnv_objEntry, ← ht3, State.setEnv_objEntry, ← ht2,
+        State.setEnv_objEntry, ← ht1, State.pushEnv_objEntry]
+    · rw [← ht4, State.setEnv_realms, State.pushEnv_realms, ← ht3, State.setEnv_realms, ← ht2, State.setEnv_realms,
+        ← ht1, State.pushEnv_realms]
+  obtain ⟨c, t5, hloop, hc, hS5, hH5, hf5, hfr5⟩ := loopI_spec { Sem.inner ctx with strict := false } ctx.labels L F N A P R
     rfl hN hP hRA E1 t4 hS4 hH4 (by omega)
   rw [f4] at hloop
-  refine ⟨c, t5, ?_, hc, hS5, hH5, by rw [← f4]; exact hf5⟩
+  refine ⟨c, t5, ?_, hc, hS5, hH5, by rw [← f4]; exact hf5, hfr4.trans hfr5⟩
   have hil : (Sem.inner ctx).lex = L := hlex
   simp only [hil, hE0, ht1]
   simp only [SumForProof.boundNames_ident, List.foldl_toArray', List.foldl_cons, List.foldl_nil, Array.foldl_toList,
@@ -345,12 +372,15 @@ theorem iota_spec (n : Nat) (ctx : Ctx) (L F : EnvId) (N : Nat) (hlex : ctx.lex 
     (hFn : ∃ bF o ts tv fo nt bn, s0.envEntry F = .func bF o ts tv fo nt ∧ bF[JSStr.ofString "n"]? = some bn ∧
       bn.value = some (num N))
     (hP : ∀ j < N, AbsentChain s0 2 s0.curRealm.arrayProto (PropKey.ofNat j)) (hf : N + 12 ≤ s0.fuel) :
-    ∃ s', IotaGen.iota n ctx s0 = .ok (.ret (.obj s0.heap.size)) s' ∧ ArrayObj s0.heap.size N (fun j => num j) s' := by
+    ∃ s', IotaGen.iota n ctx s0 = .ok (.ret (.obj s0.heap.size)) s' ∧ ArrayObj s0.heap.size N (fun j => num j) s' ∧
+      s0.envs.size ≤ s'.envs.size ∧ (∀ e, e < s0.envs.size → e ≠ L → s'.envEntry e = s0.envEntry e) ∧
+      s'.heap.size = s0.heap.size + 1 ∧ (∀ x, x < s0.heap.size → s'.objEntry x = s0.objEntry x) ∧
+      s'.realms = s0.realms ∧ s'.fuel + N + 1 = s0.fuel := by
   -- `let a = []`
   have hr : resolveBinding L "a" false s0 = .ok (.env (some L) "a" false) s0 :=
     resolveBinding_here L _ false s0 hL (by rw [hLE]; rfl)
       (by rw [hLE]; simp [Env.bindingsMap, Std.HashMap.contains_eq_isSome_getElem?, hla]) (by omega)
-  obtain ⟨t1, hlit, hA1, he1, hf1, hz1, ho1, -, hp1⟩ := array_literal { ctx with labels := #[], lex := L, strict := false, isGen := false } [] (by simp) (by simp) s0
+  obtain ⟨t1, hlit, hA1, he1, hf1, hz1, ho1, hr1, hp1⟩ := array_literal { ctx with labels := #[], lex := L, strict := false, isGen := false } [] (by simp) (by simp) s0
   simp only [List.map_nil, List.length_nil] at hlit hA1
   obtain ⟨A, hAeq⟩ : ∃ A, s0.heap.size = A := ⟨_, rfl⟩
   rw [hAeq] at hlit hA1 hp1
@@ -378,15 +408,21 @@ theorem iota_spec (n : Nat) (ctx : Ctx) (L F : EnvId) (N : Nat) (hlex : ctx.lex 
       by rw [← ht2, State.setEnv_heap_size, hz1]; omega⟩
   have hf2 : t2.fuel = s0.fuel := by rw [← ht2, State.setEnv_fuel, hf1]
   -- the loop
-  obtain ⟨c, t3, hfor, ⟨w, hc⟩, ⟨E, hS3⟩, hH3, hf3⟩ := forI_spec ctx L F N A s0.curRealm.arrayProto s0 hlex hstr hN hP
+  obtain ⟨c, t3, hfor, ⟨w, hc⟩, ⟨E, hS3⟩, hH3, hf3, hfr3⟩ := forI_spec ctx L F N A s0.curRealm.arrayProto s0 hlex hstr hN hP
     (by rw [hAeq]; exact Nat.le_refl _) t2 hS2 hH2 (by omega)
   subst hc
   obtain ⟨-, h3L, -, -, -, -, -, ⟨bL3, bda3, h3LE, hla3, hav3, -⟩, -⟩ := hS3
   -- `return a`
   have hret : identValue L "a" false t3 = .ok (.obj A) t3 :=
     identValue_skip0 L _ false t3 bda3 _ h3L (by rw [h3LE]; rfl) (by rw [h3LE]; exact hla3) hav3 (by omega)
+  have hz2e : t2.envs.size = s0.envs.size := by rw [← ht2, State.setEnv_envs_size, he1]
   rw [hAeq]
-  refine ⟨t3, ?_, hH3.1⟩
+  refine ⟨t3, ?_, hH3.1, by rw [← hz2e]; exact hfr3.1,
+    fun e he heL => by
+      rw [hfr3.2.1 e (by rw [hz2e]; exact he), ← ht2, State.setEnv_envEntry_ne _ _ _ _ (Ne.symm heL)]
+      simp only [State.envEntry, he1],
+    by rw [hfr3.2.2.1, ← ht2, State.setEnv_heap_size, hz1, hAeq], fun x hx => hH3.2.2.1 x (by rw [hAeq]; exact hx),
+    by rw [hfr3.2.2.2.2, ← ht2, State.setEnv_realms, hr1], by rw [hf3, hf2]⟩
   simp only [SumForProof.initD, SumForProof.testD, SumForProof.updD, bodyD, zero_eq] at hfor
   obtain ⟨j, hj⟩ : ∃ j, s0.fuel = j + 4 := ⟨s0.fuel - 4, by omega⟩
   have hlu : (VarKind.let == VarKind.using) = false := by decide
@@ -406,7 +442,10 @@ theorem iota_interp_spec (n : Nat) (ctx : Ctx) (L F : EnvId) (N : Nat) (hlex : c
       bn.value = some (num N))
     (hP : ∀ j < N, AbsentChain s0 2 s0.curRealm.arrayProto (PropKey.ofNat j)) (hf : N + 12 ≤ s0.fuel) :
     ∃ s', evalStmts (n + 35) ctx IotaGen.iota_stmts s0 = .ok (.ret (.obj s0.heap.size)) s' ∧
-      ArrayObj s0.heap.size N (fun j => num j) s' := by
+      ArrayObj s0.heap.size N (fun j => num j) s' ∧
+      s0.envs.size ≤ s'.envs.size ∧ (∀ e, e < s0.envs.size → e ≠ L → s'.envEntry e = s0.envEntry e) ∧
+      s'.heap.size = s0.heap.size + 1 ∧ (∀ x, x < s0.heap.size → s'.objEntry x = s0.objEntry x) ∧
+      s'.realms = s0.realms ∧ s'.fuel + N + 1 = s0.fuel := by
   rw [← congrFun (IotaGen.iota_eq n) ctx]
   exact iota_spec n ctx L F N hlex hstr hgen hN s0 hL hF hLF bL bda hLE hla hln hli hFn hP hf
 
