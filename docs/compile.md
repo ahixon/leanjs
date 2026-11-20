@@ -111,7 +111,18 @@ definitions are stated at `n = height + 1`.
   lexical declarations (`sum_fdi`: exactly the shape `sum_spec` starts from), the body
   (`sum_body`), and the [[Call]] with `this` undefined (`sum_call`): returns N(N−1)/2.
   Environment allocation is a named update too (`State.pushEnv`, `allocEnv_eq`).
-- Next: `for` loops, and objects in loops (arrays).
+- `for` loops: `Proofs/For.lean` — `forIter` (one iteration as `Sem.forS` runs it) and
+  `perIterationEnv` (CreatePerIterationEnvironment; `perIterationEnv_one`). `Proofs/SumFor.lean`:
+  `for (let i = 0; i < n; i = i + 1) s = s + i` returns N(N−1)/2; each iteration's fresh environment
+  is tracked by the invariant. The `for` statement inlines its iteration; after folding
+  `perIterationEnv` back (`← perIterationEnv_def`) `erw` matches the loop with `forIter`.
+  Environment chains: `identBody`/`resolveBody` steps, `identValue_skip0/1/2`, `resolveBinding_skip1`.
+- Arrays: `Proofs/Array.lean` — integers below 2^53 convert to their decimal digits (`toStr_int`), so
+  `a[k]` reads the property `toString k`; [[Get]] of arrays is ordinary (`Obj'.get_array`);
+  GetValue of `a[k]` and `a.key` (`getRefValue_index`, `getRefValue_name`). `Proofs/Total.lean`:
+  `total(a)` (a `for` loop over `a.length` adding `a[i]`) returns the sum of the elements, for arrays
+  of fewer than 2^26 naturals below 2^26 (`total_spec`, `total_interp_spec`).
+- Next: the full calls of `sumFor`/`total` (as for `sum`), arrays created by literals, and writes.
 
 ## Stages
 
