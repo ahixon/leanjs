@@ -240,6 +240,12 @@ definitions are stated at `n = height + 1`.
   environments kept (`iterA_cont`), the call answered (`iterA_step`, `AddTwice.add_call`), the loop
   (`loopA_runs`), the `for` statement (`forSA_runs`), `sumAdd`'s body and call for every `N < 2^26`
   (`sumAdd_call`: 2 fuel per iteration), and `sa_script`: `sumAdd(10)` evaluates to 45.
+- Strings: `Proofs/Strings.lean` — `a + b` on strings is concatenation (`applyBinaryOp_add_str`), `s.length` on a
+  primitive string its code-unit count (`getRefValue_str_length`), lengths add (`JSStr.length_append`).
+  `Proofs/Rep.lean` — examples/rep.js (`let s = ""; for (…; i < n; …) { s = s + "ab"; } return s;`): the loop
+  proofs of SumFor with a string accumulator; `rep_call`: `rep(N)` returns `reps N` ("ab" repeated `N` times) for
+  every `N < 2^26`; `reps_length`: `2N` code units; `reps_five`: "ababababab"; `rp_script`: `rep(5).length`
+  evaluates to 10.
 
 ## Stages
 
