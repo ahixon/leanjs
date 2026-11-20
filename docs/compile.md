@@ -233,6 +233,13 @@ definitions are stated at `n = height + 1`.
   (`bindFn_proto`), `this.n = 0` creating `n` after looking up the chain (`ctr_construct`; realm assumption:
   `Object.prototype` has no `n` or `inc`), the assignment to `Counter.prototype.inc` (`set_proto_inc`), `new`
   as a request (`new_req`).
+- Loops whose body makes calls: `Proofs/LoopRuns.lean` — the loop rule over `Nested.Runs` (`loop_runs`: each
+  iteration runs to `inl` with the invariant and a smaller measure, or to `inr`), `runs_loopRes_inl`/`_inr`, and
+  `stmts3_runs`. `Proofs/SumAdd.lean` — examples/sum_add.js (`for (let i = 0; i < n; i = i + 1) { s = add(s, i); }`):
+  an iteration up to its request for `add` and its continuation for any state the callee leaves with the
+  environments kept (`iterA_cont`), the call answered (`iterA_step`, `AddTwice.add_call`), the loop
+  (`loopA_runs`), the `for` statement (`forSA_runs`), `sumAdd`'s body and call for every `N < 2^26`
+  (`sumAdd_call`: 2 fuel per iteration), and `sa_script`: `sumAdd(10)` evaluates to 45.
 
 ## Stages
 
