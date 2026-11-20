@@ -220,6 +220,11 @@ definitions are stated at `n = height + 1`.
   o.inc(); o.inc();`) evaluates to 2 (`pm_script`): [[SetPrototypeOf]] of a fresh object with its cycle check
   (`setPrototypeOf_fresh`; realm assumption: `Object.prototype` ordinary, prototype null), the method found on
   the prototype (`get_inc_proto` via `Obj'.get_chain`; `method_call_get_req`), `inc`'s call as in Method.lean.
+- Recursion: `Proofs/Rec.lean` — examples/rec.js (`function sum(n) { if (n < 1) return 0; return n + sum(n - 1); }`).
+  `sum_call`: for every `k` with 0 + … + k < 2^26, the [[Call]] `sum(k)` at driver depth `m + 1 ≥ k + 1` runs
+  (`Nested.Runs`) to `tsum k`, by induction on `k`: the body either returns 0 (`sum_spec_base`) or asks for
+  `sum(k - 1)` and adds (`sum_spec_step`; `subF_nz` in NumInt), the inner call by the induction hypothesis one
+  level down. `rc_script`: `sum(10)` evaluates to 55.
 
 ## Stages
 

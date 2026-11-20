@@ -74,6 +74,11 @@ theorem addF_int (a b : Int) (ha : a.natAbs < intBound) (hb : b.natAbs < intBoun
         smallInt_fin a ha0 ha, ofSmallInt_m_ne_zero a ha0]
     · simp [addF, smallInt_ofSmallInt a ha0 ha, smallInt_ofSmallInt b hb0 hb, Nat.le_of_lt hab]
 
+/-- The engine's Number subtraction on nonzero small integers is integer subtraction. -/
+theorem subF_nz (a b : Int) (ha : a.natAbs < intBound) (hb : b.natAbs < intBound) (ha0 : a ≠ 0) (hb0 : b ≠ 0)
+    (hab : (a - b).natAbs < intBound) : subF (ofSmallInt a) (ofSmallInt b) = ofSmallInt (a - b) := by
+  simp [subF, smallInt_ofSmallInt a ha0 ha, smallInt_ofSmallInt b hb0 hb, Nat.le_of_lt hab]
+
 /-- Zero is less than a nonzero finite Number exactly when that Number is positive. -/
 theorem lt_zero_fin (neg : Bool) (m : Nat) (e : Int) (hm : m ≠ 0) (he : -1074 ≤ e) :
     F64.lt (.fin false 0 (-1074)) (.fin neg m e) = !neg := by
