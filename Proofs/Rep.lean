@@ -427,6 +427,61 @@ theorem reps_size (n : Nat) : (reps n).b.size = 4 * n := by
 theorem reps_length (n : Nat) : (reps n).length = 2 * n := by
   simp only [JSStr.length, reps_size]; omega
 
+/-! ## The string itself, for every `N` -/
+
+theorem JSStr.push_append (a t : JSStr) (u : UInt16) : (a ++ t).push u = a ++ t.push u := by
+  show JSStr.mk _ = JSStr.mk _
+  congr 1; apply ByteArray.ext
+  show ((((a.b ++ t.b).push _).push _)).data = (a.b ++ (t.b.push _).push _).data
+  simp only [ByteArray.data_push, ByteArray.data_append, Array.push_append]
+
+theorem JSStr.pushCodePoint_append (a t : JSStr) (c : Nat) : (a ++ t).pushCodePoint c = a ++ t.pushCodePoint c := by
+  unfold JSStr.pushCodePoint
+  split
+  · exact JSStr.push_append ..
+  · simp only [JSStr.push_append]
+
+theorem JSStr.append_empty (a : JSStr) : a ++ JSStr.empty = a := by
+  show JSStr.mk (a.b ++ ByteArray.empty) = a; rw [ByteArray.append_empty]
+
+theorem foldl_push_append (cs : List Char) :
+    ∀ a t : JSStr, cs.foldl (fun acc c => acc.pushCodePoint c.toNat) (a ++ t) =
+      a ++ cs.foldl (fun acc c => acc.pushCodePoint c.toNat) t := by
+  induction cs with
+  | nil => intro a t; rfl
+  | cons c cs ih => intro a t; simp only [List.foldl_cons, JSStr.pushCodePoint_append, ih]
+
+/-- Encoding a list of characters turns list append into string append. -/
+theorem JSStr.ofList_append (xs ys : List Char) : JSStr.ofList (xs ++ ys) = JSStr.ofList xs ++ JSStr.ofList ys := by
+  unfold JSStr.ofList
+  rw [List.foldl_append, ← JSStr.append_empty (List.foldl _ JSStr.empty xs), foldl_push_append, JSStr.append_empty]
+
+theorem JSStr.ofString_append (a b : String) : JSStr.ofString (a ++ b) = JSStr.ofString a ++ JSStr.ofString b := by
+  unfold JSStr.ofString; rw [String.toList_append, JSStr.ofList_append]
+
+theorem String.join_append_one (l : List String) (x : String) : String.join (l ++ [x]) = String.join l ++ x := by
+  induction l with
+  | nil => simp [String.join_cons]
+  | cons y l ih => simp only [List.cons_append, String.join_cons, ih, String.append_assoc]
+
+/-- **What `rep(N)` returns, for every `N`**: the UTF-16 encoding of the Lean string "ab" repeated `N` times. -/
+theorem reps_eq (n : Nat) : reps n = JSStr.ofString (String.join (List.replicate n "ab")) := by
+  induction n with
+  | zero => rfl
+  | succ k ih => rw [reps, ih, List.replicate_succ', String.join_append_one, JSStr.ofString_append]
+
+/-- **The [[Call]] of `rep` with `N`, in closed form**: returns the string "ab" repeated `N` times. -/
+theorem rep_call_string (f : ObjId) (d : FuncData) (s : State) (N : Nat) (go : ObjId)
+    (gb : Std.HashMap JSStr Binding) (gtv : Value)
+    (hcode : d.code = RPGen.rep_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .global)
+    (hge : (s.realms[d.realm]!).globalEnv < s.envs.size)
+    (hgE : s.envEntry (s.realms[d.realm]!).globalEnv = .global go gb gtv)
+    (hN : N < 2 ^ 26) (hf : N + 12 ≤ s.fuel) :
+    ∃ s', callECMA f d .undefined #[num N] s =
+      .ok (.str (JSStr.ofString (String.join (List.replicate N "ab")))) s' := by
+  obtain ⟨s', h⟩ := rep_call f d s N go gb gtv hcode hcls hmode hge hgE hN hf
+  exact ⟨s', by rw [← reps_eq]; exact h⟩
+
 /-- The string itself, for `N = 5`. -/
 theorem reps_five : reps 5 = JSStr.ofString "ababababab" := by
   apply congrArg JSStr.mk; apply ByteArray.ext; decide

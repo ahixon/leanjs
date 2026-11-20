@@ -244,7 +244,8 @@ definitions are stated at `n = height + 1`.
   primitive string its code-unit count (`getRefValue_str_length`), lengths add (`JSStr.length_append`).
   `Proofs/Rep.lean` — examples/rep.js (`let s = ""; for (…; i < n; …) { s = s + "ab"; } return s;`): the loop
   proofs of SumFor with a string accumulator; `rep_call`: `rep(N)` returns `reps N` ("ab" repeated `N` times) for
-  every `N < 2^26`; `reps_length`: `2N` code units; `reps_five`: "ababababab"; `rp_script`: `rep(5).length`
+  every `N < 2^26`, i.e. (`reps_eq`, via `JSStr.ofList_append`) `JSStr.ofString (String.join (List.replicate N "ab"))`
+  (`rep_call_string`); `reps_length`: `2N` code units; `reps_five`: "ababababab"; `rp_script`: `rep(5).length`
   evaluates to 10.
 
 ## Stages
