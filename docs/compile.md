@@ -91,7 +91,13 @@ definitions are stated at `n = height + 1`.
   - intermediate states in a long proof are opaque variables (`obtain ⟨u, hu⟩ : ∃ u, f … = u`), not
     `let`s, which the elaborator unfolds;
   - key and string inequalities are proved facts (`PropMap.get?_insert_ne`), never decided in place.
-- Next: lemmas for property get/set through prototypes, loops with invariants, and a larger example.
+- Prototype chains: `Proofs/Proto.lean` — for chains of ordinary/function objects, [[HasProperty]],
+  [[Get]] and [[Set]] agree with a pure walk of the chain (`ordLookup`), by induction over the chain
+  (`hasProperty_chain`, `get_chain`, `set_chain`; at `maxDepth` for chains up to 9999 objects), and
+  GetValue/PutValue of `o.key` follow (`getRefValue_prop`, `putRefValue_prop`). Example:
+  `shadowing` (assigning an inherited writable property gives the object its own and leaves the
+  prototype unchanged). Not covered yet: accessors (getters/setters are calls), exotic objects.
+- Next: loops with invariants, and a larger example.
 
 ## Stages
 
