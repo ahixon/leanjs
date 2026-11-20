@@ -252,6 +252,10 @@ definitions are stated at `n = height + 1`.
   `Proofs/ListStr.lean` — examples/list.js (`s = s + i + ","` in a loop): `list_call_string`: `list(N)` returns
   `String.join ((List.range N).map fun k => toString k ++ ",")` for every `N < 2^26` (`lst_eq`); `ls_script`:
   `list(4)` evaluates to "0,1,2,3,".
+- Indexing strings: `Proofs/Strings.lean` — the key of `s[k]` is `k`'s numeral (`toPropertyKey_nat`), `a[k]` on a
+  primitive string is the one-unit slice (`getRefValue_str_index`), and a slice of an encoded character list is the
+  encoded character (`JSStr.slice_ofList`). `Proofs/RepIndex.lean` — `rep_index`: `rep(n)[k]` is "a" at even and "b"
+  at odd `k`, for every `k < 2n`; `ri_script`: `rep(5)[3]` (examples/rep_index.js) evaluates to "b".
 
 ## Stages
 
