@@ -1,4 +1,4 @@
-import Proofs.Script
+import Proofs.Runs
 import Proofs.IotaCall
 import Proofs.ITGen
 
@@ -75,34 +75,6 @@ theorem let_call_req (c : Ctx) (u : State) (ge g fo : Nat) (gb : HashMap JSStr B
 theorem script_def (n : Nat) : ITGen.script n = Sem.stmts #[Sem.funDecl ITGen.total_func,
     Sem.funDecl ITGen.iota_func, letIota, callOf "total"] := rfl
 
-/-- The script's statements: the declarations do nothing, `let b = iota(5)` asks for its call; when it
-returns and `b` is initialized, `total(b)` asks for its call, and when that returns `v` the statements
-complete normally with `v`. -/
-theorem body_req (n : Nat) (c : Ctx) (u : State) (r3 : Req) (K3 : Outcome → State → Res Compl)
-    (hann : c.annexB = funcIds #[]) (hf : 5 ≤ u.fuel) (h3 : letIota c u = .req r3 u K3) :
-    ∃ K, ITGen.script n c u = .req r3 u K ∧
-      ∀ v w w' r4 (K4 : Outcome → State → Res Compl), K3 (.normal v) w = .ok (.normal none) w' →
-        callOf "total" c w' = .req r4 w' K4 → (∀ v t, K4 (.normal v) t = .ok (.normal (some v)) t) →
-        ∃ K', K (.normal v) w = .req r4 w' K' ∧ ∀ v t, K' (.normal v) t = .ok (.normal (some v)) t := by
-  obtain ⟨k, hk⟩ : ∃ k, u.fuel = k + 5 := ⟨u.fuel - 5, by omega⟩
-  have hann0 : ∀ i, (funcIds #[]).contains i = false := by simp [funcIds]
-  refine ⟨?K, ?h, ?_⟩
-  case h =>
-    conv =>
-      lhs
-      rw [script_def]
-      simp [Sem.stmts, M.repeatFrom, hk, M.loop, Sem.funDecl, hann, hann0, h3, M.bind_eq, M.bind_apply,
-        M.bindRes_ok, M.bindRes_req, pure, M.pure]
-  intro v w w' r4 K4 hK3 h4 hK4
-  refine ⟨?K', ?h', ?_⟩
-  case h' =>
-    conv =>
-      lhs
-      simp [hK3, M.loopRes_inl, M.loop, h4, M.bind_eq, M.bind_apply, M.bindRes_ok, M.bindRes_req, M.loopRes_req,
-        pure, M.pure]
-  intro v t
-  simp [hK4, M.loopRes_inl, M.loopRes_inr, M.bindRes_ok, M.pure, Compl.updateEmpty]
-
 theorem psum10 : psum (fun j => j) 5 = 10 := by decide
 
 /-! ## The whole script -/
@@ -178,7 +150,6 @@ theorem it_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
   -- `let b = iota(5)` asks for its call
   obtain ⟨K3, h3, hK3⟩ := let_call_req c u ge g fI gbL gtv dI rfl rfl hgeu hE1 hLb hLi hLi' hLim hgu hku hpi1 hfIu
     hfIk (by rw [hfuu, hfu0]; omega)
-  obtain ⟨K, hreq, hK⟩ := body_req 999956 c u _ K3 rfl (by rw [hfuu, hfu0]; omega) h3
   -- the call of `iota`
   obtain ⟨u', hu'⟩ : ∃ x, ({ u with fuel := u.fuel - 1 } : State) = x := ⟨_, rfl⟩
   have hr' : u'.realms = s.realms := by rw [← hu']; exact hru.trans hr0
@@ -237,7 +208,6 @@ theorem it_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
     (gb2_mem_b gb A) rfl (by rw [hhw]; exact Nat.lt_succ_of_lt hgu) (by rw [how g hgu]; exact hku)
     (by rw [how g hgu]; exact hpt1) (by rw [hhw]; exact Nat.lt_succ_of_lt hfTu) (by rw [how fT hfTu]; exact hfTk)
     (by omega)
-  obtain ⟨K', hK1, hK'⟩ := hK _ s3 w _ K4 hK3' h4 hK4
   -- the call of `total`
   obtain ⟨w', hw'⟩ : ∃ x, ({ w with fuel := w.fuel - 1 } : State) = x := ⟨_, rfl⟩
   have hgeT : (w'.realms[dT.realm]!).globalEnv = ge := by
@@ -267,11 +237,17 @@ theorem it_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
   have hu0 : scriptState s ITGen.program fs ["b"] gb gtv fp = u := by rw [← hu, ← ht0]; rfl
   have hscript : evalStmts evalDepth (scriptCtx s false) ITGen.program.body u = ITGen.script 999956 c u := by
     rw [ITGen.script_eq]; rfl
-  rw [hu0, hscript, hreq, M.bindRes_req]
-  refine drivesTo_call eng _ _ _ u _ _ s3 _ s4 himplI ?_
-  simp only [hK1, M.bindRes_req]
-  refine drivesTo_call eng _ _ _ w _ _ s4 _ s4 himplT ?_
-  simp only [hK', M.bindRes_ok, psum10]
-  exact drivesTo_ok eng _ s4
+  rw [psum10] at himplT
+  have h4' : callOf "total" c w = .req (.call (.obj fT) .undefined #[.obj A]) w K4 := h4
+  rw [hu0, hscript, script_def]
+  refine Runs.script_runs eng _ _ _ (Runs.stmts_run eng c _ u _ s4 ?_ (by simp; rw [hfuu, hfu0]; omega))
+  show Runs.StmtsRun eng c [Sem.funDecl ITGen.total_func, Sem.funDecl ITGen.iota_func, letIota, callOf "total"] u
+    none (some (num 10)) s4
+  refine .cons _ _ u u s4 none none _ (Runs.runs_funDecl eng _ c u rfl) ?_
+  refine .cons _ _ u u s4 none none _ (Runs.runs_funDecl eng _ c u rfl) ?_
+  refine .cons _ _ u w s4 none none _ ?_ ?_
+  · rw [h3]; exact Runs.runsTo_req1 eng _ _ _ u K3 _ s3 _ w himplI hK3'
+  refine .cons _ _ w s4 s4 (some (num 10)) _ _ ?_ (.nil _ _)
+  rw [h4']; exact Runs.runsTo_req1 eng _ _ _ w K4 _ s4 _ s4 himplT (hK4 _ s4)
 
 end ITScript

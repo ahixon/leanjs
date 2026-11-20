@@ -1,4 +1,4 @@
-import Proofs.Script
+import Proofs.Runs
 import Proofs.DTGen
 
 /-!
@@ -103,37 +103,6 @@ theorem script_def (n : Nat) : DTGen.script n = Sem.stmts #[Sem.funDecl DTGen.to
     Sem.funDecl DTGen.double_func, Sem.varDecl #[Sem.declLex VarKind.let "b" (some arr3)], callOf "double",
     callOf "total"] := rfl
 
-/-- The script's statements: the function declarations do nothing (they were instantiated), `let b`
-runs, and `double(b)` asks for its call; when it returns, `total(b)` asks for its call, and when that
-returns `v` the statements complete normally with `v`. -/
-theorem body_req (n : Nat) (c : Ctx) (u u2 : State) (r4 : Req) (K4 : Outcome → State → Res Compl)
-    (hann : c.annexB = funcIds #[]) (hf : 6 ≤ u.fuel)
-    (h3 : Sem.varDecl #[Sem.declLex VarKind.let "b" (some arr3)] c u = .ok (.normal none) u2)
-    (h4 : callOf "double" c u2 = .req r4 u2 K4) (hK4 : ∀ v t, K4 (.normal v) t = .ok (.normal (some v)) t) :
-    ∃ K, DTGen.script n c u = .req r4 u2 K ∧
-      ∀ w r5 (K5 : Outcome → State → Res Compl), callOf "total" c w = .req r5 w K5 →
-        (∀ v t, K5 (.normal v) t = .ok (.normal (some v)) t) →
-        ∃ K', K (.normal .undefined) w = .req r5 w K' ∧ ∀ v t, K' (.normal v) t = .ok (.normal (some v)) t := by
-  obtain ⟨k, hk⟩ : ∃ k, u.fuel = k + 6 := ⟨u.fuel - 6, by omega⟩
-  have hann0 : ∀ i, (funcIds #[]).contains i = false := by simp [funcIds]
-  refine ⟨?K, ?h, ?_⟩
-  case h =>
-    conv =>
-      lhs
-      rw [script_def]
-      simp [Sem.stmts, M.repeatFrom, hk, M.loop, Sem.funDecl, hann, hann0, h3, h4, M.bind_eq, M.bind_apply,
-        M.bindRes_ok, M.bindRes_req, pure, M.pure]
-  intro w r5 K5 h5 hK5
-  refine ⟨?K', ?h', ?_⟩
-  case h' =>
-    conv =>
-      lhs
-      simp [hK4, M.loopRes_inl, M.loop, h5, M.bind_eq, M.bind_apply, M.bindRes_ok, M.bindRes_req, M.loopRes_req,
-        pure, M.pure]
-  intro v t
-  simp [hK5, M.loopRes_inl, M.loopRes_inr, M.loop, M.bind_eq, M.bind_apply, M.bindRes_ok, pure, M.pure,
-    Compl.updateEmpty]
-
 theorem psum24 : psum (fun j => 2 * xs3 j) 3 = 24 := by decide
 
 theorem total_same : DTGen.total_func = TotalGen.total_func := rfl
@@ -221,7 +190,6 @@ theorem dt_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
   obtain ⟨K4, h4, hK4⟩ := call_req c u2 ge g fD A "double" (gb2 gb A) gtv dD _ rfl rfl hge2 hE2'
     (gb2_contains gb A _ ne_bd hgbd) (gb2_get gb A _ ne_bd hgbd) (gb2_mem gb A _ ne_bd hgbd) (gb2_b gb A)
     (gb2_mem_b gb A) rfl hgu2 hk2 hpd2 hfD2 hfDk2 (by omega)
-  obtain ⟨K, hreq, hK⟩ := body_req 999956 c u u2 _ K4 rfl (by rw [hfuu, hfu0]; omega) h3 h4 hK4
   -- the call of `double`
   obtain ⟨u2', hu2'⟩ : ∃ x, ({ u2 with fuel := u2.fuel - 1 } : State) = x := ⟨_, rfl⟩
   have hr2' : u2'.realms = s.realms := by rw [← hu2']; exact hrl2.trans (hru.trans hr0)
@@ -246,7 +214,6 @@ theorem dt_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
     (gb2_contains gb A _ ne_bt hgbt) (gb2_get gb A _ ne_bt hgbt) (gb2_mem gb A _ ne_bt hgbt) (gb2_b gb A)
     (gb2_mem_b gb A) rfl (by rw [hhs3]; exact hgu2) (by rw [hobj g hgA]; exact hk2) (by rw [hobj g hgA]; exact hpt2)
     (by rw [hhs3]; exact hfT2) (by rw [hobj fT hfTA]; exact hfTk2) (by omega)
-  obtain ⟨K', hK1, hK'⟩ := hK s3 _ K5 h5 hK5
   -- the call of `total`
   obtain ⟨s3', hs3'⟩ : ∃ x, ({ s3 with fuel := s3.fuel - 1 } : State) = x := ⟨_, rfl⟩
   have hr3' : s3'.realms = s.realms := by rw [← hs3']; exact hr3.trans hr2'
@@ -275,11 +242,20 @@ theorem dt_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
   have hu0 : scriptState s DTGen.program fs ["b"] gb gtv fp = u := by rw [← hu, ← ht0]; rfl
   have hscript : evalStmts evalDepth (scriptCtx s false) DTGen.program.body u = DTGen.script 999956 c u := by
     rw [DTGen.script_eq]; rfl
-  rw [hu0, hscript, hreq, M.bindRes_req]
-  refine drivesTo_call eng _ _ _ u2 _ _ s3 _ s4 himplD ?_
-  simp only [hK1, M.bindRes_req]
-  refine drivesTo_call eng _ _ _ s3 _ _ s4 _ s4 himplT ?_
-  simp only [hK', M.bindRes_ok, psum24]
-  exact drivesTo_ok eng _ s4
+  rw [psum24] at himplT
+  have h4' : callOf "double" c u2 = .req (.call (.obj fD) .undefined #[.obj A]) u2 K4 := h4
+  have h5' : callOf "total" c s3 = .req (.call (.obj fT) .undefined #[.obj A]) s3 K5 := h5
+  rw [hu0, hscript, script_def]
+  refine Runs.script_runs eng _ _ _ (Runs.stmts_run eng c _ u _ s4 ?_ (by simp; rw [hfuu, hfu0]; omega))
+  show Runs.StmtsRun eng c [Sem.funDecl DTGen.total_func, Sem.funDecl DTGen.double_func,
+    Sem.varDecl #[Sem.declLex VarKind.let "b" (some arr3)], callOf "double", callOf "total"] u none
+    (some (num 24)) s4
+  refine .cons _ _ u u s4 none none _ (Runs.runs_funDecl eng _ c u rfl) ?_
+  refine .cons _ _ u u s4 none none _ (Runs.runs_funDecl eng _ c u rfl) ?_
+  refine .cons _ _ u u2 s4 none none _ (by rw [h3]; exact Runs.runsTo_ok eng _ _) ?_
+  refine .cons _ _ u2 s3 s4 (some .undefined) none _ ?_ ?_
+  · rw [h4']; exact Runs.runsTo_req1 eng _ _ _ u2 K4 _ s3 _ s3 himplD (hK4 _ s3)
+  refine .cons _ _ s3 s4 s4 (some (num 24)) _ _ ?_ (.nil _ _)
+  rw [h5']; exact Runs.runsTo_req1 eng _ _ _ s3 K5 _ s4 _ s4 himplT (hK5 _ s4)
 
 end DTScript

@@ -2,6 +2,7 @@ import Proofs.Script
 import Proofs.Stmts
 import Proofs.ATGen
 import Proofs.AddCall
+import Proofs.Runs
 
 /-!
 # `let r = add(1, 2); add(r, 4);` evaluates to 7 (examples/add_twice.js)
@@ -45,34 +46,6 @@ abbrev addR4 : Sem.CStmt := Sem.exprStmt (Sem.call (Sem.identRef "add")
   (Sem.args #[Sem.ArgD.expr (Sem.ident "r"), Sem.ArgD.expr (Sem.lit (Lit.num l4))]) false (CalleeDesc.ident "add"))
 
 theorem script_def (n : Nat) : ATGen.script n = Sem.stmts #[Sem.funDecl ATGen.add_func, letR, addR4] := rfl
-
-/-- The statements: the declaration does nothing, `let r = add(1, 2)` asks for its call; when it returns
-and `r` is initialized, `add(r, 4)` asks for its call, and when that returns `v` the statements complete
-normally with `v`. -/
-theorem body_req (n : Nat) (c : Ctx) (u : State) (r3 : Req) (K3 : Outcome → State → Res Compl)
-    (hann : c.annexB = funcIds #[]) (hf : 4 ≤ u.fuel) (h3 : letR c u = .req r3 u K3) :
-    ∃ K, ATGen.script n c u = .req r3 u K ∧
-      ∀ v w w' r4 (K4 : Outcome → State → Res Compl), K3 (.normal v) w = .ok (.normal none) w' →
-        addR4 c w' = .req r4 w' K4 → (∀ v t, K4 (.normal v) t = .ok (.normal (some v)) t) →
-        ∃ K', K (.normal v) w = .req r4 w' K' ∧ ∀ v t, K' (.normal v) t = .ok (.normal (some v)) t := by
-  obtain ⟨k, hk⟩ : ∃ k, u.fuel = k + 4 := ⟨u.fuel - 4, by omega⟩
-  have hann0 : ∀ i, (funcIds #[]).contains i = false := by simp [funcIds]
-  refine ⟨?K, ?h, ?_⟩
-  case h =>
-    conv =>
-      lhs
-      rw [script_def]
-      simp [Sem.stmts, M.repeatFrom, hk, M.loop, Sem.funDecl, hann, hann0, h3, M.bind_eq, M.bind_apply,
-        M.bindRes_ok, M.bindRes_req, pure, M.pure]
-  intro v w w' r4 K4 hK3 h4 hK4
-  refine ⟨?K', ?h', ?_⟩
-  case h' =>
-    conv =>
-      lhs
-      simp [hK3, M.loopRes_inl, M.loop, h4, M.bind_eq, M.bind_apply, M.bindRes_ok, M.bindRes_req, M.loopRes_req,
-        pure, M.pure]
-  intro v t
-  simp [hK4, M.loopRes_inl, M.loopRes_inr, M.bindRes_ok, M.pure, Compl.updateEmpty]
 
 theorem ne_ra : (JSStr.ofString "r" = JSStr.ofString "add") = False := by simp; decide
 theorem add_same : ATGen.add_func = AddGen.add_func := rfl
@@ -143,7 +116,6 @@ theorem at_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
     rfl rfl hgeu hE1 hLa hLa' hLam hgu hku hpA hfAu hfAk (by rw [hfuu, hfu0]; omega)
   obtain ⟨K3, h3, hK3⟩ := let_req "r" _ c u ge g gbL gtv _ K0 rfl rfl hgeu hE1 (by simp [gbL])
     (by rw [hfuu, hfu0]; omega) h0 hK0
-  obtain ⟨K, hreq, hK⟩ := body_req 999965 c u _ K3 rfl (by rw [hfuu, hfu0]; omega) h3
   -- the call of `add` with 1 and 2
   obtain ⟨u', hu'⟩ : ∃ x, ({ u with fuel := u.fuel - 1 } : State) = x := ⟨_, rfl⟩
   have hr' : u'.realms = s.realms := by rw [← hu']; exact hru.trans hr0
@@ -188,7 +160,6 @@ theorem at_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
     rfl rfl hgew hEw hRa hRa' hRam (by rw [hhw]; exact hgu) (by rw [how]; exact hku) (by rw [how]; exact hpA)
     (by rw [hhw]; exact hfAu) (by rw [how]; exact hfAk) (by omega)
   obtain ⟨K4, h4, hK4⟩ := exprStmt_req _ c w _ K5 h5 hK5
-  obtain ⟨K', hK1, hK'⟩ := hK _ s3 w _ K4 hK3' h4 hK4
   -- the call of `add` with 3 and 4
   obtain ⟨w', hw'⟩ : ∃ x, ({ w with fuel := w.fuel - 1 } : State) = x := ⟨_, rfl⟩
   have hgeA' : (w'.realms[dA.realm]!).globalEnv = ge := by
@@ -197,8 +168,9 @@ theorem at_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
   obtain ⟨s4, hcall2, -⟩ := add_call fA dA w' three l4 g gbR gtv hcodeA hclsA hmA
     (by rw [hgeA', hzw']; exact hgew) (by rw [hgeA']; simp only [State.envEntry, hzw']; exact hEw)
     (by rw [← hw']; simp only; omega)
-  have himpl2 : callImpl eng (.obj fA) .undefined #[.num three, .num l4] w = .ok (.num (addF three l4)) s4 := by
-    rw [callImpl_func eng fA dA _ _ w (by rw [hhw]; exact hfAu) (by rw [how]; exact hfAk) (by omega), hw']
+  have himpl2 : callImpl eng (.obj fA) .undefined #[.num three, .num l4] w = .ok (num 7) s4 := by
+    rw [callImpl_func eng fA dA _ _ w (by rw [hhw]; exact hfAu) (by rw [how]; exact hfAk) (by omega), hw',
+      show num 7 = .num (addF three l4) from (congrArg Value.num seven).symm]
     exact hcall2
   -- the script
   refine ⟨s4, script_value eng s cs ATGen.program fs ["r"] gb gtv fp _ s4 rfl rfl
@@ -212,12 +184,16 @@ theorem at_script (eng : Engine) (s : State) (cs : Conts) (gb : HashMap JSStr Bi
   have hu0 : scriptState s ATGen.program fs ["r"] gb gtv fp = u := by rw [← hu, ← ht0]; rfl
   have hscript : evalStmts evalDepth (scriptCtx s false) ATGen.program.body u = ATGen.script 999965 c u := by
     rw [ATGen.script_eq]; rfl
-  rw [hu0, hscript, hreq, M.bindRes_req]
-  refine drivesTo_call eng _ _ _ u _ _ s3 _ s4 himpl1 ?_
-  simp only [hK1, M.bindRes_req]
-  refine drivesTo_call eng _ _ _ w _ _ s4 _ s4 himpl2 ?_
-  simp only [hK', M.bindRes_ok]
-  rw [show (Value.num (addF three l4)) = num 7 from congrArg Value.num seven]
-  exact drivesTo_ok eng _ s4
+  -- the statements, one by one (`Runs.stmts_run`)
+  have h3' : letR c u = .req (.call (.obj fA) .undefined #[.num AddScript.one, .num AddScript.two]) u K3 := h3
+  have h4' : addR4 c w = .req (.call (.obj fA) .undefined #[.num three, .num l4]) w K4 := h4
+  rw [hu0, hscript, script_def]
+  refine Runs.script_runs eng _ _ _ (Runs.stmts_run eng c _ u _ s4 ?_ (by simp; rw [hfuu, hfu0]; omega))
+  show Runs.StmtsRun eng c [Sem.funDecl ATGen.add_func, letR, addR4] u none (some (num 7)) s4
+  refine .cons (Sem.funDecl ATGen.add_func) _ u u s4 none none _ (Runs.runs_funDecl eng _ c u rfl) ?_
+  refine .cons letR _ u w s4 none none _ ?_ ?_
+  · rw [h3']; exact Runs.runsTo_req1 eng _ _ _ u K3 _ s3 _ w himpl1 hK3'
+  refine .cons addR4 _ w s4 s4 (some (num 7)) none _ ?_ (.nil _ _)
+  rw [h4']; exact Runs.runsTo_req1 eng _ _ _ w K4 _ s4 _ s4 himpl2 (hK4 _ s4)
 
 end AddTwice

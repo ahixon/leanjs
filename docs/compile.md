@@ -181,6 +181,11 @@ definitions are stated at `n = height + 1`.
   `let`. `Proofs/AddTwice.lean` — examples/add_twice.js (`let r = add(1, 2); add(r, 4);`) evaluates to 7
   (`at_script`), from these and the script lemmas alone, with `add`'s call stating what it leaves alone
   (`AddTwice.add_call`).
+- Statement lists, statement by statement: `Proofs/Runs.lean` — `RunsTo eng r b w'` (`r`, its requests
+  answered, ends in `b`, `w'`, under any continuation; `runsTo_ok`, `runsTo_bind`, `runsTo_call`,
+  `runsTo_req1`), `StmtsRun` (one `RunsTo` fact per statement) and `stmts_run` (the list's completion,
+  UpdateEmpty), `runs_funDecl`, `script_runs`. The three script proofs list their statements' facts
+  instead of unrolling `Sem.stmts` by hand.
 
 ## Stages
 
