@@ -203,4 +203,34 @@ theorem setMutableBinding_decl (env : EnvId) (n : JSStr) (v : Value) (strict : B
     simp [setMutableBinding, M.bind_eq, M.bind_apply, readEnv_entry _ _ s h, hE, declSetMutable, hb, hvv, hm, -modifyEnv_apply,
       modifyEnv_eq_setEnv _ _ _ h]
 
+/-! ## Allocating environments as a named update -/
+
+/-- The state with environment `e` allocated (at index `s.envs.size`). -/
+def State.pushEnv (s : State) (e : Env) : State := { s with envs := s.envs.push e }
+
+theorem allocEnv_eq (e : Env) (s : State) : allocEnv e s = .ok s.envs.size (s.pushEnv e) := by
+  simp only [allocEnv, State.pushEnv, State.withEnvs_eq]
+
+theorem newDeclEnv_eq (o : Option EnvId) (s : State) :
+    newDeclEnv o s = .ok s.envs.size (s.pushEnv (.decl {} o)) := by
+  simp only [newDeclEnv, allocEnv_eq]
+
+@[simp] theorem State.pushEnv_size (s : State) (e : Env) : (s.pushEnv e).envs.size = s.envs.size + 1 := by
+  simp [State.pushEnv]
+@[simp] theorem State.pushEnv_fuel (s : State) (e : Env) : (s.pushEnv e).fuel = s.fuel := by
+  simp only [State.pushEnv]
+@[simp] theorem State.pushEnv_entry_new (s : State) (e : Env) : (s.pushEnv e).envEntry s.envs.size = e := by
+  simp [State.pushEnv, State.envEntry]
+theorem State.pushEnv_entry_at (s : State) (e : Env) (i : EnvId) (h : i = s.envs.size) :
+    (s.pushEnv e).envEntry i = e := by
+  subst h; exact State.pushEnv_entry_new s e
+
+theorem State.pushEnv_entry_lt (s : State) (e : Env) (i : EnvId) (h : i < s.envs.size) :
+    (s.pushEnv e).envEntry i = s.envEntry i := by
+  simp [State.pushEnv, State.envEntry, Array.getElem?_push, Nat.ne_of_lt h]
+
+theorem State.setEnv_envEntry_ne (s : State) (env i : EnvId) (e : Env) (h : env ≠ i) :
+    (s.setEnv env e).envEntry i = s.envEntry i := by
+  simp [State.envEntry, State.setEnv, Array.getElem?_modify, h]
+
 end ES

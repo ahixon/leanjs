@@ -107,8 +107,11 @@ definitions are stated at `n = height + 1`.
   (`sum_spec`, and `sum_interp_spec` for the interpreter on the syntax tree). Invariant: after k
   iterations `i = k`, `s = tri k`; one lemma per iteration kind (`iter_cont`, `iter_exit`), with
   intermediate states as opaque variables.
-- Next: the call of `sum` (FunctionDeclarationInstantiation with lexical declarations), `for` loops,
-  and objects in loops (arrays).
+- The call of `sum`: `Proofs/SumCall.lean` — FunctionDeclarationInstantiation with a parameter and
+  lexical declarations (`sum_fdi`: exactly the shape `sum_spec` starts from), the body
+  (`sum_body`), and the [[Call]] with `this` undefined (`sum_call`): returns N(N−1)/2.
+  Environment allocation is a named update too (`State.pushEnv`, `allocEnv_eq`).
+- Next: `for` loops, and objects in loops (arrays).
 
 ## Stages
 
