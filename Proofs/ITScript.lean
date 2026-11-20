@@ -14,7 +14,7 @@ evaluates to 10 = 0 + 1 + 2 + 3 + 4: `iota(5)` builds a new array (its writes go
 
 open ES ES.Conv SumProof SumForProof TotalProof
 open Std (HashMap)
-open DTScript (createMutableBinding_global initializeBinding_global identValue_global_decl
+open Global (createMutableBinding_global initializeBinding_global identValue_global_decl
   resolveBinding_global_decl call_req gb2 gb2_b gb2_mem_b gb2_contains gb2_get gb2_mem isArray_of_arrayObj ne_bt l5
   callOf)
 

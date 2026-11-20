@@ -172,7 +172,9 @@ definitions are stated at `n = height + 1`.
   that existed changes), and `script_value` (the script's value is what its body, run from
   `scriptState`, drives to: `DrivesTo`, with `drivesTo_call` per answered call and `drivesTo_ok`).
   The loops are folds with an abstract step (`foldList_const`, `foldList_lets`, `foldList_fnsToInit`,
-  `foldList_fns`). `ITScript.it_script` now uses them; a script proof is its statements and calls only.
+  `foldList_fns`). `DTScript.dt_script` and `ITScript.it_script` use them; a script proof is its
+  statements and calls only. The global record's declarative part and the call statement `f(b)` are in
+  `Proofs/Global.lean`.
 
 ## Stages
 

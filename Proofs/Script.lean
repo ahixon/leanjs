@@ -1,4 +1,4 @@
-import Proofs.DTScript
+import Proofs.Global
 
 /-!
 # Scripts in general: declarations, then statements run by the driver
@@ -245,7 +245,7 @@ theorem gdi_simple (body : Array Stmt) (fs : List (Func × JSStr)) (lets : List 
     have hk1 : (VarKind.let == VarKind.const) = false := by decide
     have hk2 : (VarKind.let == VarKind.using) = false := by decide
     have hk3 : (VarKind.let == VarKind.awaitUsing) = false := by decide
-    simp [hn, LexScoped.isConstant, hk1, hk2, hk3, DTScript.createMutableBinding_global ge x false u g gb' gtv hu hEu]
+    simp [hn, LexScoped.isConstant, hk1, hk2, hk3, Global.createMutableBinding_global ge x false u g gb' gtv hu hEu]
   simp only [M.bindRes_ok, M.bind_apply]
   -- 16: the function objects
   have hlist : ((List.map Prod.fst fs.reverse).reverse.toArray ++ #[]).toList = fs.map Prod.fst := by
