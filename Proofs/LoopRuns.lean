@@ -68,4 +68,29 @@ theorem stmts3_runs (eng : Engine) (d : Nat) (a b c : Sem.CStmt) (ctx : Ctx) (w 
   · simp [M.loop, M.bind_eq, M.bind_apply, hc, pure, M.pure, M.loopRes_inr]
     exact .ok _ _ _
 
+/-- **The loop rule, counted**: iterations `k = 0, 1, …, N − 1` run to `inl` with the invariant at `k + 1`;
+at `k = N` the iteration runs to `inr` with a result satisfying `Q`. A loop allowed more than the remaining
+iterations runs to such a result. -/
+theorem loop_count (eng : Engine) (d : Nat) {α σ : Type} (body : σ → M (σ ⊕ α)) (I : Nat → σ → State → Prop)
+    (Q : α → State → Prop) (N : Nat)
+    (hstep : ∀ k st s, k < N → I k st s → ∃ st' s', Runs eng d (body st s) (.inl st') s' ∧ I (k + 1) st' s')
+    (hexit : ∀ st s, I N st s → ∃ a s', Runs eng d (body st s) (.inr a) s' ∧ Q a s') :
+    ∀ (m k : Nat) (st : σ) (s : State) (b : Nat), k + m = N → I k st s → m + 1 ≤ b →
+      ∃ a s', Runs eng d (M.loop body b st s) a s' ∧ Q a s' := by
+  intro m
+  induction m with
+  | zero =>
+    intro k st s b hk hI hb
+    obtain ⟨b', rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+    have hk' : k = N := by omega
+    subst hk'
+    obtain ⟨a, s', hr, hQ⟩ := hexit st s hI
+    exact ⟨a, s', runs_loopRes_inr eng _ d _ a s' hr, hQ⟩
+  | succ m ih =>
+    intro k st s b hk hI hb
+    obtain ⟨b', rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+    obtain ⟨st', s', hr, hI'⟩ := hstep k st s (by omega) hI
+    obtain ⟨a, s'', hl, hQ⟩ := ih (k + 1) st' s' b' (by omega) hI' (by omega)
+    exact ⟨a, s'', runs_loopRes_inl eng _ d _ st' s' hr a s'' hl, hQ⟩
+
 end Nested
