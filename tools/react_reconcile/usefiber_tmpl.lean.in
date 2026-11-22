@@ -1,0 +1,68 @@
+import JSProofs.ReactCreateWIP
+import JSProofs.CCRGen
+
+/-!
+# The child reconciler's `useFiber` (zippy docs/react-proofs.md)
+
+`useFiber(fiber, pendingProps)`: `createWorkInProgress` (`ReactCreateWIP.reuse_spec`: the alternate reused), then
+its `index` 0 and `sibling` null.
+-/
+
+open ES ES.M HostRuns Logic
+open Std (HashMap)
+
+namespace ReactUseFiber
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+theorem simpleU (d : FuncData) (hc : d.code = CCRGen.useFiber_func) : FDI.Simple d := by
+  constructor <;> rw [hc] <;> try rfl
+  simp [CCRGen.useFiber_func, Func.params, Func.info]
+
+set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 2000000 in
+set_option maxRecDepth 20000 in
+/-- **`useFiber(H, pp)`** when `H` has its alternate `X`: `X`, reset and copied from `H`, at index 0, no sibling. -/
+theorem spec @@PREM@@ :
+    WP eng answer (n + 1) h (callImpl eng (.obj fU) tU #[.obj H, pp]) s fun v w h' =>@@POST@@ := by
+  apply wp_callGen CCRGen.useFiber_eq (by decide) hU hUk (by omega) hUcls hUmode
+    (by rw [hUcode]; rfl) (by rw [hUcode]; rfl) (simpleU dU hUcode) (by rw [hUcode]; rfl) (by rw [hUcode]; rfl)
+  have hpn : dU.code.info.fdi.paramNames = #[JSStr.ofString "fiber", JSStr.ofString "pendingProps"] := by
+    rw [hUcode]; rfl
+  have hv : dU.code.info.fdi.varNames = #[] := by rw [hUcode]; rfl
+  have hl : FDI.lexDecls dU = #[] := by simp [FDI.lexDecls, hUcode, CCRGen.useFiber_func, Func.info]
+  have ha : dU.code.isAsync = false := by rw [hUcode]; rfl
+  have hne : s.envs.size ≠ dU.env := Nat.ne_of_gt hE
+  have hE1 : dU.env < s.envs.size + 1 := Nat.lt_succ_of_lt hE
+  have hneG : s.envs.size ≠ g := Nat.ne_of_gt hG
+  have hG1 : g < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  clear hUcode
+  simp only [CCRGen.useFiber]
+  js [hpn, hv, hl, ha, hE, hE1, hne, Ne.symm hne, hEe, hEn, hG, hG1, hneG, Ne.symm hneG, hGe, hGC, hGCv, hlt, hk,
+    FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hlt, hk], ?_⟩
+  refine wp_mono (ReactCreateWIP.reuse_spec
+      @@ARGS@@) ?post
+  intro v w h1 ⟨hv, hF, hfu, hh, hpp, hty, hfl, hsf, hdel, hcl, hln, hch, hmp, hms, huq, hdep, hsib, hidx, href, hrc⟩
+  subst v h1
+  have hX1 : X < w.heap.size := heap_frame hF (by js_norm [hX])
+  have hXw : (w.objEntry X).kind.isPlain = true := by rw [kind_frame hF (by js_norm [hX])]; js_norm [hXk]
+  have hEw : s.envs.size < w.envs.size := envs_frame hF (by js_norm)
+  have hEwe : w.envEntry s.envs.size = (bodyState s fU dU tU #[.obj H, pp]).envEntry s.envs.size :=
+    envEntry_frame hF (by js_norm) (by simp [ReactCreateWIP.fp])
+  have hfw : 15 ≤ w.fuel := by simp only [js_simp] at hfu; omega
+  js [hpn, hv, hl, ha, hEw, hEwe, hX1, hXw, hsib, hidx, hfw, FDI.fdiCtx, Sem.inner]
+  refine ⟨?_, by simp only [js_simp] at hfu; omega⟩
+  have hFs : Frame (ReactCreateWIP.fp X) s w := frame_mono (frame_trans (frame_bodyState (frame_refl ({} : Footprint) s)
+    fU dU tU #[.obj H, pp]) hF) (fun p hp => by simpa [Footprint.union] using hp)
+    (fun p hp => by simpa [Footprint.union] using hp) (fun _ => rfl)
+  clear hF
+  refine frame_restore ?_ s
+  simp only [ReactCreateWIP.fp] at hFs ⊢
+  frame_go' [hFs, hX, hX1]
+
+end
+
+end ReactUseFiber
