@@ -1,4 +1,5 @@
 import JSProofs.Switch
+import JSProofs.Rules4
 
 /-!
 # The `js` tactic's step, by the computation's head symbol (zippy docs/react-proofs.md)
@@ -77,7 +78,11 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
   | ``ES.Sem.call =>
     if sub 0 == some ``ES.Sem.memberRef then return some (← `(tactic| apply wp_callMemberC))
     return some (← `(tactic| (refine wp_callIdentC ?s1 ?_; (case s1 => js_side))))
-  | ``ES.Sem.update => return some (← `(tactic| (refine wp_postIncIdentC ?s1 ?_; (case s1 => js_side))))
+  | ``ES.Sem.update =>
+    if xa[0]?.any (·.isConstOf ``Bool.false) then
+      return some (← `(tactic| (refine wp_postDecIdentC ?s1 ?_; (case s1 => js_side))))
+    return some (← `(tactic| (refine wp_postIncIdentC ?s1 ?_; (case s1 => js_side))))
+  | ``ES.Sem.declPat => return some (← `(tactic| apply wp_declPat))
   | ``ES.Sem.assign =>
     match sub 0 with
     | some ``ES.Sem.identRef => return some (← `(tactic| (refine wp_assignIdentC ?s1 ?_; (case s1 => js_side))))
@@ -96,6 +101,7 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
     if op.any (·.isConstOf ``ES.BinOp.seq) then return some (← `(tactic| apply wp_seq))
     if op.any (·.isConstOf ``ES.BinOp.sne) then return some (← `(tactic| apply wp_sne))
     if op.any (·.isConstOf ``ES.BinOp.lt) then return some (← `(tactic| apply wp_ltNum))
+    if op.any (·.isConstOf ``ES.BinOp.gt) then return some (← `(tactic| apply wp_gtNum))
     if op.any (·.isConstOf ``ES.BinOp.add) then return some (← `(tactic| apply wp_addNum))
     return some (← `(tactic| (refine wp_numOp ?s1 ?_; (case s1 => decide))))
   | ``ite => return some (← `(tactic| apply wp_ite))

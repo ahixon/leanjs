@@ -1,4 +1,5 @@
 import JSProofs.ArrayIter
+import JSProofs.Rules4
 
 /-!
 # `const [a, b] = arr` (zippy docs/react-proofs.md)
@@ -238,12 +239,6 @@ theorem elem_spec {n k : Nat} {h : σ} {ctx : Ctx} {env : EnvId} {x : JSStr} {It
   case hE2 => show env < (nextState { s with fuel := s.fuel - 1 } It A i v).envs.size; rw [nextState_envs]; exact hE
   case hd2 => show Scope.declLike? ((nextState { s with fuel := s.fuel - 1 } It A i v).envEntry env) = _; simp only [State.envEntry, nextState_envs]; exact hd
   exact wp_of_eq rfl ⟨rfl, rfl, rfl⟩
-
-/-- **A destructuring declarator** (`const [a, b] = e`): the initializer, then the pattern bound to its value. -/
-theorem wp_declPat {n : Nat} {h : σ} {rhs : Sem.CExpr} {bind : Ctx → Value → M Unit} {ctx : Ctx} {s : State}
-    {Q : Unit → State → σ → Prop}
-    (hw : WP eng answer n h (rhs ctx) s fun v w h1 => WP eng answer n h1 (bind ctx v) w Q) :
-    WP eng answer n h (Sem.declPat rhs bind ctx) s Q := wp_bind hw
 
 set_option maxRecDepth 20000 in
 /-- **`const [a, b] = arr`** for an array `arr` with two elements, the realm's iterator built-ins untouched: `a` and
