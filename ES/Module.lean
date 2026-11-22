@@ -185,6 +185,18 @@ def resolveSpecifier (referrer : String) (spec : String) : String :=
     "/".intercalate out
   else spec
 
+/-- HostLoadImportedModule's resolution and loading by an embedder: when the host has set `hostData["hostModules"]`,
+a host request `module` with the referrer's path and the specifier, which the host answers with the module's path
+(its source added to `moduleSources`) or a thrown exception (a resolution or fetch failure); otherwise
+`resolveSpecifier` against the sources given in advance.
+spec: https://tc39.es/ecma262/#sec-HostLoadImportedModule -/
+def hostResolve (referrer spec : String) : M String := do
+  if !(← readS (·.hostData.contains "hostModules")) then return resolveSpecifier referrer spec
+  match ← M.request (.host "module" .undefined #[.str (JSStr.ofString referrer), .str (JSStr.ofString spec)]) with
+  | .normal (.str p) | .ret (.str p) => pure p.toString
+  | .throw e => M.throwV e
+  | _ => throwType s!"Cannot find module '{spec}'"
+
 def getModule (m : Nat) : M ModuleRec := do
   let r ← readS (·.modules[m]?)
   match r with
@@ -238,7 +250,7 @@ def loadGraph : Nat → Nat → M Unit
     let mr ← getModule m
     if mr.status != "new" then return
     let reqs ← M.mapArr mr.requested fun (spec, _) => do
-      let i ← loadModule (resolveSpecifier mr.path spec.toString)
+      let i ← loadModule (← hostResolve mr.path spec.toString)
       pure (spec, i)
     modifyModule m fun r => { r with requested := reqs, status := "unlinked" }
     M.forArr reqs fun (_, i) => loadGraph n i
@@ -654,7 +666,7 @@ def dynamicImport (specifier options : Value) : M Value := do
     | .ok _ => return ← reject (← makeError .typeError "The 'with' option must be an object")
   -- (HostLoadImportedModule, Link, Evaluate)
   let r ← M.attempt do
-    let m ← loadModule (resolveSpecifier referrer spec.toString)
+    let m ← loadModule (← hostResolve referrer spec.toString)
     loadGraph moduleDepth m
     linkModule m
     let p ← evaluateModule m
@@ -681,14 +693,31 @@ def importMeta : M Value := do
   let mr ← getModule m
   if let some o := mr.importMeta then return .obj o
   let o ← ordinaryObjectCreate .null
+  -- (HostGetImportMetaProperties: an embedder's modules have a `url` and a `resolve` function, HTML's)
+  -- spec: https://html.spec.whatwg.org/multipage/webappapis.html#hostgetimportmetaproperties
+  if ← readS (·.hostData.contains "hostModules") then
+    let url := Value.str (JSStr.ofString mr.path)
+    setOwn o (.str "url") (.data url true true true)
+    let f ← makeBuiltinFn "%ImportMetaResolve%" 1 (JSStr.ofString "resolve") #[url]
+    setOwn o (.str "resolve") (.data (.obj f) true true true)
   modifyModule m fun r => { r with importMeta := some o }
   pure (.obj o)
+
+/-- `import.meta.resolve(specifier)`: the embedder's resolution of the specifier against the module's URL (a host
+request `resolve`, answered with the URL or a thrown TypeError).
+spec: https://html.spec.whatwg.org/multipage/webappapis.html#hostgetimportmetaproperties (step 4) -/
+def importMetaResolveFn : BuiltinFn := fun self _ args _ => do
+  let base ← match (← builtinSlots self)[0]? with | some v => pure v | none => pure .undefined
+  let spec ← toStr (arg args 0)
+  match ← M.request (.host "resolve" .undefined #[base, .str spec]) with
+  | .normal v | .ret v => pure v
+  | .throw e => M.throwV e
 
 def dynamicImportFn : BuiltinFn := fun _ _ args _ => dynamicImport (arg args 0) (arg args 1)
 def importMetaFn : BuiltinFn := fun _ _ _ _ => importMeta
 
 def moduleBuiltins : Array BuiltinDef := #[
-  ⟨"%DynamicImport%", dynamicImportFn⟩, ⟨"%ImportMeta%", importMetaFn⟩,
+  ⟨"%DynamicImport%", dynamicImportFn⟩, ⟨"%ImportMeta%", importMetaFn⟩, ⟨"%ImportMetaResolve%", importMetaResolveFn⟩,
   ⟨"AsyncModuleFulfilled", asyncModuleFulfilledFn⟩, ⟨"AsyncModuleRejected", asyncModuleRejectedFn⟩,
   ⟨"DynamicImportFulfilled", dynamicImportFulfilled⟩]
 
