@@ -1,0 +1,99 @@
+import JSProofs.ReactReconcileImpl
+
+/-!
+# `reconcileChildFibers` for the counter's button (zippy docs/react-proofs.md)
+
+The child reconciler's returned function (`reconcileChildFibers = createChildReconciler(true)`): the thenable
+counter reset, `reconcileChildFibersImpl` (`ReactReconcileImpl.click_spec`), the thenable state cleared; inside a
+`try` whose handler does not run.
+-/
+
+open ES ES.M HostRuns Logic ReactReconcileImpl
+open Std (HashMap)
+
+namespace ReactReconcileFibers
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+theorem wp_gen_state {n : Nat} {h : σ} {α : Type} {x : M α} {s : State} {Q : α → State → σ → Prop}
+    (hw : ∀ St, St = s → WP eng answer n h x St Q) : WP eng answer n h x s Q := hw s rfl
+
+/-- What it writes: reconcileChildFibersImpl's and the module's thenable variables. -/
+def fpR (g : EnvId) (X : ObjId) : Footprint :=
+  ⟨[(g, "thenableIndexCounter$1"), (g, "thenableState$1")], (fpI X).props, false⟩
+
+theorem simpleR (d : FuncData) (hc : d.code = CCRGen.fn34_func) : FDI.Simple d := by
+  constructor <;> rw [hc] <;> try rfl
+  simp [CCRGen.fn34_func, Func.params, Func.info]
+
+set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 20000 in
+/-- **`reconcileChildFibers(returnFiber, current, element, lanes)`** for the button. -/
+theorem click_spec @@PREM@@ :
+    WP eng answer (n + 3) h (callImpl eng (.obj fR) tR #[.obj RF, .obj H, .obj El, ln]) s fun v w h' =>@@POST@@ := by
+  apply wp_callGen CCRGen.fn34_eq (by decide) hR hRk (by omega) hRcls hRmode
+    (by rw [hRcode]; rfl) (by rw [hRcode]; rfl) (simpleR dR hRcode) (by rw [hRcode]; rfl) (by rw [hRcode]; rfl)
+  have hpn : dR.code.info.fdi.paramNames = #[JSStr.ofString "returnFiber", JSStr.ofString "currentFirstChild",
+      JSStr.ofString "newChild", JSStr.ofString "lanes"] := by rw [hRcode]; rfl
+  have hv : dR.code.info.fdi.varNames = #[JSStr.ofString "firstChildFiber", JSStr.ofString "fiber"] := by rw [hRcode]; rfl
+  have hl : FDI.lexDecls dR = #[] := by simp [FDI.lexDecls, hRcode, CCRGen.fn34_func, Func.info]
+  have ha : dR.code.isAsync = false := by rw [hRcode]; rfl
+  have hne : s.envs.size ≠ dU.env := Nat.ne_of_gt hE
+  have hE1 : dU.env < s.envs.size + 1 := Nat.lt_succ_of_lt hE
+  have hneG : s.envs.size ≠ g := Nat.ne_of_gt hG
+  have hG1 : g < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  clear hRcode
+  simp only [CCRGen.fn34]
+  js [hpn, hv, hl, ha, hRenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRRI, hRRIv, hRnT,
+    hRnS, hGT, hGTm, hGTi, hGS, hGSm, hGSi, hI, hIk, hgU, Ne.symm hgU, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hI, hIk], ?_⟩
+  refine wp_gen_state fun St hSt => ?_
+  have hStO : ∀ o, St.objEntry o = s.objEntry o := by intro o; rw [hSt]; rfl
+  have hStz : St.heap.size = s.heap.size := by rw [hSt]; rfl
+  have hStE : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
+  have hStF : St.fuel = s.fuel - 1 := by rw [hSt]; js_norm
+  have hStU : St.envEntry dU.env = s.envEntry dU.env := by
+    rw [hSt]; js_norm [hE, hne, Ne.symm hne, hgU, Ne.symm hgU, hE1]
+  have hStg : Scope.declLike? (St.envEntry g) = some (bG.modify (JSStr.ofString "thenableIndexCounter$1")
+      (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) }), none) := by
+    rw [hSt]; js_norm [hG, hG1, hGe, hneG, Ne.symm hneG]
+  have hStK : St.envEntry s.envs.size = (bodyState s fR dR tR #[.obj RF, .obj H, .obj El, ln]).envEntry s.envs.size := by
+    rw [hSt]; js_norm [hneG, Ne.symm hneG]
+  have hF0 : Frame (fpR g X) s St := by
+    rw [hSt]; simp only [fpR, fpI, ReactCreateWIP.fp]; frame_go' [hG, hG1, hGe, hneG, Ne.symm hneG]
+  clear hSt
+  refine wp_mono (ReactReconcileImpl.click_spec (bR := bR) (g := g) (tI := .undefined) (bG := bG.modify
+      (JSStr.ofString "thenableIndexCounter$1") (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) }))
+      @@ARGS@@) ?postI
+  intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, hr1, hret1⟩
+  subst v1 h1
+  have hw1K : w1.envEntry s.envs.size = St.envEntry s.envs.size :=
+    envEntry_frame hF1 (by rw [hStE]; exact Nat.lt_succ_self _) (by simp [fpI, ReactCreateWIP.fp])
+  have hw1g : w1.envEntry g = St.envEntry g :=
+    envEntry_frame hF1 (by rw [hStE]; exact hG1) (by simp [fpI, ReactCreateWIP.fp])
+  have hw1E : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (by rw [hStE]; exact Nat.lt_succ_self _) hF1.envs_le
+  have hw1f : 10 ≤ w1.fuel := by rw [hStF] at hfu1; omega
+  rw [hStK] at hw1K
+  have hw1U : w1.envEntry dU.env = s.envEntry dU.env :=
+    (envEntry_frame hF1 (by rw [hStE]; exact hE1) (by simp [fpI, ReactCreateWIP.fp])).trans hStU
+  have hUw1 : dU.env < w1.envs.size := Nat.lt_of_lt_of_le (Nat.lt_trans hE (by rw [hStE]; exact Nat.lt_succ_self _)) hF1.envs_le
+  have hStgS := hStg
+  rw [← hw1g] at hStg
+  js [hpn, hv, hl, ha, hw1K, hw1E, hw1f, hStg, Nat.lt_of_lt_of_le (Nat.lt_trans hG (by rw [hStE]; exact Nat.lt_succ_self _)) hF1.envs_le,
+    hGS, hGSm, hneG, Ne.symm hneG, hw1U, hUw1, hEe, hRnS, hStgS, hw1g, hgU, Ne.symm hgU, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner]
+  refine ⟨?_, by rw [hStF] at hfu1; omega, rfl⟩
+  have hFw1 : Frame (fpR g X) s w1 := frame_extend hF0 hF1 (by simp [fpI, fpR, ReactCreateWIP.fp])
+    (by simp [fpI, fpR, ReactCreateWIP.fp]) (fun _ => rfl)
+  have hGw1 : g < w1.envs.size := Nat.lt_of_lt_of_le (Nat.lt_trans hG (by rw [hStE]; exact Nat.lt_succ_self _)) hF1.envs_le
+  clear hF0 hF1
+  refine frame_restore ?_ s
+  rw [← hw1g]
+  simp only [fpR, fpI, ReactCreateWIP.fp] at hFw1 ⊢
+  frame_go' [hFw1, hG, hGw1, hw1E, hStg, hneG, Ne.symm hneG]
+
+end
+
+end ReactReconcileFibers

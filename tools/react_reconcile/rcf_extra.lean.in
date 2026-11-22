@@ -1,0 +1,11 @@
+    {fR : ObjId} {dR : FuncData} {tR : Value} {bdRI bdT bdTS : Binding}
+    -- (the reconciler's returned function, in its closure record; the module's thenable variables)
+    (hR : fR < s.heap.size) (hRk : (s.objEntry fR).kind = .func dR) (hRcode : dR.code = CCRGen.fn34_func)
+    (hRcls : dR.isClassCtor = false) (hRmode : dR.thisMode = .strict) (hRenv : dR.env = dU.env)
+    (hRRI : bR[JSStr.ofString "reconcileChildFibersImpl"]? = some bdRI) (hRRIv : bdRI.value = some (.obj fI))
+    (hRnT : bR[JSStr.ofString "thenableIndexCounter$1"]? = none) (hRnS : bR[JSStr.ofString "thenableState$1"]? = none)
+    (hGT : bG[JSStr.ofString "thenableIndexCounter$1"]? = some bdT) (hGTm : bdT.mutable = true)
+    (hGTi : bdT.value.isSome = true)
+    (hGS : bG[JSStr.ofString "thenableState$1"]? = some bdTS) (hGSm : bdTS.mutable = true)
+    (hGSi : bdTS.value.isSome = true)
+    (hgU : g ≠ dU.env)
