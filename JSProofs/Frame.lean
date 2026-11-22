@@ -345,6 +345,42 @@ theorem extensible_frame {fp : Footprint} {s w : State} (hF : Frame fp s w) {o :
 theorem heap_frame {fp : Footprint} {s w : State} (hF : Frame fp s w) {o : ObjId} (ho : o < s.heap.size) :
     o < w.heap.size := Nat.lt_of_lt_of_le ho hF.heap_le
 
+theorem envs_frame {fp : Footprint} {s w : State} (hF : Frame fp s w) {e : EnvId} (he : e < s.envs.size) :
+    e < w.envs.size := Nat.lt_of_lt_of_le he hF.envs_le
+
+/-- Through an empty footprint every existing record is exactly as it was. -/
+theorem envEntry_frame0 {s w : State} (hF : Frame {} s w) {e : EnvId} (he : e < s.envs.size) :
+    w.envEntry e = s.envEntry e := hF.env_eq e he fun _ h => by simp at h
+
+/-- Through an empty footprint every existing object is exactly as it was. -/
+theorem objEntry_frame0 {s w : State} (hF : Frame {} s w) {o : ObjId} (ho : o < s.heap.size) :
+    w.objEntry o = s.objEntry o := hF.obj_eq o ho fun _ h => by simp at h
+
+/-- **Extending a frame through a callee's**: its footprint within the target's. -/
+theorem frame_extend {fp fp2 : Footprint} {s u w : State} (h1 : Frame fp s u) (h2 : Frame fp2 u w)
+    (hb : fp2.binds.all (fun p => fp.binds.contains p) = true)
+    (hp : fp2.props.all (fun p => fp.props.contains p) = true) : Frame fp s w :=
+  frame_mono (frame_trans h1 h2)
+    (fun q hq => by
+      simp only [Footprint.union, List.mem_append] at hq
+      rcases hq with hq | hq
+      · exact hq
+      · exact List.contains_iff_mem.mp (List.all_eq_true.mp hb q hq))
+    (fun q hq => by
+      simp only [Footprint.union, List.mem_append] at hq
+      rcases hq with hq | hq
+      · exact hq
+      · exact List.contains_iff_mem.mp (List.all_eq_true.mp hp q hq))
+
+/-- A declarative or function record after a frame: still one, its lookups outside the footprint as before. -/
+theorem declLike_frame {fp : Footprint} {s w : State} (hF : Frame fp s w) {e : EnvId} (he : e < s.envs.size)
+    {bs : HashMap JSStr Binding} {o : Option EnvId} (hd : Scope.declLike? (s.envEntry e) = some (bs, o)) :
+    ∃ bw, Scope.declLike? (w.envEntry e) = some (bw, o) ∧ ∀ x, (e, x) ∉ fp.binds → bw[x]? = bs[x]? := by
+  have h := hF.env_agree e he
+  unfold EnvAgree at h
+  rw [hd] at h
+  exact h
+
 /-- An existing record with no binding in the footprint is exactly as it was. -/
 theorem envEntry_frame {fp : Footprint} {s w : State} (hF : Frame fp s w) {e : EnvId} (he : e < s.envs.size)
     (hn : fp.binds.all (fun p => p.1 != e) = true) : w.envEntry e = s.envEntry e :=

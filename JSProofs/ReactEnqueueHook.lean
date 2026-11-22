@@ -32,7 +32,7 @@ theorem call_spec {n : Nat} {h : σ} {fo fEU fGR : ObjId} {d dEU dGR : FuncData}
     {s : State} {bG : HashMap JSStr Binding} {oG : Option EnvId}
     {bdA bdI bdL bdN bdEU bdGR : Binding} {A F R Root : ObjId} {L c p fl : F64}
     {lw le lc fe fc aw ae ac sw se sc rw re rc tw te tc nw ne nc : Bool} {v0 v1 v2 v3 : Value}
-    {e0 e1 e2 e3 c0 c1 c2 c3 : Bool}
+    {e0 e1 e2 e3 c0 c1 c2 c3 xe xc : Bool} {Alt : ObjId} {al : F64}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 60 ≤ s.fuel)
     (hcode : d.code = ECHUGen.enqueueConcurrentHookUpdate_func) (hcls : d.isClassCtor = false)
     (hmode : d.thisMode = .strict)
@@ -57,23 +57,26 @@ theorem call_spec {n : Nat} {h : σ} {fo fEU fGR : ObjId} {d dEU dGR : FuncData}
     (hL4 : 4 ≤ (Conv.toNat? L).getD 0)
     (hF : F < s.heap.size) (hFk : (s.objEntry F).kind.isPlain = true) (hFA : F ≠ A)
     (hFl : (s.objEntry F).props.get? (.str "lanes") = some (.data (.num fl) true fe fc))
-    (hFa : (s.objEntry F).props.get? (.str "alternate") = some (.data .null aw ae ac))
+    (hFa : (s.objEntry F).props.get? (.str "alternate") = some (.data (.obj Alt) aw ae ac))
+    (hX : Alt < s.heap.size) (hXk : (s.objEntry Alt).kind.isPlain = true) (hXA : Alt ≠ A) (hXF : Alt ≠ F)
+    (hXl : (s.objEntry Alt).props.get? (.str "lanes") = some (.data (.num al) true xe xc))
     -- (getRootForUpdatedFiber, its module facts: F's parent R is the host root fiber)
     (hGRo : fGR < s.heap.size) (hGRk : (s.objEntry fGR).kind = .func dGR)
     (hGRcode : dGR.code = GRFGen.getRootForUpdatedFiber_func) (hGRcls : dGR.isClassCtor = false)
-    (hGRmode : dGR.thisMode = .strict) (hGRenv : dGR.env = d.env) (hGRA : fGR ≠ A) (hGRF : fGR ≠ F)
+    (hGRmode : dGR.thisMode = .strict) (hGRenv : dGR.env = d.env) (hGRA : fGR ≠ A) (hGRF : fGR ≠ F) (hGRX : fGR ≠ Alt)
     (hGN : bG[JSStr.ofString "nestedUpdateCount"]? = some bdN)
     (hGNv : bdN.value = some (.num (F64.fin false 0 (-1074))))
     (hFr : (s.objEntry F).props.get? (.str "return") = some (.data (.obj R) sw se sc))
-    (hR : R < s.heap.size) (hRk : (s.objEntry R).kind.isPlain = true) (hRA : R ≠ A) (hRF : R ≠ F)
+    (hR : R < s.heap.size) (hRk : (s.objEntry R).kind.isPlain = true) (hRA : R ≠ A) (hRF : R ≠ F) (hRX : R ≠ Alt)
     (hRr : (s.objEntry R).props.get? (.str "return") = some (.data .null rw re rc))
     (hRt : (s.objEntry R).props.get? (.str "tag") = some (.data (.num (F64.fin false 6755399441055744 (-51))) tw te tc))
     (hRs : (s.objEntry R).props.get? (.str "stateNode") = some (.data (.obj Root) nw ne nc)) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj F, queue, update, .num p]) s fun v w _ =>
       v = .obj Root ∧
       Frame ⟨[(d.env, "concurrentQueuesIndex"), (d.env, "concurrentlyUpdatedLanes")],
-        [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes")]⟩ s w ∧
-      (w.objEntry F).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr fl p)) true fe fc) := by
+        [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes"), (Alt, .str "lanes")]⟩ s w ∧
+      (w.objEntry F).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr fl p)) true fe fc) ∧
+      s.fuel ≤ w.fuel + 10 := by
   apply wp_callGen ECHUGen.enqueueConcurrentHookUpdate_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "fiber", JSStr.ofString "queue",
@@ -94,8 +97,8 @@ theorem call_spec {n : Nat} {h : σ} {fo fEU fGR : ObjId} {d dEU dGR : FuncData}
     hEUcls hEUmode (by simpa [hEUenv] using hG1) hGe0 hGA hGAv hGI hGIv hGIm hGL hGLv hGLm (by simpa using hA)
     (by simpa using hAk) (by simpa using hA0) (by simpa using hA1) (by simpa using hA2) (by simpa using hA3)
     (by simpa using hAL) hL4 (by simpa using hF) (by simpa using hFk) hFA (by simpa using hFl)
-    (by simpa using hFa)) ?_
-  intro v w1 h1 ⟨hv, hF1, hfu, h0, h1', h2, h3, hlanes⟩
+    (by simpa using hFa) (by simpa using hX) (by simpa using hXk) hXA hXF (by simpa using hXl)) ?_
+  intro v w1 h1 ⟨hv, hF1, hfu, h0, h1', h2, h3, hlanes, hxlanes⟩
   subst hv
   rw [hEUenv] at hF1
   -- (what the call left: the caller's record exactly; the module's lookups outside its footprint; objects)
@@ -110,11 +113,11 @@ theorem call_spec {n : Nat} {h : σ} {fo fEU fGR : ObjId} {d dEU dGR : FuncData}
   have hGw1 : d.env < w1.envs.size := Nat.lt_of_lt_of_le (by simp; omega) hF1.envs_le
   have hEw1 : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (by simp) hF1.envs_le
   have hGR1 : w1.objEntry fGR = s.objEntry fGR := by
-    rw [objEntry_frame hF1 (by simpa using hGRo) (by simp [hGRA, hGRF, Ne.symm hGRA, Ne.symm hGRF]), bodyState_objEntry]
+    rw [objEntry_frame hF1 (by simpa using hGRo) (by simp [hGRA, hGRF, hGRX, Ne.symm hGRA, Ne.symm hGRF, Ne.symm hGRX]), bodyState_objEntry]
   have hR1 : w1.objEntry R = s.objEntry R := by
-    rw [objEntry_frame hF1 (by simpa using hR) (by simp [hRA, hRF, Ne.symm hRA, Ne.symm hRF]), bodyState_objEntry]
+    rw [objEntry_frame hF1 (by simpa using hR) (by simp [hRA, hRF, hRX, Ne.symm hRA, Ne.symm hRF, Ne.symm hRX]), bodyState_objEntry]
   have hFr1 : (w1.objEntry F).props.get? (.str "return") = some (.data (.obj R) sw se sc) := by
-    rw [props_frame hF1 (by simpa using hF) (by simp [hFA, Ne.symm hFA]), bodyState_objEntry, hFr]
+    rw [props_frame hF1 (by simpa using hF) (by simp [hFA, Ne.symm hFA, hXF, Ne.symm hXF]), bodyState_objEntry, hFr]
   have hFk1 : (w1.objEntry F).kind.isPlain = true := by
     rw [kind_frame hF1 (by simpa using hF), bodyState_objEntry]; exact hFk
   have hF1h : F < w1.heap.size := heap_frame hF1 (by simpa using hF)
@@ -131,13 +134,16 @@ theorem call_spec {n : Nat} {h : σ} {fo fEU fGR : ObjId} {d dEU dGR : FuncData}
   subst hv
   -- (the result: the root; both frames composed; `fiber.lanes` as the first call left it)
   have hFr : Frame ⟨[(d.env, "concurrentQueuesIndex"), (d.env, "concurrentlyUpdatedLanes")],
-      [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes")]⟩ s w2 := by
+      [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes"), (Alt, .str "lanes")]⟩ s w2 := by
     simpa [Footprint.union] using
       frame_trans (frame_trans (frame_bodyState (frame_refl {} s) fo d t #[.obj F, queue, update, .num p]) hF1) hF2
   have hl2 : (w2.objEntry F).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr fl p)) true fe fc) := by
     rw [props_frame hF2 hF1h (by simp)]; exact hlanes
   simp only [StmtsWP_cons, StmtsWP_nil] at *
-  exact ⟨trivial, frame_restore hFr s, hl2⟩
+  refine ⟨trivial, frame_restore hFr s, hl2, ?_⟩
+  show s.fuel ≤ w2.fuel + 10
+  rw [bodyState_fuel] at hfu
+  omega
 
 end
 

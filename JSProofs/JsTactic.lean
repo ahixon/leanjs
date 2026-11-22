@@ -97,6 +97,14 @@ def frameRuleFor (t : Lean.Expr)
   let s := args[args.size - 2]!
   let w := (args[args.size - 1]!).consumeMData
   if w == s then return some (← `(tactic| exact frame_refl _ _))
+  if w.isFVar then
+    -- (a callee's final state: extend through the frame hypothesis about it)
+    for decl in ← getLCtx do
+      let ty ← instantiateMVars decl.type
+      if ty.isAppOf ``Logic.Frame && (ty.getAppArgs[ty.getAppNumArgs - 1]!) == w then
+        let h := mkIdent decl.userName
+        return some (← `(tactic| (refine frame_extend ?_ $h ?s1 ?s2; (case s1 => simp [$facts,*]); (case s2 => simp [$facts,*]))))
+    return none
   let some hw := w.getAppFn.constName? | return none
   match hw with
   | ``ES.State.restore => return some (← `(tactic| apply frame_restore))
@@ -122,8 +130,10 @@ elab "frame_go'" "[" facts:Lean.Parser.Tactic.simpArg,* "]" : tactic => do
     | k + 1 => do
       let gs ← getGoals
       if gs.isEmpty then return
-      let some tac ← frameRuleFor (← getMainTarget) ⟨facts.elemsAndSeps⟩ | throwError "frame_go': no rule for this goal"
-      evalTactic tac
+      withMainContext do
+        let some tac ← frameRuleFor (← getMainTarget) ⟨facts.elemsAndSeps⟩ |
+          throwError m!"frame_go': no rule for {← getMainTarget}"
+        evalTactic tac
       loop k
   loop 1000
 
