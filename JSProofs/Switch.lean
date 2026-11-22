@@ -360,3 +360,37 @@ theorem wp_callMemberC {n : Nat} {h : σ} {obj : Sem.CExpr} {k : JSStr} {as : Ar
 end
 
 end Logic
+
+namespace Logic
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+/-- **`l: body`**: the body (seeing the label if it is a loop, `switch` or labelled statement); a `break l` out of
+it completes normally. -/
+theorem wp_labeled {n : Nat} {h : σ} {l : JSStr} {b : Bool} {body : Sem.CStmt} {ctx : Ctx} {s : State}
+    {Q : Compl → State → σ → Prop}
+    (hw : WP eng answer n h (body { ctx with labels := if b then ctx.labels.push l else #[] }) s fun r w h1 =>
+      Q (match r with
+        | .brk (some l') v => if l' == l then .normal (some (v.getD .undefined)) else r
+        | r => r) w h1) :
+    WP eng answer n h (Sem.labeled l b body ctx) s Q := by
+  rw [wp_iff_wpr]
+  simp only [Sem.labeled, M.bind_eq, M.bind_apply]
+  apply wpr_bind
+  refine wp_mono hw fun r w h1 q => ?_
+  cases r with
+  | brk l' v =>
+    cases l' with
+    | none => exact wp_of_eq rfl q
+    | some l' =>
+      cases hl : (l' == l) <;> simp only [hl] at q ⊢ <;> exact wp_of_eq rfl q
+  | _ => exact wp_of_eq rfl q
+
+/-- **`break l`**. -/
+theorem wp_brk {n : Nat} {h : σ} {l : Option JSStr} {ctx : Ctx} {s : State} {Q : Compl → State → σ → Prop}
+    (hq : Q (.brk l none) s h) : WP eng answer n h (Sem.brk l ctx) s Q := wp_of_eq rfl hq
+
+end
+
+end Logic

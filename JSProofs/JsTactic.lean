@@ -59,6 +59,8 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
   | ``ES.Sem.cond => return some (← `(tactic| apply wp_cond))
   | ``ES.Sem.forS => return some (← `(tactic| apply wp_forVar))
   | ``ES.Sem.doWhile => return some (← `(tactic| apply wp_doWhile))
+  | ``ES.Sem.labeled => return some (← `(tactic| apply wp_labeled))
+  | ``ES.Sem.brk => return some (← `(tactic| apply wp_brk))
   | ``ES.Sem.switch => return some (← `(tactic| (refine wp_switchC ?s1 ?_; (case s1 => rfl))))
   | ``ES.Sem.unary =>
     let op := xa[0]?
