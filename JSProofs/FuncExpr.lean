@@ -347,3 +347,11 @@ open Lean Meta Simp in
 /-- A closed `==` on Numbers' representations, evaluated. -/
 simproc [js_simp] f64BeqEval (@BEq.beq F64 _ _ _) := reduceClosed
 end Logic
+
+namespace Logic
+/-- A footprint's names are among the same names with one more. -/
+@[simp] theorem all_contains_cons_self {α : Type} [BEq α] [LawfulBEq α] (x : α) (l : List α) :
+    l.all (fun p => (x :: l).contains p) = true := by
+  simp [List.all_eq_true]
+  intro a h; exact Or.inr h
+end Logic

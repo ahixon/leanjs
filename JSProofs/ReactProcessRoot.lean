@@ -45,7 +45,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     {bG : HashMap JSStr Binding} {oG : Option EnvId}
     {bdM bdD bdC bdF bdN bdT bdP bdL : Binding} {R fN fT fL : ObjId} {dN dT dL : FuncData} {L : F64}
     {rw re rc : Bool} {fpT fpF : Footprint} {kF : Nat} {P : State → σ → Prop} {Q : State → σ → Prop}
-    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : kF + 200 ≤ s.fuel)
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : kF + 300 ≤ s.fuel)
     (hcode : d.code = PRSGen.processRootScheduleInMicrotask_func) (hcls : d.isClassCtor = false)
     (hmode : d.thisMode = .strict)
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
@@ -71,12 +71,12 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
       (.num (numberBinOp .bitAnd L (F64.fin false 6755399441055744 (-51)))) = false)
     -- (`now()`: reads the time, writes nothing)
     (hNow : ∀ w h1, Frame (fpA d.env) s w → s.fuel ≤ w.fuel + 10 →
-      WP eng answer n h1 (callImpl eng (.obj fN) .undefined #[]) w fun _ w' _ =>
-        Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10)
+      WP eng answer n h1 (callImpl eng (.obj fN) .undefined #[]) w fun r w' _ =>
+        (∃ tv, r = .num tv) ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10)
     -- (`scheduleTaskForRootDuringMicrotask(root, currentTime)`: the root's lanes `L`, sync)
-    (hTask : ∀ w h1 tm, Frame (fpA d.env) s w → s.fuel ≤ w.fuel + 30 →
-      WP eng answer n h1 (callImpl eng (.obj fT) .undefined #[.obj R, tm]) w fun v w' h' =>
-        v = .num L ∧ Frame fpT w w' ∧ w.fuel ≤ w'.fuel + 30 ∧ P w' h')
+    (hTask : ∀ w h1 tv, Frame (fpA d.env) s w → s.fuel ≤ w.fuel + 30 →
+      WP eng answer n h1 (callImpl eng (.obj fT) .undefined #[.obj R, .num tv]) w fun v w' h' =>
+        v = .num L ∧ Frame fpT w w' ∧ w.fuel ≤ w'.fuel + 60 ∧ P w' h')
     (hfpE : fpT.binds.all (fun q => q.1 != s.envs.size) = true)
     (hfpM : (d.env, JSStr.ofString "mightHavePendingSyncWork") ∉ fpT.binds)
     (hfpP : (d.env, JSStr.ofString "pendingEffectsStatus") ∉ fpT.binds)
@@ -89,7 +89,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
         (s.envs.size, "root")], [], false⟩ w2 w →
       (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
         (bm[JSStr.ofString "mightHavePendingSyncWork"]?.bind (·.value)) = some (.bool true)) →
-      s.fuel ≤ w.fuel + 80 →
+      s.fuel ≤ w.fuel + 120 →
       WP eng answer n h1 (callImpl eng (.obj fL) .undefined #[.num (F64.fin false 0 (-1074)), .bool false]) w
         fun _ w' h' => Frame fpF w w' ∧ w.fuel ≤ w'.fuel + kF ∧ Q (w'.restore s) h')
     (hfpFE : fpF.binds.all (fun q => q.1 != s.envs.size) = true)
@@ -118,7 +118,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   case fr => simp only [fpA]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu => js_side
   case post1 =>
-  intro tm w1 h1 ⟨hF1, hfu1⟩
+  intro tmv w1 h1 ⟨⟨tm, htm⟩, hF1, hfu1⟩
+  subst htm
   have hE1 := envEntry_frame0 hF1 (e := s.envs.size) (by simp)
   have hG1e := envEntry_frame0 hF1 (e := d.env) (by simp; omega)
   have hE1s : s.envs.size < w1.envs.size := envs_frame hF1 (by simp)

@@ -169,7 +169,7 @@ def frameRuleFor (t : Lean.Expr)
       let ty ← instantiateMVars decl.type
       if ty.isAppOf ``Logic.Frame && (ty.getAppArgs[ty.getAppNumArgs - 1]!) == w then
         let h := mkIdent decl.userName
-        return some (← `(tactic| (refine frame_extend ?_ $h ?s1 ?s2 ?s3; (case s1 => simp [$facts,*]); (case s2 => simp [$facts,*]); (case s3 => simp))))
+        return some (← `(tactic| (refine frame_extend ?_ $h ?s1 ?s2 ?s3; (case s1 => first | exact all_contains_cons_self _ _ | simp [$facts,*]); (case s2 => first | exact all_contains_cons_self _ _ | simp [$facts,*]); (case s3 => simp))))
     return none
   let some hw := w.getAppFn.constName? | return none
   match hw with

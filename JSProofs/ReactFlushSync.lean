@@ -102,8 +102,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
         fun r w' _ => r = .num (F64.fin false 0 (-1074)) ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 20) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t
         #[.num (F64.fin false 0 (-1074)), .bool false]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + kP + 200 ∧
-      ∃ w2 h2, P w2 h2 ∧ Frame (fpW s.envs.size d.env) w2 w := by
+      v = .undefined ∧ Frame ⟨(d.env, JSStr.ofString "isFlushingWork") :: fpP.binds, fpP.props, fpP.jobs⟩ s w ∧
+      s.fuel ≤ w.fuel + kP + 200 ∧ ∃ w2 h2, P w2 h2 ∧ Frame (fpW s.envs.size d.env) w2 w := by
   replace hNext1 := ReactDSSI.Hold.mk hNext1
   replace hPre := ReactDSSI.Hold.mk hPre
   replace hPerf := ReactDSSI.Hold.mk hPerf
@@ -205,7 +205,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hGI, hGIm, hR3, hRk3, hRn3, hRc3, hRt3, hG3, hGk3, envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4,
     envs_frame hF4, FDI.fdiCtx, Sem.inner]
   all_goals (try apply And.intro)
-  all_goals first | rfl | omega | (refine ⟨w3, h3, hP3, ?_⟩; simp only [fpW]; frame_go' [*, hne, Ne.symm hne, envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4, envs_frame hF4])
+  all_goals (try apply And.intro)
+  all_goals first | rfl | omega | (refine ⟨w3, h3, hP3, ?_⟩; simp only [fpW]; frame_go' [*, hne, Ne.symm hne, envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4, envs_frame hF4]) | frame_go' [*, hne, Ne.symm hne, hG1, fpA, envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4, envs_frame hF4]
 
 end
 
