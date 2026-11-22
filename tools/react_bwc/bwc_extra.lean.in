@@ -1,0 +1,21 @@
+    {fB fCS : ObjId} {dB dCS : FuncData} {tB : Value} {bdCS bdUFb : Binding} {Pp : ObjId} {f0 : F64}
+    {mpw mpe mpc ppw ppe ppc c0lw c0le c0lc c0fw c0fe c0fc tgw tge tgc tyw tye tyc : Bool}
+    -- (beginWork and checkScheduledUpdateOrContext, functions of react-dom's module)
+    (hBW : fB < s.heap.size) (hBWk : (s.objEntry fB).kind = .func dB) (hBWcode : dB.code = BWGen.beginWork_func)
+    (hBWcls : dB.isClassCtor = false) (hBWmode : dB.thisMode = .strict) (hBWenv : dB.env = d.env)
+    (hGCS : bG[JSStr.ofString "checkScheduledUpdateOrContext"]? = some bdCS) (hGCSv : bdCS.value = some (.obj fCS))
+    (hCS : fCS < s.heap.size) (hCSk : (s.objEntry fCS).kind = .func dCS)
+    (hCScode : dCS.code = CSUGen.checkScheduledUpdateOrContext_func) (hCScls : dCS.isClassCtor = false)
+    (hCSmode : dCS.thisMode = .strict)
+    (hGUFb : bG[JSStr.ofString "updateFunctionComponent"]? = some bdUFb) (hGUFbv : bdUFb.value = some (.obj fUF))
+    -- (the current counter fiber: its props are the work in progress's (cloned by the root's bailout), an update in
+    -- lane 2, no forced re-render flag; the work in progress: a function component (tag 0) of the counter)
+    (hPp : P = .obj Pp)
+    (hC0mp : (s.objEntry C0).props.get? (.str "memoizedProps") = some (.data (.obj Pp) mpw mpe mpc))
+    (hC1pp : (s.objEntry C1).props.get? (.str "pendingProps") = some (.data (.obj Pp) ppw ppe ppc))
+    (hC0l : (s.objEntry C0).props.get? (.str "lanes") = some (.data two c0lw c0le c0lc))
+    (hC0f : (s.objEntry C0).props.get? (.str "flags") = some (.data (.num f0) c0fw c0fe c0fc))
+    (hf0 : numberBinOp .bitAnd f0 (F64.fin false 4503599627370496 (-35)) = F64.fin false 0 (-1074))
+    (hC1tag : (s.objEntry C1).props.get? (.str "tag") = some (.data (.num (F64.fin false 0 (-1074))) tgw tge tgc))
+    (hC1ty : (s.objEntry C1).props.get? (.str "type") = some (.data (.obj fK) tyw tye tyc))
+    (dUFC1 : fUF ≠ C1)

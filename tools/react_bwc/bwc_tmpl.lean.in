@@ -1,0 +1,178 @@
+import JSProofs.ReactUpdateFunction
+import JSProofs.ReactRootBailout
+import JSProofs.BWGen
+import JSProofs.BWSwitch
+
+/-!
+# `beginWork` for the counter fiber in the click's render (zippy docs/react-proofs.md)
+
+`beginWork(current, workInProgress, 2)` for the counter's function-component fiber: its props unchanged (the root's
+bailout cloned it), an update scheduled in lane 2 (`checkScheduledUpdateOrContext`), so no early bailout;
+`didReceiveUpdate` from the current fiber's flags, the work in progress's lanes cleared, then (tag 0)
+`updateFunctionComponent` (`ReactUpdateFunction.click_spec`).
+-/
+
+open ES ES.M HostRuns Logic ReactReducer ReactUpdateReducer ReactUseState ReactCounter ReactRenderHooks
+  ReactUpdateFunction
+open Std (HashMap)
+
+namespace ReactBeginCounter
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+theorem wp_gen_state {n : Nat} {h : σ} {α : Type} {x : M α} {s : State} {Q : α → State → σ → Prop}
+    (hw : ∀ St, St = s → WP eng answer n h x St Q) : WP eng answer n h x s Q := hw s rfl
+
+/-- What it writes: updateFunctionComponent's (whose footprint has the fiber's lanes) and `didReceiveUpdate`. -/
+def fpB (g : EnvId) (C1 H0 Q RSI X : ObjId) : Footprint := fpUF g C1 H0 Q RSI X
+
+set_option linter.unusedVariables false in
+set_option maxRecDepth 10000 in
+/-- **`checkScheduledUpdateOrContext(current, 2)`** with an update in lane 2: `true`. -/
+theorem check_lane {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
+    {H : ObjId} {hl : F64} {lw le lc : Bool}
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 10 ≤ s.fuel)
+    (hcode : d.code = CSUGen.checkScheduledUpdateOrContext_func) (hcls : d.isClassCtor = false)
+    (hmode : d.thisMode = .strict)
+    (hH : H < s.heap.size) (hHk : (s.objEntry H).kind.isPlain = true)
+    (hHl : (s.objEntry H).props.get? (.str "lanes") = some (.data (.num hl) lw le lc))
+    (hl0 : isStrictlyEqual (.num (F64.fin false 0 (-1074)))
+      (.num (numberBinOp .bitAnd hl (F64.fin false 4503599627370496 (-51)))) = false) :
+    WP eng answer n h (callImpl eng (.obj fo) t #[.obj H, .num (F64.fin false 4503599627370496 (-51))]) s
+      fun v w h' => v = .bool true ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 ∧ h' = h ∧ w.realm = s.realm := by
+  apply wp_callGen CSUGen.checkScheduledUpdateOrContext_eq (by decide) hlt hk (by omega) hcls hmode
+    (by rw [hcode]; rfl) (by rw [hcode]; rfl) (ReactRootBailout.simpleC d hcode) (by rw [hcode]; rfl)
+    (by rw [hcode]; rfl)
+  have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "renderLanes"] := by
+    rw [hcode]; rfl
+  have hv : d.code.info.fdi.varNames = #[] := by rw [hcode]; rfl
+  have hl : FDI.lexDecls d = #[] := by
+    simp [FDI.lexDecls, hcode, CSUGen.checkScheduledUpdateOrContext_func, Func.info]
+  have ha : d.code.isAsync = false := by rw [hcode]; rfl
+  clear hcode
+  simp only [CSUGen.checkScheduledUpdateOrContext]
+  js [hpn, hv, hl, ha, hH, hHk, hHl, hl0, FDI.fdiCtx, Sem.inner]
+  all_goals (repeat' apply And.intro)
+  all_goals first | rfl | omega | (simp only [js_simp]; omega) | frame_go' [*]
+
+theorem simpleB (d : FuncData) (hc : d.code = BWGen.beginWork_func) : FDI.Simple d := by
+  constructor <;> rw [hc] <;> try rfl
+  simp [BWGen.beginWork_func, Func.params, Func.info]
+
+set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 8000000 in
+set_option maxRecDepth 20000 in
+/-- **`beginWork(current, workInProgress, 2)`** for the counter fiber in the click's render. -/
+theorem click_spec @@PREM@@ :
+    WP eng answer (n + 8) h (callImpl eng (.obj fB) tB #[.obj C0, .obj C1, two]) s fun v w h' =>@@POST@@ := by
+  apply wp_callGen BWGen.beginWork_eq (by decide) hBW hBWk (by omega) hBWcls hBWmode
+    (by rw [hBWcode]; rfl) (by rw [hBWcode]; rfl) (simpleB dB hBWcode) (by rw [hBWcode]; rfl) (by rw [hBWcode]; rfl)
+  have hpn : dB.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
+      JSStr.ofString "renderLanes"] := by rw [hBWcode]; rfl
+  have hv : dB.code.info.fdi.varNames = #[JSStr.ofString "props", JSStr.ofString "$$typeof", JSStr.ofString "prevState",
+    JSStr.ofString "nextState"] := by rw [hBWcode]; rfl
+  have hl : FDI.lexDecls dB = #[] := by simp [FDI.lexDecls, hBWcode, BWGen.beginWork_func, Func.info]
+  have ha : dB.code.isAsync = false := by rw [hBWcode]; rfl
+  have hne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
+  have hG1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  subst hPp
+  subst hoG
+  clear hBWcode
+  simp only [BWGen.beginWork]
+  js [hpn, hv, hl, ha, hBWenv, hG, hG1, hne, Ne.symm hne, hGe, hC0, hC0k, hC0mp, hC1, hC1k, hC1pp, beq_self_eq_true, hGCS, hGCSv, hCS,
+    hCSk, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hCS, hCSk], ?_⟩
+  refine wp_mono (check_lane hCS hCSk (by js_norm; omega) hCScode hCScls hCSmode hC0 hC0k hC0l (by js_norm)) ?postC
+  intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, hr1⟩
+  subst v1 h1
+  have hw1K := envEntry_frame0 hF1 (e := s.envs.size) (by js_norm)
+  have hw1G := envEntry_frame0 hF1 (e := d.env) (by js_norm [hG1])
+  simp only [js_simp, ↓reduceIte, hne, Ne.symm hne] at hw1K hw1G
+  have hw1o : ∀ o, o < s.heap.size → w1.objEntry o = s.objEntry o := fun o ho =>
+    (objEntry_frame0 hF1 (by js_norm [ho])).trans rfl
+  have hw1E : s.envs.size + 1 ≤ w1.envs.size := by have := hF1.envs_le; simp only [js_simp] at this; exact this
+  have hw1z : s.heap.size ≤ w1.heap.size := by have := hF1.heap_le; simp only [js_simp] at this; exact this
+  have hw1f : 509 ≤ w1.fuel := by simp only [js_simp] at hfu1; omega
+  have hEw1' : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hw1E
+  have hGw1' : d.env < w1.envs.size := Nat.lt_of_lt_of_le hG1 hw1E
+  have hnw1 : w1.envs.size ≠ s.envs.size := Nat.ne_of_gt hEw1'
+  have hnw1G : w1.envs.size ≠ d.env := Nat.ne_of_gt hGw1'
+  have hz00 : isStrictlyEqual (.num (F64.fin false 0 (-1074))) (.num (F64.fin false 0 (-1074))) = true := by decide
+  iterate 32 (first | js_go | js_norm [hpn, hv, hl, ha, hBWenv, hw1K, hw1G, hGe, hne, Ne.symm hne, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hw1E, Nat.lt_of_lt_of_le hG1 hw1E, hw1o, hC0, hC0k, hC1, hC0f, hf0, hz00, hEw1', hGw1', Nat.lt_succ_of_lt hEw1', Nat.lt_succ_of_lt hGw1', hnw1, hnw1G, Ne.symm hnw1, Ne.symm hnw1G, hC1, hC1k, hC1l, hC1tag, hC1ty, hC1pp, hGDR, hGDRm, hGDRi, hGUFb, hGUFbv, hUF, hUFk, Nat.lt_of_lt_of_le hC1 hw1z, Nat.lt_of_lt_of_le hUF hw1z, Nat.lt_of_lt_of_le hC0 hw1z, hw1f, FDI.fdiCtx, Sem.inner] | js_split)
+  refine wp_switchC BWSwitch.lex ?_
+  js [hpn, hv, hl, ha, hBWenv, hw1K, hw1G, hGe, hne, Ne.symm hne, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hw1E, Nat.lt_of_lt_of_le hG1 hw1E, hw1o, hC0, hC0k, hC1, hC0f, hf0, hz00, hEw1', hGw1', Nat.lt_succ_of_lt hEw1', Nat.lt_succ_of_lt hGw1', hnw1, hnw1G, Ne.symm hnw1, Ne.symm hnw1G, hC1, hC1k, hC1l, hC1tag, hC1ty, hC1pp, hGDR, hGDRm, hGDRi, hGUFb, hGUFbv, hUF, hUFk, Nat.lt_of_lt_of_le hC1 hw1z, Nat.lt_of_lt_of_le hUF hw1z, Nat.lt_of_lt_of_le hC0 hw1z, hw1f, FDI.fdiCtx, Sem.inner]
+  -- (`return updateFunctionComponent(current, workInProgress, workInProgress.type, workInProgress.pendingProps, 2)`)
+  refine ⟨by js_norm [CallableC, hw1o, hUF, hUFk, Nat.lt_of_lt_of_le hUF hw1z, dUFC1, Ne.symm dUFC1], ?_⟩
+  refine wp_gen_state fun St hSt => ?_
+  have gSp : ∀ o k, o < s.heap.size → (o = C1 → k ≠ PropKey.str (JSStr.ofString "lanes")) →
+      (St.objEntry o).props.get? k = (s.objEntry o).props.get? k := by
+    intro o k ho hk
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le ho hw1z, Nat.lt_of_lt_of_le hC1 hw1z]
+    by_cases hoc : C1 = o
+    · subst hoc; simp [PropMap.get?_insert_ne _ _ _ _ (Ne.symm (hk rfl)), hw1o C1 hC1]
+    · simp [hoc, hw1o o ho]
+  have gSk : ∀ o, o < s.heap.size → (St.objEntry o).kind = (s.objEntry o).kind := by
+    intro o ho
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le ho hw1z, Nat.lt_of_lt_of_le hC1 hw1z]
+    by_cases hoc : C1 = o
+    · subst hoc; simp [hw1o C1 hC1]
+    · simp [hoc, hw1o o ho]
+  have gSpr : ∀ o, o < s.heap.size → (St.objEntry o).proto = (s.objEntry o).proto := by
+    intro o ho
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le ho hw1z, Nat.lt_of_lt_of_le hC1 hw1z]
+    by_cases hoc : C1 = o
+    · subst hoc; simp [hw1o C1 hC1]
+    · simp [hoc, hw1o o ho]
+  have gSC1l : (St.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) := by
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le hC1 hw1z]
+  have gSz : s.heap.size ≤ St.heap.size := by rw [hSt]; simp only [js_simp]; exact hw1z
+  have gSE : s.envs.size ≤ St.envs.size := by rw [hSt]; simp only [js_simp]; omega
+  have gSe : ∀ e, e < s.envs.size → e ≠ d.env → St.envEntry e = s.envEntry e := by
+    intro e he hne'
+    rw [hSt]; js_norm [he, hne', Ne.symm hne', Nat.ne_of_lt he, Nat.ne_of_gt he, Nat.lt_of_lt_of_le he (Nat.le_of_lt hEw1'),
+      Nat.ne_of_lt (Nat.lt_trans he hEw1'), Nat.ne_of_gt (Nat.lt_trans he hEw1')]
+    rw [envEntry_frame0 hF1 (by js_norm [Nat.lt_succ_of_lt he])]; js_norm [Nat.ne_of_lt he, Nat.ne_of_gt he]
+  have gSd : Scope.declLike? (St.envEntry d.env) = some (bG.modify (JSStr.ofString "didReceiveUpdate")
+      (fun bd => { bd with value := some (.bool false) }), none) := by
+    rw [hSt]; js_norm [hGw1', hnw1G, Ne.symm hnw1G, hw1G, hGe, hne, Ne.symm hne]
+  have gSR : St.realms = s.realms := by rw [hSt]; show w1.realms = s.realms; rw [hF1.realms_eq]; rfl
+  have gSF : 505 ≤ St.fuel := by rw [hSt]; simp only [js_simp]; omega
+  have gF1 : Frame (fpB d.env C1 H0 Q RSI X) s w1 := frame_mono (frame_trans (frame_bodyState
+    (frame_refl ({} : Footprint) s) fB dB tB #[.obj C0, .obj C1, two]) hF1) (by simp) (by simp) (fun _ => rfl)
+  have gFSt : Frame (fpB d.env C1 H0 Q RSI X) s St := by
+    rw [hSt, ← hw1G]
+    refine frame_pushEnv (frame_mono (fp' := fpB d.env C1 H0 Q RSI X) (frame_setProp_prop (frame_mono (fp' := fpB d.env C1 H0 Q RSI X) (frame_setEnv_bind gF1 hG (by rw [hw1G]; exact hGe)
+      _ _) ?_ ?_ ?_) hC1 _ _) ?_ ?_ ?_) _
+    · intro p hp; simp only [List.mem_cons] at hp; rcases hp with rfl | hp
+      · simp [fpB, fpUF]
+      · exact hp
+    · intro p hp; exact hp
+    · intro h; exact h
+    · intro p hp; exact hp
+    · intro p hp; simp only [List.mem_cons] at hp; rcases hp with rfl | hp
+      · simp [fpB, fpUF]
+      · exact hp
+    · intro h; exact h
+  have gSFe : St.fuel = w1.fuel := by rw [hSt]; simp only [js_simp]
+  have gStK : St.envEntry s.envs.size = w1.envEntry s.envs.size := by
+    rw [hSt]; js_norm [hEw1', hnw1, Ne.symm hnw1, hne, Ne.symm hne]
+  clear hSt
+  refine wp_mono (ReactUpdateFunction.click_spec (bG := bG.modify (JSStr.ofString "didReceiveUpdate")
+      (fun bd => { bd with value := some (.bool false) })) (oG := none) (bdDR := { bdDR with value := some (.bool false) })
+      (ln := .num (F64.fin false 0 (-1074))) (tUF := .undefined) (ec := false) (ee := false) (ew := false) (fw := false)
+      (kc := false) (ke := false) (kw := false) (le := false) (r_pc := false) (r_pe := false) (r_pw := false) (rw := false)
+      (tRW := .undefined) (ue := false) (yc := false) (ye := false) (yw := false) (uw := uw) (uc := uc)
+      @@ARGS@@) ?postU
+  intro v2 w2 h2 ⟨C, hv2, hF2, hfu2, hh2, hr2, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, xret,
+    hch, hCch⟩
+  subst v2 h2
+  have FW := frame_extend' gFSt hF2 (fun q hq _ => hq) (fun q hq _ => hq) (fun _ => rfl)
+  have hfw : s.fuel ≤ w2.fuel + 530 := by simp only [js_simp] at hfu1; omega
+  exact ⟨C, rfl, frame_restore FW s, hfw, rfl, rfl, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15,
+    xret, hch, hCch⟩
+
+end
+
+end ReactBeginCounter
