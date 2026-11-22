@@ -1,0 +1,247 @@
+import JSProofs.ReactUseFiber
+import JSProofs.ReactReconcileHelpers
+import JSProofs.Rules6
+
+/-!
+# `reconcileChildFibersImpl` for the counter's button (zippy docs/react-proofs.md)
+
+`reconcileChildFibersImpl(returnFiber, current, element, lanes)` where the element is a `button` with no key and
+the current child is a `button` fiber with no key and no sibling: the current child reused (`useFiber`), its ref
+coerced, its `return` the parent; no placement (it has its alternate).
+-/
+
+open ES ES.M HostRuns Logic
+open Std (HashMap)
+
+namespace ReactReconcileImpl
+
+/-- A frame from `s` carried on to a state `W` that agrees with `w` on everything `s` had. -/
+theorem frame_of_agree' {fp : Footprint} {s w W : State} (hF : Frame fp s w)
+    (he : ∀ e, e < s.envs.size → W.envEntry e = w.envEntry e) (ho : ∀ o, o < s.heap.size → W.objEntry o = w.objEntry o)
+    (hE : w.envs.size ≤ W.envs.size) (hH : w.heap.size ≤ W.heap.size) (hr : W.realms = w.realms) (hj : W.jobs = w.jobs) :
+    Frame fp s W where
+  envs_le := Nat.le_trans hF.envs_le hE
+  heap_le := Nat.le_trans hF.heap_le hH
+  env_agree e h := by rw [he e h]; exact hF.env_agree e h
+  obj_agree o h := by rw [ho o h]; exact hF.obj_agree o h
+  env_eq e h hn := by rw [he e h]; exact hF.env_eq e h hn
+  obj_eq o h hn := by rw [ho o h]; exact hF.obj_eq o h hn
+  realms_eq := by rw [hr]; exact hF.realms_eq
+  jobs_prefix := by rw [hj]; exact hF.jobs_prefix
+  jobs_eq h := by rw [hj]; exact hF.jobs_eq h
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+/-- What it writes: the reused fiber's fields (createWorkInProgress's, `index`, `sibling`, `ref`) and `return`. -/
+def fpI (X : ObjId) : Footprint := ⟨(ReactCreateWIP.fp X).binds, (ReactCreateWIP.fp X).props ++ [(X, .str "return")], false⟩
+
+theorem simpleI (d : FuncData) (hc : d.code = CCRGen.reconcileChildFibersImpl_func) : FDI.Simple d := by
+  constructor <;> rw [hc] <;> try rfl
+  simp [CCRGen.reconcileChildFibersImpl_func, Func.params, Func.info]
+
+set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 20000 in
+/-- **`reconcileChildFibersImpl(returnFiber, H, El, lanes)`** for the button. -/
+theorem click_spec @@PREM@@ :
+    WP eng answer (n + 2) h (callImpl eng (.obj fI) tI #[.obj RF, .obj H, .obj El, ln]) s fun v w h' =>@@POST@@ := by
+  apply wp_callGen CCRGen.reconcileChildFibersImpl_eq (by decide) hI hIk (by omega) hIcls hImode
+    (by rw [hIcode]; rfl) (by rw [hIcode]; rfl) (simpleI dI hIcode) (by rw [hIcode]; rfl) (by rw [hIcode]; rfl)
+  have hpn : dI.code.info.fdi.paramNames = #[JSStr.ofString "returnFiber", JSStr.ofString "currentFirstChild",
+      JSStr.ofString "newChild", JSStr.ofString "lanes"] := by rw [hIcode]; rfl
+  have hv : dI.code.info.fdi.varNames = #[JSStr.ofString "key"] := by rw [hIcode]; rfl
+  have hl : FDI.lexDecls dI = #[] := by simp [FDI.lexDecls, hIcode, CCRGen.reconcileChildFibersImpl_func, Func.info]
+  have ha : dI.code.isAsync = false := by rw [hIcode]; rfl
+  have hne : s.envs.size ≠ dU.env := Nat.ne_of_gt hE
+  have hE1 : dU.env < s.envs.size + 1 := Nat.lt_succ_of_lt hE
+  have hneG : s.envs.size ≠ g := Nat.ne_of_gt hG
+  have hG1 : g < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  have hE2 : dU.env < s.envs.size + 1 + 1 := Nat.lt_succ_of_lt hE1
+  have hG2 : g < s.envs.size + 1 + 1 := Nat.lt_succ_of_lt hG1
+  have hnE2 : dU.env ≠ s.envs.size + 1 := Nat.ne_of_lt hE1
+  have hnG2 : g ≠ s.envs.size + 1 := Nat.ne_of_lt hG1
+  obtain ⟨iF, rfl⟩ := hFrs
+  obtain ⟨iE, rfl⟩ := hEls
+  have hFE1 : (iF == iE) = false := by simp only [beq_eq_false_iff_ne]; intro h; exact hFrEl (by rw [h])
+  have hFE2 : (iE == iF) = false := by simp only [beq_eq_false_iff_ne]; intro h; exact hFrEl (by rw [h])
+  clear hIcode
+  simp only [CCRGen.reconcileChildFibersImpl]
+  js [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC,
+    hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, FDI.fdiCtx,
+    Sem.inner]
+  refine wp_typeofIdentC ?s1 ?_
+  case s1 => js_side
+  js [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner], by js_norm [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner], ?_⟩
+  js [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner]
+  refine wp_typeofIdentC ?s1 ?_
+  case s1 => js_side
+  js [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner], by js_norm [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner], ?_⟩
+  js [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner]
+  -- (`deleteRemainingChildren(returnFiber, currentFirstChild.sibling)`: the sibling is null)
+  refine ⟨by js_norm [CallableC, hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner, hDel, hDelk, hDelenv, hRDel, hRDelv, hRST, hRSTv], ?_⟩
+  refine wp_mono (ReactReconcileHelpers.delete_none (bR := bR) (oR := some g) (bdT := bdST) ?_ ?_ ?_ hDelcode hDelcls
+    hDelmode ?_ ?_ ?_ ?_) ?postD
+  all_goals first
+    | (js_norm [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner, hDel, hDelk, hDelenv, hRDel, hRDelv, hRST, hRSTv]; done)
+    | (js_norm [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner, hDel, hDelk, hDelenv, hRDel, hRDelv, hRST, hRSTv]; omega)
+    | skip
+  case postD =>
+  intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, hr1⟩
+  subst v1 h1
+  have hw1o : ∀ o, o < s.heap.size → w1.objEntry o = s.objEntry o := by
+    intro o ho; rw [objEntry_frame0 hF1 (by js_norm [ho])]; js_norm
+  have hw1eA := envEntry_frame0 hF1 (e := s.envs.size) (by first | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+  have hw1eB := envEntry_frame0 hF1 (e := s.envs.size + 1) (by first | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+  have hw1eU := envEntry_frame0 hF1 (e := dU.env) (by first | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+  have hw1eG := envEntry_frame0 hF1 (e := g) (by first | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+  simp (config := { maxDischargeDepth := 6 }) only [js_simp, ↓reduceIte, hne, Ne.symm hne, hnE2, hnG2, Ne.symm hnE2,
+    Ne.symm hnG2, hneG, Ne.symm hneG, hE, hG, hE1, hG1, hE2, hG2] at hw1eA hw1eB hw1eU hw1eG
+  have hw1E : s.envs.size + 1 < w1.envs.size := by have := hF1.envs_le; simp only [js_simp] at this; omega
+  have hw1z : s.heap.size ≤ w1.heap.size := by have := hF1.heap_le; simp only [js_simp] at this; omega
+  have hw1f : 100 ≤ w1.fuel := by simp only [js_simp] at hfu1; omega
+  have hw1all : ∀ e, e < s.envs.size → w1.envEntry e = s.envEntry e := by
+    intro e he
+    rw [envEntry_frame0 hF1 (by simp only [js_simp]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt he))]
+    simp only [js_simp, Nat.ne_of_lt he, Nat.ne_of_gt he, Nat.ne_of_lt (Nat.lt_succ_of_lt he),
+      Nat.ne_of_gt (Nat.lt_succ_of_lt he), ↓reduceIte, he, Nat.lt_succ_of_lt he, Nat.lt_succ_of_lt (Nat.lt_succ_of_lt he)]
+  have hw1j : w1.jobs = s.jobs := by rw [hF1.jobs_eq rfl]; rfl
+  have hw1R : w1.realms = s.realms := by rw [hF1.realms_eq]; rfl
+  have hFw1 : Frame {} s w1 := frame_of_agree' (frame_refl {} s) hw1all (fun o ho => hw1o o ho)
+    (by have := hF1.envs_le; simp only [js_simp] at this; omega) hw1z hw1R hw1j
+  js [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner, hw1eA, hw1eB, hw1eU, hw1eG, hw1E, hw1o, hw1f, Nat.lt_of_succ_lt hw1E, Nat.lt_trans hE1 hw1E, Nat.lt_trans hG1 hw1E, hRUF, hRUFv, hU, hUk, hRDel, hRPl, hRPlv, hX, hXk, hC, hCk]
+  -- (`useFiber(currentFirstChild, newChild.props)`: the alternate reused)
+  refine ⟨Nat.lt_of_lt_of_le hEl hw1z, by js_norm [CallableC, hw1o, hU, hUk, Nat.lt_of_lt_of_le hU hw1z], ?_⟩
+  refine wp_mono (ReactUseFiber.spec (bR := bR) (bG := bG) (g := g) (bdCW := bdCW) (tU := .undefined) (pp := .obj C)
+      @@UFARGS@@) ?postU
+  intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hpp2, hty2, hfl2, hsf2, hdel2, hcl2, hln2, hch2, hmp2, hms2, huq2, hdep2, hsib2,
+    hidx2, href2, hrc2⟩
+  subst v2 h2
+  have hXw1 : X < w1.heap.size := Nat.lt_of_lt_of_le hX hw1z
+  have hw2o : ∀ o, o < s.heap.size → o ≠ X → w2.objEntry o = s.objEntry o := by
+    intro o ho hoX
+    rw [objEntry_frame hF2 (Nat.lt_of_lt_of_le ho hw1z) (by simp [ReactCreateWIP.fp, Ne.symm hoX]), hw1o o ho]
+  have hw2p : ∀ k, (ReactCreateWIP.fp X).props.contains (X, k) = false →
+      (w2.objEntry X).props.get? k = (s.objEntry X).props.get? k := by
+    intro k hk; rw [props_frame hF2 hXw1 hk, hw1o X hX]
+  have hw2k : (w2.objEntry X).kind.isPlain = true := by rw [kind_frame hF2 hXw1, hw1o X hX]; exact hXk
+  have hXa2 := (hw2p (.str "alternate") (by simp [ReactCreateWIP.fp])).trans hXa
+  have hXret2 := (hw2p (.str "return") (by simp [ReactCreateWIP.fp])).trans hXret
+  have hw2e : ∀ e, e < w1.envs.size → w2.envEntry e = w1.envEntry e := fun e he =>
+    envEntry_frame hF2 he (by simp [ReactCreateWIP.fp])
+  have hw2E : w1.envs.size ≤ w2.envs.size := hF2.envs_le
+  have hw2z : w1.heap.size ≤ w2.heap.size := hF2.heap_le
+  have hXw2 : X < w2.heap.size := Nat.lt_of_lt_of_le hXw1 hw2z
+  have hw2f : 50 ≤ w2.fuel := by omega
+  have hw2eA := (hw2e _ (Nat.lt_of_succ_lt hw1E)).trans hw1eA
+  have hw2eB := (hw2e _ hw1E).trans hw1eB
+  have hw2eU := (hw2e _ (Nat.lt_trans hE1 hw1E)).trans hw1eU
+  have hw2eG := (hw2e _ (Nat.lt_trans hG1 hw1E)).trans hw1eG
+  have hw2E' : s.envs.size + 1 < w2.envs.size := Nat.lt_of_lt_of_le hw1E hw2E
+  js [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner, hw2eA, hw2eB, hw2eU, hw2eG, hw2E', Nat.lt_of_succ_lt hw2E', Nat.lt_trans hE1 hw2E', Nat.lt_trans hG1 hw2E',
+    hw2f, hXw2, hw2k, hGCR, hGCRv]
+  -- (`coerceRef(lanes, newChild)`: no ref)
+  have hCRX := hdX fCR (by simp)
+  have hPlX := hdX fPl (by simp)
+  have hElX := hdX El (by simp)
+  have hCX := hdX C (by simp)
+  have hOPX := hdX OP (by simp)
+  have cfacts := And.intro (hw2o fCR hCR hCRX) (And.intro (hw2o El hEl hElX) (And.intro (hw2o C hC hCX) (hw2o OP hOP hOPX)))
+  obtain ⟨hw2CR, hw2El, hw2C, hw2OP⟩ := cfacts
+  refine ⟨by js_norm [CallableC, hw2CR, hCRk, Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hCR hw1z) hw2z], ?_⟩
+  refine wp_mono (ReactReconcileHelpers.coerce_none (rv := false) (X := X) (El := El) (C := C) (OP := OP) (r0 := vR) (re := e14) (rc := c14) (pw := pw) (pe := pe) (pc := pc)
+      ?_ ?_ ?_ hCRcode hCRcls hCRmode ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_) ?postC
+  all_goals first
+    | (js_norm [hw2CR, hCRk, hw2El, hElk, hElp, hw2C, hCk, hCp, hCr, hw2OP, hOPk, hOPp, hOPr, hXw2, hw2k, href2,
+        Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hCR hw1z) hw2z, Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hEl hw1z) hw2z,
+        Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hC hw1z) hw2z, Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hOP hw1z) hw2z,
+        hw2f]; done)
+    | (simp only [js_simp]; omega)
+    | (simp [hElk]; done)
+    | skip
+  case postC =>
+  intro v3 w3 h3 ⟨hv3, hF3, hfu3, hh3, hr3, href3⟩
+  subst v3 h3
+  have hw3eS := envEntry_frame hF3 (e := s.envs.size) (by simp only [js_simp]; exact Nat.lt_of_succ_lt hw2E')
+    (by simp)
+  have hw3e : ∀ e, e < w2.envs.size → e ≠ s.envs.size → w3.envEntry e = w2.envEntry e := by
+    intro e he hne'; rw [envEntry_frame hF3 (by simp only [js_simp]; exact he) (by simp)]
+    simp only [js_simp, Ne.symm hne', ↓reduceIte]
+  have hw3E : w2.envs.size ≤ w3.envs.size := by have := hF3.envs_le; simp only [js_simp] at this; exact this
+  have hw3z : w2.heap.size ≤ w3.heap.size := by have := hF3.heap_le; simp only [js_simp] at this; exact this
+  have hw3o : ∀ o, o < w2.heap.size → o ≠ X → w3.objEntry o = w2.objEntry o := by
+    intro o ho hoX; rw [objEntry_frame hF3 (by simp only [js_simp]; exact ho) (by simp [Ne.symm hoX])]
+    simp only [js_simp]
+  have hw3X : ∀ k, k ≠ .str (JSStr.ofString "ref") → (w3.objEntry X).props.get? k = (w2.objEntry X).props.get? k := by
+    intro k hk; rw [props_frame hF3 (by simp only [js_simp]; exact hXw2) (by simp [hk])]; simp only [js_simp]
+  have hw3k : (w3.objEntry X).kind.isPlain = true := by
+    rw [kind_frame hF3 (by simp only [js_simp]; exact hXw2)]; simp only [js_simp]; exact hw2k
+  have hXret3 := (hw3X (.str "return") (by decide)).trans hXret2
+  have hXa3 := (hw3X (.str "alternate") (by decide)).trans hXa2
+  have hXw3 : X < w3.heap.size := Nat.lt_of_lt_of_le hXw2 hw3z
+  have hw3f : 40 ≤ w3.fuel := by simp only [js_simp] at hfu3; omega
+  have hw3eB := (hw3e _ hw2E' (Nat.succ_ne_self _)).trans hw2eB
+  have hw3eU := (hw3e _ (Nat.lt_trans hE1 hw2E') hne.symm).trans hw2eU
+  have hw3eG := (hw3e _ (Nat.lt_trans hG1 hw2E') hneG.symm).trans hw2eG
+  have hw3E' : s.envs.size + 1 < w3.envs.size := Nat.lt_of_lt_of_le hw2E' hw3E
+  simp (config := { maxDischargeDepth := 6 }) only [js_simp, ↓reduceIte, Nat.lt_of_succ_lt hw2E'] at hw3eS
+  js [hpn, hv, hl, ha, hIenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRnF, hRnE, hRnC, hGFr, hGFrv, hGEl, hGElv, hEl, hElk, hEltyp, hElkey, hElty, hElp, hH, hHk, hHkey, hHet, hH_sibling, hFE1, hFE2, beq_self_eq_true, hE2, hG2, hnE2, hnG2, Ne.symm hnE2, Ne.symm hnG2, FDI.fdiCtx, Sem.inner, hw3eS, hw3eB, hw3eU, hw3eG, hw3E', Nat.lt_of_succ_lt hw3E', Nat.lt_trans hE1 hw3E', Nat.lt_trans hG1 hw3E',
+    hw3f, hXw3, hw3k, hXret3, hRPl, hRPlv]
+  -- (`placeSingleChild(returnFiber)`: the reused fiber, no placement)
+  have hw3Pl : w3.objEntry fPl = s.objEntry fPl := by
+    rw [hw3o fPl (Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hPl hw1z) hw2z) hPlX, hw2o fPl hPl hPlX]
+  have hPlw3 : fPl < w3.heap.size := Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hPl hw1z) hw2z) hw3z
+  refine ⟨by js_norm [CallableC, hw3Pl, hPlk, hPlw3, hPlX, Ne.symm hPlX], ?_⟩
+  refine wp_mono (ReactReconcileHelpers.place_reused (bR := bR) (oR := some g) (bdT := bdST) (X := X) (A := H)
+      (aw := aw) (ae := ae) (ac := ac) ?_ ?_ ?_ hPlcode hPlcls hPlmode ?_ ?_ ?_ ?_ ?_ ?_ ?_) ?postP
+  all_goals first
+    | (js_norm [hw3Pl, hPlk, hPlw3, hPlX, Ne.symm hPlX, hPlenv, hw3eU, hEe, hRST, hRSTv, hXw3, hw3k, hXa3,
+        Nat.lt_trans hE1 hw3E', hne, Ne.symm hne, hw3f]; done)
+    | (simp only [js_simp]; omega)
+    | skip
+  case postP =>
+  intro v4 w4 h4 ⟨hv4, hF4, hfu4, hh4, hr4⟩
+  subst v4 h4
+  have hX4 := objEntry_frame0 hF4 (o := X) (by simp only [js_simp]; exact hXw3)
+  have hX4p : ∀ k, k ≠ PropKey.str (JSStr.ofString "return") →
+      (w4.objEntry X).props.get? k = (w3.objEntry X).props.get? k := by
+    intro k hk; rw [hX4]; simp only [js_simp, State.setProp_entry_self _ _ _ _ hXw3, Obj.withProps_props,
+      PropMap.get?_insert_ne _ _ _ _ (Ne.symm hk)]
+  have f_pendingProps := (hX4p (.str (JSStr.ofString "pendingProps")) (by decide)).trans ((hw3X _ (by decide)).trans hpp2)
+  have f_type := (hX4p (.str (JSStr.ofString "type")) (by decide)).trans ((hw3X _ (by decide)).trans hty2)
+  have f_flags := (hX4p (.str (JSStr.ofString "flags")) (by decide)).trans ((hw3X _ (by decide)).trans hfl2)
+  have f_subtreeFlags := (hX4p (.str (JSStr.ofString "subtreeFlags")) (by decide)).trans ((hw3X _ (by decide)).trans hsf2)
+  have f_deletions := (hX4p (.str (JSStr.ofString "deletions")) (by decide)).trans ((hw3X _ (by decide)).trans hdel2)
+  have f_childLanes := (hX4p (.str (JSStr.ofString "childLanes")) (by decide)).trans ((hw3X _ (by decide)).trans hcl2)
+  have f_lanes := (hX4p (.str (JSStr.ofString "lanes")) (by decide)).trans ((hw3X _ (by decide)).trans hln2)
+  have f_child := (hX4p (.str (JSStr.ofString "child")) (by decide)).trans ((hw3X _ (by decide)).trans hch2)
+  have f_memoizedProps := (hX4p (.str (JSStr.ofString "memoizedProps")) (by decide)).trans ((hw3X _ (by decide)).trans hmp2)
+  have f_memoizedState := (hX4p (.str (JSStr.ofString "memoizedState")) (by decide)).trans ((hw3X _ (by decide)).trans hms2)
+  have f_updateQueue := (hX4p (.str (JSStr.ofString "updateQueue")) (by decide)).trans ((hw3X _ (by decide)).trans huq2)
+  have f_dependencies := (hX4p (.str (JSStr.ofString "dependencies")) (by decide)).trans ((hw3X _ (by decide)).trans hdep2)
+  have f_sibling := (hX4p (.str (JSStr.ofString "sibling")) (by decide)).trans ((hw3X _ (by decide)).trans hsib2)
+  have f_index := (hX4p (.str (JSStr.ofString "index")) (by decide)).trans ((hw3X _ (by decide)).trans hidx2)
+  have f_refCleanup := (hX4p (.str (JSStr.ofString "refCleanup")) (by decide)).trans ((hw3X _ (by decide)).trans hrc2)
+  have f_ref := (hX4p (.str (JSStr.ofString "ref")) (by decide)).trans href3
+  have f_ret : (w4.objEntry X).props.get? (.str (JSStr.ofString "return")) = some (.data (.obj RF) true rew rec) := by
+    rw [hX4]; simp only [js_simp, State.setProp_entry_self _ _ _ _ hXw3, Obj.withProps_props, PropMap.get?_insert,
+      ite_true, ↓reduceIte]
+  have hfr : Frame (fpI X) s (w4.restore s) := by
+    refine frame_restore (frame_mono (frame_trans (frame_setEnv_new (frame_setProp_prop (frame_trans
+      (frame_setEnv_new (frame_trans hFw1 hF2) (Nat.le_refl _) _) hF3) hX _ _) (Nat.le_refl _) _) hF4) ?_ ?_ ?_) s
+    · intro p hp; revert p; simp [Footprint.union, fpI, ReactCreateWIP.fp]
+    · intro p hp; revert p; simp [Footprint.union, fpI, ReactCreateWIP.fp]
+    · intro _; rfl
+  have hfuel : s.fuel ≤ w4.fuel + 120 := by simp only [js_simp] at hfu1 hfu2 hfu3 hfu4; omega
+  exact ⟨rfl, hfr, hfuel, rfl, f_pendingProps, f_type, f_flags, f_subtreeFlags, f_deletions, f_childLanes, f_lanes,
+    f_child, f_memoizedProps, f_memoizedState, f_updateQueue, f_dependencies, f_sibling, f_index, f_ref, f_refCleanup,
+    rfl, f_ret⟩
+
+
+
+end
+
+end ReactReconcileImpl
