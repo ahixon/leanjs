@@ -34,6 +34,16 @@ theorem wp_typeofMemberC {n : Nat} {h : σ} {obj : Sem.CExpr} {k : JSStr} {ctx :
   rw [ht]
   exact wp_of_eq rfl hq
 
+/-- **`null != obj`** is true (IsLooselyEqual's last step: no conversion). -/
+theorem wp_neNullObj {n : Nat} {h : σ} {o : ObjId} {s : State} {Q : Value → State → σ → Prop}
+    (hk : 1 ≤ s.fuel) (hq : Q (.bool true) s h) : WP eng answer n h (Sem.binaryOp .ne .null (.obj o)) s Q := by
+  obtain ⟨k, hk'⟩ : ∃ k, s.fuel = k + 1 := ⟨s.fuel - 1, by omega⟩
+  refine wp_of_eq ?_ hq
+  simp only [Sem.binaryOp, isLooselyEqual]
+  show M.bindRes _ (M.loop _ s.fuel _ s) = _
+  rw [hk']
+  rfl
+
 end
 
 end Logic
