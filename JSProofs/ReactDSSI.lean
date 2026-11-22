@@ -120,7 +120,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hTk : (s.objEntry fT).kind = .func dT)
     (hSA : fS ≠ A) (hSF : fS ≠ F) (hSX : fS ≠ Alt) (hTA : fT ≠ A) (hTF : fT ≠ F) (hTX : fT ≠ Alt)
     (hSpec : ∀ w h1, Frame ⟨[(d.env, "concurrentQueuesIndex"), (d.env, "concurrentlyUpdatedLanes")],
-        [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes"), (Alt, .str "lanes")]⟩ s w →
+        [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes"), (Alt, .str "lanes")], false⟩ s w →
       s.fuel ≤ w.fuel + 60 →
       WP eng answer (n + 2) h1 (callImpl eng (.obj fS) .undefined #[.obj Root, .obj F, .num p]) w fun _ w' h' =>
         Frame fpS w w' ∧ w.fuel ≤ w'.fuel + 30 ∧ P w' h')

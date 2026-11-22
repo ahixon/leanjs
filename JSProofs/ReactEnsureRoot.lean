@@ -35,7 +35,7 @@ theorem simple (d : FuncData) (hc : d.code = ERSGen.ensureRootIsScheduled_func) 
 /-- What `ensureRootIsScheduled` writes. -/
 def fp (e : EnvId) : Footprint :=
   ⟨[(e, "firstScheduledRoot"), (e, "lastScheduledRoot"), (e, "mightHavePendingSyncWork"),
-    (e, "didScheduleMicrotask")], []⟩
+    (e, "didScheduleMicrotask")], [], false⟩
 
 /-- The schedule after the call: the root first and last, sync work pending, a microtask marked scheduled. -/
 def Scheduled (w : State) (e : EnvId) (oG : Option EnvId) (R : ObjId) : Prop :=

@@ -74,7 +74,7 @@ theorem call_spec {n : Nat} {h : σ} {fo fEU fGR : ObjId} {d dEU dGR : FuncData}
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj F, queue, update, .num p]) s fun v w _ =>
       v = .obj Root ∧
       Frame ⟨[(d.env, "concurrentQueuesIndex"), (d.env, "concurrentlyUpdatedLanes")],
-        [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes"), (Alt, .str "lanes")]⟩ s w ∧
+        [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes"), (Alt, .str "lanes")], false⟩ s w ∧
       (w.objEntry F).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr fl p)) true fe fc) ∧
       s.fuel ≤ w.fuel + 10 := by
   apply wp_callGen ECHUGen.enqueueConcurrentHookUpdate_eq (by decide) hlt hk (by omega) hcls hmode
@@ -134,7 +134,7 @@ theorem call_spec {n : Nat} {h : σ} {fo fEU fGR : ObjId} {d dEU dGR : FuncData}
   subst hv
   -- (the result: the root; both frames composed; `fiber.lanes` as the first call left it)
   have hFr : Frame ⟨[(d.env, "concurrentQueuesIndex"), (d.env, "concurrentlyUpdatedLanes")],
-      [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes"), (Alt, .str "lanes")]⟩ s w2 := by
+      [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes"), (Alt, .str "lanes")], false⟩ s w2 := by
     simpa [Footprint.union] using
       frame_trans (frame_trans (frame_bodyState (frame_refl {} s) fo d t #[.obj F, queue, update, .num p]) hF1) hF2
   have hl2 : (w2.objEntry F).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr fl p)) true fe fc) := by

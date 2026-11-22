@@ -23,8 +23,10 @@ namespace Logic
 structure Footprint where
   binds : List (EnvId × JSStr) := []
   props : List (ObjId × PropKey) := []
+  /-- Whether jobs may be queued (`queueMicrotask`, promise reactions); without it the job queue is unchanged. -/
+  jobs : Bool := false
 
-def Footprint.union (a b : Footprint) : Footprint := ⟨a.binds ++ b.binds, a.props ++ b.props⟩
+def Footprint.union (a b : Footprint) : Footprint := ⟨a.binds ++ b.binds, a.props ++ b.props, a.jobs || b.jobs⟩
 
 /-- A record now (`ew`) agrees with the record then (`es`) except at the names `P`. -/
 def EnvAgree (P : JSStr → Prop) (ew es : Env) : Prop :=
@@ -47,6 +49,10 @@ structure Frame (fp : Footprint) (s w : State) : Prop where
   obj_eq : ∀ o, o < s.heap.size → (∀ k, (o, k) ∉ fp.props) → w.objEntry o = s.objEntry o
   /-- The realms (their intrinsics: what new objects are made from) are as they were. -/
   realms_eq : w.realms = s.realms
+  /-- Jobs are only ever queued during a call (the queue is run between tasks)… -/
+  jobs_prefix : ∃ js, w.jobs = s.jobs ++ js
+  /-- … and only by footprints that say so. -/
+  jobs_eq : fp.jobs = false → w.jobs = s.jobs
 
 /-! ## Composition -/
 
@@ -90,7 +96,7 @@ theorem objAgree_trans {P R : PropKey → Prop} {a b c : Obj} (h1 : ObjAgree P b
 
 theorem frame_refl (fp : Footprint) (s : State) : Frame fp s s :=
   ⟨Nat.le_refl _, Nat.le_refl _, fun _ _ => envAgree_refl _ _, fun _ _ => objAgree_refl _ _, fun _ _ _ => rfl,
-    fun _ _ _ => rfl, rfl⟩
+    fun _ _ _ => rfl, rfl, ⟨#[], by simp⟩, fun _ => rfl⟩
 
 /-- **Frames compose**: the footprints' union. -/
 theorem frame_trans {fp1 fp2 : Footprint} {s u w : State} (h1 : Frame fp1 s u) (h2 : Frame fp2 u w) :
@@ -110,9 +116,17 @@ theorem frame_trans {fp1 fp2 : Footprint} {s u w : State} (h1 : Frame fp1 s u) (
     rw [h2.obj_eq o (Nat.lt_of_lt_of_le ho h1.heap_le) (fun k hk => hn k (by simp [Footprint.union, hk])),
       h1.obj_eq o ho (fun k hk => hn k (by simp [Footprint.union, hk]))]
   realms_eq := h2.realms_eq.trans h1.realms_eq
+  jobs_prefix := by
+    obtain ⟨j1, e1⟩ := h1.jobs_prefix
+    obtain ⟨j2, e2⟩ := h2.jobs_prefix
+    exact ⟨j1 ++ j2, by rw [e2, e1, Array.append_assoc]⟩
+  jobs_eq hj := by
+    simp only [Footprint.union, Bool.or_eq_false_iff] at hj
+    rw [h2.jobs_eq hj.2, h1.jobs_eq hj.1]
 
 theorem frame_mono {fp fp' : Footprint} {s w : State} (h : Frame fp s w)
-    (hb : ∀ p, p ∈ fp.binds → p ∈ fp'.binds) (hp : ∀ p, p ∈ fp.props → p ∈ fp'.props) : Frame fp' s w where
+    (hb : ∀ p, p ∈ fp.binds → p ∈ fp'.binds) (hp : ∀ p, p ∈ fp.props → p ∈ fp'.props)
+    (hj : fp'.jobs = false → fp.jobs = false) : Frame fp' s w where
   envs_le := h.envs_le
   heap_le := h.heap_le
   env_agree e hl := envAgree_mono (h.env_agree e hl) fun x hx => hb _ hx
@@ -121,6 +135,8 @@ theorem frame_mono {fp fp' : Footprint} {s w : State} (h : Frame fp s w)
   env_eq e hl hn := h.env_eq e hl (fun x hx => hn x (hb _ hx))
   obj_eq o hl hn := h.obj_eq o hl (fun k hk => hn k (hp _ hk))
   realms_eq := h.realms_eq
+  jobs_prefix := h.jobs_prefix
+  jobs_eq h' := h.jobs_eq (hj h')
 
 /-! ## Steps -/
 
@@ -138,12 +154,14 @@ theorem frame_setEnv_new (hF : Frame fp s u) {e : EnvId} (he : s.envs.size ≤ e
     obj_agree := fun o ho => by simpa [State.objEntry, State.setEnv] using hF.obj_agree o ho
     env_eq := fun i hi hn => by rw [setEnv_envEntry_ne _ _ _ _ (hne i hi)]; exact hF.env_eq i hi hn
     obj_eq := fun o ho hn => by simpa [State.objEntry, State.setEnv] using hF.obj_eq o ho hn 
-    realms_eq := by simpa [State.setEnv] using hF.realms_eq }
+    realms_eq := by simpa [State.setEnv] using hF.realms_eq 
+    jobs_prefix := by simpa [State.setEnv] using hF.jobs_prefix
+    jobs_eq := fun hj => by simpa [State.setEnv] using hF.jobs_eq hj }
 
 /-- **A binding of an existing record** changes: its name joins the footprint. -/
 theorem frame_setEnv_bind (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.size) {bm : HashMap JSStr Binding}
     {o : Option EnvId} (hd : Scope.declLike? (u.envEntry e) = some (bm, o)) (x : JSStr) (f : Binding → Binding) :
-    Frame ⟨(e, x) :: fp.binds, fp.props⟩ s (u.setEnv e ((u.envEntry e).withBindings (·.modify x f))) := by
+    Frame ⟨(e, x) :: fp.binds, fp.props, fp.jobs⟩ s (u.setEnv e ((u.envEntry e).withBindings (·.modify x f))) := by
   have heu : e < u.envs.size := Nat.lt_of_lt_of_le he hF.envs_le
   refine {
     envs_le := by simpa using hF.envs_le
@@ -152,7 +170,9 @@ theorem frame_setEnv_bind (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.size)
     obj_agree := fun o' ho => by simpa [State.objEntry, State.setEnv] using hF.obj_agree o' ho
     env_eq := fun i hi hn => ?_
     obj_eq := fun o' ho hn => by simpa [State.objEntry, State.setEnv] using hF.obj_eq o' ho hn 
-    realms_eq := by simpa [State.setEnv] using hF.realms_eq }
+    realms_eq := by simpa [State.setEnv] using hF.realms_eq 
+    jobs_prefix := by simpa [State.setEnv] using hF.jobs_prefix
+    jobs_eq := fun hj => by simpa [State.setEnv] using hF.jobs_eq hj }
   · by_cases hei : e = i
     · subst hei
       rw [State.setEnv_envEntry_self _ _ _ heu]
@@ -192,11 +212,13 @@ theorem frame_setProp_new (hF : Frame fp s u) {o : ObjId} (ho : s.heap.size ≤ 
     obj_agree := fun i hi => by rw [State.setProp_entry_ne _ _ _ _ _ (hne i hi)]; exact hF.obj_agree i hi
     env_eq := fun i hi hn => by simpa using hF.env_eq i hi hn
     obj_eq := fun i hi hn => by rw [State.setProp_entry_ne _ _ _ _ _ (hne i hi)]; exact hF.obj_eq i hi hn 
-    realms_eq := by simpa [State.setProp] using hF.realms_eq }
+    realms_eq := by simpa [State.setProp] using hF.realms_eq 
+    jobs_prefix := by simpa [State.setProp] using hF.jobs_prefix
+    jobs_eq := fun hj => by simpa [State.setProp] using hF.jobs_eq hj }
 
 /-- **A property of an existing object** changes: the key joins the footprint. -/
 theorem frame_setProp_prop (hF : Frame fp s u) {o : ObjId} (ho : o < s.heap.size) (k : PropKey) (p : Property) :
-    Frame ⟨fp.binds, (o, k) :: fp.props⟩ s (u.setProp o k p) := by
+    Frame ⟨fp.binds, (o, k) :: fp.props, fp.jobs⟩ s (u.setProp o k p) := by
   have hou : o < u.heap.size := Nat.lt_of_lt_of_le ho hF.heap_le
   refine {
     envs_le := by simpa using hF.envs_le
@@ -205,7 +227,9 @@ theorem frame_setProp_prop (hF : Frame fp s u) {o : ObjId} (ho : o < s.heap.size
     obj_agree := fun i hi => ?_
     env_eq := fun i hi hn => by simpa using hF.env_eq i hi hn
     obj_eq := fun i hi hn => ?_ 
-    realms_eq := by simpa [State.setProp] using hF.realms_eq }
+    realms_eq := by simpa [State.setProp] using hF.realms_eq 
+    jobs_prefix := by simpa [State.setProp] using hF.jobs_prefix
+    jobs_eq := fun hj => by simpa [State.setProp] using hF.jobs_eq hj }
   · by_cases hoi : o = i
     · subst hoi
       rw [State.setProp_entry_self _ _ _ _ hou]
@@ -230,6 +254,8 @@ theorem frame_allocObj (hF : Frame fp s u) (ob : Obj) : Frame fp s (u.allocObj o
   env_eq i hi hn := by simpa using hF.env_eq i hi hn
   obj_eq i hi hn := by rw [State.allocObj_entry_lt _ _ _ (Nat.lt_of_lt_of_le hi hF.heap_le)]; exact hF.obj_eq i hi hn
   realms_eq := by simpa [State.allocObj] using hF.realms_eq
+  jobs_prefix := by simpa [State.allocObj] using hF.jobs_prefix
+  jobs_eq hj := by simpa [State.allocObj] using hF.jobs_eq hj
 
 /-- A function's call: its record pushed and filled (`bodyState`). -/
 theorem frame_bodyState (hF : Frame fp s u) (fo : ObjId) (d : FuncData) (t : Value) (args : Array Value) :
@@ -243,10 +269,13 @@ theorem frame_bodyState (hF : Frame fp s u) (fo : ObjId) (d : FuncData) (t : Val
     rw [bodyState_envEntry_lt _ _ _ _ _ _ (Nat.lt_of_lt_of_le hi hF.envs_le)]; exact hF.env_eq i hi hn
   obj_eq i hi hn := by simpa using hF.obj_eq i hi hn
   realms_eq := by simpa [bodyState, entryState, State.setEnv] using hF.realms_eq
+  jobs_prefix := by simpa [bodyState, entryState, State.setEnv] using hF.jobs_prefix
+  jobs_eq hj := by simpa [bodyState, entryState, State.setEnv] using hF.jobs_eq hj
 
 /-- The caller's realm and script back. -/
 theorem frame_restore (hF : Frame fp s u) (c : State) : Frame fp s (u.restore c) :=
-  ⟨hF.envs_le, hF.heap_le, hF.env_agree, hF.obj_agree, hF.env_eq, hF.obj_eq, hF.realms_eq⟩
+  ⟨hF.envs_le, hF.heap_le, hF.env_agree, hF.obj_agree, hF.env_eq, hF.obj_eq, hF.realms_eq, hF.jobs_prefix,
+    hF.jobs_eq⟩
 
 end
 
@@ -369,7 +398,8 @@ theorem objEntry_frame0 {s w : State} (hF : Frame {} s w) {o : ObjId} (ho : o < 
 /-- **Extending a frame through a callee's**: its footprint within the target's. -/
 theorem frame_extend {fp fp2 : Footprint} {s u w : State} (h1 : Frame fp s u) (h2 : Frame fp2 u w)
     (hb : fp2.binds.all (fun p => fp.binds.contains p) = true)
-    (hp : fp2.props.all (fun p => fp.props.contains p) = true) : Frame fp s w :=
+    (hp : fp2.props.all (fun p => fp.props.contains p) = true) (hj : fp.jobs = false → fp2.jobs = false) :
+    Frame fp s w :=
   frame_mono (frame_trans h1 h2)
     (fun q hq => by
       simp only [Footprint.union, List.mem_append] at hq
@@ -381,6 +411,7 @@ theorem frame_extend {fp fp2 : Footprint} {s u w : State} (h1 : Frame fp s u) (h
       rcases hq with hq | hq
       · exact hq
       · exact List.contains_iff_mem.mp (List.all_eq_true.mp hp q hq))
+    (fun h => by simp [Footprint.union, h, hj h])
 
 /-- A declarative or function record after a frame: still one, its lookups outside the footprint as before. -/
 theorem declLike_frame {fp : Footprint} {s w : State} (hF : Frame fp s w) {e : EnvId} (he : e < s.envs.size)
@@ -436,7 +467,7 @@ theorem frame_setEnv_decl_in (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.si
   exact frame_mono h (fun p hp => by
     rcases List.mem_cons.mp hp with rfl | hp
     · exact hin
-    · exact hp) (fun _ hp => hp)
+    · exact hp) (fun _ hp => hp) id
 
 /-- A binding of an existing record known by `declLike?`, written: allowed if it is in the footprint. -/
 theorem frame_setEnv_with_in (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.size) {ev : Env}
@@ -448,7 +479,7 @@ theorem frame_setEnv_with_in (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.si
   exact frame_mono (frame_setEnv_bind hF he hd x f) (fun p hp => by
     rcases List.mem_cons.mp hp with rfl | hp
     · exact hin
-    · exact hp) (fun _ hp => hp)
+    · exact hp) (fun _ hp => hp) id
 
 /-- A property of an existing object, written: allowed if it is in the footprint. -/
 theorem frame_setProp_in (hF : Frame fp s u) {o : ObjId} (ho : o < s.heap.size) {k : PropKey}
@@ -456,7 +487,7 @@ theorem frame_setProp_in (hF : Frame fp s u) {o : ObjId} (ho : o < s.heap.size) 
   frame_mono (frame_setProp_prop hF ho k p) (fun _ hp => hp) (fun q hq => by
     rcases List.mem_cons.mp hq with rfl | hq
     · exact hin
-    · exact hq)
+    · exact hq) id
 
 end
 

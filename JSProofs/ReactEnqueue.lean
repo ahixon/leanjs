@@ -65,7 +65,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t queue update
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj F, queue, update, .num p]) s fun v w _ =>
       v = .undefined ∧
       Frame ⟨[(d.env, "concurrentQueuesIndex"), (d.env, "concurrentlyUpdatedLanes")],
-        [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes"), (Alt, .str "lanes")]⟩ s w ∧
+        [(A, .str "0"), (A, .str "1"), (A, .str "2"), (A, .str "3"), (F, .str "lanes"), (Alt, .str "lanes")], false⟩ s w ∧
       s.fuel ≤ w.fuel + 1 ∧
       (w.objEntry A).props.get? (.str "0") = some (.data (.obj F) true e0 c0) ∧
       (w.objEntry A).props.get? (.str "1") = some (.data queue true e1 c1) ∧

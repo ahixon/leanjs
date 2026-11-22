@@ -20,7 +20,7 @@ namespace ReactScheduleClick
 /-- What scheduling a click's update writes, up to `queueMicrotask`. -/
 def fpAll (R : ObjId) (e : EnvId) : Footprint :=
   ⟨[(e, "firstScheduledRoot"), (e, "lastScheduledRoot"), (e, "mightHavePendingSyncWork"), (e, "didScheduleMicrotask")],
-   [(R, .str "pendingLanes"), (R, .str "suspendedLanes"), (R, .str "pingedLanes"), (R, .str "warmLanes")]⟩
+   [(R, .str "pendingLanes"), (R, .str "suspendedLanes"), (R, .str "pingedLanes"), (R, .str "warmLanes")], false⟩
 
 section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
@@ -75,7 +75,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t fiber : Valu
     (hQM : ∀ w h1 c e, Frame (fpAll R d.env) s w → ReactEnsureRoot.Scheduled w d.env oG R →
       ReactSchedTask.Callback w c e d.env →
       (w.objEntry R).props.get? (.str "pendingLanes") = some (.data (.num (numberBinOp .bitOr pl p)) true pe pc) →
-      s.fuel ≤ w.fuel + 30 →
+      s.fuel ≤ w.fuel + 24 →
       WP eng answer n h1 (callImpl eng (.obj fQ) .undefined #[.obj c]) w fun _ w' h' => Q (w'.restore s) h') :
     WP eng answer (n + 3) h (callImpl eng (.obj fo) t #[.obj R, fiber, .num p]) s fun v w h' =>
       v = .undefined ∧ Q w h' := by

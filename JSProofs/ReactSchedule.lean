@@ -35,7 +35,7 @@ theorem simple (d : FuncData) (hc : d.code = SUFGen.scheduleUpdateOnFiber_func) 
 
 /-- What `markRootUpdated$1` writes. -/
 def fpM (R : ObjId) : Footprint :=
-  ⟨[], [(R, .str "pendingLanes"), (R, .str "suspendedLanes"), (R, .str "pingedLanes"), (R, .str "warmLanes")]⟩
+  ⟨[], [(R, .str "pendingLanes"), (R, .str "suspendedLanes"), (R, .str "pingedLanes"), (R, .str "warmLanes")], false⟩
 
 set_option maxHeartbeats 1000000 in
 theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t fiber : Value} {s : State}

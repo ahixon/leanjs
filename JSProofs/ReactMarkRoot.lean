@@ -40,7 +40,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     WP eng answer n h (callImpl eng (.obj fo) t #[.obj R, .num p]) s fun v w _ =>
       v = .undefined ∧
       Frame ⟨[], [(R, .str "pendingLanes"), (R, .str "suspendedLanes"), (R, .str "pingedLanes"),
-        (R, .str "warmLanes")]⟩ s w ∧
+        (R, .str "warmLanes")], false⟩ s w ∧
       s.fuel ≤ w.fuel + 1 ∧
       (w.objEntry R).props.get? (.str "pendingLanes") = some (.data (.num (numberBinOp .bitOr pl p)) true pe pc) ∧
       (w.objEntry R).props.get? (.str "suspendedLanes") = some (.data (.num (F64.fin false 0 (-1074))) true ue uc) ∧
