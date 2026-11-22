@@ -31,7 +31,7 @@ set_option maxHeartbeats 1000000 in
 returns `P.stateNode`. -/
 theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t update : Value} {s : State}
     {F Fa P Pa Rt : ObjId} {lane fl al pc ac : F64}
-    {fe fc ae ac' pe pc' qe qc r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 : Bool}
+    {fe fc ae ac' pe pc' qe qc r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15 r16 r17 r18 : Bool}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 30 ≤ s.fuel)
     (hcode : d.code = MULGen.markUpdateLaneFromFiberToRoot_func) (hcls : d.isClassCtor = false)
     (hmode : d.thisMode = .strict)
@@ -47,8 +47,8 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t update : Val
     (hPc : (s.objEntry P).props.get? (.str "childLanes") = some (.data (.num pc) true pe pc'))
     (hPal : (s.objEntry P).props.get? (.str "alternate") = some (.data (.obj Pa) r7 r8 r9))
     (hPt : (s.objEntry P).props.get? (.str "tag") = some (.data (.num (F64.fin false 6755399441055744 (-51))) r10 r11 r12))
-    (hPr : (s.objEntry P).props.get? (.str "return") = some (.data .null r1 r2 r3))
-    (hPs : (s.objEntry P).props.get? (.str "stateNode") = some (.data (.obj Rt) r4 r5 r6))
+    (hPr : (s.objEntry P).props.get? (.str "return") = some (.data .null r13 r14 r15))
+    (hPs : (s.objEntry P).props.get? (.str "stateNode") = some (.data (.obj Rt) r16 r17 r18))
     (hPac : (s.objEntry Pa).props.get? (.str "childLanes") = some (.data (.num ac) true qe qc)) :
     WP eng answer n h (callImpl eng (.obj fo) t #[.obj F, update, .num lane]) s fun v w h' =>
       v = .obj Rt ∧ Frame (fp F Fa P Pa) s w ∧ s.fuel ≤ w.fuel + 30 ∧ h' = h ∧

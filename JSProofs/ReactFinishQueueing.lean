@@ -107,7 +107,7 @@ set_option maxHeartbeats 2000000 in
 theorem one_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
     {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdI bdL bdA bdM : Binding}
     {A Qo U F Fa P Pa Rt fM : ObjId} {dM : FuncData} {lane fl al pc ac L : F64} {v4 v5 : Value} {lw le lc : Bool}
-    {e0 c0 e1 c1 e2 c2 e3 c3 qe qc ue uc fe fc ae ac' pe pc' xe xc r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 : Bool}
+    {e0 c0 e1 c1 e2 c2 e3 c3 qe qc ue uc fe fc ae ac' pe pc' xe xc r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15 r16 r17 r18 : Bool}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 100 ≤ s.fuel)
     (hcode : d.code = FQCGen.finishQueueingConcurrentUpdates_func) (hcls : d.isClassCtor = false)
     (hmode : d.thisMode = .strict)
@@ -148,8 +148,8 @@ theorem one_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hPc : (s.objEntry P).props.get? (.str "childLanes") = some (.data (.num pc) true pe pc'))
     (hPal : (s.objEntry P).props.get? (.str "alternate") = some (.data (.obj Pa) r7 r8 r9))
     (hPt : (s.objEntry P).props.get? (.str "tag") = some (.data (.num (F64.fin false 6755399441055744 (-51))) r10 r11 r12))
-    (hPr : (s.objEntry P).props.get? (.str "return") = some (.data .null r1 r2 r3))
-    (hPs : (s.objEntry P).props.get? (.str "stateNode") = some (.data (.obj Rt) r4 r5 r6))
+    (hPr : (s.objEntry P).props.get? (.str "return") = some (.data .null r13 r14 r15))
+    (hPs : (s.objEntry P).props.get? (.str "stateNode") = some (.data (.obj Rt) r16 r17 r18))
     (hPac : (s.objEntry Pa).props.get? (.str "childLanes") = some (.data (.num ac) true xe xc)) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
       v = .undefined ∧ Frame (fpOne d.env A Qo U F Fa P Pa) s w ∧ s.fuel ≤ w.fuel + 100 ∧ h' = h ∧
@@ -178,7 +178,7 @@ theorem one_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGL, hGLm, hGLv, hGA, hL0, hL1, hL2, hL3, hGAv, hGM, hGMv, hMo, hMk, hA, hAk, hA0, hA1, hA2, hA3, hAL, hL4, hlane, hQ, hQk, hQp, hU, hUk, hUn, dAQ, dAU, dQU, Ne.symm dAQ, Ne.symm dAU, Ne.symm dQU, FDI.fdiCtx, Sem.inner]
   focus
     js_norm [CallableC, *, Ne.symm dMA, Ne.symm dMQ, Ne.symm dMU]
-    refine wp_mono (ReactMarkLane.root_spec (d := dM) (Rt := Rt) (fl := fl) (al := al) (pc := pc) (ac := ac) (F := F) (Fa := Fa) (P := P) (Pa := Pa) (fe := fe) (fc := fc) (ae := ae) (ac' := ac') (pe := pe) (pc' := pc') (qe := xe) (qc := xc) (r1 := r1) (r2 := r2) (r3 := r3) (r4 := r4) (r5 := r5) (r6 := r6) (r7 := r7) (r8 := r8) (r9 := r9) (r10 := r10) (r11 := r11) (r12 := r12)
+    refine wp_mono (ReactMarkLane.root_spec (d := dM) (Rt := Rt) (fl := fl) (al := al) (pc := pc) (ac := ac) (F := F) (Fa := Fa) (P := P) (Pa := Pa) (fe := fe) (fc := fc) (ae := ae) (ac' := ac') (pe := pe) (pc' := pc') (qe := xe) (qc := xc) (r1 := r1) (r2 := r2) (r3 := r3) (r4 := r4) (r5 := r5) (r6 := r6) (r7 := r7) (r8 := r8) (r9 := r9) (r10 := r10) (r11 := r11) (r12 := r12) (r13 := r13) (r14 := r14) (r15 := r15) (r16 := r16) (r17 := r17) (r18 := r18)
       ?_ ?_ ?_ hMcode hMcls hMmode ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ d1 d2 d3 d4 d5 d6 ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_) ?post
     case post =>
       intro v w' h' ⟨hv, hFr, hfu', hh, hF', hFa', hP', hPa'⟩
