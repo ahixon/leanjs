@@ -189,6 +189,33 @@ theorem bodyState_envEntry_self (s : State) (fo : ObjId) (d : FuncData) (t : Val
   have h : s.envs.size < (entryState s fo d t).envs.size := by simp [entryState]
   simp [bodyState, h]
 
+/-! ## Numbers -/
+
+/-- A numeric operator (not `+`, comparisons, `in`, `instanceof`) on two Numbers. -/
+def isNumOp : BinOp → Bool
+  | .sub | .mul | .div | .mod | .exp | .shl | .sar | .shr | .bitAnd | .bitOr | .bitXor => true
+  | _ => false
+
+theorem binaryOp_num (op : BinOp) (a b : F64) (s : State) (hop : isNumOp op = true) :
+    Sem.binaryOp op (.num a) (.num b) s = .ok (.num (numberBinOp op a b)) s := by
+  cases op <;> simp [isNumOp] at hop <;> rfl
+
+open Lean Meta Simp in
+/-- A closed `numberBinOp`/`isStrictlyEqual`/`toBoolean` term, reduced (the kernel checks the `rfl`). -/
+simproc numEval (numberBinOp _ _ _) := fun e => do
+  if e.hasFVar || e.hasMVar then return .continue
+  let r ← withTransparency .all <| reduce e
+  if r == e then return .continue
+  return .done { expr := r, proof? := some (← mkExpectedTypeHint (← mkEqRefl r) (← mkEq e r)) }
+
+open Lean Meta Simp in
+simproc strictEqEval (isStrictlyEqual _ _) := fun e => do
+  if e.hasFVar || e.hasMVar then return .continue
+  let r ← withTransparency .all <| reduce e
+  unless r.isConstOf ``Bool.true || r.isConstOf ``Bool.false do return .continue
+  return .done { expr := r, proof? := some (← mkExpectedTypeHint (← mkEqRefl r) (← mkEq e r)) }
+
+
 /-- A record of a body's state: the function's own one, or the caller's. -/
 theorem bodyState_envEntry (s : State) (fo : ObjId) (d : FuncData) (t : Value) (args : Array Value) (e : EnvId) :
     (bodyState s fo d t args).envEntry e = if e = s.envs.size then .func
@@ -229,14 +256,14 @@ macro_rules
       FDI.createLex, List.range_succ, List.range_zero, List.nil_append, List.cons_append, List.foldl_cons,
       List.foldl_nil, List.foldl_append, List.size_toArray, List.length_cons, List.length_nil,
       Std.HashMap.getElem?_modify, Std.HashMap.getElem?_insert, Std.HashMap.getElem?_empty,
-      Std.HashMap.contains_modify, Std.HashMap.contains_insert, Std.HashMap.contains_empty,
+      Std.HashMap.contains_eq_isSome_getElem?, Option.isSome_some, Option.isSome_none,
       State.setEnv_envs_size, State.setEnv_fuel, setEnv_heap, setEnv_objEntry, bodyState_envs_size, bodyState_fuel,
       bodyState_objEntry, bodyState_heap, State.setProp_envs, State.setProp_fuel, State.setProp_size,
       Option.map_some, Option.map_none, ↓reduceIte, Bool.false_eq_true, toBoolean, litValue, retVal,
       Compl.updateEmpty, Option.orElse, HOrElse.hOrElse, OrElse.orElse, Bool.not_false, Bool.not_true,
       Bool.true_and, Bool.false_and, Bool.and_true, Bool.or_false, Bool.false_or, Bool.true_or, Bool.or_true,
       Bool.and_false, ↓reduceDIte,
-      Nat.lt_add_one, and_true, true_and, jsstrBeq, lit_getElem?_zero, lit_getElem?_succ, lit_getElem!_zero, lit_getElem!_succ,
+      Nat.lt_add_one, and_true, true_and, jsstrBeq, numEval, strictEqEval, lit_getElem?_zero, lit_getElem?_succ, lit_getElem!_zero, lit_getElem!_succ,
       Option.getD_some, List.contains_toArray, List.contains_cons, List.contains_nil,
       $xs,*])
 
