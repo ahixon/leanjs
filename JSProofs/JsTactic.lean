@@ -56,7 +56,11 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
     return none
   | ``ES.Sem.cond => return some (← `(tactic| apply wp_cond))
   | ``ES.Sem.forS => return some (← `(tactic| apply wp_forVar))
-  | ``ES.Sem.unary => return some (← `(tactic| apply wp_not))
+  | ``ES.Sem.unary =>
+    let op := xa[0]?
+    if op.any (·.isConstOf ``ES.UnOp.neg) then return some (← `(tactic| apply wp_negNum))
+    if op.any (·.isConstOf ``ES.UnOp.bitNot) then return some (← `(tactic| apply wp_bitNotNum))
+    return some (← `(tactic| apply wp_not))
   | ``ES.Sem.object => return some (← `(tactic| apply wp_object))
   | ``ES.Sem.func => return some (← `(tactic| (refine wp_funcExpr ⟨rfl, rfl, rfl, rfl, rfl⟩ ?s1 ?_; (case s1 => (simp only [js_simp]; assumption)))))
   | ``ES.Sem.seq => return some (← `(tactic| apply wp_seqExpr))
@@ -85,6 +89,57 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
   | ``ite => return some (← `(tactic| apply wp_ite))
   | ``Pure.pure => return some (← `(tactic| apply wp_pure))
   | _ => return none
+
+/-- The keys written on `m'` above `m` (its `modify`/`insert` spine down to `m`). -/
+partial def keysAbove (m m' : Lean.Expr) : MetaM (Option (List Lean.Expr)) := do
+  let m' := m'.consumeMData
+  if m' == m then return some []
+  if m'.isAppOf ``Std.HashMap.modify || m'.isAppOf ``Std.HashMap.insert then
+    let args := m'.getAppArgs
+    let inner := args[args.size - 3]!
+    let k := args[args.size - 2]!
+    let some ks ← keysAbove m inner | return none
+    return some (k :: ks)
+  return none
+
+/-- A function record rewritten at several names since the frame's start (`frame_setEnv_func_onlyAt`): `hent`
+solved first (it fixes the old map), then the names in between read off the new map. -/
+elab "frame_func_onlyAt" "[" facts:Lean.Parser.Tactic.simpArg,* "]" : tactic => do
+  let factsArr : Syntax.TSepArray [`Lean.Parser.Tactic.simpStar, `Lean.Parser.Tactic.simpErase,
+      `Lean.Parser.Tactic.simpLemma] "," := ⟨facts.elemsAndSeps⟩
+  evalTactic (← `(tactic| refine frame_setEnv_func_onlyAt (bm := ?fbm) ?_ (he := ?fs1) (hent := ?fs2) ?fk0 ?fks (hks := ?fs3) (hm := ?fs4)))
+  evalTactic (← `(tactic| case fs2 => first | with_reducible rfl | (js_norm [$factsArr,*]; try with_reducible rfl)))
+  let gs ← getGoals
+  let some g4 ← gs.findM? (fun g => return (← g.getTag).eraseMacroScopes == `fs4) | throwError "frame_func_onlyAt: no OnlyAt goal"
+  let ty ← instantiateMVars (← g4.getType)
+  let args := ty.getAppArgs
+  let ksE := args[0]!; let bm := args[1]!; let bm' := args[2]!
+  let some keys ← keysAbove (← instantiateMVars bm) bm' | throwError "frame_func_onlyAt: the new map is not the old one rewritten"
+  let some k0 := keys.head? | throwError "frame_func_onlyAt: nothing written"
+  let rest ← mkListLit (mkConst ``ES.JSStr) keys.tail
+  let ka := ksE.getAppArgs
+  let mv? (e : Option Lean.Expr) : Option MVarId := match e with
+    | some (.mvar m) => some m
+    | _ => none
+  let (some m0, some m1) := (mv? ka[1]?, mv? ka[2]?) |
+    throwError "frame_func_onlyAt: the names are not holes"
+  m0.assign k0
+  m1.assign rest
+  setGoals ((← getGoals).filter fun g => g != m0 && g != m1)
+  evalTactic (← `(tactic| case fs3 => (apply forall_mem_of_all; simp)))
+  evalTactic (← `(tactic| case fs4 => repeat' (first
+    | with_reducible exact onlyAt_refl _ _
+    | (with_reducible refine onlyAt_modify ?mk _ ?_); (case mk => simp)
+    | (with_reducible refine onlyAt_insert ?mk _ ?_); (case mk => simp))))
+  evalTactic (← `(tactic| case fs1 => simp [$factsArr,*]))
+
+/-- `Env.func (m.modify x f) o …` ↦ `Env.func m o …` (the write before the last one to a function record). -/
+def funcInner (ev : Lean.Expr) : MetaM (Option (TSyntax `term)) := do
+  let args := ev.getAppArgs
+  let m := (args[0]!).consumeMData
+  unless m.isAppOf ``Std.HashMap.modify || m.isAppOf ``Std.HashMap.insert do return none
+  let inner := mkAppN ev.getAppFn (#[(m.getAppArgs[m.getAppNumArgs - 3]!)] ++ args.extract 1 args.size)
+  return some (← Lean.PrettyPrinter.delab inner)
 
 /-- One step of a frame proof for an explicit final state, by the state's head symbol (`frame_refl` only when the
 final state is the start, syntactically). -/
@@ -115,11 +170,25 @@ def frameRuleFor (t : Lean.Expr)
   | ``ES.State.setEnv =>
     let ev := (w.getAppArgs[2]!).consumeMData
     if ev.isAppOf ``ES.Env.withBindings then
-      return some (← `(tactic| (refine frame_setEnv_with_in ?_ (he := ?s1) (hent := ?s2) (hd := ?s3) (hin := ?s4) _; (case s1 => simp [$facts,*]); (case s2 => js_norm [$facts,*]); (case s3 => js_norm [$facts,*]); (case s4 => simp))))
+      let direct ← `(tactic| (refine frame_setEnv_with_in ?_ (he := ?s1) (hent := ?s2) (hd := ?s3) (hin := ?s4) _; (case s1 => simp [$facts,*]); (case s2 => js_norm [$facts,*]); (case s3 => js_norm [$facts,*]); (case s4 => simp)))
+      -- (two writes collapsed into one: split off the inner one)
+      let inner := (ev.getAppArgs[0]!).consumeMData
+      if inner.isAppOf ``ES.Env.withBindings then
+        let a ← Lean.PrettyPrinter.delab inner
+        let directSeq ← `(Lean.Parser.Tactic.tacticSeq| $direct:tactic)
+        return some (← `(tactic| first | $directSeq | (refine frame_setEnv_split (a := $a) ?_)))
+      return some direct
     if ev.isAppOf ``ES.Env.func then
-      return some (← `(tactic| first
-        | (refine frame_setEnv_new ?_ (he := ?s1) _; (case s1 => simp))
-        | (refine frame_setEnv_func_in ?_ (he := ?s1) (hent := ?s2) (hin := ?s3) _; (case s1 => simp [$facts,*]); (case s2 => js_norm [$facts,*]); (case s3 => simp))))
+      let fin ← `(tactic| (refine frame_setEnv_func_in ?_ (he := ?s1) (hent := ?s2) (hin := ?s3) _; (case s1 => simp [$facts,*]); (case s2 => js_norm [$facts,*]); (case s3 => simp)))
+      let finSeq ← `(Lean.Parser.Tactic.tacticSeq| $fin:tactic)
+      match ← funcInner ev with
+      | some _ => return some (← `(tactic| first
+          | (refine frame_setEnv_new ?_ (he := ?s1) _; (case s1 => simp))
+          | $finSeq
+          | frame_func_onlyAt [$facts,*]))
+      | none => return some (← `(tactic| first
+          | (refine frame_setEnv_new ?_ (he := ?s1) _; (case s1 => simp))
+          | $finSeq))
     if ev.isAppOf ``ES.Env.decl then
       return some (← `(tactic| (refine frame_setEnv_decl_in ?_ (he := ?s1) (hent := ?s2) (hin := ?s3) _; (case s1 => simp [$facts,*]); (case s2 => js_norm [$facts,*]); (case s3 => simp))))
     return some (← `(tactic| (refine frame_setEnv_new ?_ (he := ?s1) _; (case s1 => simp))))

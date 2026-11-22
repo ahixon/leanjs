@@ -146,3 +146,130 @@ theorem wp_funcExpr {n : Nat} {h : σ} {f : Func} {ctx : Ctx} {s : State} {Q : V
 end
 
 end Logic
+
+
+namespace Logic
+
+/-- Two writes in a row to the same record: the second (each carries the whole record). -/
+@[js_simp] theorem setEnv_setEnv_same (s : State) (e : EnvId) (a b : Env) :
+    (s.setEnv e a).setEnv e b = s.setEnv e b := by
+  simp only [State.setEnv]
+  congr 1
+  apply Array.ext
+  · simp
+  · intro i h1 h2
+    simp only [Array.getElem_modify]
+    split <;> rfl
+
+end Logic
+
+namespace Logic
+
+/-- A record write that collapsed two (`setEnv_setEnv_same`), framed as the two. -/
+theorem frame_setEnv_split {fp : Footprint} {s u : State} {e : EnvId} {a b : Env}
+    (h : Frame fp s ((u.setEnv e a).setEnv e b)) : Frame fp s (u.setEnv e b) := by
+  rwa [setEnv_setEnv_same] at h
+
+end Logic
+
+namespace Logic
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+/-- **`-x`** of a Number. -/
+theorem wp_negNum {n : Nat} {h : σ} {e : Sem.CExpr} {ctx : Ctx} {s : State} {Q : Value → State → σ → Prop}
+    (hw : WP eng answer n h (e ctx) s fun v w h1 => match v with
+      | .num x => Q (.num x.neg) w h1
+      | _ => False) :
+    WP eng answer n h (Sem.unary .neg e ctx) s Q := by
+  rw [wp_iff_wpr]
+  simp only [Sem.unary, M.bind_eq, M.bind_apply]
+  refine wpr_bind (wp_mono hw fun v w h1 q => ?_)
+  cases v <;> simp at q
+  exact wp_of_eq (by simp [Sem.unaryOp, M.bind_eq, M.bind_apply, toNumeric_num, M.bindRes_ok]; rfl) q
+
+/-- **`~x`** of a Number: the complement of its 32-bit integer. -/
+theorem wp_bitNotNum {n : Nat} {h : σ} {e : Sem.CExpr} {ctx : Ctx} {s : State} {Q : Value → State → σ → Prop}
+    (hw : WP eng answer n h (e ctx) s fun v w h1 => match v with
+      | .num x => Q (intV (Conv.intNot (Conv.toInt32 x))) w h1
+      | _ => False) :
+    WP eng answer n h (Sem.unary .bitNot e ctx) s Q := by
+  rw [wp_iff_wpr]
+  simp only [Sem.unary, M.bind_eq, M.bind_apply]
+  refine wpr_bind (wp_mono hw fun v w h1 q => ?_)
+  cases v <;> simp at q
+  exact wp_of_eq (by simp [Sem.unaryOp, M.bind_eq, M.bind_apply, toNumeric_num, M.bindRes_ok]; rfl) q
+
+end
+
+end Logic
+
+namespace Logic
+
+/-- `m'` agrees with `m` except at the names `ks`. -/
+def OnlyAt (ks : List JSStr) (m m' : Std.HashMap JSStr Binding) : Prop := ∀ x, x ∉ ks → m'[x]? = m[x]?
+
+theorem onlyAt_refl (ks : List JSStr) (m : Std.HashMap JSStr Binding) : OnlyAt ks m m := fun _ _ => rfl
+
+theorem onlyAt_modify {ks : List JSStr} {m m' : Std.HashMap JSStr Binding} {k : JSStr} (hk : k ∈ ks)
+    (f : Binding → Binding) (h : OnlyAt ks m m') : OnlyAt ks m (m'.modify k f) := fun x hx => by
+  have hkx : (k == x) = false := by
+    simp only [beq_eq_false_iff_ne]; exact fun e => hx (e ▸ hk)
+  rw [Std.HashMap.getElem?_modify, hkx]; exact h x hx
+
+theorem onlyAt_insert {ks : List JSStr} {m m' : Std.HashMap JSStr Binding} {k : JSStr} (hk : k ∈ ks)
+    (b : Binding) (h : OnlyAt ks m m') : OnlyAt ks m (m'.insert k b) := fun x hx => by
+  have hkx : (k == x) = false := by
+    simp only [beq_eq_false_iff_ne]; exact fun e => hx (e ▸ hk)
+  rw [Std.HashMap.getElem?_insert, hkx]; exact h x hx
+
+/-- **A function record rewritten at names in the footprint** (a call's locals, several writes at once). -/
+theorem frame_setEnv_func_onlyAt {fp : Footprint} {s u : State} {e : EnvId} (hF : Frame fp s u) (he : e < s.envs.size)
+    {bm bm' : Std.HashMap JSStr Binding} {o : Option EnvId} {ts : ThisStatus} {tv : Value} {fo : ObjId} {nt : Value}
+    (hent : u.envEntry e = .func bm o ts tv fo nt) (k0 : JSStr) (ks : List JSStr) (hks : ∀ x ∈ k0 :: ks, (e, x) ∈ fp.binds)
+    (hm : OnlyAt (k0 :: ks) bm bm') : Frame fp s (u.setEnv e (.func bm' o ts tv fo nt)) := by
+  have heu : e < u.envs.size := Nat.lt_of_lt_of_le he hF.envs_le
+  refine {
+    envs_le := by simpa using hF.envs_le
+    heap_le := by simpa [State.setEnv] using hF.heap_le
+    env_agree := fun i hi => ?_
+    obj_agree := fun o' ho => by simpa [State.objEntry, State.setEnv] using hF.obj_agree o' ho
+    env_eq := fun i hi hn => ?_
+    obj_eq := fun o' ho hn => by simpa [State.objEntry, State.setEnv] using hF.obj_eq o' ho hn
+    realms_eq := by simpa [State.setEnv] using hF.realms_eq
+    jobs_prefix := by simpa [State.setEnv] using hF.jobs_prefix
+    jobs_eq := fun hj => by simpa [State.setEnv] using hF.jobs_eq hj }
+  · by_cases hei : e = i
+    · subst hei
+      rw [State.setEnv_envEntry_self _ _ _ heu]
+      have hag := hF.env_agree e hi
+      rw [hent] at hag
+      unfold EnvAgree at hag ⊢
+      cases hs : Scope.declLike? (s.envEntry e) with
+      | none => rw [hs] at hag; rw [← hag] at hs; simp [Scope.declLike?] at hs
+      | some p =>
+        obtain ⟨bs, os⟩ := p
+        rw [hs] at hag
+        obtain ⟨bw, hw, hx⟩ := hag
+        simp only [Scope.declLike?, Option.some.injEq, Prod.mk.injEq] at hw
+        obtain ⟨rfl, rfl⟩ := hw
+        refine ⟨bm', rfl, fun y hy => ?_⟩
+        have hyk : y ∉ k0 :: ks := fun hm' => hy (hks y hm')
+        rw [hm y hyk]; exact hx y hy
+    · rw [setEnv_envEntry_ne _ _ _ _ hei]; exact hF.env_agree i hi
+  · by_cases hei : e = i
+    · subst hei; exact absurd (hks k0 List.mem_cons_self) (hn k0)
+    · rw [setEnv_envEntry_ne _ _ _ _ hei]; exact hF.env_eq i hi hn
+
+end Logic
+
+namespace Logic
+
+theorem forall_mem_of_all {fp : Footprint} {e : EnvId} {l : List JSStr}
+    (h : l.all (fun x => fp.binds.contains (e, x)) = true) : ∀ x ∈ l, (e, x) ∈ fp.binds := by
+  intro x hx
+  have := List.all_eq_true.mp h x hx
+  simpa using this
+
+end Logic
