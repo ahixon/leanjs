@@ -56,6 +56,11 @@ def GetsAcc (eng : Engine) (answer : HostAnswer σ) (n : Nat) (h : σ) (s : Stat
     ordLookup s m o (.str k) = some (.accessor g sv e c) ∧ g.isUndefined = false ∧
     WP eng answer n h (callImpl eng g (.obj o) #[]) s Q
 
+theorem getsAcc_mono {n : Nat} {h : σ} {s : State} {b : Value} {k : JSStr} {P Q : Value → State → σ → Prop}
+    (hg : GetsAcc eng answer n h s b k P) (hpq : ∀ v w h', P v w h' → Q v w h') : GetsAcc eng answer n h s b k Q := by
+  obtain ⟨o, m, g, sv, e, c, hb, hc, hm, hl, hgu, q⟩ := hg
+  exact ⟨o, m, g, sv, e, c, hb, hc, hm, hl, hgu, wp_mono q hpq⟩
+
 /-- **`obj.k`, an accessor**: the getter's call with `obj` as `this`. -/
 theorem wp_getMemberAcc {n : Nat} {h : σ} {obj : Sem.CExpr} {k : JSStr} {ctx : Ctx} {s : State}
     {Q : Value → State → σ → Prop}
