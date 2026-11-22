@@ -226,9 +226,14 @@ def genDecl (names : Names) : Nat → VarKind → VarDeclarator → String
     match kind, target, init with
     | .var, _, none => "(fun _ => pure ())"
     | .var, .ident x, some ie => app "ES.Sem.declVar" [qStr x, rhs x ie]
-    | .var, _, some _ => fb
+    | .var, p, some ie =>
+      app "ES.Sem.declPat" [genExpr names k ie,
+        s!"(fun ctx v => ES.bindPattern {d k} ctx {qPattern quoteDepth p} v (.init none))"]
     | kd, .ident x, none => app "ES.Sem.declLex" [qVarKind kd, qStr x, "none"]
     | kd, .ident x, some ie => app "ES.Sem.declLex" [qVarKind kd, qStr x, "(some " ++ rhs x ie ++ ")"]
+    | _, p, some ie =>
+      app "ES.Sem.declPat" [genExpr names k ie,
+        s!"(fun ctx v => ES.bindPattern {d k} ctx {qPattern quoteDepth p} v (.init (some ctx.lex)))"]
     | _, _, _ => fb
 
 end

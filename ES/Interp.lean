@@ -656,6 +656,14 @@ def declLex (kind : VarKind) (x : JSStr) (v : Option CExpr) : CDecl := fun ctx =
       | some cap => addDisposableResource cap val (kind == .awaitUsing)
       | none => M.halt "internal: using declaration outside a disposal scope"
 
+/-- A declarator with a destructuring pattern: the initializer, then the pattern bound to its value (`bind`: the
+interpreter's BindingInitialization of the pattern).
+spec: https://tc39.es/ecma262/#sec-variable-statement-runtime-semantics-evaluation
+spec: https://tc39.es/ecma262/#sec-let-and-const-declarations-runtime-semantics-evaluation -/
+def declPat (rhs : CExpr) (bind : Ctx → Value → M Unit) : CDecl := fun ctx => do
+  let v ← rhs ctx
+  bind ctx v
+
 def varDecl (ds : Array CDecl) : CStmt := fun ctx => do
   let ctx := inner ctx
   M.forArr ds fun d => d ctx
@@ -1599,14 +1607,10 @@ def declD : Nat → VarKind → VarDeclarator → Sem.CDecl
     match kind, target, init with
     | .var, _, none => fun _ => pure ()
     | .var, .ident x, some ie => Sem.declVar x (rhs x ie)
-    | .var, p, some ie => fun ctx => do
-      let v ← evalExpr n ctx ie
-      bindPattern n ctx p v (.init none)
+    | .var, p, some ie => Sem.declPat (evalExpr n · ie) fun ctx v => bindPattern n ctx p v (.init none)
     | k, .ident x, none => Sem.declLex k x none
     | k, .ident x, some ie => Sem.declLex k x (some (rhs x ie))
-    | _, p, some ie => fun ctx => do
-      let v ← evalExpr n ctx ie
-      bindPattern n ctx p v (.init (some ctx.lex))
+    | _, p, some ie => Sem.declPat (evalExpr n · ie) fun ctx v => bindPattern n ctx p v (.init (some ctx.lex))
     | _, _, none => fun _ => pure ()
 
 /-- A statement list: UpdateEmpty of each statement's completion with the last value.
