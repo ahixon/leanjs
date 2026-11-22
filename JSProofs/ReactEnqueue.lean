@@ -42,7 +42,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t fiber queue 
     {lw le lc fw fe fc aw ae ac : Bool} {v0 v1 v2 v3 : Value} {e0 e1 e2 e3 c0 c1 c2 c3 : Bool}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 20 ≤ s.fuel)
     (hcode : d.code = EUGen.fn0_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
-    (hG : d.env < s.envs.size) (hGe : s.envEntry d.env = .decl bG oG)
+    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGA : bG[JSStr.ofString "concurrentQueues"]? = some bdA) (hGAv : bdA.value = some (.obj A))
     (hGI : bG[JSStr.ofString "concurrentQueuesIndex"]? = some bdI)
     (hGIv : bdI.value = some (.num (F64.fin false 0 (-1074)))) (hGIm : bdI.mutable = true)
@@ -85,6 +85,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t fiber queue 
   simp only [EUGen.fn0]
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGA, hGAv, hGI, hGIv, hGIm, hGL, hGLv, hGLm, hA, hAk,
     hA0, hA1, hA2, hA3, hAL, hl0, hl1, hl2, hl3, hF, hFk, hFA, Ne.symm hFA, hFl, hFa, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals first | omega | frame_go' [*, hG, hG1, hne, Ne.symm hne, hGe, hA, hF, hFA, Ne.symm hFA]
 

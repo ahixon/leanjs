@@ -103,17 +103,16 @@ def frameRuleFor (t : Lean.Expr)
   | ``Logic.bodyState => return some (← `(tactic| apply frame_bodyState))
   | ``ES.State.allocObj => return some (← `(tactic| apply frame_allocObj))
   | ``ES.State.withFuel => return some (← `(tactic| apply frame_withFuel))
-  | ``ES.State.setEnv => return some (← `(tactic| first
-      | (refine frame_setEnv_new ?_ (he := ?s1) _; (case s1 => simp))
-      | (refine frame_setEnv_decl_in ?_ (he := ?s1) (hent := ?s2) (hin := ?s3) _
-         (case s1 => simp [$facts,*])
-         (case s2 => js_norm [$facts,*])
-         (case s3 => simp))))
+  | ``ES.State.setEnv =>
+    let ev := (w.getAppArgs[2]!).consumeMData
+    if ev.isAppOf ``ES.Env.withBindings then
+      return some (← `(tactic| (refine frame_setEnv_with_in ?_ (he := ?s1) (hent := ?s2) (hd := ?s3) (hin := ?s4) _; (case s1 => simp [$facts,*]); (case s2 => js_norm [$facts,*]); (case s3 => js_norm [$facts,*]); (case s4 => simp))))
+    if ev.isAppOf ``ES.Env.decl then
+      return some (← `(tactic| (refine frame_setEnv_decl_in ?_ (he := ?s1) (hent := ?s2) (hin := ?s3) _; (case s1 => simp [$facts,*]); (case s2 => js_norm [$facts,*]); (case s3 => simp))))
+    return some (← `(tactic| (refine frame_setEnv_new ?_ (he := ?s1) _; (case s1 => simp))))
   | ``ES.State.setProp => return some (← `(tactic| first
       | (refine frame_setProp_new ?_ (ho := ?s1) _ _; (case s1 => simp))
-      | (refine frame_setProp_in ?_ (ho := ?s1) (hin := ?s2) _
-         (case s1 => simp [$facts,*])
-         (case s2 => simp))))
+      | (refine frame_setProp_in ?_ (ho := ?s1) (hin := ?s2) _; (case s1 => simp [$facts,*]); (case s2 => simp))))
   | _ => return none
 
 /-- Frame steps until the start. -/

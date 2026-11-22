@@ -392,6 +392,18 @@ theorem frame_setEnv_decl_in (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.si
     · exact hin
     · exact hp) (fun _ hp => hp)
 
+/-- A binding of an existing record known by `declLike?`, written: allowed if it is in the footprint. -/
+theorem frame_setEnv_with_in (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.size) {ev : Env}
+    (hent : u.envEntry e = ev) (hd : (Scope.declLike? ev).isSome = true) {x : JSStr} (hin : (e, x) ∈ fp.binds)
+    (f : Binding → Binding) :
+    Frame fp s (u.setEnv e (ev.withBindings (·.modify x f))) := by
+  subst hent
+  obtain ⟨⟨bm, o⟩, hd⟩ := Option.isSome_iff_exists.mp hd
+  exact frame_mono (frame_setEnv_bind hF he hd x f) (fun p hp => by
+    rcases List.mem_cons.mp hp with rfl | hp
+    · exact hin
+    · exact hp) (fun _ hp => hp)
+
 /-- A property of an existing object, written: allowed if it is in the footprint. -/
 theorem frame_setProp_in (hF : Frame fp s u) {o : ObjId} (ho : o < s.heap.size) {k : PropKey}
     (hin : (o, k) ∈ fp.props) (p : Property) : Frame fp s (u.setProp o k p) :=
