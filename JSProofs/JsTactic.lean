@@ -1,4 +1,4 @@
-import JSProofs.Loops3
+import JSProofs.Switch
 
 /-!
 # The `js` tactic's step, by the computation's head symbol (zippy docs/react-proofs.md)
@@ -59,6 +59,7 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
   | ``ES.Sem.cond => return some (← `(tactic| apply wp_cond))
   | ``ES.Sem.forS => return some (← `(tactic| apply wp_forVar))
   | ``ES.Sem.doWhile => return some (← `(tactic| apply wp_doWhile))
+  | ``ES.Sem.switch => return some (← `(tactic| (refine wp_switchC ?s1 ?_; (case s1 => rfl))))
   | ``ES.Sem.unary =>
     let op := xa[0]?
     if op.any (·.isConstOf ``ES.UnOp.neg) then return some (← `(tactic| apply wp_negNum))
@@ -71,7 +72,9 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
     let key := ((xa[0]!).getAppArgs)[1]?
     if key.any (·.isAppOf ``ES.Sem.Key.computed) then return some (← `(tactic| apply wp_getIdxC))
     return some (← `(tactic| apply wp_getMemberC))
-  | ``ES.Sem.call => return some (← `(tactic| (refine wp_callIdentC ?s1 ?_; (case s1 => js_side))))
+  | ``ES.Sem.call =>
+    if sub 0 == some ``ES.Sem.memberRef then return some (← `(tactic| apply wp_callMemberC))
+    return some (← `(tactic| (refine wp_callIdentC ?s1 ?_; (case s1 => js_side))))
   | ``ES.Sem.update => return some (← `(tactic| (refine wp_postIncIdentC ?s1 ?_; (case s1 => js_side))))
   | ``ES.Sem.assign =>
     match sub 0 with
@@ -91,6 +94,7 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
     if op.any (·.isConstOf ``ES.BinOp.seq) then return some (← `(tactic| apply wp_seq))
     if op.any (·.isConstOf ``ES.BinOp.sne) then return some (← `(tactic| apply wp_sne))
     if op.any (·.isConstOf ``ES.BinOp.lt) then return some (← `(tactic| apply wp_ltNum))
+    if op.any (·.isConstOf ``ES.BinOp.add) then return some (← `(tactic| apply wp_addNum))
     return some (← `(tactic| (refine wp_numOp ?s1 ?_; (case s1 => decide))))
   | ``ite => return some (← `(tactic| apply wp_ite))
   | ``Pure.pure => return some (← `(tactic| apply wp_pure))
@@ -172,6 +176,7 @@ def frameRuleFor (t : Lean.Expr)
   | ``ES.State.restore => return some (← `(tactic| apply frame_restore))
   | ``Logic.bodyState => return some (← `(tactic| apply frame_bodyState))
   | ``ES.State.allocObj => return some (← `(tactic| apply frame_allocObj))
+  | ``ES.State.pushEnv => return some (← `(tactic| apply frame_pushEnv))
   | ``ES.State.withFuel => return some (← `(tactic| apply frame_withFuel))
   | ``ES.State.setEnv =>
     let ev := (w.getAppArgs[2]!).consumeMData

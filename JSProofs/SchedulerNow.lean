@@ -1,0 +1,71 @@
+import JSProofs.ReactSchedTaskRoot
+import JSProofs.NOWGen
+
+/-!
+# The scheduler's `unstable_now` (React's `now`) (zippy docs/react-proofs.md)
+
+```js
+exports.unstable_now = function () { return localPerformance.now(); };
+```
+With `performance` present: the host's `performance.now()` (a hypothesis in the reads-only shape: some Number, nothing
+written). The first proof through a method call (`Logic.wp_callMemberC`).
+-/
+
+open ES ES.M HostRuns Logic
+open Std (HashMap)
+
+namespace SchedulerNow
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+/-- A host function that only reads, called with `this` and `args`, giving `v`. -/
+def HostReads (eng : Engine) (answer : HostAnswer σ) (n : Nat) (f : ObjId) (thisV : Value) (args : Array Value)
+    (v : Value) (s : State) (k : Nat) : Prop :=
+  ∀ w h1, Frame {} s w → s.fuel ≤ w.fuel + 5 →
+    WP eng answer n h1 (callImpl eng (.obj f) thisV args) w fun r w' _ => r = v ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + k
+
+theorem simple (d : FuncData) (hc : d.code = NOWGen.fn0_func) : FDI.Simple d := by
+  constructor <;> rw [hc] <;> try rfl
+  simp [NOWGen.fn0_func, Func.params, Func.info]
+
+set_option maxRecDepth 10000 in
+theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
+    {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdP : Binding} {P fN : ObjId} {bP : BuiltinData}
+    {pw pe pc : Bool} {tm : F64}
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 20 ≤ s.fuel)
+    (hcode : d.code = NOWGen.fn0_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
+    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
+    (hGP : bG[JSStr.ofString "localPerformance"]? = some bdP) (hGPv : bdP.value = some (.obj P))
+    (hP : P < s.heap.size) (hPk : (s.objEntry P).kind.isPlain = true)
+    (hPn : (s.objEntry P).props.get? (.str "now") = some (.data (.obj fN) pw pe pc))
+    (hNo : fN < s.heap.size) (hNk : (s.objEntry fN).kind = .builtin bP)
+    (hNow : HostReads eng answer n fN (.obj P) #[] (.num tm) s 5) :
+    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
+      v = .num tm ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 := by
+  replace hNow := ReactDSSI.Hold.mk hNow
+  apply wp_callGen NOWGen.fn0_eq (by decide) hlt hk (by omega) hcls hmode
+    (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
+  have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
+  have hv : d.code.info.fdi.varNames = #[] := by rw [hcode]; rfl
+  have hl : FDI.lexDecls d = #[] := by simp [FDI.lexDecls, hcode, NOWGen.fn0_func, Func.info]
+  have ha : d.code.isAsync = false := by rw [hcode]; rfl
+  have hne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
+  have hG1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  clear hcode
+  simp only [NOWGen.fn0]
+  js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGP, hGPv, hP, hPk, hPn, hNo, hNk, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, *], ?_⟩
+  refine wp_mono ((ReactDSSI.Hold.get hNow) _ h (frame_bodyState (frame_refl {} s) fo d t #[]) (by simp; omega)) ?post
+  case post =>
+  intro r w1 h1 ⟨hr, hF1, hfu1⟩
+  subst hr
+  try simp only [js_simp] at hfu1
+  js [FDI.fdiCtx, Sem.inner, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1]
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
+  all_goals first | rfl | omega | frame_go' [*]
+
+end
+
+end SchedulerNow
