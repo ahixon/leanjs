@@ -1,4 +1,4 @@
-import JSProofs.Calls2
+import JSProofs.Frame
 import JSProofs.RULGen
 
 /-!
@@ -46,7 +46,8 @@ theorem rup_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hI : I < s.heap.size) (hIk : (s.objEntry I).kind.isPlain = true)
     (hIp : (s.objEntry I).props.get? (.str "p") = some (.data (.num p) wp ep cp))
     (hp : isStrictlyEqual (.num (F64.fin false 0 (-1074))) (.num p) = false) :
-    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v _ _ => v = .num p := by
+    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
+      v = .num p ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 1 := by
   apply wp_callGen RULGen.resolveUpdatePriority_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple_rup d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -58,6 +59,8 @@ theorem rup_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   clear hcode
   simp only [RULGen.resolveUpdatePriority]
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGb, hGv, hI, hIk, hIp, hp, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
+  all_goals first | omega | (simp; omega) | frame_tac
 
 theorem simple_rul (d : FuncData) (hc : d.code = RULGen.requestUpdateLane_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -86,7 +89,8 @@ theorem rul_spec {n : Nat} {h : σ} {fo fR : ObjId} {d dR : FuncData} {t : Value
     (hp : isStrictlyEqual (.num (F64.fin false 0 (-1074))) (.num p) = false)
     (hS : S < s.heap.size) (hSk : (s.objEntry S).kind.isPlain = true)
     (hST : (s.objEntry S).props.get? (.str "T") = some (.data .null wt et ct)) :
-    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v _ _ => v = .num p := by
+    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
+      v = .num p ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 2 := by
   apply wp_callGen RULGen.requestUpdateLane_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple_rul d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -103,8 +107,11 @@ theorem rul_spec {n : Nat} {h : σ} {fo fR : ObjId} {d dR : FuncData} {t : Value
   refine ⟨by simp [CallableC, hR, hRk], ?_⟩
   have hGd' : (bodyState s fo d t #[]).envEntry dR.env = .decl bG oG := by
     rw [hRenv, bodyState_envEntry_lt _ _ _ _ _ _ hG, hGe]
-  exact rup_spec (by simpa using hR) (by simpa using hRk) (by simp; omega) hRcode hRcls hRmode
-    (by simpa [hRenv] using hG1) hGd' hGI hGIv (by simpa using hI) (by simpa using hIk) (by simpa using hIp) hp
+  refine wp_mono (rup_spec (by simpa using hR) (by simpa using hRk) (by simp; omega) hRcode hRcls hRmode
+    (by simpa [hRenv] using hG1) hGd' hGI hGIv (by simpa using hI) (by simpa using hIk) (by simpa using hIp) hp) ?_
+  intro v w h1 ⟨hv, hfr, hfu⟩
+  refine ⟨hv, frame_restore (by simpa using frame_trans (frame_bodyState (frame_refl {} s) fo d t #[]) hfr) _, ?_⟩
+  simp at hfu ⊢; omega
 
 end
 

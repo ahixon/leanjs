@@ -93,6 +93,9 @@ theorem wp_inCallee {α : Type} {n : Nat} {h : σ} {realm script : Nat} {body : 
 
 /-! ## Calls of ECMAScript functions -/
 
+/-- A callee's final state `w` with the caller's (`s`) realm and script back. -/
+def _root_.ES.State.restore (w s : State) : State := { w with realm := s.realm, script := s.script }
+
 /-- The function record a call of a non-arrow function runs its body in, `this` bound to `t`. -/
 def boundEnv (fo : ObjId) (d : FuncData) (t : Value) : Env := .func {} (some d.env) .initialized t fo .undefined
 
@@ -122,7 +125,7 @@ theorem wp_callImpl_strict {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : V
     (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (hasync : d.code.isAsync = false) (hgen : d.code.isGenerator = false)
     (hb : WP eng answer n h (evalFunctionBody evalDepth fo d s.envs.size args) (entryState s fo d t)
-      fun v w h' => Q v { w with realm := s.realm, script := s.script } h') :
+      fun v w h' => Q v (w.restore s) h') :
     WP eng answer n h (callImpl eng (.obj fo) t args) s Q := by
   -- (the call: one step of fuel, the function's kind, then [[Call]] in the callee's realm)
   have hfz : (s.fuel == 0) = false := by simp [hf]
@@ -182,7 +185,7 @@ theorem wp_call_simple {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value
     (hasync : d.code.isAsync = false) (hgen : d.code.isGenerator = false) (hs : FDI.Simple d)
     (hbody : d.code.body = .stmts body) (hdisp : d.code.info.fdi.usesDispose = false)
     (hb : WP eng answer n h (evalStmts 999999 (FDI.fdiCtx fo d s.envs.size) body) (bodyState s fo d t args)
-      fun c w h' => Q (retVal c) { w with realm := s.realm, script := s.script } h') :
+      fun c w h' => Q (retVal c) (w.restore s) h') :
     WP eng answer n h (callImpl eng (.obj fo) t args) s Q := by
   apply wp_callImpl_strict hlt hk (by omega) hcls hmode hasync hgen
   have hE : s.envs.size < (entryState s fo d t).envs.size := by simp [entryState]

@@ -178,7 +178,7 @@ theorem wp_callGen {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {a
     (hasync : d.code.isAsync = false) (hgen : d.code.isGenerator = false) (hs : FDI.Simple d)
     (hbody : d.code.body = .stmts stmts) (hdisp : d.code.info.fdi.usesDispose = false)
     (hb : WP eng answer n h (f (999999 - H) (FDI.fdiCtx fo d s.envs.size)) (bodyState s fo d t args)
-      fun c w h' => Q (retVal c) { w with realm := s.realm, script := s.script } h') :
+      fun c w h' => Q (retVal c) (w.restore s) h') :
     WP eng answer n h (callImpl eng (.obj fo) t args) s Q := by
   apply wp_call_simple hlt hk hf hcls hmode hasync hgen hs hbody hdisp
   rw [heq, Nat.sub_add_cancel hH] at hb

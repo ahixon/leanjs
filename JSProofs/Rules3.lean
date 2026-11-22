@@ -309,16 +309,11 @@ theorem wp_block {n : Nat} {h : σ} {decls : Array LexScoped} {body : Array Sem.
 end
 
 /-- A callee's final state with the caller's realm and script back: records and objects as in `w`. -/
-@[js_simp] theorem restore_envEntry (w : State) (r sc : Nat) (e : EnvId) :
-    ({ w with realm := r, script := sc } : State).envEntry e = w.envEntry e := rfl
-@[js_simp] theorem restore_objEntry (w : State) (r sc : Nat) (o : ObjId) :
-    ({ w with realm := r, script := sc } : State).objEntry o = w.objEntry o := rfl
-@[js_simp] theorem restore_envs (w : State) (r sc : Nat) :
-    ({ w with realm := r, script := sc } : State).envs = w.envs := rfl
-@[js_simp] theorem restore_heap (w : State) (r sc : Nat) :
-    ({ w with realm := r, script := sc } : State).heap = w.heap := rfl
-@[js_simp] theorem restore_fuel (w : State) (r sc : Nat) :
-    ({ w with realm := r, script := sc } : State).fuel = w.fuel := rfl
+@[js_simp] theorem restore_envEntry (w s : State) (e : EnvId) : (w.restore s).envEntry e = w.envEntry e := rfl
+@[js_simp] theorem restore_objEntry (w s : State) (o : ObjId) : (w.restore s).objEntry o = w.objEntry o := rfl
+@[js_simp] theorem restore_envs (w s : State) : (w.restore s).envs = w.envs := rfl
+@[js_simp] theorem restore_heap (w s : State) : (w.restore s).heap = w.heap := rfl
+@[js_simp] theorem restore_fuel (w s : State) : (w.restore s).fuel = w.fuel := rfl
 
 attribute [js_simp] ObjWP SeqWP allocObj_objEntry setProp_objEntry allocObj_envEntry setProp_envEntry
   State.allocObj_size State.allocObj_fuel State.allocObj_envs staticPropKey PropMap.get?_insert

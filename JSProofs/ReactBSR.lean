@@ -65,7 +65,7 @@ theorem call_prim {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t st a : Value
     (hcode : d.code = BSRGen.basicStateReducer_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (ha : ∀ o, a ≠ .obj o) :
     WP eng answer n h (callImpl eng (.obj fo) t #[st, a]) s fun v w _ =>
-      v = a ∧ w = { bodyState s fo d t #[st, a] with realm := s.realm, script := s.script } := by
+      v = a ∧ w = (bodyState s fo d t #[st, a]).restore s := by
   apply wp_call_simple hlt hk (by omega) hcls hmode (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode)
     (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   change WP eng answer n h (evalStmts (999970 + 29) _ BSRGen.basicStateReducer_stmts) _ _
