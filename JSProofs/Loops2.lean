@@ -67,7 +67,7 @@ simproc [js_simp] ltNumEval (ltNum _ _) := reduceClosed
 @[js_simp] theorem seq_obj_num (o : ObjId) (x : F64) : isStrictlyEqual (.obj o) (.num x) = false := rfl
 @[js_simp] theorem seq_num_obj (o : ObjId) (x : F64) : isStrictlyEqual (.num x) (.obj o) = false := rfl
 
-attribute [js_simp] Sem.breakToNormal Compl.value? Option.getD_some Option.getD_none loopContinues
+attribute [js_simp] ArgsWP Sem.breakToNormal Compl.value? Option.getD_some Option.getD_none loopContinues
 
 section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}

@@ -37,9 +37,9 @@ def Elem (s : State) (A : ObjId) (i : Nat) : Prop :=
   ∃ v e c, (s.objEntry A).props.get? (.str (numberToJSStr (Conv.ofNat i))) = some (.data v true e c)
 
 
-theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t fiber queue update : Value} {s : State}
+theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t queue update : Value} {s : State}
     {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdA bdI bdL : Binding} {A F : ObjId} {L c p fl : F64}
-    {lw le lc fw fe fc aw ae ac : Bool} {v0 v1 v2 v3 : Value} {e0 e1 e2 e3 c0 c1 c2 c3 : Bool}
+    {lw le lc fe fc aw ae ac : Bool} {v0 v1 v2 v3 : Value} {e0 e1 e2 e3 c0 c1 c2 c3 : Bool}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 20 ≤ s.fuel)
     (hcode : d.code = EUGen.fn0_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
