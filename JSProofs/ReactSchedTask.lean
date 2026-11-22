@@ -30,11 +30,12 @@ theorem simple (d : FuncData) (hc : d.code = SIRGen.scheduleImmediateRootSchedul
   constructor <;> rw [hc] <;> try rfl
   simp [SIRGen.scheduleImmediateRootScheduleTask_func, Func.params, Func.info]
 
-/-- The microtask's callback `c`: React's closure, over the record `e` (whose outer record is the module's, `g`). -/
+/-- The microtask's callback `c`: React's closure, over the record `e` of the call that made it (no bindings; its
+outer record is the module's, `g`). -/
 def Callback (w : State) (c : ObjId) (e g : EnvId) : Prop :=
   c < w.heap.size ∧ ∃ dc : FuncData, (w.objEntry c).kind = .func dc ∧ dc.code = SIRGen.fn5_func ∧
     dc.thisMode = .strict ∧ dc.isClassCtor = false ∧ dc.env = e ∧ e < w.envs.size ∧
-    ∃ bm, Scope.declLike? (w.envEntry e) = some (bm, some g)
+    Scope.declLike? (w.envEntry e) = some (FDI.fdiMap #[] #[] #[] #[], some g)
 
 theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
     {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdM : Binding} {fM : ObjId} {bM : BuiltinData}
@@ -78,8 +79,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
         script := d.script, annexB := funcIds #[] } (funcProto (bodyState s fo d t #[]))
     simp only [bodyState_heap] at hk'
     refine ⟨by simp [closState_heap_size], _, hk', rfl, rfl, rfl, rfl, by simp [closState_envs, entryState, bodyState], ?_⟩
-    rw [closState_envEntry, bodyState_self]
-    exact ⟨_, rfl⟩
+    rw [closState_envEntry, bodyState_self, hpn, hv, hl]
   case fu => js_side
   case post =>
     intro b w1 h1 hQ

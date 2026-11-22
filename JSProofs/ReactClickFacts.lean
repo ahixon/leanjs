@@ -29,8 +29,8 @@ theorem objEntry_bare {fp : Footprint} {s w : State} (hF : Frame fp s w) (hp : f
 
 theorem callback_bare {fp : Footprint} {s w : State} (hF : Frame fp s w) (hb : fp.binds = []) (hp : fp.props = [])
     {c : ObjId} {e g : EnvId} (h : ReactSchedTask.Callback s c e g) : ReactSchedTask.Callback w c e g := by
-  obtain ⟨hc, dc, hk, h1, h2, h3, h4, he, bm, hd⟩ := h
-  exact ⟨heap_frame hF hc, dc, by rw [objEntry_bare hF hp hc]; exact hk, h1, h2, h3, h4, envs_frame hF he, bm,
+  obtain ⟨hc, dc, hk, h1, h2, h3, h4, he, hd⟩ := h
+  exact ⟨heap_frame hF hc, dc, by rw [objEntry_bare hF hp hc]; exact hk, h1, h2, h3, h4, envs_frame hF he,
     by rw [envEntry_bare hF hb he]; exact hd⟩
 
 theorem scheduled_bare {fp : Footprint} {s w : State} (hF : Frame fp s w) (hb : fp.binds = []) {e : EnvId}

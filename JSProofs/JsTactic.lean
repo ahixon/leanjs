@@ -116,6 +116,10 @@ def frameRuleFor (t : Lean.Expr)
     let ev := (w.getAppArgs[2]!).consumeMData
     if ev.isAppOf ``ES.Env.withBindings then
       return some (← `(tactic| (refine frame_setEnv_with_in ?_ (he := ?s1) (hent := ?s2) (hd := ?s3) (hin := ?s4) _; (case s1 => simp [$facts,*]); (case s2 => js_norm [$facts,*]); (case s3 => js_norm [$facts,*]); (case s4 => simp))))
+    if ev.isAppOf ``ES.Env.func then
+      return some (← `(tactic| first
+        | (refine frame_setEnv_new ?_ (he := ?s1) _; (case s1 => simp))
+        | (refine frame_setEnv_func_in ?_ (he := ?s1) (hent := ?s2) (hin := ?s3) _; (case s1 => simp [$facts,*]); (case s2 => js_norm [$facts,*]); (case s3 => simp))))
     if ev.isAppOf ``ES.Env.decl then
       return some (← `(tactic| (refine frame_setEnv_decl_in ?_ (he := ?s1) (hent := ?s2) (hin := ?s3) _; (case s1 => simp [$facts,*]); (case s2 => js_norm [$facts,*]); (case s3 => simp))))
     return some (← `(tactic| (refine frame_setEnv_new ?_ (he := ?s1) _; (case s1 => simp))))

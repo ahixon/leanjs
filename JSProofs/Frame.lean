@@ -481,6 +481,19 @@ theorem frame_setEnv_with_in (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.si
     · exact hin
     · exact hp) (fun _ hp => hp) id
 
+/-- A binding of an existing function record (a call's own record, its locals), written: allowed if it is in the
+footprint. -/
+theorem frame_setEnv_func_in (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.size)
+    {bm : Std.HashMap JSStr Binding} {o : Option EnvId} {ts : ThisStatus} {tv : Value} {fo : ObjId} {nt : Value}
+    (hent : u.envEntry e = .func bm o ts tv fo nt) {x : JSStr} (hin : (e, x) ∈ fp.binds) (f : Binding → Binding) :
+    Frame fp s (u.setEnv e (.func (bm.modify x f) o ts tv fo nt)) := by
+  have h := frame_setEnv_bind hF he (bm := bm) (o := o) (by rw [hent]; rfl) x f
+  rw [hent] at h
+  exact frame_mono h (fun p hp => by
+    rcases List.mem_cons.mp hp with rfl | hp
+    · exact hin
+    · exact hp) (fun _ hp => hp) id
+
 /-- A property of an existing object, written: allowed if it is in the footprint. -/
 theorem frame_setProp_in (hF : Frame fp s u) {o : ObjId} (ho : o < s.heap.size) {k : PropKey}
     (hin : (o, k) ∈ fp.props) (p : Property) : Frame fp s (u.setProp o k p) :=
