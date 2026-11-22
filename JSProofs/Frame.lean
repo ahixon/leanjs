@@ -359,6 +359,8 @@ theorem objEntry_frame {fp : Footprint} {s w : State} (hF : Frame fp s w) {o : O
     have := List.all_eq_true.mp hn _ hk
     simp at this
 
+attribute [js_simp] false_and and_false not_false_eq_true ne_eq
+
 /-- The empty footprint's union with itself. -/
 @[simp] theorem union_empty : (({} : Footprint).union {}) = {} := rfl
 
