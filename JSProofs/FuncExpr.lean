@@ -273,3 +273,68 @@ theorem forall_mem_of_all {fp : Footprint} {e : EnvId} {l : List JSStr}
   simpa using this
 
 end Logic
+
+namespace Logic
+
+theorem getRefValue_idx (o : ObjId) (x : F64) (strict : Bool) (s : State) :
+    getRefValue (.prop (.obj o) (.num x) strict none) s = Obj'.get o (.str (numberToJSStr x)) (.obj o) s := by
+  simp [getRefValue, Value.isNullish, M.bind_eq, M.bind_apply, toPropertyKey_num, pure, M.pure]
+
+/-- [[Get]] of an array's own data property: its value. -/
+theorem get_array_own (n : Nat) (o : ObjId) (k : PropKey) (r : Value) (s : State) (h : o < s.heap.size)
+    (hk : (s.objEntry o).kind = .array) {v : Value} {w e c : Bool}
+    (hp : (s.objEntry o).props.get? k = some (.data v w e c)) : ES.get (n + 3) o k r s = .ok v s := by
+  simp [ES.get, M.bind_eq, M.bind_apply, objKind, readObj_entry' _ _ _ h, hk, ordinaryGet,
+    getOwnProperty_array _ _ _ _ h hk, hp, pure, M.pure]
+
+/-- `a[i]` of an array's own data element, the index a Number. -/
+def GetsIdxC (s : State) (base kv : Value) (P : Value → Prop) : Prop :=
+  match base, kv with
+  | .obj o, .num x => o < s.heap.size ∧ (s.objEntry o).kind = .array ∧
+    match (s.objEntry o).props.get? (.str (numberToJSStr x)) with
+    | some (.data v _ _ _) => P v
+    | _ => False
+  | _, _ => False
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+/-- **`a[i]`** of an array's own element. -/
+theorem wp_getIdxC {n : Nat} {h : σ} {obj ke : Sem.CExpr} {ctx : Ctx} {s : State} {Q : Value → State → σ → Prop}
+    (hw : WP eng answer n h (obj ctx) s fun bv w1 h1 => WP eng answer n h1 (ke ctx) w1 fun kv w2 h2 =>
+      GetsIdxC w2 bv kv fun v => Q v w2 h2) :
+    WP eng answer n h (Sem.getValue (Sem.memberRef obj (.computed ke) false) ctx) s Q := by
+  rw [wp_iff_wpr]
+  simp only [Sem.getValue, Sem.memberRef, M.bind_eq, M.bind_apply]
+  apply wpr_bind
+  apply wpr_bind
+  refine wp_mono hw fun bv w1 h1 hk => ?_
+  simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte]
+  apply wp_bind
+  refine wp_mono hk fun kv w2 h2 hg => ?_
+  refine wp_of_eq (a := Ref.prop bv kv ctx.strict none) rfl ?_
+  match bv, kv, hg with
+  | .obj o, .num x, ⟨hlt, hka, hm⟩ =>
+    cases hp : (w2.objEntry o).props.get? (.str (numberToJSStr x)) with
+    | none => rw [hp] at hm; exact hm.elim
+    | some p =>
+      rw [hp] at hm
+      cases p with
+      | accessor => exact hm.elim
+      | data v ww ee cc =>
+        refine wp_of_eq ?_ hm
+        rw [getRefValue_idx]
+        unfold Obj'.get
+        rw [show maxDepth = 19997 + 3 from rfl]
+        exact get_array_own _ _ _ _ _ hlt hka hp
+
+end
+
+end Logic
+attribute [js_simp] Logic.GetsIdxC
+
+namespace Logic
+open Lean Meta Simp in
+/-- A closed `intV` (the result of `~x`, shifts on 32-bit integers), evaluated. -/
+simproc [js_simp] intVEval (intV _) := reduceClosed
+end Logic

@@ -64,7 +64,10 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
   | ``ES.Sem.object => return some (← `(tactic| apply wp_object))
   | ``ES.Sem.func => return some (← `(tactic| (refine wp_funcExpr ⟨rfl, rfl, rfl, rfl, rfl⟩ ?s1 ?_; (case s1 => (simp only [js_simp]; assumption)))))
   | ``ES.Sem.seq => return some (← `(tactic| apply wp_seqExpr))
-  | ``ES.Sem.getValue => return some (← `(tactic| apply wp_getMemberC))
+  | ``ES.Sem.getValue =>
+    let key := ((xa[0]!).getAppArgs)[1]?
+    if key.any (·.isAppOf ``ES.Sem.Key.computed) then return some (← `(tactic| apply wp_getIdxC))
+    return some (← `(tactic| apply wp_getMemberC))
   | ``ES.Sem.call => return some (← `(tactic| (refine wp_callIdentC ?s1 ?_; (case s1 => js_side))))
   | ``ES.Sem.update => return some (← `(tactic| (refine wp_postIncIdentC ?s1 ?_; (case s1 => js_side))))
   | ``ES.Sem.assign =>
