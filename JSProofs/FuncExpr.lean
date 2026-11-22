@@ -355,3 +355,31 @@ namespace Logic
   simp [List.all_eq_true]
   intro a h; exact Or.inr h
 end Logic
+
+namespace Logic
+/-- **A frame keeps only what existed at the start**: names of records and objects created later can be dropped
+from the footprint (or anything added). -/
+theorem frame_drop {fp fp' : Footprint} {s w : State} (hF : Frame fp s w)
+    (hb : ∀ q ∈ fp.binds, q.1 < s.envs.size → q ∈ fp'.binds) (hp : ∀ q ∈ fp.props, q.1 < s.heap.size → q ∈ fp'.props)
+    (hj : fp'.jobs = false → fp.jobs = false) : Frame fp' s w where
+  envs_le := hF.envs_le
+  heap_le := hF.heap_le
+  env_agree e he := envAgree_mono (hF.env_agree e he) fun x hx => hb _ hx he
+  obj_agree o ho := ⟨(hF.obj_agree o ho).1, (hF.obj_agree o ho).2.1, (hF.obj_agree o ho).2.2.1,
+    fun k hk => (hF.obj_agree o ho).2.2.2 k (fun h' => hk (hp _ h' ho))⟩
+  env_eq e he hn := hF.env_eq e he (fun x hx => hn x (hb _ hx he))
+  obj_eq o ho hn := hF.obj_eq o ho (fun k hk => hn k (hp _ hk ho))
+  realms_eq := hF.realms_eq
+  jobs_prefix := hF.jobs_prefix
+  jobs_eq h' := hF.jobs_eq (hj h')
+end Logic
+
+namespace Logic
+/-- Names of existing records stay names of existing records as records are added. -/
+theorem binds_lt_mono {fp : Footprint} {s w : State} (h : fp.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
+    (hle : s.envs.size ≤ w.envs.size) : fp.binds.all (fun q => decide (q.1 < w.envs.size)) = true := by
+  rw [List.all_eq_true] at h ⊢
+  intro q hq
+  have := of_decide_eq_true (h q hq)
+  exact decide_eq_true (Nat.lt_of_lt_of_le this hle)
+end Logic

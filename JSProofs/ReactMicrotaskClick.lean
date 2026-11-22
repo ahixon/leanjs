@@ -4,6 +4,9 @@ import JSProofs.ReactLanesPick
 import JSProofs.ReactPrerender
 import JSProofs.MathRules
 import JSProofs.ReactFlushSync
+import JSProofs.ReactProcessRoot
+import JSProofs.SchedulerNow
+import JSProofs.ReactMicrotask
 
 /-!
 # A click's microtask, composed (zippy docs/react-proofs.md)
@@ -213,6 +216,409 @@ theorem flush_click {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {
   case post =>
     intro v w h' ⟨hv, hFr, hfu, w2, h2, ⟨_, hPu⟩, hF2⟩
     exact ⟨hv, hFr, hfu, w2, h2, hPu, hF2⟩
+
+/-- What the microtask writes before the work: the two flags, the lane's expiration time, the root's callback. -/
+def fpPre (g : EnvId) (R A : ObjId) : Footprint :=
+  ⟨[(g, "mightHavePendingSyncWork"), (g, "didScheduleMicrotask")], (ReactSchedTaskRoot.fp R A).props, false⟩
+
+/-- … and the flag the flush sets. -/
+def fpPerf (g : EnvId) (R A : ObjId) : Footprint :=
+  ⟨[(g, "mightHavePendingSyncWork"), (g, "didScheduleMicrotask"), (g, "isFlushingWork")],
+    (ReactSchedTaskRoot.fp R A).props, false⟩
+
+/-- **Step 3**: `processRootScheduleInMicrotask` after a click, every callee by its theorem: `now` (the scheduler's
+`unstable_now`; the host's `performance.now()` a hypothesis), `scheduleTaskForRootDuringMicrotask` (step 1),
+`flushSyncWorkAcrossRoots_impl` (step 2). Left: the host's clock and the work (`performSyncWorkOnRoot(root, 2)`),
+stated from the microtask's start. -/
+theorem processRoot_click {m : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
+    {bG : HashMap JSStr Binding} {oG : Option EnvId}
+    {bdM bdD bdC bdF bdN bdT bdP0 bdL bdI bdW bdRL bdCz bdE bdG bdPr bdH bdS : Binding}
+    {R A fN fT fL fC fE fG fP fH fS : ObjId} {dN dT dL dE dG dP dH dS : FuncData} {bC : BuiltinData} {wl : F64}
+    -- (the scheduler's module: `localPerformance`)
+    {gS : EnvId} {bS : HashMap JSStr Binding} {oS : Option EnvId} {bdLP : Binding} {Pf fPN : ObjId}
+    {bPN : BuiltinData} {pfw pfe pfc : Bool} {tm : F64}
+    {cp wv : Value} {rw re rc sw se sc pw pe pc xw xe xc lw le lc cw ce cc tw te tc ne nc qe qc ae ac ww we wc : Bool}
+    {L : F64} {fpP : Footprint} {kP : Nat} {Pu : State → σ → Prop}
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : kP + 1000 ≤ s.fuel)
+    (hcode : d.code = PRSGen.processRootScheduleInMicrotask_func) (hcls : d.isClassCtor = false)
+    (hmode : d.thisMode = .strict)
+    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
+    (hGM : bG[JSStr.ofString "mightHavePendingSyncWork"]? = some bdM) (hGMm : bdM.mutable = true)
+    (hGMv : bdM.value.isSome = true)
+    (hGD : bG[JSStr.ofString "didScheduleMicrotask"]? = some bdD) (hGDm : bdD.mutable = true)
+    (hGDv : bdD.value.isSome = true)
+    (hGC : bG[JSStr.ofString "currentEventTransitionLane"]? = some bdC)
+    (hGCv : bdC.value = some (.num (F64.fin false 0 (-1074))))
+    (hGF : bG[JSStr.ofString "firstScheduledRoot"]? = some bdF) (hGFv : bdF.value = some (.obj R))
+    (hGN : bG[JSStr.ofString "now"]? = some bdN) (hGNv : bdN.value = some (.obj fN))
+    (hGT : bG[JSStr.ofString "scheduleTaskForRootDuringMicrotask"]? = some bdT) (hGTv : bdT.value = some (.obj fT))
+    (hGP0 : bG[JSStr.ofString "pendingEffectsStatus"]? = some bdP0)
+    (hGP0v : bdP0.value = some (.num (F64.fin false 0 (-1074))))
+    (hGL : bG[JSStr.ofString "flushSyncWorkAcrossRoots_impl"]? = some bdL) (hGLv : bdL.value = some (.obj fL))
+    (hGI : bG[JSStr.ofString "isFlushingWork"]? = some bdI) (hGIv : bdI.value = some (.bool false))
+    (hGIm : bdI.mutable = true)
+    (hGW : bG[JSStr.ofString "workInProgressRoot"]? = some bdW) (hGWv : bdW.value = some .null)
+    (hGRL : bG[JSStr.ofString "workInProgressRootRenderLanes"]? = some bdRL) (hGRLv : bdRL.value = some (.num wl))
+    (hGCz : bG[JSStr.ofString "clz32"]? = some bdCz) (hGCzv : bdCz.value = some (.obj fC))
+    (hGE : bG[JSStr.ofString "computeExpirationTime"]? = some bdE) (hGEv : bdE.value = some (.obj fE))
+    (hGG : bG[JSStr.ofString "getNextLanes"]? = some bdG) (hGGv : bdG.value = some (.obj fG))
+    (hGPr : bG[JSStr.ofString "checkIfRootIsPrerendering"]? = some bdPr) (hGPrv : bdPr.value = some (.obj fP))
+    (hGH : bG[JSStr.ofString "getHighestPriorityLanes"]? = some bdH) (hGHv : bdH.value = some (.obj fH))
+    (hGS : bG[JSStr.ofString "performSyncWorkOnRoot"]? = some bdS) (hGSv : bdS.value = some (.obj fS))
+    -- (the functions)
+    (hNo : fN < s.heap.size) (hNk : (s.objEntry fN).kind = .func dN) (hNcode : dN.code = NOWGen.fn0_func)
+    (hNcls : dN.isClassCtor = false) (hNmode : dN.thisMode = .strict) (hNenv : dN.env = gS)
+    (hTo : fT < s.heap.size) (hTk : (s.objEntry fT).kind = .func dT)
+    (hTcode : dT.code = STRGen.scheduleTaskForRootDuringMicrotask_func) (hTcls : dT.isClassCtor = false)
+    (hTmode : dT.thisMode = .strict) (hTenv : dT.env = d.env)
+    (hLo : fL < s.heap.size) (hLk : (s.objEntry fL).kind = .func dL)
+    (hLcode : dL.code = FSWGen.flushSyncWorkAcrossRoots_impl_func) (hLcls : dL.isClassCtor = false)
+    (hLmode : dL.thisMode = .strict) (hLenv : dL.env = d.env)
+    (hCo : fC < s.heap.size) (hCk : (s.objEntry fC).kind = .builtin bC)
+    (hCfn : eng.builtins[bC.id]? = some (ES.Builtins.Text.mathFn1 (fun x => Num.ofNat (Num.clz32 x))))
+    (hEo : fE < s.heap.size) (hEk : (s.objEntry fE).kind = .func dE)
+    (hEcode : dE.code = CETGen.computeExpirationTime_func) (hEcls : dE.isClassCtor = false)
+    (hEmode : dE.thisMode = .strict)
+    (hGo : fG < s.heap.size) (hGk : (s.objEntry fG).kind = .func dG)
+    (hGcode : dG.code = GNLGen.getNextLanes_func) (hGcls : dG.isClassCtor = false) (hGmode : dG.thisMode = .strict)
+    (hGenv : dG.env = d.env)
+    (hHo : fH < s.heap.size) (hHk : (s.objEntry fH).kind = .func dH)
+    (hHcode : dH.code = GHPGen.getHighestPriorityLanes_func) (hHcls : dH.isClassCtor = false)
+    (hHmode : dH.thisMode = .strict)
+    (hPo : fP < s.heap.size) (hPk : (s.objEntry fP).kind = .func dP)
+    (hPcode : dP.code = CPRGen.checkIfRootIsPrerendering_func) (hPcls : dP.isClassCtor = false)
+    (hPmode : dP.thisMode = .strict)
+    (hSo : fS < s.heap.size) (hSk : (s.objEntry fS).kind = .func dS)
+    -- (the scheduler's clock)
+    (hgS : gS < s.envs.size) (hgSg : gS ≠ d.env) (hSe : Scope.declLike? (s.envEntry gS) = some (bS, oS))
+    (hSLP : bS[JSStr.ofString "localPerformance"]? = some bdLP) (hSLPv : bdLP.value = some (.obj Pf))
+    (hPf : Pf < s.heap.size) (hPfk : (s.objEntry Pf).kind.isPlain = true)
+    (hPfn : (s.objEntry Pf).props.get? (.str "now") = some (.data (.obj fPN) pfw pfe pfc))
+    (hPNo : fPN < s.heap.size) (hPNk : (s.objEntry fPN).kind = .builtin bPN)
+    (hClock : ∀ w, Frame (ReactProcessRoot.fpA d.env) s w →
+      SchedulerNow.HostReads eng answer (m + 1) fPN (.obj Pf) #[] (.num tm) w 5)
+    -- (the root and its expiration times)
+    (hR : R < s.heap.size) (hRk : (s.objEntry R).kind.isPlain = true) (hRA : R ≠ A)
+    (hRn : (s.objEntry R).props.get? (.str "next") = some (.data .null rw re rc))
+    (hRs : (s.objEntry R).props.get? (.str "suspendedLanes") = some (.data (.num (F64.fin false 0 (-1074))) sw se sc))
+    (hRi : (s.objEntry R).props.get? (.str "pingedLanes") = some (.data (.num (F64.fin false 0 (-1074))) pw pe pc))
+    (hRx : (s.objEntry R).props.get? (.str "expirationTimes") = some (.data (.obj A) xw xe xc))
+    (hRp : (s.objEntry R).props.get? (.str "pendingLanes") =
+      some (.data (.num (F64.fin false 4503599627370496 (-51))) lw le lc))
+    (hRw : (s.objEntry R).props.get? (.str "warmLanes") = some (.data wv ww we wc))
+    (hRc : (s.objEntry R).props.get? (.str "cancelPendingCommit") = some (.data .null cw ce cc))
+    (hRt : (s.objEntry R).props.get? (.str "timeoutHandle") =
+      some (.data (.num (F64.fin false 4503599627370496 (-52)).neg) tw te tc))
+    (hRnode : (s.objEntry R).props.get? (.str "callbackNode") = some (.data .null true ne nc))
+    (hRq : (s.objEntry R).props.get? (.str "callbackPriority") = some (.data cp true qe qc))
+    (hA : A < s.heap.size) (hAk : (s.objEntry A).kind = .array)
+    (hA1 : (s.objEntry A).props.get? (.str "1") = some (.data (.num (F64.fin false 4503599627370496 (-52)).neg) true ae ac))
+    (hAL : (s.objEntry A).props.get? (.str "length") = some (.data (.num L) true false false))
+    (hL : 1 < (Conv.toNat? L).getD 0)
+    (hAE : A ≠ fE) (hAG : A ≠ fG) (hAP : A ≠ fP) (hAC : A ≠ fC) (hAH : A ≠ fH) (hAS : A ≠ fS) (hAF : A ≠ fL)
+    (hRG : R ≠ fG) (hRP : R ≠ fP) (hRE : R ≠ fE) (hRC : R ≠ fC) (hRH : R ≠ fH) (hRS : R ≠ fS) (hRF : R ≠ fL)
+    -- (the work: `performSyncWorkOnRoot(root, 2)`, from any state framed from the start by what came before)
+    (hPerf : ∀ w h1, Frame (fpPerf d.env R A) s w → s.fuel ≤ w.fuel + 400 →
+      WP eng answer (m + 1) h1
+        (callImpl eng (.obj fS) .undefined #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) w
+        fun _ w' h' => Frame fpP w w' ∧ w.fuel ≤ w'.fuel + kP ∧ ReactFlushSync.After w' d.env oG R bdF ∧
+          (∃ a b c, (w'.objEntry R).props.get? (.str "pendingLanes") =
+            some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧ Pu w' h')
+    (hfpB : fpP.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
+    (hfpG : (d.env, JSStr.ofString "getNextLanes") ∉ fpP.binds)
+    (hfpI : (d.env, JSStr.ofString "isFlushingWork") ∉ fpP.binds)
+    (hfpC : (d.env, JSStr.ofString "currentEventTransitionLane") ∉ fpP.binds)
+    (hfpO : fpP.props.all (fun q => q.1 != fG) = true) :
+    WP eng answer (m + 3) h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
+      v = .undefined ∧ ∃ w2 h2 e, Pu w2 h2 ∧ Frame (ReactFlushSync.fpW e d.env) w2 w := by
+  have hne : d.env ≠ s.envs.size := Nat.ne_of_lt hG
+  -- (before the work: objects as they were through `fpA`)
+  have objA : ∀ {w : State}, Frame (ReactProcessRoot.fpA d.env) s w → ∀ {o : ObjId}, o < s.heap.size →
+      w.objEntry o = s.objEntry o := fun hF _ ho => objEntry_frame hF ho (by simp [ReactProcessRoot.fpA])
+  refine wp_mono (ReactProcessRoot.call_spec (n := m + 2) (L := F64.fin false 4503599627370496 (-51))
+    (fpT := ReactSchedTaskRoot.fp R A) (fpF := ⟨(d.env, JSStr.ofString "isFlushingWork") :: fpP.binds, fpP.props, fpP.jobs⟩)
+    (kF := kP + 200) (P := fun w _ => Frame (fpPre d.env R A) s w)
+    (Q := fun x _ => ∃ w2 h2 e, Pu w2 h2 ∧ Frame (ReactFlushSync.fpW e d.env) w2 x)
+    hlt hk (by omega) hcode hcls hmode hG hGe hGM hGMm hGMv hGD hGDm hGDv hGC hGCv hGF hGFv hGN hGNv hGT hGTv hGP0
+    hGP0v hGL hGLv hNo hNk hTo hTk hLo hLk hR hRk hRn (by decide) (by decide) ?now ?task
+    (by simp [ReactSchedTaskRoot.fp]) (by simp [ReactSchedTaskRoot.fp]) (by simp [ReactSchedTaskRoot.fp])
+    (by simp [ReactSchedTaskRoot.fp]) (by simp [ReactSchedTaskRoot.fp])
+    (by simp [ReactSchedTaskRoot.fp, hAF, hRF]) ?flush
+    (by simp only [List.all_cons, binds_avoid hfpB (Nat.le_refl _), Bool.and_true]; simp [hne])
+    (by simp [hfpC])) fun v w h' ⟨hv, hq⟩ => ⟨hv, hq⟩
+  case now =>
+    intro w h1 hF hfu
+    have hgSw : w.envEntry gS = s.envEntry gS := envEntry_frame hF hgS (by simp [ReactProcessRoot.fpA, Ne.symm hgSg])
+    exact wp_mono (SchedulerNow.call_spec (n := m + 1) (heap_frame hF hNo) (by rw [objA hF hNo]; exact hNk) (by omega)
+      hNcode hNcls hNmode (by rw [hNenv]; exact envs_frame hF hgS) (by rw [hNenv, hgSw]; exact hSe) hSLP hSLPv
+      (heap_frame hF hPf) (by rw [objA hF hPf]; exact hPfk) (by rw [objA hF hPf]; exact hPfn) (heap_frame hF hPNo)
+      (by rw [objA hF hPNo]; exact hPNk) (hClock w hF)) fun r w' h' ⟨hv, hF', hfu'⟩ => ⟨⟨tm, hv⟩, hF', hfu'⟩
+  case task =>
+    intro w h1 tv hF hfu
+    obtain ⟨bW, hW, hWx⟩ := declLike_frame hF hG hGe
+    have b : ∀ {x : JSStr}, (d.env, x) ∉ (ReactProcessRoot.fpA d.env).binds → bW[x]? = bG[x]? := fun hx => hWx _ hx
+    have rp : ∀ {k : PropKey}, (w.objEntry R).props.get? k = (s.objEntry R).props.get? k := by
+      intro k; rw [objA hF hR]
+    exact wp_mono (schedTask_click (n := m) (tv := tv) (bG := bW) (oG := oG) (ae := ae) (ac := ac) (qe := qe)
+      (qc := qc) (ne := ne) (nc := nc) (sw := sw) (se := se) (sc := sc) (pw := pw) (pe := pe) (pc := pc) (xw := xw)
+      (xe := xe) (xc := xc) (lw := lw) (le := le) (lc := lc) (cw := cw) (ce := ce) (cc := cc) (tw := tw) (te := te)
+      (tc := tc) (ww := ww) (we := we) (wc := wc) (wv := wv) (cp := cp) (L := L) (wl := wl) (nw := false)
+      (hlt := heap_frame hF hTo) (hk := by rw [objA hF hTo]; exact hTk) (hf := by omega) (hcode := hTcode)
+      (hcls := hTcls) (hmode := hTmode) (hG := by rw [hTenv]; exact envs_frame hF hG) (hGe := by rw [hTenv]; exact hW)
+      (hGC := by rw [b (by simp [ReactProcessRoot.fpA, js_simp])]; exact hGCz) (hGCv := hGCzv)
+      (hGE := by rw [b (by simp [ReactProcessRoot.fpA, js_simp])]; exact hGE) (hGEv := hGEv)
+      (hGW := by rw [b (by simp [ReactProcessRoot.fpA, js_simp])]; exact hGW) (hGWv := hGWv)
+      (hGL := by rw [b (by simp [ReactProcessRoot.fpA, js_simp])]; exact hGRL) (hGLv := hGRLv)
+      (hGG := by rw [b (by simp [ReactProcessRoot.fpA, js_simp])]; exact hGG) (hGGv := hGGv)
+      (hGP := by rw [b (by simp [ReactProcessRoot.fpA, js_simp])]; exact hGPr) (hGPv := hGPrv)
+      (hGH := by rw [b (by simp [ReactProcessRoot.fpA, js_simp])]; exact hGH) (hGHv := hGHv)
+      (hCo := heap_frame hF hCo) (hCk := by rw [objA hF hCo]; exact hCk) (hCfn := hCfn)
+      (hEo := heap_frame hF hEo) (hEk := by rw [objA hF hEo]; exact hEk) (hEcode := hEcode) (hEcls := hEcls)
+      (hEmode := hEmode) (hGo := heap_frame hF hGo) (hGk := by rw [objA hF hGo]; exact hGk) (hGcode := hGcode)
+      (hGcls := hGcls) (hGmode := hGmode) (hGenv := by rw [hGenv, hTenv]) (hHo := heap_frame hF hHo)
+      (hHk := by rw [objA hF hHo]; exact hHk) (hHcode := hHcode) (hHcls := hHcls) (hHmode := hHmode)
+      (hPo := heap_frame hF hPo) (hPk := by rw [objA hF hPo]; exact hPk) (hPcode := hPcode) (hPcls := hPcls)
+      (hPmode := hPmode) (hR := heap_frame hF hR) (hRk := by rw [objA hF hR]; exact hRk) (hRA := hRA)
+      (hRs := by rw [rp]; exact hRs) (hRi := by rw [rp]; exact hRi) (hRx := by rw [rp]; exact hRx)
+      (hRp := by rw [rp]; exact hRp) (hRw := by rw [rp]; exact hRw) (hRc := by rw [rp]; exact hRc)
+      (hRt := by rw [rp]; exact hRt) (hRn := by rw [rp]; exact hRnode) (hRq := by rw [rp]; exact hRq)
+      (hA := heap_frame hF hA) (hAk := by rw [objA hF hA]; exact hAk) (hAE := hAE) (hAG := hAG) (hAP := hAP)
+      (hRG := hRG) (hRP := hRP) (hRE := hRE) (hAC := hAC) (hRC := hRC) (hAH := hAH) (hRH := hRH)
+      (hA1 := by rw [objA hF hA]; exact hA1) (hAL := by rw [objA hF hA]; exact hAL) (hL := hL))
+      fun v w' h' ⟨hv, hF', hfu', _⟩ => ⟨hv, hF', hfu', by
+        have := frame_trans hF hF'
+        simpa [Footprint.union, ReactProcessRoot.fpA, ReactSchedTaskRoot.fp, fpPre] using this⟩
+  case flush =>
+    intro w2 w h1 hP2 hF2 ⟨bm, hbm, hmt⟩ hfu
+    have hFs := frame_trans hP2 hF2
+    obtain ⟨bW, hW, hWx⟩ := declLike_frame hFs hG hGe
+    have hbmW : bm = bW := by rw [hW] at hbm; simp only [Option.some.injEq, Prod.mk.injEq] at hbm; exact hbm.1.symm
+    subst hbmW
+    obtain ⟨bdM', hGM', hGMv'⟩ : ∃ bd, bm[JSStr.ofString "mightHavePendingSyncWork"]? = some bd ∧
+        bd.value = some (.bool true) := by
+      cases hx : bm[JSStr.ofString "mightHavePendingSyncWork"]? with
+      | none => rw [hx] at hmt; simp at hmt
+      | some bd => rw [hx] at hmt; exact ⟨bd, rfl, by simpa using hmt⟩
+    have b : ∀ {x : JSStr}, (d.env, x) ∉ ((fpPre d.env R A).union ⟨[(d.env, "mightHavePendingSyncWork"),
+        (s.envs.size, "nextLanes"), (s.envs.size, "prev"), (s.envs.size, "root")], [], false⟩).binds →
+        bm[x]? = bG[x]? := fun hx => hWx _ hx
+    have obj : ∀ {o : ObjId}, o < s.heap.size → A ≠ o → R ≠ o → w.objEntry o = s.objEntry o := fun ho hA' hR' =>
+      objEntry_frame hFs ho (by simp [Footprint.union, fpPre, ReactSchedTaskRoot.fp, hA', hR'])
+    have rp : ∀ {k : JSStr}, k ≠ JSStr.ofString "callbackPriority" → k ≠ JSStr.ofString "callbackNode" →
+        (w.objEntry R).props.get? (.str k) = (s.objEntry R).props.get? (.str k) := fun h1 h2 =>
+      props_frame hFs hR (by simp [Footprint.union, fpPre, ReactSchedTaskRoot.fp, hRA, h1, h2])
+    have hle : s.envs.size ≤ w.envs.size := hFs.envs_le
+    refine wp_mono (flush_click (n := m) (d := dL) (bG := bm) (oG := oG) (Pu := Pu) (fpP := fpP) (kP := kP)
+      (lv0 := .num wl) (nw := rw) (ne := re) (nc := rc) (cw := cw) (ce := ce) (cc := cc) (tw := tw) (te := te) (tc := tc)
+      (lw := lw) (le := le) (lc := lc) (sw := sw) (se := se) (sc := sc) (pw := pw) (pe := pe) (pc := pc) (wv := wv)
+      (ww := ww) (we := we) (wc := wc)
+      (hlt := heap_frame hFs hLo) (hk := by rw [obj hLo hAF hRF]; exact hLk) (hf := by omega) (hcode := hLcode)
+      (hcls := hLcls) (hmode := hLmode) (hG := by rw [hLenv]; exact envs_frame hFs hG) (hGe := by rw [hLenv]; exact hW)
+      (hGI := by rw [b (by simp [Footprint.union, fpPre, hne, js_simp])]; exact hGI) (hGIv := hGIv)
+      (hGIm := hGIm) (hGM := hGM') (hGMv := hGMv')
+      (hGF := by rw [b (by simp [Footprint.union, fpPre, hne, js_simp])]; exact hGF) (hGFv := hGFv)
+      (hGW := by rw [b (by simp [Footprint.union, fpPre, hne, js_simp])]; exact hGW) (hGWv := hGWv)
+      (hGL := by rw [b (by simp [Footprint.union, fpPre, hne, js_simp])]; exact hGRL) (hGLv := hGRLv)
+      (hGG := by rw [b (by simp [Footprint.union, fpPre, hne, js_simp])]; exact hGG) (hGGv := hGGv)
+      (hGP := by rw [b (by simp [Footprint.union, fpPre, hne, js_simp])]; exact hGPr) (hGPv := hGPrv)
+      (hGS := by rw [b (by simp [Footprint.union, fpPre, hne, js_simp])]; exact hGS) (hGSv := hGSv)
+      (hGH := by rw [b (by simp [Footprint.union, fpPre, hne, js_simp])]; exact hGH) (hGHv := hGHv)
+      (hGo := heap_frame hFs hGo) (hGk := by rw [obj hGo hAG hRG]; exact hGk) (hGcode := hGcode) (hGcls := hGcls)
+      (hGmode := hGmode) (hGenv := by rw [hGenv, hLenv]) (hHo := heap_frame hFs hHo)
+      (hHk := by rw [obj hHo hAH hRH]; exact hHk) (hHcode := hHcode) (hHcls := hHcls) (hHmode := hHmode)
+      (hPo := heap_frame hFs hPo) (hPk := by rw [obj hPo hAP hRP]; exact hPk) (hPcode := hPcode) (hPcls := hPcls)
+      (hPmode := hPmode) (hSo := heap_frame hFs hSo) (hSk := by rw [obj hSo hAS hRS]; exact hSk)
+      (hR := heap_frame hFs hR) (hRk := by rw [kind_frame hFs hR]; exact hRk)
+      (hRn := by rw [rp (by simp [js_simp]) (by simp [js_simp])]; exact hRn)
+      (hRc := by rw [rp (by simp [js_simp]) (by simp [js_simp])]; exact hRc)
+      (hRt := by rw [rp (by simp [js_simp]) (by simp [js_simp])]; exact hRt)
+      (hRp := by rw [rp (by simp [js_simp]) (by simp [js_simp])]; exact hRp)
+      (hRs := by rw [rp (by simp [js_simp]) (by simp [js_simp])]; exact hRs)
+      (hRi := by rw [rp (by simp [js_simp]) (by simp [js_simp])]; exact hRi)
+      (hRw := by rw [rp (by simp [js_simp]) (by simp [js_simp])]; exact hRw)
+      (hPerf := ?perf) (hfpE := binds_avoid hfpB hle) (hfpG := by rw [hLenv]; exact hfpG)
+      (hfpI := by rw [hLenv]; exact hfpI) (hfpO := hfpO)) ?post
+    case perf =>
+      intro w' h1' hF' hfu'
+      rw [hLenv] at hF' ⊢
+      refine hPerf w' h1' ?_ (by omega)
+      refine frame_drop (frame_trans hFs hF') (fun q hq hq' => ?_) (fun q hq _ => by
+        simpa [Footprint.union, fpPre, fpPerf, ReactFlushSync.fpA] using hq) (fun _ => rfl)
+      simp only [Footprint.union, fpPre, ReactFlushSync.fpA, List.cons_append, List.nil_append, List.mem_cons,
+        List.mem_nil_iff, or_false, fpPerf] at hq ⊢
+      rcases hq with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> first | exact absurd hq' (Nat.lt_irrefl _) | simp | (simp only [] at hq'; omega)
+    case post =>
+      intro v w' h' ⟨_, hFr, hfu', w3, h3, hPu, hF3⟩
+      refine ⟨by rw [hLenv] at hFr; exact hFr, by omega, w3, h3, w.envs.size, hPu, ?_⟩
+      rw [hLenv] at hF3
+      exact frame_restore hF3 s
+
+/-- **Step 4: the microtask**, the job a click queued: React's callback, `processRootScheduleInMicrotask` and every
+callee by its theorem. Left: the host's clock and the work (`performSyncWorkOnRoot(root, 2)`), stated from the
+microtask's start. -/
+theorem microtask_click {eng : Engine} {σ : Type} {answer : HostAnswer σ} {m : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State} {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdM bdD bdC bdF bdN bdT bdP0 bdL bdI bdW bdRL bdCz bdE bdG bdPr bdH bdS : Binding} {R A fN fT fL fC fE fG fP fH fS : ObjId} {dN dT dL dE dG dP dH dS : FuncData} {bC : BuiltinData} {wl : F64} {gS : EnvId} {bS : HashMap JSStr Binding} {oS : Option EnvId} {bdLP : Binding} {Pf fPN : ObjId} {bPN : BuiltinData} {pfw pfe pfc : Bool} {tm : F64} {cp wv : Value} {rw re rc sw se sc pw pe pc xw xe xc lw le lc cw ce cc tw te tc ne nc qe qc ae ac ww we wc : Bool} {L : F64} {fpP : Footprint} {kP : Nat} {Pu : State → σ → Prop} {c : ObjId} {e : EnvId} {bdX bdPRS : Binding} {ec : F64}
+    (hcb : ReactSchedTask.Callback s c e d.env)
+    (hGX : bG[JSStr.ofString "executionContext"]? = some bdX) (hGXv : bdX.value = some (.num ec))
+    (hec : isStrictlyEqual (.num (F64.fin false 0 (-1074)))
+      (.num (numberBinOp .bitAnd ec (F64.fin false 6755399441055744 (-50)))) = true)
+    (hGPRS : bG[JSStr.ofString "processRootScheduleInMicrotask"]? = some bdPRS) (hGPRSv : bdPRS.value = some (.obj fo))
+    (hlt : fo < s.heap.size)
+    (hk : (s.objEntry fo).kind = .func d)
+    (hf : kP + 1010 ≤ s.fuel)
+    (hcode : d.code = PRSGen.processRootScheduleInMicrotask_func)
+    (hcls : d.isClassCtor = false)
+    (hmode : d.thisMode = .strict)
+    (hG : d.env < s.envs.size)
+    (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
+    (hGM : bG[JSStr.ofString "mightHavePendingSyncWork"]? = some bdM)
+    (hGMm : bdM.mutable = true)
+    (hGMv : bdM.value.isSome = true)
+    (hGD : bG[JSStr.ofString "didScheduleMicrotask"]? = some bdD)
+    (hGDm : bdD.mutable = true)
+    (hGDv : bdD.value.isSome = true)
+    (hGC : bG[JSStr.ofString "currentEventTransitionLane"]? = some bdC)
+    (hGCv : bdC.value = some (.num (F64.fin false 0 (-1074))))
+    (hGF : bG[JSStr.ofString "firstScheduledRoot"]? = some bdF)
+    (hGFv : bdF.value = some (.obj R))
+    (hGN : bG[JSStr.ofString "now"]? = some bdN)
+    (hGNv : bdN.value = some (.obj fN))
+    (hGT : bG[JSStr.ofString "scheduleTaskForRootDuringMicrotask"]? = some bdT)
+    (hGTv : bdT.value = some (.obj fT))
+    (hGP0 : bG[JSStr.ofString "pendingEffectsStatus"]? = some bdP0)
+    (hGP0v : bdP0.value = some (.num (F64.fin false 0 (-1074))))
+    (hGL : bG[JSStr.ofString "flushSyncWorkAcrossRoots_impl"]? = some bdL)
+    (hGLv : bdL.value = some (.obj fL))
+    (hGI : bG[JSStr.ofString "isFlushingWork"]? = some bdI)
+    (hGIv : bdI.value = some (.bool false))
+    (hGIm : bdI.mutable = true)
+    (hGW : bG[JSStr.ofString "workInProgressRoot"]? = some bdW)
+    (hGWv : bdW.value = some .null)
+    (hGRL : bG[JSStr.ofString "workInProgressRootRenderLanes"]? = some bdRL)
+    (hGRLv : bdRL.value = some (.num wl))
+    (hGCz : bG[JSStr.ofString "clz32"]? = some bdCz)
+    (hGCzv : bdCz.value = some (.obj fC))
+    (hGE : bG[JSStr.ofString "computeExpirationTime"]? = some bdE)
+    (hGEv : bdE.value = some (.obj fE))
+    (hGG : bG[JSStr.ofString "getNextLanes"]? = some bdG)
+    (hGGv : bdG.value = some (.obj fG))
+    (hGPr : bG[JSStr.ofString "checkIfRootIsPrerendering"]? = some bdPr)
+    (hGPrv : bdPr.value = some (.obj fP))
+    (hGH : bG[JSStr.ofString "getHighestPriorityLanes"]? = some bdH)
+    (hGHv : bdH.value = some (.obj fH))
+    (hGS : bG[JSStr.ofString "performSyncWorkOnRoot"]? = some bdS)
+    (hGSv : bdS.value = some (.obj fS))
+    (hNo : fN < s.heap.size)
+    (hNk : (s.objEntry fN).kind = .func dN)
+    (hNcode : dN.code = NOWGen.fn0_func)
+    (hNcls : dN.isClassCtor = false)
+    (hNmode : dN.thisMode = .strict)
+    (hNenv : dN.env = gS)
+    (hTo : fT < s.heap.size)
+    (hTk : (s.objEntry fT).kind = .func dT)
+    (hTcode : dT.code = STRGen.scheduleTaskForRootDuringMicrotask_func)
+    (hTcls : dT.isClassCtor = false)
+    (hTmode : dT.thisMode = .strict)
+    (hTenv : dT.env = d.env)
+    (hLo : fL < s.heap.size)
+    (hLk : (s.objEntry fL).kind = .func dL)
+    (hLcode : dL.code = FSWGen.flushSyncWorkAcrossRoots_impl_func)
+    (hLcls : dL.isClassCtor = false)
+    (hLmode : dL.thisMode = .strict)
+    (hLenv : dL.env = d.env)
+    (hCo : fC < s.heap.size)
+    (hCk : (s.objEntry fC).kind = .builtin bC)
+    (hCfn : eng.builtins[bC.id]? = some (ES.Builtins.Text.mathFn1 (fun x => Num.ofNat (Num.clz32 x))))
+    (hEo : fE < s.heap.size)
+    (hEk : (s.objEntry fE).kind = .func dE)
+    (hEcode : dE.code = CETGen.computeExpirationTime_func)
+    (hEcls : dE.isClassCtor = false)
+    (hEmode : dE.thisMode = .strict)
+    (hGo : fG < s.heap.size)
+    (hGk : (s.objEntry fG).kind = .func dG)
+    (hGcode : dG.code = GNLGen.getNextLanes_func)
+    (hGcls : dG.isClassCtor = false)
+    (hGmode : dG.thisMode = .strict)
+    (hGenv : dG.env = d.env)
+    (hHo : fH < s.heap.size)
+    (hHk : (s.objEntry fH).kind = .func dH)
+    (hHcode : dH.code = GHPGen.getHighestPriorityLanes_func)
+    (hHcls : dH.isClassCtor = false)
+    (hHmode : dH.thisMode = .strict)
+    (hPo : fP < s.heap.size)
+    (hPk : (s.objEntry fP).kind = .func dP)
+    (hPcode : dP.code = CPRGen.checkIfRootIsPrerendering_func)
+    (hPcls : dP.isClassCtor = false)
+    (hPmode : dP.thisMode = .strict)
+    (hSo : fS < s.heap.size)
+    (hSk : (s.objEntry fS).kind = .func dS)
+    (hgS : gS < s.envs.size)
+    (hgSg : gS ≠ d.env)
+    (hSe : Scope.declLike? (s.envEntry gS) = some (bS, oS))
+    (hSLP : bS[JSStr.ofString "localPerformance"]? = some bdLP)
+    (hSLPv : bdLP.value = some (.obj Pf))
+    (hPf : Pf < s.heap.size)
+    (hPfk : (s.objEntry Pf).kind.isPlain = true)
+    (hPfn : (s.objEntry Pf).props.get? (.str "now") = some (.data (.obj fPN) pfw pfe pfc))
+    (hPNo : fPN < s.heap.size)
+    (hPNk : (s.objEntry fPN).kind = .builtin bPN)
+    (hClock : ∀ w, Frame (ReactProcessRoot.fpA d.env) s w →
+      SchedulerNow.HostReads eng answer (m + 1) fPN (.obj Pf) #[] (.num tm) w 5)
+    (hR : R < s.heap.size)
+    (hRk : (s.objEntry R).kind.isPlain = true)
+    (hRA : R ≠ A)
+    (hRn : (s.objEntry R).props.get? (.str "next") = some (.data .null rw re rc))
+    (hRs : (s.objEntry R).props.get? (.str "suspendedLanes") = some (.data (.num (F64.fin false 0 (-1074))) sw se sc))
+    (hRi : (s.objEntry R).props.get? (.str "pingedLanes") = some (.data (.num (F64.fin false 0 (-1074))) pw pe pc))
+    (hRx : (s.objEntry R).props.get? (.str "expirationTimes") = some (.data (.obj A) xw xe xc))
+    (hRp : (s.objEntry R).props.get? (.str "pendingLanes") =
+      some (.data (.num (F64.fin false 4503599627370496 (-51))) lw le lc))
+    (hRw : (s.objEntry R).props.get? (.str "warmLanes") = some (.data wv ww we wc))
+    (hRc : (s.objEntry R).props.get? (.str "cancelPendingCommit") = some (.data .null cw ce cc))
+    (hRt : (s.objEntry R).props.get? (.str "timeoutHandle") =
+      some (.data (.num (F64.fin false 4503599627370496 (-52)).neg) tw te tc))
+    (hRnode : (s.objEntry R).props.get? (.str "callbackNode") = some (.data .null true ne nc))
+    (hRq : (s.objEntry R).props.get? (.str "callbackPriority") = some (.data cp true qe qc))
+    (hA : A < s.heap.size)
+    (hAk : (s.objEntry A).kind = .array)
+    (hA1 : (s.objEntry A).props.get? (.str "1") = some (.data (.num (F64.fin false 4503599627370496 (-52)).neg) true ae ac))
+    (hAL : (s.objEntry A).props.get? (.str "length") = some (.data (.num L) true false false))
+    (hL : 1 < (Conv.toNat? L).getD 0)
+    (hAE : A ≠ fE)
+    (hAG : A ≠ fG)
+    (hAP : A ≠ fP)
+    (hAC : A ≠ fC)
+    (hAH : A ≠ fH)
+    (hAS : A ≠ fS)
+    (hAF : A ≠ fL)
+    (hRG : R ≠ fG)
+    (hRP : R ≠ fP)
+    (hRE : R ≠ fE)
+    (hRC : R ≠ fC)
+    (hRH : R ≠ fH)
+    (hRS : R ≠ fS)
+    (hRF : R ≠ fL)
+    (hPerf : ∀ w h1, Frame (fpPerf d.env R A) s w → s.fuel ≤ w.fuel + 402 →
+      WP eng answer (m + 1) h1
+        (callImpl eng (.obj fS) .undefined #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) w
+        fun _ w' h' => Frame fpP w w' ∧ w.fuel ≤ w'.fuel + kP ∧ ReactFlushSync.After w' d.env oG R bdF ∧
+          (∃ a b c, (w'.objEntry R).props.get? (.str "pendingLanes") =
+            some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧ Pu w' h')
+    (hfpB : fpP.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
+    (hfpG : (d.env, JSStr.ofString "getNextLanes") ∉ fpP.binds)
+    (hfpI : (d.env, JSStr.ofString "isFlushingWork") ∉ fpP.binds)
+    (hfpC : (d.env, JSStr.ofString "currentEventTransitionLane") ∉ fpP.binds)
+    (hfpO : fpP.props.all (fun q => q.1 != fG) = true) :
+    WP eng answer (m + 4) h (callImpl eng (.obj c) .undefined #[]) s fun v w _ =>
+      v = .undefined ∧ ∃ w2 h2 e, Pu w2 h2 ∧ Frame (ReactFlushSync.fpW e d.env) w2 w := by
+  refine wp_mono (ReactMicrotask.call_spec (n := m + 3)
+    (Q := fun x _ => ∃ w2 h2 e, Pu w2 h2 ∧ Frame (ReactFlushSync.fpW e d.env) w2 x) hcb (by omega) hG hGe hGX hGXv hec
+    hGPRS hGPRSv hlt hk ?spec) fun v w h' ⟨hv, hq⟩ => ⟨hv, hq⟩
+  case spec =>
+  intro w h1 hF hfu
+  refine wp_mono (processRoot_click (m := m) (hlt := by transfer hF, hlt) (hk := by transfer hF, hk) (hf := by omega) (hcode := by transfer hF, hcode) (hcls := by transfer hF, hcls) (hmode := by transfer hF, hmode) (hG := by transfer hF, hG) (hGe := by transfer hF, hGe) (hGM := by transfer hF, hGM) (hGMm := by transfer hF, hGMm) (hGMv := by transfer hF, hGMv) (hGD := by transfer hF, hGD) (hGDm := by transfer hF, hGDm) (hGDv := by transfer hF, hGDv) (hGC := by transfer hF, hGC) (hGCv := by transfer hF, hGCv) (hGF := by transfer hF, hGF) (hGFv := by transfer hF, hGFv) (hGN := by transfer hF, hGN) (hGNv := by transfer hF, hGNv) (hGT := by transfer hF, hGT) (hGTv := by transfer hF, hGTv) (hGP0 := by transfer hF, hGP0) (hGP0v := by transfer hF, hGP0v) (hGL := by transfer hF, hGL) (hGLv := by transfer hF, hGLv) (hGI := by transfer hF, hGI) (hGIv := by transfer hF, hGIv) (hGIm := by transfer hF, hGIm) (hGW := by transfer hF, hGW) (hGWv := by transfer hF, hGWv) (hGRL := by transfer hF, hGRL) (hGRLv := by transfer hF, hGRLv) (hGCz := by transfer hF, hGCz) (hGCzv := by transfer hF, hGCzv) (hGE := by transfer hF, hGE) (hGEv := by transfer hF, hGEv) (hGG := by transfer hF, hGG) (hGGv := by transfer hF, hGGv) (hGPr := by transfer hF, hGPr) (hGPrv := by transfer hF, hGPrv) (hGH := by transfer hF, hGH) (hGHv := by transfer hF, hGHv) (hGS := by transfer hF, hGS) (hGSv := by transfer hF, hGSv) (hNo := by transfer hF, hNo) (hNk := by transfer hF, hNk) (hNcode := by transfer hF, hNcode) (hNcls := by transfer hF, hNcls) (hNmode := by transfer hF, hNmode) (hNenv := by transfer hF, hNenv) (hTo := by transfer hF, hTo) (hTk := by transfer hF, hTk) (hTcode := by transfer hF, hTcode) (hTcls := by transfer hF, hTcls) (hTmode := by transfer hF, hTmode) (hTenv := by transfer hF, hTenv) (hLo := by transfer hF, hLo) (hLk := by transfer hF, hLk) (hLcode := by transfer hF, hLcode) (hLcls := by transfer hF, hLcls) (hLmode := by transfer hF, hLmode) (hLenv := by transfer hF, hLenv) (hCo := by transfer hF, hCo) (hCk := by transfer hF, hCk) (hCfn := by transfer hF, hCfn) (hEo := by transfer hF, hEo) (hEk := by transfer hF, hEk) (hEcode := by transfer hF, hEcode) (hEcls := by transfer hF, hEcls) (hEmode := by transfer hF, hEmode) (hGo := by transfer hF, hGo) (hGk := by transfer hF, hGk) (hGcode := by transfer hF, hGcode) (hGcls := by transfer hF, hGcls) (hGmode := by transfer hF, hGmode) (hGenv := by transfer hF, hGenv) (hHo := by transfer hF, hHo) (hHk := by transfer hF, hHk) (hHcode := by transfer hF, hHcode) (hHcls := by transfer hF, hHcls) (hHmode := by transfer hF, hHmode) (hPo := by transfer hF, hPo) (hPk := by transfer hF, hPk) (hPcode := by transfer hF, hPcode) (hPcls := by transfer hF, hPcls) (hPmode := by transfer hF, hPmode) (hSo := by transfer hF, hSo) (hSk := by transfer hF, hSk) (hgS := by transfer hF, hgS) (hgSg := by transfer hF, hgSg) (hSe := by transfer hF, hSe) (hSLP := by transfer hF, hSLP) (hSLPv := by transfer hF, hSLPv) (hPf := by transfer hF, hPf) (hPfk := by transfer hF, hPfk) (hPfn := by transfer hF, hPfn) (hPNo := by transfer hF, hPNo) (hPNk := by transfer hF, hPNk) (hR := by transfer hF, hR) (hRk := by transfer hF, hRk) (hRA := by transfer hF, hRA) (hRn := by transfer hF, hRn) (hRs := by transfer hF, hRs) (hRi := by transfer hF, hRi) (hRx := by transfer hF, hRx) (hRp := by transfer hF, hRp) (hRw := by transfer hF, hRw) (hRc := by transfer hF, hRc) (hRt := by transfer hF, hRt) (hRnode := by transfer hF, hRnode) (hRq := by transfer hF, hRq) (hA := by transfer hF, hA) (hAk := by transfer hF, hAk) (hA1 := by transfer hF, hA1) (hAL := by transfer hF, hAL) (hL := by transfer hF, hL) (hAE := by transfer hF, hAE) (hAG := by transfer hF, hAG) (hAP := by transfer hF, hAP) (hAC := by transfer hF, hAC) (hAH := by transfer hF, hAH) (hAS := by transfer hF, hAS) (hAF := by transfer hF, hAF) (hRG := by transfer hF, hRG) (hRP := by transfer hF, hRP) (hRE := by transfer hF, hRE) (hRC := by transfer hF, hRC) (hRH := by transfer hF, hRH) (hRS := by transfer hF, hRS) (hRF := by transfer hF, hRF) (hfpB := binds_lt_mono hfpB hF.envs_le) (hfpG := by transfer hF, hfpG) (hfpI := by transfer hF, hfpI) (hfpC := by transfer hF, hfpC) (hfpO := by transfer hF, hfpO)
+    (hClock := fun w' hF' => hClock w' (by simpa [Footprint.union] using frame_trans hF hF'))
+    (hPerf := fun w' h2 hF' hfu' => hPerf w' h2 (by simpa [Footprint.union] using frame_trans hF hF') (by omega)))
+    fun v w' h' ⟨_, w2, h2, e2, hPu, hF2⟩ => ⟨w2, h2, e2, hPu, frame_restore hF2 s⟩
 
 end
 
