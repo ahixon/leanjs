@@ -73,7 +73,7 @@ set_option maxRecDepth 20000 in
 /-- **`Counter()`** in the click's re-render. -/
 theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     {bG : HashMap JSStr Binding} {oG : Option EnvId} {fD : ObjId} {dD : FuncData} {fS RSI HD : ObjId} {dS : FuncData} {tS : Value} {bR : HashMap JSStr Binding}
-    {oR : Option EnvId} {fK IR IJ fJ AP fV fN AIP IP OP : ObjId} {dK dJ : FuncData} {tK vT : Value}
+    {oR : Option EnvId} {fK IR IJ fJ AP fV fN AIP IP OP : ObjId} {dK dJ : FuncData} {tK vT : Value} {argsK : Array Value}
     {bA bJ : HashMap JSStr Binding} {oA oJ : Option EnvId} {bdIR bdIJ bdT : Binding} {bdV bdN : BuiltinData} {xE : F64}
     {irw ire irc ijw ije ijc pw pe pc nnw nne nnc : Bool} {bdRSI : Binding} {rw re rc uw ue' uc : Bool} {bdU bdB : Binding}
     {bdC bdW bdF bdUW bdUR bdRL bdCE bdSD bdDR bdIs : Binding} {bdIsb : BuiltinData}
@@ -188,7 +188,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     (dfN : fN ≠ C1 ∧ fN ≠ H0 ∧ fN ≠ Q) (dIP : IP ≠ C1 ∧ IP ≠ H0 ∧ IP ≠ Q) (dOP : OP ≠ C1 ∧ OP ≠ H0 ∧ OP ≠ Q)
     (dIJ : IJ ≠ C1 ∧ IJ ≠ H0 ∧ IJ ≠ Q) (dfJ : fJ ≠ C1 ∧ fJ ≠ H0 ∧ fJ ≠ Q)
     (hKd : dK.env ≠ d.env) (hJd : dJ.env ≠ d.env) :
-    WP eng answer (n + 5) h (callImpl eng (.obj fK) tK #[]) s fun v w h' =>
+    WP eng answer (n + 5) h (callImpl eng (.obj fK) tK argsK) s fun v w h' =>
       ∃ E C F dF, v = .obj E ∧ Frame (fpU d.env C1 s.heap.size H0 Q) s w ∧ s.fuel ≤ w.fuel + 200 ∧ h' = h ∧
       -- (the element: a `button` whose props' `children` is the new count, `onClick` the arrow over the new state)
       (w.objEntry E).props.get? (.str "$$typeof") = some (.data vT true true true) ∧
@@ -267,11 +267,11 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
   intro v w h1 ⟨hv1, hF1, hfu1, hh1, hA1, hp1, hsym1, hdl1, hm1, hkk1, hkm1, hkb1, hkbq1, hkq1, hkn1, hH0b1, hQp1, hQr1,
     hQl1, hr1⟩
   subst v h1
-  have hbz : (bodyState s fK dK tK #[]).heap.size = s.heap.size := by js_norm
+  have hbz : (bodyState s fK dK tK argsK).heap.size = s.heap.size := by js_norm
   simp only [hbz] at hF1 hA1 hp1 hsym1
   simp (config := { maxDischargeDepth := 6 }) only [js_simp, ↓reduceIte] at hfu1 hr1 hp1
   -- (what `useState` left alone: its frame from the component's start)
-  have hFs := frame_trans (frame_bodyState (frame_refl ({} : Footprint) s) fK dK tK #[]) hF1
+  have hFs := frame_trans (frame_bodyState (frame_refl ({} : Footprint) s) fK dK tK argsK) hF1
   have hfo : ∀ o, o < s.heap.size → o ≠ C1 → o ≠ H0 → o ≠ Q → w.objEntry o = s.objEntry o := by
     intro o ho h1 h2 h3
     refine objEntry_frame hFs ho ?_
@@ -281,7 +281,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     refine envEntry_frame hFs he ?_
     simp [fpU, ReactHooks.fpW, fpR, Footprint.union, Ne.symm h1]
   have hEK : s.envs.size < w.envs.size := envs_frame hF1 (by js_norm)
-  have hEKe : w.envEntry s.envs.size = (bodyState s fK dK tK #[]).envEntry s.envs.size :=
+  have hEKe : w.envEntry s.envs.size = (bodyState s fK dK tK argsK).envEntry s.envs.size :=
     envEntry_frame hF1 (by js_norm) (by simp [fpU, ReactHooks.fpW, fpR, Footprint.union, Nat.ne_of_gt hG, Ne.symm (Nat.ne_of_gt hG)])
   have hzw : s.heap.size + 2 ≤ w.heap.size := Nat.succ_le_of_lt hA1.1
   simp only [realm_bodyState, realms_bodyState] at hr1 hp1
