@@ -108,7 +108,7 @@ theorem dispatcher_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : Stat
       (w.objEntry H0).props.get? (.str "baseQueue") = some (.data (.obj U) true e3 c3) ∧
       (w.objEntry Q).props.get? (.str "pending") = some (.data .null true qp.2.1 qp.2.2) ∧
       (w.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2) ∧
-      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data vE true ql.2.1 ql.2.2) := by
+      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data vE true ql.2.1 ql.2.2) ∧ w.realm = s.realm := by
   apply wp_callGen USDGen.fn1_eq (by decide) hD hDk (by omega) hDcls hDmode
     (by rw [hDcode]; rfl) (by rw [hDcode]; rfl) (simpleD dD hDcode) (by rw [hDcode]; rfl) (by rw [hDcode]; rfl)
   have hpn : dD.code.info.fdi.paramNames = #[] := by rw [hDcode]; rfl
@@ -141,7 +141,7 @@ theorem dispatcher_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : Stat
   rw [realms_bodyState] at hp
   exact ⟨hv, frame_restore (frame_mono (frame_trans (frame_bodyState (frame_refl ({} : Footprint) s) fD dD tD argsD) hF)
     (fun p hp => by simpa [Footprint.union] using hp) (fun p hp => by simpa [Footprint.union] using hp)
-    (fun _ => rfl)) s, by omega, hh, hA, hp, hsym, hdl, hm, hkk, hkm, hkb, hkbq, hkq, hkn, hH0b, hQp, hQr, hQl⟩
+    (fun _ => rfl)) s, by omega, hh, hA, hp, hsym, hdl, hm, hkk, hkm, hkb, hkbq, hkq, hkn, hH0b, hQp, hQr, hQl, rfl⟩
 
 theorem simpleS (d : FuncData) (hc : d.code = USGen.fn0_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -245,7 +245,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry H0).props.get? (.str "baseQueue") = some (.data (.obj U) true e3 c3) ∧
       (w.objEntry Q).props.get? (.str "pending") = some (.data .null true qp.2.1 qp.2.2) ∧
       (w.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2) ∧
-      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data vE true ql.2.1 ql.2.2) := by
+      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data vE true ql.2.1 ql.2.2) ∧ w.realm = s.realm := by
   apply wp_callGen USGen.fn0_eq (by decide) hS hSk (by omega) hScls hSmode
     (by rw [hScode]; rfl) (by rw [hScode]; rfl) (simpleS dS hScode) (by rw [hScode]; rfl) (by rw [hScode]; rfl)
   have hpn : dS.code.info.fdi.paramNames = #[JSStr.ofString "initialState"] := by rw [hScode]; rfl
@@ -276,14 +276,14 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     (hUl := hUl) (hUr := hUr) (hUa := hUa) (hUe := hUe) (hUv := hUv) (hUn := hUn) (hdiff := hdiff) (d1 := d1) (d2
     := d2) (d3 := d3) (d4 := d4) (d5 := d5) (d6 := d6) (d7 := d7) (d8 := d8) (d9 := d9) (d10 := d10) (d11 := d11)
     (d12 := d12)) ?post
-  intro v w h1 ⟨hv, hF, hfu, hh, hA, hp, hsym, hdl, hm, hkk, hkm, hkb, hkbq, hkq, hkn, hH0b, hQp, hQr, hQl⟩
+  intro v w h1 ⟨hv, hF, hfu, hh, hA, hp, hsym, hdl, hm, hkk, hkm, hkb, hkbq, hkq, hkn, hH0b, hQp, hQr, hQl, _⟩
   simp (config := { maxDischargeDepth := 6 }) only [js_simp, ↓reduceIte] at hv hfu hA hp hsym hm hkk hkm hkb hkbq hkq hkn hH0b hQp hQr hQl
   have hbz : (bodyState s fS dS tS #[x]).heap.size = s.heap.size := by js_norm
   rw [hbz] at hF
   rw [realms_bodyState] at hp
   exact ⟨hv, frame_restore (frame_mono (frame_trans (frame_bodyState (frame_refl ({} : Footprint) s) fS dS tS #[x]) hF)
     (fun p hp => by simpa [Footprint.union] using hp) (fun p hp => by simpa [Footprint.union] using hp)
-    (fun _ => rfl)) s, by omega, hh, hA, hp, hsym, hdl, hm, hkk, hkm, hkb, hkbq, hkq, hkn, hH0b, hQp, hQr, hQl⟩
+    (fun _ => rfl)) s, by omega, hh, hA, hp, hsym, hdl, hm, hkk, hkm, hkb, hkbq, hkq, hkn, hH0b, hQp, hQr, hQl, rfl⟩
 
 end
 

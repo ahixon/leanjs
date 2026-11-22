@@ -83,6 +83,46 @@ def arrowState (t : State) (f : Func) (ctx : Ctx) (fp : ObjId) (nm : JSStr) : St
     (.data (numV f.info.expectedArgs) false false true)).setProp t.heap.size (.str kName)
     (.data (.str nm) false false true)
 
+section
+variable (t : State) (f : Func) (ctx : Ctx) (fp : ObjId) (nm : JSStr)
+
+@[js_simp] theorem arrowState_curRealm : (arrowState t f ctx fp nm).curRealm = t.curRealm := rfl
+@[js_simp] theorem arrowState_envs : (arrowState t f ctx fp nm).envs = t.envs := rfl
+@[js_simp] theorem arrowState_envEntry (e : EnvId) : (arrowState t f ctx fp nm).envEntry e = t.envEntry e := rfl
+@[js_simp] theorem arrowState_fuel : (arrowState t f ctx fp nm).fuel = t.fuel := rfl
+@[js_simp] theorem arrowState_realm : (arrowState t f ctx fp nm).realm = t.realm := rfl
+@[js_simp] theorem arrowState_realms : (arrowState t f ctx fp nm).realms = t.realms := rfl
+@[js_simp] theorem arrowState_script : (arrowState t f ctx fp nm).script = t.script := rfl
+@[js_simp] theorem arrowState_jobs : (arrowState t f ctx fp nm).jobs = t.jobs := rfl
+@[js_simp] theorem arrowState_heap_size : (arrowState t f ctx fp nm).heap.size = t.heap.size + 1 := by
+  simp [arrowState, State.setProp, State.allocObj]
+
+@[js_simp] theorem arrowState_objEntry_lt {o : ObjId} (h : o < t.heap.size) :
+    (arrowState t f ctx fp nm).objEntry o = t.objEntry o := by
+  have h1 : t.heap.size ≠ o := Nat.ne_of_gt h
+  simp only [arrowState]
+  rw [State.setProp_entry_ne _ _ _ _ _ h1, State.setProp_entry_ne _ _ _ _ _ h1, State.allocObj_entry_lt _ _ _ h]
+
+/-- The arrow function object: its kind, prototype, and `name`. -/
+theorem arrowState_new :
+    ((arrowState t f ctx fp nm).objEntry t.heap.size).kind = .func (arrowData t f ctx) ∧
+    ((arrowState t f ctx fp nm).objEntry t.heap.size).proto = .obj fp ∧
+    ((arrowState t f ctx fp nm).objEntry t.heap.size).props.get? (.str kName) =
+      some (.data (.str nm) false false true) := by
+  simp only [arrowState]
+  refine ⟨?_, ?_, ?_⟩ <;>
+  rw [State.setProp_entry_self _ _ _ _ (by simp [State.setProp, State.allocObj]),
+    State.setProp_entry_self _ _ _ _ (by simp [State.allocObj]), State.allocObj_entry_new] <;>
+  simp [ES.Obj.withProps_proto, PropMap.get?_insert]
+
+theorem frame_arrowState : Frame {} t (arrowState t f ctx fp nm) := by
+  simp only [arrowState]
+  refine frame_setProp_new ?_ (by simp) _ _
+  refine frame_setProp_new ?_ (by simp) _ _
+  exact frame_allocObj (frame_refl _ _) _
+
+end
+
 /-- An arrow function: anonymous, strict, neither async nor a generator. -/
 structure ArrowClosure (f : Func) : Prop where
   name : f.name = none

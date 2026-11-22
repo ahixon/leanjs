@@ -45,7 +45,8 @@ theorem spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : Sta
       (w.objEntry s.heap.size).props.get? (.str "type") = some (.data ty true true true) ∧
       (w.objEntry s.heap.size).props.get? (.str "key") = some (.data .null true true true) ∧
       (w.objEntry s.heap.size).props.get? (.str "ref") = some (.data .null true true true) ∧
-      (w.objEntry s.heap.size).props.get? (.str "props") = some (.data (.obj C) true true true) := by
+      (w.objEntry s.heap.size).props.get? (.str "props") = some (.data (.obj C) true true true) ∧
+      w.realm = s.realm := by
   apply wp_callGen JSXGen.jsxProd_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleJ d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "type", JSStr.ofString "config", JSStr.ofString "maybeKey"] := by
@@ -89,6 +90,7 @@ theorem spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : Sta
     | omega | (simp only [js_simp]; omega) | (frame_go' [*, hne, Ne.symm hne, hG1]; done)
     | (js_norm [*, Nat.ne_of_lt hC, Nat.ne_of_gt hC, Nat.ne_of_lt hOP, Nat.ne_of_gt hOP]; done)
     | (simp [ES.Obj.withProps_proto, State.curRealm, State.setEnv, bodyState, entryState]; done)
+    | rfl
 
 end
 
