@@ -25,9 +25,9 @@ def fp (X : ObjId) : Footprint := ⟨[], [(X, .str "pendingProps"), (X, .str "ty
 
 set_option maxRecDepth 20000 in
 set_option maxHeartbeats 1000000 in
-/-- **`createWorkInProgress(H, null)`**, `H.alternate = X` and `H.dependencies` null: `X`'s fields reset and copied
+/-- **`createWorkInProgress(H, pp)`**, `H.alternate = X` and `H.dependencies` null: `X`'s fields reset and copied
 from `H`; returns `X`. -/
-theorem reuse_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
+theorem reuse_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t pp : Value} {s : State}
     {H X : ObjId} {fl : F64} {vT vCL vL vC vMP vMS vUQ vS vI vR vRC o0 o1 o2 o3 o4 o5 o6 o7 o8 o9 o10 o11 o12 o13 o14 o15 : Value} {r0w r0e r0c r1w r1e r1c r2w r2e r2c r3w r3e r3c r4w r4e r4c r5w r5e r5c r6w r6e r6c r7w r7e r7c r8w r8e r8c r9w r9e r9c r10w r10e r10c r11w r11e r11c r12w r12e r12c r13w r13e r13c e0 c0 e1 c1 e2 c2 e3 c3 e4 c4 e5 c5 e6 c6 e7 c7 e8 c8 e9 c9 e10 c10 e11 c11 e12 c12 e13 c13 e14 c14 e15 c15 : Bool}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 20 ≤ s.fuel)
     (hcode : d.code = CWIPGen.createWorkInProgress_func) (hcls : d.isClassCtor = false)
@@ -64,9 +64,9 @@ theorem reuse_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
     (hX_index : (s.objEntry X).props.get? (.str "index") = some (.data o13 true e13 c13))
     (hX_ref : (s.objEntry X).props.get? (.str "ref") = some (.data o14 true e14 c14))
     (hX_refCleanup : (s.objEntry X).props.get? (.str "refCleanup") = some (.data o15 true e15 c15)) :
-    WP eng answer n h (callImpl eng (.obj fo) t #[.obj H, .null]) s fun v w h' =>
+    WP eng answer n h (callImpl eng (.obj fo) t #[.obj H, pp]) s fun v w h' =>
       v = .obj X ∧ Frame (fp X) s w ∧ s.fuel ≤ w.fuel + 20 ∧ h' = h ∧
-      (w.objEntry X).props.get? (.str "pendingProps") = some (.data (.null) true e0 c0) ∧
+      (w.objEntry X).props.get? (.str "pendingProps") = some (.data (pp) true e0 c0) ∧
       (w.objEntry X).props.get? (.str "type") = some (.data (vT) true e1 c1) ∧
       (w.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true e2 c2) ∧
       (w.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true e3 c3) ∧
