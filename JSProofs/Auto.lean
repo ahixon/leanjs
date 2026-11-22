@@ -1,4 +1,5 @@
 import Lean
+import JSProofs.JsAttr
 import JSProofs.Body
 
 /-!
@@ -245,27 +246,18 @@ theorem setEnv_envEntry (s : State) (e : EnvId) (ev : Env) (i : EnvId) :
       simp [State.envEntry, State.setEnv, Array.getElem?_eq_none hge', Array.getElem?_eq_none hge]
     · exact setEnv_envEntry_ne s e ev i he
 
+
+/-! ## The simp set -/
+
+attribute [js_simp] StmtsWP DeclsWP List.toList_toArray Scope.lookup_succ Scope.resolve Scope.lookup GetsC SetsC PutsC Scope.declLike? setEnv_envEntry Env.withBindings bodyState_envEntry FDI.fdiMap FDI.createParam FDI.bindParam FDI.createVar FDI.createLex List.range_succ List.range_zero List.nil_append List.cons_append List.foldl_cons List.foldl_nil List.foldl_append List.size_toArray List.length_cons List.length_nil Std.HashMap.getElem?_modify Std.HashMap.getElem?_insert Std.HashMap.getElem?_empty Std.HashMap.contains_eq_isSome_getElem? Option.isSome_some Option.isSome_none State.setEnv_envs_size State.setEnv_fuel setEnv_heap setEnv_objEntry bodyState_envs_size bodyState_fuel bodyState_objEntry bodyState_heap State.setProp_envs State.setProp_fuel State.setProp_size Option.map_some Option.map_none Bool.false_eq_true toBoolean litValue retVal Compl.updateEmpty Option.orElse HOrElse.hOrElse OrElse.orElse Bool.not_false Bool.not_true Bool.true_and Bool.false_and Bool.and_true Bool.or_false Bool.false_or Bool.true_or Bool.or_true Bool.and_false Nat.lt_add_one and_true true_and lit_getElem?_zero lit_getElem?_succ lit_getElem!_zero lit_getElem!_succ Option.getD_some List.contains_toArray List.contains_cons List.contains_nil
+attribute [js_simp] jsstrBeq numEval strictEqEval
+
 /-- Normalizing a goal after a step: the generated denotations' bookkeeping, the states' reads, literal names,
 and the given facts (the caller's state). -/
 syntax "js_norm" ("[" Lean.Parser.Tactic.simpArg,* "]")? : tactic
 macro_rules
   | `(tactic| js_norm) => `(tactic| js_norm [])
-  | `(tactic| js_norm [$xs,*]) => `(tactic| simp (config := { decide := true }) only [StmtsWP, DeclsWP,
-      List.toList_toArray, Scope.lookup_succ, Scope.resolve, Scope.lookup, GetsC, SetsC, PutsC,
-      Scope.declLike?, setEnv_envEntry, Env.withBindings, bodyState_envEntry, FDI.fdiMap, FDI.createParam, FDI.bindParam, FDI.createVar,
-      FDI.createLex, List.range_succ, List.range_zero, List.nil_append, List.cons_append, List.foldl_cons,
-      List.foldl_nil, List.foldl_append, List.size_toArray, List.length_cons, List.length_nil,
-      Std.HashMap.getElem?_modify, Std.HashMap.getElem?_insert, Std.HashMap.getElem?_empty,
-      Std.HashMap.contains_eq_isSome_getElem?, Option.isSome_some, Option.isSome_none,
-      State.setEnv_envs_size, State.setEnv_fuel, setEnv_heap, setEnv_objEntry, bodyState_envs_size, bodyState_fuel,
-      bodyState_objEntry, bodyState_heap, State.setProp_envs, State.setProp_fuel, State.setProp_size,
-      Option.map_some, Option.map_none, ↓reduceIte, Bool.false_eq_true, toBoolean, litValue, retVal,
-      Compl.updateEmpty, Option.orElse, HOrElse.hOrElse, OrElse.orElse, Bool.not_false, Bool.not_true,
-      Bool.true_and, Bool.false_and, Bool.and_true, Bool.or_false, Bool.false_or, Bool.true_or, Bool.or_true,
-      Bool.and_false, ↓reduceDIte,
-      Nat.lt_add_one, and_true, true_and, jsstrBeq, numEval, strictEqEval, lit_getElem?_zero, lit_getElem?_succ, lit_getElem!_zero, lit_getElem!_succ,
-      Option.getD_some, List.contains_toArray, List.contains_cons, List.contains_nil,
-      $xs,*])
+  | `(tactic| js_norm [$xs,*]) => `(tactic| simp (config := { decide := true }) only [js_simp, ↓reduceIte, ↓reduceDIte, $xs,*])
 
 /-- One step: the rule for the computation's head symbol. -/
 syntax "js_step" : tactic
