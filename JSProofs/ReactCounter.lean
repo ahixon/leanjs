@@ -190,7 +190,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     (hKd : dK.env ≠ d.env) (hJd : dJ.env ≠ d.env) :
     WP eng answer (n + 5) h (callImpl eng (.obj fK) tK argsK) s fun v w h' =>
       ∃ E C F dF, v = .obj E ∧ E < w.heap.size ∧ C < w.heap.size ∧ F < w.heap.size ∧
-      s.heap.size < w.heap.size ∧ s.envs.size < w.envs.size ∧
+      s.heap.size < w.heap.size ∧ s.envs.size < w.envs.size ∧ s.heap.size ≤ E ∧ s.heap.size ≤ C ∧
       Frame (fpU d.env C1 s.heap.size H0 Q) s w ∧ s.fuel ≤ w.fuel + 200 ∧ h' = h ∧
       -- (the element: a `button` whose props' `children` is the new count, `onClick` the arrow over the new state)
       (w.objEntry E).props.get? (.str "$$typeof") = some (.data vT true true true) ∧
@@ -428,10 +428,16 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_of_lt (Nat.lt_succ_self _)) hSt2,
     by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hSt2,
     Nat.lt_of_lt_of_le (Nat.lt_of_succ_lt hA1.1) (Nat.le_trans (by rw [hWz]; exact Nat.le_add_right _ _) hSz),
-    Nat.lt_of_lt_of_le hEK (by rw [← hWE]; exact hSE), ?fr, ?fu, hh3, hEt, hEty, hEkey, hEref, hEpr, ?ch, ?oc, hEk, ?Ck, ?Cp, ?Cr,
+    Nat.lt_of_lt_of_le hEK (by rw [← hWE]; exact hSE), ?Eb, Nat.le_trans (Nat.le_of_lt (Nat.lt_of_succ_lt hA1.1))
+    (Nat.le_add_right _ _), ?fr, ?fu, hh3, hEt, hEty, hEkey, hEref, hEpr, ?ch, ?oc, hEk, ?Ck, ?Cp, ?Cr,
     by rw [hF3e]; exact hFnew.1, rfl, rfl, rfl, ?dK, ?dG, ?c1, ?k1, ?k2, ?k3, ?k4, ?k5, ?h0, ?q1, ?q2, ?q3⟩
   case ch => rw [hC3]; js_norm [hCC, hCC2]
   case oc => rw [hC3]; js_norm [hCC, hCC2]
+  case Eb =>
+    have h1 : s.heap.size ≤ W.heap.size :=
+      Nat.le_trans (Nat.le_of_lt (Nat.lt_of_succ_lt hA1.1)) (by rw [hWz]; exact Nat.le_add_right _ _)
+    simp only [js_simp]
+    exact Nat.le_trans h1 (Nat.le_trans (Nat.le_succ _) (Nat.le_succ _))
   case Ck =>
     rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_kind, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)),
       Obj.withProps_kind, arrowState_objEntry_lt _ _ _ _ _
