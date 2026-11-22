@@ -24,7 +24,7 @@ def _root_.ES.State.withFuel (s : State) (f : Nat) : State := { s with fuel := f
 @[js_simp] theorem withFuel_fuel (s : State) (f : Nat) : (s.withFuel f).fuel = f := rfl
 
 theorem frame_withFuel {fp : Footprint} {s u : State} (hF : Frame fp s u) (f : Nat) : Frame fp s (u.withFuel f) :=
-  ⟨hF.envs_le, hF.heap_le, hF.env_agree, hF.obj_agree, hF.env_eq, hF.obj_eq⟩
+  ⟨hF.envs_le, hF.heap_le, hF.env_agree, hF.obj_agree, hF.env_eq, hF.obj_eq, hF.realms_eq⟩
 
 /-- One iteration of `for (…; test; ) body` whose declarations are `var`s (no per-iteration copies). -/
 def forStep (ctx : Ctx) (labels : Array JSStr) (test : Sem.CExpr) (body : Sem.CStmt) :

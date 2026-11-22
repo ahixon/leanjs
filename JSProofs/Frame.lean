@@ -45,6 +45,8 @@ structure Frame (fp : Footprint) (s w : State) : Prop where
   obj_agree : ∀ o, o < s.heap.size → ObjAgree (fun k => (o, k) ∈ fp.props) (w.objEntry o) (s.objEntry o)
   env_eq : ∀ e, e < s.envs.size → (∀ x, (e, x) ∉ fp.binds) → w.envEntry e = s.envEntry e
   obj_eq : ∀ o, o < s.heap.size → (∀ k, (o, k) ∉ fp.props) → w.objEntry o = s.objEntry o
+  /-- The realms (their intrinsics: what new objects are made from) are as they were. -/
+  realms_eq : w.realms = s.realms
 
 /-! ## Composition -/
 
@@ -88,7 +90,7 @@ theorem objAgree_trans {P R : PropKey → Prop} {a b c : Obj} (h1 : ObjAgree P b
 
 theorem frame_refl (fp : Footprint) (s : State) : Frame fp s s :=
   ⟨Nat.le_refl _, Nat.le_refl _, fun _ _ => envAgree_refl _ _, fun _ _ => objAgree_refl _ _, fun _ _ _ => rfl,
-    fun _ _ _ => rfl⟩
+    fun _ _ _ => rfl, rfl⟩
 
 /-- **Frames compose**: the footprints' union. -/
 theorem frame_trans {fp1 fp2 : Footprint} {s u w : State} (h1 : Frame fp1 s u) (h2 : Frame fp2 u w) :
@@ -107,6 +109,7 @@ theorem frame_trans {fp1 fp2 : Footprint} {s u w : State} (h1 : Frame fp1 s u) (
   obj_eq o ho hn := by
     rw [h2.obj_eq o (Nat.lt_of_lt_of_le ho h1.heap_le) (fun k hk => hn k (by simp [Footprint.union, hk])),
       h1.obj_eq o ho (fun k hk => hn k (by simp [Footprint.union, hk]))]
+  realms_eq := h2.realms_eq.trans h1.realms_eq
 
 theorem frame_mono {fp fp' : Footprint} {s w : State} (h : Frame fp s w)
     (hb : ∀ p, p ∈ fp.binds → p ∈ fp'.binds) (hp : ∀ p, p ∈ fp.props → p ∈ fp'.props) : Frame fp' s w where
@@ -117,6 +120,7 @@ theorem frame_mono {fp fp' : Footprint} {s w : State} (h : Frame fp s w)
     fun k hk => (h.obj_agree o hl).2.2.2 k (fun h' => hk (hp _ h'))⟩
   env_eq e hl hn := h.env_eq e hl (fun x hx => hn x (hb _ hx))
   obj_eq o hl hn := h.obj_eq o hl (fun k hk => hn k (hp _ hk))
+  realms_eq := h.realms_eq
 
 /-! ## Steps -/
 
@@ -133,7 +137,8 @@ theorem frame_setEnv_new (hF : Frame fp s u) {e : EnvId} (he : s.envs.size ≤ e
     env_agree := fun i hi => by rw [setEnv_envEntry_ne _ _ _ _ (hne i hi)]; exact hF.env_agree i hi
     obj_agree := fun o ho => by simpa [State.objEntry, State.setEnv] using hF.obj_agree o ho
     env_eq := fun i hi hn => by rw [setEnv_envEntry_ne _ _ _ _ (hne i hi)]; exact hF.env_eq i hi hn
-    obj_eq := fun o ho hn => by simpa [State.objEntry, State.setEnv] using hF.obj_eq o ho hn }
+    obj_eq := fun o ho hn => by simpa [State.objEntry, State.setEnv] using hF.obj_eq o ho hn 
+    realms_eq := by simpa [State.setEnv] using hF.realms_eq }
 
 /-- **A binding of an existing record** changes: its name joins the footprint. -/
 theorem frame_setEnv_bind (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.size) {bm : HashMap JSStr Binding}
@@ -146,7 +151,8 @@ theorem frame_setEnv_bind (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.size)
     env_agree := fun i hi => ?_
     obj_agree := fun o' ho => by simpa [State.objEntry, State.setEnv] using hF.obj_agree o' ho
     env_eq := fun i hi hn => ?_
-    obj_eq := fun o' ho hn => by simpa [State.objEntry, State.setEnv] using hF.obj_eq o' ho hn }
+    obj_eq := fun o' ho hn => by simpa [State.objEntry, State.setEnv] using hF.obj_eq o' ho hn 
+    realms_eq := by simpa [State.setEnv] using hF.realms_eq }
   · by_cases hei : e = i
     · subst hei
       rw [State.setEnv_envEntry_self _ _ _ heu]
@@ -185,7 +191,8 @@ theorem frame_setProp_new (hF : Frame fp s u) {o : ObjId} (ho : s.heap.size ≤ 
     env_agree := fun i hi => by simpa using hF.env_agree i hi
     obj_agree := fun i hi => by rw [State.setProp_entry_ne _ _ _ _ _ (hne i hi)]; exact hF.obj_agree i hi
     env_eq := fun i hi hn => by simpa using hF.env_eq i hi hn
-    obj_eq := fun i hi hn => by rw [State.setProp_entry_ne _ _ _ _ _ (hne i hi)]; exact hF.obj_eq i hi hn }
+    obj_eq := fun i hi hn => by rw [State.setProp_entry_ne _ _ _ _ _ (hne i hi)]; exact hF.obj_eq i hi hn 
+    realms_eq := by simpa [State.setProp] using hF.realms_eq }
 
 /-- **A property of an existing object** changes: the key joins the footprint. -/
 theorem frame_setProp_prop (hF : Frame fp s u) {o : ObjId} (ho : o < s.heap.size) (k : PropKey) (p : Property) :
@@ -197,7 +204,8 @@ theorem frame_setProp_prop (hF : Frame fp s u) {o : ObjId} (ho : o < s.heap.size
     env_agree := fun i hi => by simpa using hF.env_agree i hi
     obj_agree := fun i hi => ?_
     env_eq := fun i hi hn => by simpa using hF.env_eq i hi hn
-    obj_eq := fun i hi hn => ?_ }
+    obj_eq := fun i hi hn => ?_ 
+    realms_eq := by simpa [State.setProp] using hF.realms_eq }
   · by_cases hoi : o = i
     · subst hoi
       rw [State.setProp_entry_self _ _ _ _ hou]
@@ -221,6 +229,7 @@ theorem frame_allocObj (hF : Frame fp s u) (ob : Obj) : Frame fp s (u.allocObj o
   obj_agree i hi := by rw [State.allocObj_entry_lt _ _ _ (Nat.lt_of_lt_of_le hi hF.heap_le)]; exact hF.obj_agree i hi
   env_eq i hi hn := by simpa using hF.env_eq i hi hn
   obj_eq i hi hn := by rw [State.allocObj_entry_lt _ _ _ (Nat.lt_of_lt_of_le hi hF.heap_le)]; exact hF.obj_eq i hi hn
+  realms_eq := by simpa [State.allocObj] using hF.realms_eq
 
 /-- A function's call: its record pushed and filled (`bodyState`). -/
 theorem frame_bodyState (hF : Frame fp s u) (fo : ObjId) (d : FuncData) (t : Value) (args : Array Value) :
@@ -233,10 +242,11 @@ theorem frame_bodyState (hF : Frame fp s u) (fo : ObjId) (d : FuncData) (t : Val
   env_eq i hi hn := by
     rw [bodyState_envEntry_lt _ _ _ _ _ _ (Nat.lt_of_lt_of_le hi hF.envs_le)]; exact hF.env_eq i hi hn
   obj_eq i hi hn := by simpa using hF.obj_eq i hi hn
+  realms_eq := by simpa [bodyState, entryState, State.setEnv] using hF.realms_eq
 
 /-- The caller's realm and script back. -/
 theorem frame_restore (hF : Frame fp s u) (c : State) : Frame fp s (u.restore c) :=
-  ⟨hF.envs_le, hF.heap_le, hF.env_agree, hF.obj_agree, hF.env_eq, hF.obj_eq⟩
+  ⟨hF.envs_le, hF.heap_le, hF.env_agree, hF.obj_agree, hF.env_eq, hF.obj_eq, hF.realms_eq⟩
 
 end
 
