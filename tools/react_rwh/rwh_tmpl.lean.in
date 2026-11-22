@@ -53,6 +53,9 @@ theorem click_spec @@PREM@@ :
       (w.objEntry C).props.get? (.str "children") =
         some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
       (w.objEntry C).props.get? (.str "onClick") = some (.data (.obj F) true true true) ∧
+      E < w.heap.size ∧ C < w.heap.size ∧
+      (w.objEntry E).kind = .ordinary ∧ (w.objEntry C).kind = .ordinary ∧ (w.objEntry C).proto = .obj OP ∧
+      (w.objEntry C).props.get? (.str "ref") = none ∧
       (w.objEntry F).kind = .func dF' ∧ dF'.code = onClickFunc ∧ dF'.env = s.envs.size + 1 ∧
       dF'.thisMode = .lexical ∧
       Scope.declLike? (w.envEntry (s.envs.size + 1)) = some (((((∅ : HashMap JSStr Binding).insert
@@ -139,7 +142,7 @@ theorem click_spec @@PREM@@ :
       (bdF := { bdF with value := some (.obj C1) }) (bdRL := { bdRL with value := some two })
       (bdSD := { bdSD with value := some (.bool false) }) (tK := .undefined) (argsK := #[P, .undefined])
       @@CARGS@@) ?post
-  intro v w h1 ⟨E, C, F, dF', hvE, hEb, hCb, hFb, hKb, hEKb, hFc, hfuc, hhc, hEt, hEty, hEkey, hEref, hEpr, hCch, hCoc, hFk, hFcode, hFenv, hFthis,
+  intro v w h1 ⟨E, C, F, dF', hvE, hEb, hCb, hFb, hKb, hEKb, hFc, hfuc, hhc, hEt, hEty, hEkey, hEref, hEpr, hCch, hCoc, hEk', hCk', hCp', hCr', hFk, hFcode, hFenv, hFthis,
     hdK', hdG, hm1, hk1, hk2, hk3, hk4, hk5, hH0b, hQp1, hQr1, hQl1⟩
   subst v h1
   rw [hStz] at hFc
@@ -223,6 +226,15 @@ theorem click_spec @@PREM@@ :
   have Ep := (hpw E _ hEb (by decide)).trans hEpr
   have Cch := (hpw C _ hCb (by decide)).trans hCch
   have Coc := (hpw C _ hCb (by decide)).trans hCoc
+  have Ek2 : (w2.objEntry E).kind = .ordinary := by
+    rw [kind_frame hF2 (by simp only [js_simp]; exact hEb)]; simp only [js_simp]; exact hEk'
+  have Ck2 : (w2.objEntry C).kind = .ordinary := by
+    rw [kind_frame hF2 (by simp only [js_simp]; exact hCb)]; simp only [js_simp]; exact hCk'
+  have Cp2 : (w2.objEntry C).proto = .obj OP := by
+    rw [(hF2.obj_agree C (by simp only [js_simp]; exact hCb)).2.1]; simp only [js_simp]; exact hCp'
+  have Cr2 := (hpw C _ hCb (by decide)).trans hCr'
+  have Eb2 : E < w2.heap.size := Nat.lt_of_lt_of_le (by simp only [js_simp]; exact hEb) hF2.heap_le
+  have Cb2 : C < w2.heap.size := Nat.lt_of_lt_of_le (by simp only [js_simp]; exact hCb) hF2.heap_le
   have Fk : (w2.objEntry F).kind = .func dF' := by
     rw [kind_frame hF2 (by simp only [js_simp]; exact hFb)]; simp only [js_simp]; exact hFk
   have dK2 : Scope.declLike? (w2.envEntry (s.envs.size + 1)) = some (((((∅ : HashMap JSStr Binding).insert
@@ -262,7 +274,7 @@ theorem click_spec @@PREM@@ :
   refine ⟨E, C, F, dF', ?_⟩
   repeat' apply And.intro
   all_goals first
-    | rfl | exact hfuel | exact hframe | exact Et | exact Ety | exact Ek | exact Er | exact Ep | exact Cch | exact Coc | exact Fk
+    | rfl | exact hfuel | exact hframe | exact Ek2 | exact Ck2 | exact Cp2 | exact Cr2 | exact Eb2 | exact Cb2 | exact Et | exact Ety | exact Ek | exact Er | exact Ep | exact Cch | exact Coc | exact Fk
     | exact hFcode | exact hFenv | exact hFthis | exact dK2 | exact hdl2 | exact hRSIH2 | exact m1 | exact u1
     | exact l1 | exact k1 | exact k2 | exact k3 | exact k4 | exact k5 | exact h0 | exact q1 | exact q2 | exact q3
     | skip

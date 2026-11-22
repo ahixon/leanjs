@@ -201,6 +201,8 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry C).props.get? (.str "children") =
         some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
       (w.objEntry C).props.get? (.str "onClick") = some (.data (.obj F) true true true) ∧
+      (w.objEntry E).kind = .ordinary ∧ (w.objEntry C).kind = .ordinary ∧ (w.objEntry C).proto = .obj OP ∧
+      (w.objEntry C).props.get? (.str "ref") = none ∧
       (w.objEntry F).kind = .func dF ∧ dF.code = onClickFunc ∧ dF.env = s.envs.size ∧ dF.thisMode = .lexical ∧
       Scope.declLike? (w.envEntry s.envs.size) = some (((((∅ : HashMap JSStr Binding).insert (JSStr.ofString "n")
         { mutable := false, strict := true }).insert (JSStr.ofString "setN") { mutable := false, strict := true }).modify
@@ -426,10 +428,26 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_of_lt (Nat.lt_succ_self _)) hSt2,
     by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hSt2,
     Nat.lt_of_lt_of_le (Nat.lt_of_succ_lt hA1.1) (Nat.le_trans (by rw [hWz]; exact Nat.le_add_right _ _) hSz),
-    Nat.lt_of_lt_of_le hEK (by rw [← hWE]; exact hSE), ?fr, ?fu, hh3, hEt, hEty, hEkey, hEref, hEpr, ?ch, ?oc,
+    Nat.lt_of_lt_of_le hEK (by rw [← hWE]; exact hSE), ?fr, ?fu, hh3, hEt, hEty, hEkey, hEref, hEpr, ?ch, ?oc, hEk, ?Ck, ?Cp, ?Cr,
     by rw [hF3e]; exact hFnew.1, rfl, rfl, rfl, ?dK, ?dG, ?c1, ?k1, ?k2, ?k3, ?k4, ?k5, ?h0, ?q1, ?q2, ?q3⟩
   case ch => rw [hC3]; js_norm [hCC, hCC2]
   case oc => rw [hC3]; js_norm [hCC, hCC2]
+  case Ck =>
+    rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_kind, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)),
+      Obj.withProps_kind, arrowState_objEntry_lt _ _ _ _ _
+      (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+      State.allocObj_entry_new]
+  case Cr =>
+    rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide),
+      State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide),
+      arrowState_objEntry_lt _ _ _ _ _
+      (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+      State.allocObj_entry_new]
+    simp [PropMap.get?_empty]
+  case Cp =>
+    rw [hC3, ES.setProp_proto, ES.setProp_proto, arrowState_objEntry_lt _ _ _ _ _
+      (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+      State.allocObj_entry_new]
   case dK => rw [hSe _ hEKW]; exact hWd
   case dG => rw [hfinE _ (envs_frame hFs hG) (Nat.ne_of_lt hG)]; exact hdl1
   case c1 => rw [hfin _ (hw C1 hC1)]; exact hm1

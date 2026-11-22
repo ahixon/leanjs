@@ -39,7 +39,7 @@ theorem spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : Sta
     (hOPref : (s.objEntry OP).props.get? (.str "ref") = none) :
     WP eng answer n h (callImpl eng (.obj fo) t #[ty, .obj C]) s fun v w h' =>
       v = .obj s.heap.size ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 40 ∧ h' = h ∧ w.heap.size = s.heap.size + 1 ∧
-      (w.objEntry s.heap.size).kind.isPlain = true ∧
+      (w.objEntry s.heap.size).kind = .ordinary ∧
       (w.objEntry s.heap.size).proto = .obj s.realms[d.realm]!.objectProto ∧
       (w.objEntry s.heap.size).props.get? (.str "$$typeof") = some (.data vT true true true) ∧
       (w.objEntry s.heap.size).props.get? (.str "type") = some (.data ty true true true) ∧
