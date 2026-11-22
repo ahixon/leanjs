@@ -147,3 +147,28 @@ macro_rules
   | `(tactic| js [$xs,*]) => `(tactic| repeat' (first | js_go | js_norm [*, $xs,*] | js_split))
 
 end Logic
+
+namespace Logic
+
+@[simp] theorem restore_restore (x a b : ES.State) : (x.restore a).restore b = x.restore b := rfl
+
+/-- A footprint of existing records only avoids a record created later. -/
+theorem binds_avoid {fp : Footprint} {s sd : ES.State} (h : fp.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
+    (hle : s.envs.size ≤ sd.envs.size) : fp.binds.all (fun q => q.1 != sd.envs.size) = true := by
+  rw [List.all_eq_true] at h ⊢
+  intro q hq
+  have hlt : q.1 < s.envs.size := of_decide_eq_true (h q hq)
+  simp only [bne_iff_ne, ne_eq]
+  intro heq
+  rw [heq] at hlt
+  exact Nat.lt_irrefl _ (Nat.lt_of_lt_of_le hlt hle)
+
+/-- A premise about a state framed from `s` with an empty footprint, from the same premise about `s`. -/
+macro "transfer" hF:term "," h:term : tactic => `(tactic| first
+  | exact $h
+  | exact heap_frame $hF $h
+  | exact envs_frame $hF $h
+  | (rw [objEntry_frame0 $hF]; exact $h; assumption)
+  | (rw [envEntry_frame0 $hF]; exact $h; assumption))
+
+end Logic
