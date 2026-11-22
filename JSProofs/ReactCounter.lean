@@ -72,7 +72,7 @@ set_option maxHeartbeats 4000000 in
 set_option maxRecDepth 20000 in
 /-- **`Counter()`** in the click's re-render. -/
 theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
-    {bG : HashMap JSStr Binding} {oG : Option EnvId} {fD : ObjId} {dD : FuncData} {fS RSI HD : ObjId} {dS : FuncData} {tS : Value} {bR : HashMap JSStr Binding}
+    {bG : HashMap JSStr Binding} {oG : Option EnvId} {fD : ObjId} {dD : FuncData} {fS RSI HD : ObjId} {dS : FuncData} {bR : HashMap JSStr Binding}
     {oR : Option EnvId} {fK IR IJ fJ AP fV fN AIP IP OP : ObjId} {dK dJ : FuncData} {tK vT : Value} {argsK : Array Value}
     {bA bJ : HashMap JSStr Binding} {oA oJ : Option EnvId} {bdIR bdIJ bdT : Binding} {bdV bdN : BuiltinData} {xE : F64}
     {irw ire irc ijw ije ijc pw pe pc nnw nne nnc : Bool} {bdRSI : Binding} {rw re rc uw ue' uc : Bool} {bdU bdB : Binding}
@@ -189,7 +189,9 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     (dIJ : IJ ≠ C1 ∧ IJ ≠ H0 ∧ IJ ≠ Q) (dfJ : fJ ≠ C1 ∧ fJ ≠ H0 ∧ fJ ≠ Q)
     (hKd : dK.env ≠ d.env) (hJd : dJ.env ≠ d.env) :
     WP eng answer (n + 5) h (callImpl eng (.obj fK) tK argsK) s fun v w h' =>
-      ∃ E C F dF, v = .obj E ∧ Frame (fpU d.env C1 s.heap.size H0 Q) s w ∧ s.fuel ≤ w.fuel + 200 ∧ h' = h ∧
+      ∃ E C F dF, v = .obj E ∧ E < w.heap.size ∧ C < w.heap.size ∧ F < w.heap.size ∧
+      s.heap.size < w.heap.size ∧ s.envs.size < w.envs.size ∧
+      Frame (fpU d.env C1 s.heap.size H0 Q) s w ∧ s.fuel ≤ w.fuel + 200 ∧ h' = h ∧
       -- (the element: a `button` whose props' `children` is the new count, `onClick` the arrow over the new state)
       (w.objEntry E).props.get? (.str "$$typeof") = some (.data vT true true true) ∧
       (w.objEntry E).props.get? (.str "type") = some (.data (.str (JSStr.ofString "button")) true true true) ∧
@@ -419,7 +421,12 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     { lex := s.envs.size, var := s.envs.size, priv := dK.privEnv, strict := true, fn := some fK, realm := dK.realm,
       script := dK.script, annexB := funcIds #[] } (funcProto (W.allocObj { proto := .obj OP })) (JSStr.ofString "onClick")
   rw [hAz] at hFnew
-  refine ⟨_, w.heap.size + 3, w.heap.size + 3 + 1, _, hv3, ?fr, ?fu, hh3, hEt, hEty, hEkey, hEref, hEpr, ?ch, ?oc,
+  have hSt2 : W.heap.size + 1 + 1 ≤ w3.heap.size := by have h := hF3.heap_le; simp only [js_simp] at h; exact h
+  refine ⟨_, w.heap.size + 3, w.heap.size + 3 + 1, _, hv3, by rw [hz3]; exact Nat.lt_succ_self _,
+    by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_of_lt (Nat.lt_succ_self _)) hSt2,
+    by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hSt2,
+    Nat.lt_of_lt_of_le (Nat.lt_of_succ_lt hA1.1) (Nat.le_trans (by rw [hWz]; exact Nat.le_add_right _ _) hSz),
+    Nat.lt_of_lt_of_le hEK (by rw [← hWE]; exact hSE), ?fr, ?fu, hh3, hEt, hEty, hEkey, hEref, hEpr, ?ch, ?oc,
     by rw [hF3e]; exact hFnew.1, rfl, rfl, rfl, ?dK, ?dG, ?c1, ?k1, ?k2, ?k3, ?k4, ?k5, ?h0, ?q1, ?q2, ?q3⟩
   case ch => rw [hC3]; js_norm [hCC, hCC2]
   case oc => rw [hC3]; js_norm [hCC, hCC2]

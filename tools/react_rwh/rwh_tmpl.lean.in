@@ -1,0 +1,273 @@
+import JSProofs.ReactCounter
+import JSProofs.ReactFinishHooks
+import JSProofs.RWHGen
+
+/-!
+# `renderWithHooks` for the counter's re-render after a click (zippy docs/react-proofs.md)
+
+`renderWithHooks(current, workInProgress, Counter, props, undefined, 2)`: the render's module variables and the
+update dispatcher installed (`ReactSharedInternals.H`), the component called (`ReactCounter.click_spec`), then
+`finishRenderingHooks(current)` (`ReactFinishHooks.spec`): the button element.
+-/
+
+open ES ES.M HostRuns Logic ReactReducer ReactUpdateReducer ReactUseState ReactCounter
+open Std (HashMap)
+
+namespace ReactRenderHooks
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+/-- What it writes: its own variables and fields, the component's (`fpU`), `finishRenderingHooks`' (`fpF`). -/
+def fpRWH (g : EnvId) (C1 K H0 Q RSI : ObjId) : Footprint :=
+  ⟨[(g, "renderLanes"), (g, "currentlyRenderingFiber"), (g, "shouldDoubleInvokeUserFnsInHooksDEV"), (g, "currentHook"),
+    (g, "workInProgressHook"), (g, "didReceiveUpdate"), (g, "didScheduleRenderPhaseUpdate"), (g, "thenableIndexCounter"),
+    (g, "thenableState")],
+   [(C1, .str "memoizedState"), (C1, .str "updateQueue"), (C1, .str "lanes"), (RSI, .str "H"), (K, .str "memoizedState"),
+    (K, .str "baseState"), (K, .str "baseQueue"), (H0, .str "baseQueue"), (Q, .str "pending"),
+    (Q, .str "lastRenderedReducer"), (Q, .str "lastRenderedState")], false⟩
+
+theorem wp_gen_state {n : Nat} {h : σ} {α : Type} {x : M α} {s : State} {Q : α → State → σ → Prop}
+    (hw : ∀ St, St = s → WP eng answer n h x St Q) : WP eng answer n h x s Q := hw s rfl
+
+theorem simpleRW (d : FuncData) (hc : d.code = RWHGen.renderWithHooks_func) : FDI.Simple d := by
+  constructor <;> rw [hc] <;> try rfl
+  simp [RWHGen.renderWithHooks_func, Func.params, Func.info]
+
+set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 20000 in
+/-- **`renderWithHooks(current, workInProgress, Counter, props, undefined, 2)`** in the click's re-render. -/
+theorem click_spec @@PREM@@ :
+    WP eng answer (n + 6) h (callImpl eng (.obj fRW) tRW #[.obj C0, .obj C1, .obj fK, P, .undefined, two]) s
+      fun v w h' =>
+      ∃ E C F dF', v = .obj E ∧ Frame (fpRWH d.env C1 s.heap.size H0 Q RSI) s w ∧ s.fuel ≤ w.fuel + 300 ∧ h' = h ∧
+      w.realm = s.realm ∧
+      -- (the button element)
+      (w.objEntry E).props.get? (.str "$$typeof") = some (.data vT true true true) ∧
+      (w.objEntry E).props.get? (.str "type") = some (.data (.str (JSStr.ofString "button")) true true true) ∧
+      (w.objEntry E).props.get? (.str "key") = some (.data .null true true true) ∧
+      (w.objEntry E).props.get? (.str "ref") = some (.data .null true true true) ∧
+      (w.objEntry E).props.get? (.str "props") = some (.data (.obj C) true true true) ∧
+      (w.objEntry C).props.get? (.str "children") =
+        some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
+      (w.objEntry C).props.get? (.str "onClick") = some (.data (.obj F) true true true) ∧
+      (w.objEntry F).kind = .func dF' ∧ dF'.code = onClickFunc ∧ dF'.env = s.envs.size + 1 ∧
+      dF'.thisMode = .lexical ∧
+      Scope.declLike? (w.envEntry (s.envs.size + 1)) = some (((((∅ : HashMap JSStr Binding).insert
+        (JSStr.ofString "n") { mutable := false, strict := true }).insert (JSStr.ofString "setN")
+        { mutable := false, strict := true }).modify (JSStr.ofString "n") (fun bd => { bd with value := some (.num xE) })).modify
+        (JSStr.ofString "setN") (fun bd => { bd with value := some dv }), some dK.env) ∧
+      -- (the module's variables after the render, the dispatcher reset)
+      Scope.declLike? (w.envEntry d.env) = some (ReactFinishHooks.resetMap (((((((bG.modify (JSStr.ofString "renderLanes") (fun bd => { bd with value := some two })).modify
+        (JSStr.ofString "currentlyRenderingFiber") (fun bd => { bd with value := some (.obj C1) })).modify
+        (JSStr.ofString "shouldDoubleInvokeUserFnsInHooksDEV") (fun bd => { bd with value := some (.bool false) })).modify
+        (JSStr.ofString "currentHook") (fun bd => { bd with value := some (.obj H0) })).modify
+        (JSStr.ofString "workInProgressHook") (fun bd => { bd with value := some (.obj s.heap.size) })).modify
+        (JSStr.ofString "didReceiveUpdate") (fun bd => { bd with value := some (.bool true) })).modify
+        (JSStr.ofString "shouldDoubleInvokeUserFnsInHooksDEV") (fun bd => { bd with value := some (.bool false) })), oG) ∧
+      (w.objEntry RSI).props.get? (.str "H") = some (.data vCO true re rc) ∧
+      -- (the work in progress: its new first hook, its update queue and lanes cleared)
+      (w.objEntry C1).props.get? (.str "memoizedState") = some (.data (.obj s.heap.size) true me mc) ∧
+      (w.objEntry C1).props.get? (.str "updateQueue") = some (.data .null true uw uc) ∧
+      (w.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) ∧
+      (w.objEntry s.heap.size).props.get? (.str "memoizedState") = some (.data (.num xE) true true true) ∧
+      (w.objEntry s.heap.size).props.get? (.str "baseState") = some (.data (.num xE) true true true) ∧
+      (w.objEntry s.heap.size).props.get? (.str "baseQueue") = some (.data .null true true true) ∧
+      (w.objEntry s.heap.size).props.get? (.str "queue") = some (.data (.obj Q) true true true) ∧
+      (w.objEntry s.heap.size).props.get? (.str "next") = some (.data .null true true true) ∧
+      (w.objEntry H0).props.get? (.str "baseQueue") = some (.data (.obj U) true e3 c3) ∧
+      (w.objEntry Q).props.get? (.str "pending") = some (.data .null true qp.2.1 qp.2.2) ∧
+      (w.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2) ∧
+      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data (.num xE) true ql.2.1 ql.2.2) := by
+  apply wp_callGen RWHGen.renderWithHooks_eq (by decide) hRW hRWk (by omega) hRWcls hRWmode
+    (by rw [hRWcode]; rfl) (by rw [hRWcode]; rfl) (simpleRW dRW hRWcode) (by rw [hRWcode]; rfl) (by rw [hRWcode]; rfl)
+  have hpn : dRW.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
+      JSStr.ofString "Component", JSStr.ofString "props", JSStr.ofString "secondArg", JSStr.ofString "nextRenderLanes"] := by
+    rw [hRWcode]; rfl
+  have hv : dRW.code.info.fdi.varNames = #[] := by rw [hRWcode]; rfl
+  have hl : FDI.lexDecls dRW = #[] := by simp [FDI.lexDecls, hRWcode, RWHGen.renderWithHooks_func, Func.info]
+  have ha : dRW.code.isAsync = false := by rw [hRWcode]; rfl
+  have hne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
+  have hG1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+@@DIST@@
+  clear hRWcode
+  simp only [RWHGen.renderWithHooks]
+  js [hpn, hv, hl, ha, hRWenv, hG, hG1, hne, Ne.symm hne, hGe, hGRL, hGRLm, hGRLi, hGF, hGFm, hGFi, hGSD, hGSDm,
+    hGSDi, hGHU, hGHUv, hGRSd, hGRSdv, hC1, hC1k, hC1m, hC1u, hC1l, hC0, hC0k, hC0m, hI, hIk, hIH, dRC, Ne.symm dRC,
+    hK, hKk, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hK, hKk, dfK1, dfK2, Ne.symm dfK1, Ne.symm dfK2], ?_⟩
+  -- (the call's state: what renderWithHooks wrote)
+  refine wp_gen_state fun St hSt => ?_
+  have hStO : ∀ X, X ≠ C1 → X ≠ RSI → St.objEntry X = s.objEntry X := by
+    intro X h1 h2; rw [hSt]; js_norm [h1, h2, Ne.symm h1, Ne.symm h2]
+  have hStz : St.heap.size = s.heap.size := by rw [hSt]; js_norm
+  have hStE : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
+  have hStEe : ∀ e, e < s.envs.size → e ≠ d.env → St.envEntry e = s.envEntry e := by
+    intro e he hd; rw [hSt]; js_norm [he, hd, Ne.symm hd, Nat.ne_of_lt he, Nat.ne_of_gt he]
+  have hStd : Scope.declLike? (St.envEntry d.env) = some (((bG.modify (JSStr.ofString "renderLanes")
+      (fun bd => { bd with value := some two })).modify (JSStr.ofString "currentlyRenderingFiber")
+      (fun bd => { bd with value := some (.obj C1) })).modify (JSStr.ofString "shouldDoubleInvokeUserFnsInHooksDEV")
+      (fun bd => { bd with value := some (.bool false) }), oG) := by
+    rw [hSt]; js_norm [hG, hG1, hGe, hne, Ne.symm hne]
+  have hStR : St.realms = s.realms := by rw [hSt]; rfl
+  have hStF : St.fuel = s.fuel - 1 := by rw [hSt]; js_norm
+  have hC1k' : (St.objEntry C1).kind.isPlain = true := by rw [hSt]; js_norm [hC1, hC1k, dRC, Ne.symm dRC]
+  have hC1a' : (St.objEntry C1).props.get? (.str "alternate") = some (.data (.obj C0) aw ae ac) := by
+    rw [hSt]; js_norm [hC1, hC1a, dRC, Ne.symm dRC]
+  have hC1m' : (St.objEntry C1).props.get? (.str "memoizedState") = some (.data .null true me mc) := by
+    rw [hSt]; js_norm [hC1, hC1m, dRC, Ne.symm dRC]
+  have hIk' : (St.objEntry RSI).kind.isPlain = true := by rw [hSt]; js_norm [hI, hIk, dRC, Ne.symm dRC]
+  have hIH' : (St.objEntry RSI).props.get? (.str "H") = some (.data (.obj HD) true re rc) := by
+    rw [hSt]; js_norm [hI, hIH, dRC, Ne.symm dRC]
+  have hF0 : Frame (fpRWH d.env C1 s.heap.size H0 Q RSI) s St := by
+    rw [hSt]; simp only [fpRWH]; frame_go' [*, hne, Ne.symm hne, hG1]
+  have hC1u' : (St.objEntry C1).props.get? (.str "updateQueue") = some (.data .null true uw uc) := by
+    rw [hSt]; js_norm [hC1, hC1u, dRC, Ne.symm dRC]
+  have hC1l' : (St.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) := by
+    rw [hSt]; js_norm [hC1, hC1l, dRC, Ne.symm dRC]
+  have hStK : St.envEntry s.envs.size =
+      (bodyState s fRW dRW tRW #[.obj C0, .obj C1, .obj fK, P, .undefined, two]).envEntry s.envs.size := by
+    rw [hSt]; js_norm [hne, Ne.symm hne]
+  clear hSt
+  -- (`Counter(props, undefined)`)
+  refine wp_mono (ReactCounter.click_spec (bG := ((bG.modify (JSStr.ofString "renderLanes")
+      (fun bd => { bd with value := some two })).modify (JSStr.ofString "currentlyRenderingFiber")
+      (fun bd => { bd with value := some (.obj C1) })).modify (JSStr.ofString "shouldDoubleInvokeUserFnsInHooksDEV")
+      (fun bd => { bd with value := some (.bool false) })) (oG := oG)
+      (bdF := { bdF with value := some (.obj C1) }) (bdRL := { bdRL with value := some two })
+      (bdSD := { bdSD with value := some (.bool false) }) (tK := .undefined) (argsK := #[P, .undefined])
+      @@CARGS@@) ?post
+  intro v w h1 ⟨E, C, F, dF', hvE, hEb, hCb, hFb, hKb, hEKb, hFc, hfuc, hhc, hEt, hEty, hEkey, hEref, hEpr, hCch, hCoc, hFk, hFcode, hFenv, hFthis,
+    hdK', hdG, hm1, hk1, hk2, hk3, hk4, hk5, hH0b, hQp1, hQr1, hQl1⟩
+  subst v h1
+  rw [hStz] at hFc
+  -- (renderWithHooks' own record, untouched by the component)
+  have hRWe : w.envEntry s.envs.size = St.envEntry s.envs.size :=
+    envEntry_frame hFc (by rw [hStE]; exact Nat.lt_succ_self _)
+      (by simp [fpU, ReactHooks.fpW, fpR, Footprint.union, Nat.ne_of_gt hG, Ne.symm (Nat.ne_of_gt hG)])
+  have hEw : s.envs.size < w.envs.size := envs_frame hFc (by rw [hStE]; exact Nat.lt_succ_self _)
+  have hGw : d.env < w.envs.size := envs_frame hFc (by rw [hStE]; exact Nat.lt_succ_of_lt hG)
+  js [hpn, hv, hl, ha, hEw, hRWe, hStK, hGw, hdG, hGSD, hGDP, hGDPv, hGFR, hGFRv, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner]
+  -- (`finishRenderingHooks(current)`: the objects it reads are as the component left them)
+  have hfpU : ∀ o, o ≠ C1 → o ≠ s.heap.size → o ≠ H0 → o ≠ Q →
+      (fpU d.env C1 s.heap.size H0 Q).props.all (fun p => p.1 != o) = true := by
+    intro o h1 h2 h3 h4; simp [fpU, ReactHooks.fpW, fpR, Footprint.union, Ne.symm h1, Ne.symm h2, Ne.symm h3, Ne.symm h4]
+  have hwF : w.objEntry fF = s.objEntry fF := by
+    rw [objEntry_frame hFc (by rw [hStz]; exact hFF) (hfpU fF dfF1 (Nat.ne_of_lt hFF) dFH.1 dFH.2), hStO fF dfF1 dfF2]
+  have hFw : fF < w.heap.size := heap_frame hFc (by rw [hStz]; exact hFF)
+  have hwI : w.objEntry RSI = St.objEntry RSI :=
+    objEntry_frame hFc (by rw [hStz]; exact hI) (hfpU RSI dRC (Nat.ne_of_lt hI) (Ne.symm dH02) dRQ)
+  have hIw : RSI < w.heap.size := heap_frame hFc (by rw [hStz]; exact hI)
+  have hwH0n : (w.objEntry H0).props.get? (.str "next") = some (.data .null nw' ne' nc') := by
+    rw [props_frame hFc (by rw [hStz]; exact hH0) (by simp [fpU, ReactHooks.fpW, fpR, Footprint.union]),
+      hStO H0 dH01 dH02]; exact hH0n
+  have hwH0k : (w.objEntry H0).kind.isPlain = true := by
+    rw [kind_frame hFc (by rw [hStz]; exact hH0), hStO H0 dH01 dH02]; exact hH0k
+  have hH0w : H0 < w.heap.size := heap_frame hFc (by rw [hStz]; exact hH0)
+  have hfw : 99 ≤ w.fuel := by rw [hStF] at hfuc; omega
+  refine ⟨by js_norm [CallableC, hwF, hFFk, hFw, hwI, hIk', hIH', hIw, hwH0n, hwH0k, hH0w, hGw, hne, Ne.symm hne, hEw, hRWe, hStK, hdG, hGRSd, hGRSdv, hGCO, hGCOv, hGC, hGCm, hGRL, hGRLm, hGW, hGWm, hGF, hGFm, hGDS, hGDSm, hGDSi, hGTI, hGTIm, hGTIi, hGTS, hGTSm, hGTSi, hGDR, Ne.symm dH02, hfw, hFFenv], ?_⟩
+  refine wp_mono (ReactFinishHooks.spec (bG := ((((((bG.modify (JSStr.ofString "renderLanes") (fun bd => { bd with value := some two })).modify
+        (JSStr.ofString "currentlyRenderingFiber") (fun bd => { bd with value := some (.obj C1) })).modify
+        (JSStr.ofString "shouldDoubleInvokeUserFnsInHooksDEV") (fun bd => { bd with value := some (.bool false) })).modify
+        (JSStr.ofString "currentHook") (fun bd => { bd with value := some (.obj H0) })).modify
+        (JSStr.ofString "workInProgressHook") (fun bd => { bd with value := some (.obj s.heap.size) })).modify
+        (JSStr.ofString "didReceiveUpdate") (fun bd => { bd with value := some (.bool true) })).modify
+        (JSStr.ofString "shouldDoubleInvokeUserFnsInHooksDEV") (fun bd => { bd with value := some (.bool false) })) (oG := oG) (bdRS := bdRSd) (bdCO := bdCO)
+      (bdCH := { bdC with value := some (.obj H0) }) (bdRL := { bdRL with value := some two })
+      (bdWH := { bdW with value := some (.obj s.heap.size) }) (bdCF := { bdF with value := some (.obj C1) })
+      (bdDS := bdDS) (bdTI := bdTI) (bdTS := bdTS) (bdDR := { bdDR with value := some (.bool true) }) (RSI := RSI)
+      (H0 := H0) (vCO := vCO) (vH := .obj HD) (re := re) (rc := rc) (nw := nw') (ne := ne') (nc := nc')
+      ?_ ?_ ?_ hFFcode hFFcls hFFmode ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_) ?post2
+  all_goals first
+    | (js_norm [hwF, hFFk, hFw, hwI, hIk', hIH', hIw, hwH0n, hwH0k, hH0w, hGw, hne, Ne.symm hne, hEw, hRWe, hStK, hdG, hGRSd, hGRSdv, hGCO, hGCOv, hGC, hGCm, hGRL, hGRLm, hGW, hGWm, hGF, hGFm, hGDS, hGDSm, hGDSi, hGTI, hGTIm, hGTIi, hGTS, hGTSm, hGTSi, hGDR, Ne.symm dH02, hfw, hFFenv]; done)
+    | (js_norm [hwF, hFFk, hFw, hwI, hIk', hIH', hIw, hwH0n, hwH0k, hH0w, hGw, hne, Ne.symm hne, hEw, hRWe, hStK, hdG, hGRSd, hGRSdv, hGCO, hGCOv, hGC, hGCm, hGRL, hGRLm, hGW, hGWm, hGF, hGFm, hGDS, hGDSm, hGDSi, hGTI, hGTIm, hGTIi, hGTS, hGTSm, hGTSi, hGDR, Ne.symm dH02, hfw, hFFenv]; omega)
+    | (simp; done)
+    | (rw [hFFenv]; js_norm [hdG, hGw, hne, Ne.symm hne, hEw, hStz]; done)
+    | skip
+  case post2 =>
+  intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hr2, hdl2, hRSIH2⟩
+  subst v2 h2
+  rw [hFFenv] at hF2 hdl2
+  have hw2K := envEntry_frame hF2 (e := s.envs.size) (by js_norm [hEw]) (by simp [ReactFinishHooks.fpF, hne, Ne.symm hne])
+  have hw2E := envs_frame hF2 (e := s.envs.size) (by js_norm [hEw])
+  simp (config := { maxDischargeDepth := 6 }) only [js_simp, ↓reduceIte, hne, Ne.symm hne, hRWe, hStK, hEw] at hw2K hw2E
+  have hfw2 : 69 ≤ w2.fuel := by simp only [js_simp] at hfu2; omega
+  js [hpn, hv, hl, ha, hw2K, hw2E, hfw2, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner]
+  -- (the facts at the end: through finishRenderingHooks' frame, whose only object write is ReactSharedInternals.H)
+  rw [hStz] at hk1 hk2 hk3 hk4 hk5 hm1 hdG
+  rw [hStE] at hdK' hFenv
+  have hpw : ∀ o k, o < w.heap.size → k ≠ PropKey.str (JSStr.ofString "H") →
+      (w2.objEntry o).props.get? k = (w.objEntry o).props.get? k := by
+    intro o k ho hk
+    rw [props_frame hF2 (by simp only [js_simp]; exact ho) (by simp [ReactFinishHooks.fpF]; intro _; exact hk)]
+    simp only [js_simp]
+  have hpC : ∀ o k, o < s.heap.size → o ≠ C1 → o ≠ s.heap.size → o ≠ H0 → o ≠ Q →
+      (w.objEntry o).props.get? k = (St.objEntry o).props.get? k := by
+    intro o k ho h1 h2 h3 h4
+    rw [objEntry_frame hFc (by rw [hStz]; exact ho) (hfpU o h1 h2 h3 h4)]
+  have hC1w : C1 < w.heap.size := heap_frame hFc (by rw [hStz]; exact hC1)
+  have hKw : s.heap.size < w.heap.size := by rw [← hStz]; exact hKb
+  have hQw : Q < w.heap.size := heap_frame hFc (by rw [hStz]; exact hQ)
+  have hH0w' : H0 < w.heap.size := hH0w
+  have hfF : Frame (fpRWH d.env C1 s.heap.size H0 Q RSI) s w :=
+    frame_extend hF0 hFc (by simp [fpU, ReactHooks.fpW, fpR, Footprint.union, fpRWH])
+      (by simp [fpU, ReactHooks.fpW, fpR, Footprint.union, fpRWH]) (fun _ => rfl)
+  subst hvE
+  have hKe : s.envs.size + 1 < w.envs.size := by rw [← hStE]; exact hEKb
+  have Et := (hpw E _ hEb (by decide)).trans hEt
+  have Ety := (hpw E _ hEb (by decide)).trans hEty
+  have Ek := (hpw E _ hEb (by decide)).trans hEkey
+  have Er := (hpw E _ hEb (by decide)).trans hEref
+  have Ep := (hpw E _ hEb (by decide)).trans hEpr
+  have Cch := (hpw C _ hCb (by decide)).trans hCch
+  have Coc := (hpw C _ hCb (by decide)).trans hCoc
+  have Fk : (w2.objEntry F).kind = .func dF' := by
+    rw [kind_frame hF2 (by simp only [js_simp]; exact hFb)]; simp only [js_simp]; exact hFk
+  have dK2 : Scope.declLike? (w2.envEntry (s.envs.size + 1)) = some (((((∅ : HashMap JSStr Binding).insert
+      (JSStr.ofString "n") { mutable := false, strict := true }).insert (JSStr.ofString "setN")
+      { mutable := false, strict := true }).modify (JSStr.ofString "n") (fun bd => { bd with value := some (.num xE) })).modify
+      (JSStr.ofString "setN") (fun bd => { bd with value := some dv }), some dK.env) := by
+    rw [envEntry_frame hF2 (e := s.envs.size + 1) (by simp only [js_simp]; exact hKe)
+      (by simp [ReactFinishHooks.fpF, Nat.ne_of_lt (Nat.lt_succ_of_lt hG)])]
+    simp only [js_simp, Nat.ne_of_lt (Nat.lt_succ_of_lt hG), Ne.symm (Nat.ne_of_lt (Nat.lt_succ_of_lt hG)),
+      Nat.succ_ne_self, ↓reduceIte, hKe]
+    exact hdK'
+  have m1 := (hpw C1 _ hC1w (by decide)).trans hm1
+  have u1 := (hpw C1 _ hC1w (by decide)).trans ((props_frame hFc (by rw [hStz]; exact hC1)
+    (by simp [fpU, ReactHooks.fpW, fpR, Footprint.union])).trans hC1u')
+  have l1 := (hpw C1 _ hC1w (by decide)).trans ((props_frame hFc (by rw [hStz]; exact hC1)
+    (by simp [fpU, ReactHooks.fpW, fpR, Footprint.union])).trans hC1l')
+  have k1 := (hpw _ _ hKw (by decide)).trans hk1
+  have k2 := (hpw _ _ hKw (by decide)).trans hk2
+  have k3 := (hpw _ _ hKw (by decide)).trans hk3
+  have k4 := (hpw _ _ hKw (by decide)).trans hk4
+  have k5 := (hpw _ _ hKw (by decide)).trans hk5
+  have h0 := (hpw H0 _ hH0w' (by decide)).trans hH0b
+  have q1 := (hpw Q _ hQw (by decide)).trans hQp1
+  have q2 := (hpw Q _ hQw (by decide)).trans hQr1
+  have q3 := (hpw Q _ hQw (by decide)).trans hQl1
+  have hfuel : s.fuel ≤ w2.fuel + 300 := by
+    simp only [js_simp] at hfu2
+    rw [hStF] at hfuc
+    omega
+  have hframe : Frame (fpRWH d.env C1 s.heap.size H0 Q RSI) s (w2.restore s) := by
+    refine frame_restore (frame_extend ?h12 hF2 (by simp [ReactFinishHooks.fpF, fpRWH])
+      (by simp [ReactFinishHooks.fpF, fpRWH]) (fun _ => by simp [ReactFinishHooks.fpF])) s
+    case h12 =>
+      clear hFc hF0
+      simp only [fpRWH] at hfF ⊢
+      frame_go' [hfF, hdG, hne, Ne.symm hne, hG, hEw, hGw]
+  refine ⟨E, C, F, dF', ?_⟩
+  repeat' apply And.intro
+  all_goals first
+    | rfl | exact hfuel | exact hframe | exact Et | exact Ety | exact Ek | exact Er | exact Ep | exact Cch | exact Coc | exact Fk
+    | exact hFcode | exact hFenv | exact hFthis | exact dK2 | exact hdl2 | exact hRSIH2 | exact m1 | exact u1
+    | exact l1 | exact k1 | exact k2 | exact k3 | exact k4 | exact k5 | exact h0 | exact q1 | exact q2 | exact q3
+    | skip
+
+
+end
+
+end ReactRenderHooks
