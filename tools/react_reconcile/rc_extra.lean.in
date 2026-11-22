@@ -1,0 +1,11 @@
+    {fC C0 : ObjId} {dC : FuncData} {tC : Value} {bdRCF : Binding} {c0w c0e c0c cw cc : Bool} {ch0 : Value}
+    -- (reconcileChildren, a module function; `reconcileChildFibers` the reconciler's returned function)
+    (hRC : fC < s.heap.size) (hRCk : (s.objEntry fC).kind = .func dC) (hRCcode : dC.code = RChGen.reconcileChildren_func)
+    (hRCcls : dC.isClassCtor = false) (hRCmode : dC.thisMode = .strict) (hRCenv : dC.env = g)
+    (hGRCF : bG[JSStr.ofString "reconcileChildFibers"]? = some bdRCF) (hGRCFv : bdRCF.value = some (.obj fR))
+    -- (the current fiber, whose child is the current button fiber; the work in progress's child)
+    (hC0 : C0 < s.heap.size) (hC0k : (s.objEntry C0).kind.isPlain = true)
+    (hC0c : (s.objEntry C0).props.get? (.str "child") = some (.data (.obj H) c0w c0e c0c))
+    (hRF : RF < s.heap.size) (hRFk : (s.objEntry RF).kind.isPlain = true)
+    (hRFc : (s.objEntry RF).props.get? (.str "child") = some (.data ch0 true cw cc))
+    (hRFX : RF ≠ X)

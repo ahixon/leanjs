@@ -1,0 +1,88 @@
+import JSProofs.ReactReconcileFibers
+import JSProofs.RChGen
+
+/-!
+# `reconcileChildren` for the counter's re-render (zippy docs/react-proofs.md)
+
+`reconcileChildren(current, workInProgress, nextChildren, renderLanes)` with a current fiber: the work in
+progress's child is `reconcileChildFibers(workInProgress, current.child, nextChildren, renderLanes)`
+(`ReactReconcileFibers.click_spec`: the current button fiber's alternate reused).
+-/
+
+open ES ES.M HostRuns Logic ReactReconcileImpl ReactReconcileFibers
+open Std (HashMap)
+
+namespace ReactReconcileChildren
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+theorem wp_gen_state {n : Nat} {h : σ} {α : Type} {x : M α} {s : State} {Q : α → State → σ → Prop}
+    (hw : ∀ St, St = s → WP eng answer n h x St Q) : WP eng answer n h x s Q := hw s rfl
+
+/-- What it writes: reconcileChildFibers' and the work in progress's child. -/
+def fpC (g : EnvId) (X RF : ObjId) : Footprint := ⟨(fpR g X).binds, (fpR g X).props ++ [(RF, .str "child")], false⟩
+
+theorem simpleC (d : FuncData) (hc : d.code = RChGen.reconcileChildren_func) : FDI.Simple d := by
+  constructor <;> rw [hc] <;> try rfl
+  simp [RChGen.reconcileChildren_func, Func.params, Func.info]
+
+set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 20000 in
+/-- **`reconcileChildren(current, workInProgress, element, lanes)`** for the button. -/
+theorem click_spec @@PREM@@ :
+    WP eng answer (n + 4) h (callImpl eng (.obj fC) tC #[.obj C0, .obj RF, .obj El, ln]) s fun v w h' =>@@POST@@ := by
+  apply wp_callGen RChGen.reconcileChildren_eq (by decide) hRC hRCk (by omega) hRCcls hRCmode
+    (by rw [hRCcode]; rfl) (by rw [hRCcode]; rfl) (simpleC dC hRCcode) (by rw [hRCcode]; rfl) (by rw [hRCcode]; rfl)
+  have hpn : dC.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
+      JSStr.ofString "nextChildren", JSStr.ofString "renderLanes"] := by rw [hRCcode]; rfl
+  have hv : dC.code.info.fdi.varNames = #[] := by rw [hRCcode]; rfl
+  have hl : FDI.lexDecls dC = #[] := by simp [FDI.lexDecls, hRCcode, RChGen.reconcileChildren_func, Func.info]
+  have ha : dC.code.isAsync = false := by rw [hRCcode]; rfl
+  have hne : s.envs.size ≠ dU.env := Nat.ne_of_gt hE
+  have hE1 : dU.env < s.envs.size + 1 := Nat.lt_succ_of_lt hE
+  have hneG : s.envs.size ≠ g := Nat.ne_of_gt hG
+  have hG1 : g < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  clear hRCcode
+  simp only [RChGen.reconcileChildren]
+  js [hpn, hv, hl, ha, hRCenv, hG, hG1, hneG, Ne.symm hneG, hGe, hGRCF, hGRCFv, hC0, hC0k, hC0c, hRF, hRFk, hR, hRk,
+    FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hR, hRk], ?_⟩
+  refine wp_gen_state fun St hSt => ?_
+  have hStO : ∀ o, St.objEntry o = s.objEntry o := by intro o; rw [hSt]; rfl
+  have hStz : St.heap.size = s.heap.size := by rw [hSt]; rfl
+  have hStE : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
+  have hStF : St.fuel = s.fuel - 1 := by rw [hSt]; js_norm
+  have hStU : St.envEntry dU.env = s.envEntry dU.env := by rw [hSt]; js_norm [hE, hne, Ne.symm hne]
+  have hStg : Scope.declLike? (St.envEntry g) = some (bG, none) := by rw [hSt]; js_norm [hG, hGe, hneG, Ne.symm hneG]
+  have hStK : St.envEntry s.envs.size = (bodyState s fC dC tC #[.obj C0, .obj RF, .obj El, ln]).envEntry s.envs.size := by
+    rw [hSt]
+  have hF0 : Frame {} s St := by rw [hSt]; exact frame_bodyState (frame_refl _ s) _ _ _ _
+  clear hSt
+  refine wp_mono (ReactReconcileFibers.click_spec (bR := bR) (bG := bG) (g := g) (tR := .undefined)
+      @@ARGS@@) ?postR
+  intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, hr1, hret1,
+    hg1⟩
+  subst v1 h1
+  have hRFw : w1.objEntry RF = s.objEntry RF := by
+    rw [objEntry_frame hF1 (by rw [hStz]; exact hRF) (by simp [fpR, fpI, ReactCreateWIP.fp, Ne.symm hRFX]), hStO]
+  have hRFw1 : RF < w1.heap.size := Nat.lt_of_lt_of_le (by rw [hStz]; exact hRF) hF1.heap_le
+  have hXw1 : X < w1.heap.size := Nat.lt_of_lt_of_le (by rw [hStz]; exact hX) hF1.heap_le
+  have hw1K : w1.envEntry s.envs.size = St.envEntry s.envs.size :=
+    envEntry_frame hF1 (by rw [hStE]; exact Nat.lt_succ_self _) (by simp [fpR, hneG, Ne.symm hneG])
+  rw [hStK] at hw1K
+  have hw1E : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (by rw [hStE]; exact Nat.lt_succ_self _) hF1.envs_le
+  js [hpn, hv, hl, ha, hRFw, hRFw1, hRF, hRFk, hRFc, hw1K, hw1E, FDI.fdiCtx, Sem.inner]
+  have hFs : Frame (fpR g X) s St := frame_mono hF0 (fun p hp => by simp at hp) (fun p hp => by simp at hp)
+    (fun _ => rfl)
+  refine ⟨frame_restore (frame_mono (frame_setProp_prop (frame_extend hFs hF1 (by simp [fpR]) (by simp [fpR])
+    (fun _ => rfl)) hRF _ _) ?_ ?_ ?_) s, by rw [hStF] at hfu1; omega, rfl⟩
+  · intro p hp; simpa [fpC, fpR] using hp
+  · intro p hp; revert p; simp [fpC, fpR, fpI, ReactCreateWIP.fp]
+  · intro _; rfl
+
+end
+
+end ReactReconcileChildren
