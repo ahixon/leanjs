@@ -171,6 +171,23 @@ end
 
 /-! ## The tactic -/
 
+open Lean Meta Simp in
+/-- `JSStr.ofString "a" = JSStr.ofString "b"` for two string literals: `True` or `False` (the kernel checks the
+`decide`). -/
+simproc jsstrEq ((JSStr.ofString _ : JSStr) = JSStr.ofString _) := fun e => do
+  let_expr Eq _ x y := e | return .continue
+  let_expr JSStr.ofString a := x | return .continue
+  let_expr JSStr.ofString b := y | return .continue
+  let .lit (.strVal a') := a | return .continue
+  let .lit (.strVal b') := b | return .continue
+  if a' == b' then
+    return .done { expr := mkConst ``True, proof? := some (← mkEqTrue (← mkEqRefl x)) }
+  else
+    let hd ← mkDecide e
+    let h ← mkEqRefl (mkConst ``false)
+    let hne ← mkAppM ``of_decide_eq_false #[← mkExpectedTypeHint h (← mkEq hd (mkConst ``false))]
+    return .done { expr := mkConst ``False, proof? := some (← mkEqFalse hne) }
+
 /-! ## Literal arrays (a call's arguments, a function's parameter names) -/
 
 @[simp] theorem lit_getElem?_zero {α : Type} (a : α) (l : List α) : (List.toArray (a :: l))[0]? = some a := by simp
@@ -249,21 +266,38 @@ theorem setEnv_envEntry (s : State) (e : EnvId) (ev : Env) (i : EnvId) :
 
 /-! ## The simp set -/
 
-attribute [js_simp] StmtsWP DeclsWP List.toList_toArray Scope.lookup_succ Scope.resolve Scope.lookup GetsC SetsC PutsC Scope.declLike? setEnv_envEntry Env.withBindings bodyState_envEntry FDI.fdiMap FDI.createParam FDI.bindParam FDI.createVar FDI.createLex List.range_succ List.range_zero List.nil_append List.cons_append List.foldl_cons List.foldl_nil List.foldl_append List.size_toArray List.length_cons List.length_nil Std.HashMap.getElem?_modify Std.HashMap.getElem?_insert Std.HashMap.getElem?_empty Std.HashMap.contains_eq_isSome_getElem? Option.isSome_some Option.isSome_none State.setEnv_envs_size State.setEnv_fuel setEnv_heap setEnv_objEntry bodyState_envs_size bodyState_fuel bodyState_objEntry bodyState_heap State.setProp_envs State.setProp_fuel State.setProp_size Option.map_some Option.map_none Bool.false_eq_true toBoolean litValue retVal Compl.updateEmpty Option.orElse HOrElse.hOrElse OrElse.orElse Bool.not_false Bool.not_true Bool.true_and Bool.false_and Bool.and_true Bool.or_false Bool.false_or Bool.true_or Bool.or_true Bool.and_false Nat.lt_add_one and_true true_and lit_getElem?_zero lit_getElem?_succ lit_getElem!_zero lit_getElem!_succ Option.getD_some List.contains_toArray List.contains_cons List.contains_nil
-attribute [js_simp] jsstrBeq numEval strictEqEval
+attribute [js_simp] DeclsWP List.toList_toArray Scope.lookup_succ Scope.resolve Scope.lookup GetsC SetsC PutsC Scope.declLike? setEnv_envEntry Env.withBindings bodyState_envEntry FDI.fdiMap FDI.createParam FDI.bindParam FDI.createVar FDI.createLex List.range_succ List.range_zero List.nil_append List.cons_append List.foldl_cons List.foldl_nil List.foldl_append List.size_toArray List.length_cons List.length_nil Std.HashMap.getElem?_modify Std.HashMap.getElem?_insert Std.HashMap.getElem?_empty Std.HashMap.contains_eq_isSome_getElem? Option.isSome_some Option.isSome_none State.setEnv_envs_size State.setEnv_fuel setEnv_heap setEnv_objEntry bodyState_envs_size bodyState_fuel bodyState_objEntry bodyState_heap State.setProp_envs State.setProp_fuel State.setProp_size Option.map_some Option.map_none Bool.false_eq_true toBoolean litValue retVal Compl.updateEmpty Option.orElse HOrElse.hOrElse OrElse.orElse Bool.not_false Bool.not_true Bool.true_and Bool.false_and Bool.and_true Bool.or_false Bool.false_or Bool.true_or Bool.or_true Bool.and_false Nat.lt_add_one and_true true_and lit_getElem?_zero lit_getElem?_succ lit_getElem!_zero lit_getElem!_succ Option.getD_some List.contains_toArray List.contains_cons List.contains_nil
+attribute [js_simp] jsstrBeq jsstrEq numEval strictEqEval PropKey.str.injEq
 
 /-- Normalizing a goal after a step: the generated denotations' bookkeeping, the states' reads, literal names,
 and the given facts (the caller's state). -/
 syntax "js_norm" ("[" Lean.Parser.Tactic.simpArg,* "]")? : tactic
 macro_rules
   | `(tactic| js_norm) => `(tactic| js_norm [])
-  | `(tactic| js_norm [$xs,*]) => `(tactic| simp (config := { decide := true }) only [js_simp, ↓reduceIte, ↓reduceDIte, $xs,*])
+  | `(tactic| js_norm [$xs,*]) => `(tactic| simp only [js_simp, ↓reduceIte, ↓reduceDIte, $xs,*])
+
+section
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+
+/-- A statement list's first statement (the rest stays folded, so normalization does not walk it). -/
+theorem StmtsWP_cons {n : Nat} {ctx : Ctx} {c : Sem.CStmt} {cs : List Sem.CStmt} {v : Option Value} {h : σ}
+    {s : State} {Q : Compl → State → σ → Prop} :
+    StmtsWP eng answer n ctx (c :: cs) v h s Q = WP eng answer n h (c ctx) s fun r w h1 => match r with
+      | .normal rv => StmtsWP eng answer n ctx cs (rv <|> v) h1 w Q
+      | r => Q (r.updateEmpty v) w h1 := rfl
+
+theorem StmtsWP_nil {n : Nat} {ctx : Ctx} {v : Option Value} {h : σ} {s : State} {Q : Compl → State → σ → Prop} :
+    StmtsWP eng answer n ctx [] v h s Q = Q (.normal v) s h := rfl
+
+end
 
 /-- One step: the rule for the computation's head symbol. -/
 syntax "js_step" : tactic
 macro_rules
   | `(tactic| js_step) => `(tactic| first
       | apply wp_stmts (by simp [depth]; omega)
+      | rw [StmtsWP_cons]
+      | rw [StmtsWP_nil]
       | apply wp_varDecl
       | apply wp_declVarC (by simp [depth]; omega)
       | apply wp_assignIdentC (by simp [depth]; omega)
@@ -287,7 +321,9 @@ elab "js_split" : tactic => do
   let t ← instantiateMVars (← getMainTarget)
   unless t.isAppOfArity ``ite 5 do throwError "js_split: the goal is not an if"
   let c ← Term.exprToSyntax (t.getArg! 1)
-  evalTactic (← `(tactic| by_cases hjs : $c <;> simp only [hjs, ↓reduceIte, Bool.not_eq_true] at *))
+  evalTactic (← `(tactic| by_cases hjs : $c <;>
+    (try simp only [Bool.not_eq_true, Bool.false_eq_true, Bool.true_eq_false] at hjs) <;>
+    simp only [hjs, ↓reduceIte, Bool.not_eq_true]))
 
 /-- Steps and normalization until neither applies. -/
 syntax "js" ("[" Lean.Parser.Tactic.simpArg,* "]")? : tactic

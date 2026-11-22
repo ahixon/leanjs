@@ -100,7 +100,8 @@ theorem call_spec {n : Nat} {h : σ} {fo fL fR fD : ObjId} {d dL dR : FuncData} 
   refine ⟨by simp [CallableC, hD1, hDk1, hDk], wp_mono (hDspec _ h1 (frame_setEnv_new hF1 (by simp) _) ?_) ?_⟩
   · simp at hfu ⊢; omega
   · intro v' w' h' r
-    exact r
+    simp only [StmtsWP_nil]
+    exact ⟨trivial, r⟩
 
 end
 

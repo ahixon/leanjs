@@ -223,4 +223,9 @@ theorem getRefValue_env (s : State) (e : EnvId) (n : JSStr) (strict : Bool) (he 
     obtain ⟨bv, bm', bs, bdl⟩ := bd <;> simp at hv <;> subst hv <;>
     simp [HashMap.get?_eq_getElem?, hb] <;> rfl
 
+/- The walks are computed by rewriting (`lookup_succ`, `resolve`'s equations), never by `whnf`: evaluating them
+symbolically through a function body's nested states is what made goals with a pending lookup expensive to look at
+(any tactic that inspects such a goal reduces it). -/
+attribute [irreducible] lookup resolve
+
 end Scope

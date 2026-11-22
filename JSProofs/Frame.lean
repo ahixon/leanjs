@@ -376,4 +376,45 @@ macro_rules
       | (apply frame_setEnv_new (he := by simp))
       | (apply frame_setProp_new (ho := by simp)))); done)
 
+/-! ## Frames of explicit final states, the footprint fixed -/
+
+section
+variable {fp : Footprint} {s u : State}
+
+/-- A binding of an existing declarative record, written: allowed if it is in the footprint. -/
+theorem frame_setEnv_decl_in (hF : Frame fp s u) {e : EnvId} (he : e < s.envs.size) {bm : Std.HashMap JSStr Binding}
+    {o : Option EnvId} (hent : u.envEntry e = .decl bm o) {x : JSStr} (hin : (e, x) ∈ fp.binds)
+    (f : Binding → Binding) : Frame fp s (u.setEnv e (.decl (bm.modify x f) o)) := by
+  have h := frame_setEnv_bind hF he (bm := bm) (o := o) (by rw [hent]; rfl) x f
+  rw [hent] at h
+  exact frame_mono h (fun p hp => by
+    rcases List.mem_cons.mp hp with rfl | hp
+    · exact hin
+    · exact hp) (fun _ hp => hp)
+
+/-- A property of an existing object, written: allowed if it is in the footprint. -/
+theorem frame_setProp_in (hF : Frame fp s u) {o : ObjId} (ho : o < s.heap.size) {k : PropKey}
+    (hin : (o, k) ∈ fp.props) (p : Property) : Frame fp s (u.setProp o k p) :=
+  frame_mono (frame_setProp_prop hF ho k p) (fun _ hp => hp) (fun q hq => by
+    rcases List.mem_cons.mp hq with rfl | hq
+    · exact hin
+    · exact hq)
+
+end
+
+/-- A frame for an explicit final state against a stated footprint: the last steps, down to the start. -/
+syntax "frame_go" ("[" Lean.Parser.Tactic.simpArg,* "]")? : tactic
+macro_rules
+  | `(tactic| frame_go [$xs,*]) => `(tactic| (repeat' (first
+      | exact frame_refl _ _
+      | apply frame_restore
+      | apply frame_bodyState
+      | apply frame_allocObj
+      | (apply frame_setEnv_new (he := by simp))
+      | (apply frame_setProp_new (ho := by simp))
+      | (apply frame_setEnv_decl_in (he := by simp [*, $xs,*]) (hent := by js_norm [*, $xs,*])
+          (hin := by simp))
+      | (apply frame_setProp_in (ho := by simp [*, $xs,*]) (hin := by simp)))); done)
+
+
 end Logic
