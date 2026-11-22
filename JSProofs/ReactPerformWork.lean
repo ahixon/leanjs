@@ -51,9 +51,9 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     {bG : HashMap JSStr Binding} {oG : Option EnvId}
     {bdX bdP bdRS : Binding} {R fP fRS : ObjId} {dP dRS : FuncData} {ec : F64}
     {lw le lc sw se sc pw pe pc : Bool} {Q : State → σ → Prop}
-    {bdCR bdE : Binding} {fCR fE : ObjId} {dCR dE : FuncData} {fpR fpC : Footprint} {kR kC : Nat}
+    {bdCR bdE : Binding} {fCR fE : ObjId} {dCR dE : FuncData} {fpR fpC fpE : Footprint} {kR kC kE : Nat}
     {PR PC : State → σ → Prop}
-    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : kR + kC + 300 ≤ s.fuel)
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : kR + kC + kE + 300 ≤ s.fuel)
     (hcode : d.code = PWRGen.performWorkOnRoot_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGX : bG[JSStr.ofString "executionContext"]? = some bdX) (hGXv : bdX.value = some (.num ec))
@@ -96,9 +96,12 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hfpCO : fpC.props.all (fun q => q.1 != fE) = true)
     -- (`ensureRootIsScheduled(root)`)
     (hEnsure : ∀ w3 w h1, PC w3 h1 → Frame (fpOwn s.envs.size) w3 w → 20 ≤ w.fuel →
-      WP eng answer n h1 (callImpl eng (.obj fE) .undefined #[.obj R]) w fun _ w' h' => Q (w'.restore s) h') :
+      WP eng answer n h1 (callImpl eng (.obj fE) .undefined #[.obj R]) w fun _ w' h' =>
+        Frame fpE w w' ∧ w.fuel ≤ w'.fuel + kE ∧ Q (w'.restore s) h')
+    (hfpEB : fpE.binds.all (fun q => decide (q.1 < s.envs.size)) = true) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj R, .num (F64.fin false 4503599627370496 (-51)), .bool true]) s
-      fun v w h' => v = .undefined ∧ Q w h' := by
+      fun v w h' => v = .undefined ∧ Frame ⟨fpR.binds ++ fpC.binds ++ fpE.binds, fpR.props ++ fpC.props ++ fpE.props,
+        fpR.jobs || fpC.jobs || fpE.jobs⟩ s w ∧ s.fuel ≤ w.fuel + kR + kC + kE + 300 ∧ Q w h' := by
   replace hRender := ReactDSSI.Hold.mk hRender
   replace hComplete := ReactDSSI.Hold.mk hComplete
   replace hEnsure := ReactDSSI.Hold.mk hEnsure
@@ -198,8 +201,15 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   case fr4 => simp only [fpOwn]; frame_go' [*, hne, Ne.symm hne]
   case fu4 => first | omega | (simp only [js_simp] at hfu3; omega)
   case post4 =>
-  intro r w4 h4 hQ
-  js [FDI.fdiCtx, Sem.inner, hQ]
+  intro r w4 h4 ⟨hF4, hfu4, hQ⟩
+  have hE4 := envEntry_frame hF4 (e := s.envs.size) (by first | exact hE3s | (simp only [js_simp]; exact hE3s) | (simp only [js_simp]; omega))
+    (binds_avoid hfpEB (Nat.le_refl _))
+  js [FDI.fdiCtx, Sem.inner, hQ, hE4]
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
+  all_goals first | rfl | exact hQ | omega | (simp only [js_simp] at *; omega) | skip
+  frame_go' [*, hne, Ne.symm hne, hG1]
 
 end
 

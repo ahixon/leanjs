@@ -31,7 +31,7 @@ set_option maxRecDepth 10000 in
 theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t root lanes : Value} {s : State}
     {bG : HashMap JSStr Binding} {oG : Option EnvId}
     {bdF bdW bdS bdV bdM bdL bdP bdX : Binding} {fF fW fM fL fX fP : ObjId} {dF dW dM dL dX dP : FuncData}
-    {Q : State → σ → Prop}
+    {Q : State → σ → Prop} {fpW : Footprint} {kW : Nat}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 100 ≤ s.fuel)
     (hcode : d.code = PSWGen.performSyncWorkOnRoot_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
@@ -60,8 +60,10 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t root lanes :
     -- (`performWorkOnRoot(root, lanes, true)`)
     (hWork : ∀ w h1, Frame {} s w → s.fuel ≤ w.fuel + 70 →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fW) .undefined #[root, lanes, .bool true]) w fun _ w' h' =>
-        Q (w'.restore s) h') :
-    WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[root, lanes]) s fun v w h' => v = .undefined ∧ Q w h' := by
+        Frame fpW w w' ∧ w.fuel ≤ w'.fuel + kW ∧ Q (w'.restore s) h')
+    (hfpWB : fpW.binds.all (fun q => decide (q.1 < s.envs.size)) = true) :
+    WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[root, lanes]) s fun v w h' =>
+      v = .undefined ∧ Frame fpW s w ∧ s.fuel ≤ w.fuel + kW + 100 ∧ Q w h' := by
   replace hWork := ReactDSSI.Hold.mk hWork
   apply wp_callGen PSWGen.performSyncWorkOnRoot_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
@@ -92,8 +94,16 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t root lanes :
   case fr => frame_go' [*, hne, Ne.symm hne, hG1]
   case fu => simp at hfu1 ⊢; omega
   case post =>
-    intro b w2 h2 hQ
-    js [FDI.fdiCtx, Sem.inner, hQ]
+    intro b w2 h2 ⟨hF2, hfu2, hQ⟩
+    have hE1s : s.envs.size < w1.envs.size := envs_frame hF1 (by simp)
+    have hE2 := envEntry_frame hF2 (e := s.envs.size) (by first | exact hE1s | (simp only [js_simp]; exact hE1s))
+      (binds_avoid hfpWB (Nat.le_refl _))
+    js [FDI.fdiCtx, Sem.inner, hQ, hE2]
+    all_goals (try apply And.intro)
+    all_goals (try apply And.intro)
+    all_goals (try apply And.intro)
+    all_goals first | rfl | exact hQ | omega | (simp only [js_simp] at *; omega) | skip
+    frame_go' [*, hne, Ne.symm hne, hG1]
 
 end
 

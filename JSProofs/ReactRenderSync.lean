@@ -52,6 +52,13 @@ def fpEnd (e g : EnvId) (I : ObjId) : Footprint :=
     (g, "workInProgressRoot"), (g, "workInProgressRootRenderLanes")] : List (EnvId × JSStr)),
     [(I, .str "H"), (I, .str "A")], false⟩
 
+/-- What a render writes: the function's own module writes, the dispatchers, and the callees' footprints. -/
+def fpRS (g : EnvId) (I : ObjId) (fpPF fpWL fpFQ : Footprint) : Footprint :=
+  ⟨([(g, "executionContext"), (g, "workInProgressTransitions"), (g, "lastContextDependency"),
+    (g, "currentlyRenderingFiber$1"), (g, "workInProgressRoot"), (g, "workInProgressRootRenderLanes")] :
+      List (EnvId × JSStr)) ++ fpPF.binds ++ fpWL.binds ++ fpFQ.binds,
+    [(I, .str "H"), (I, .str "A")] ++ fpPF.props ++ fpWL.props ++ fpFQ.props, fpPF.jobs || fpWL.jobs || fpFQ.jobs⟩
+
 theorem simple (d : FuncData) (hc : d.code = RRSGen.renderRootSync_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
   simp [RRSGen.renderRootSync_func, Func.params, Func.info]
@@ -119,7 +126,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hfpFB : fpFQ.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
     (hf' : kP + kW + kF + 400 ≤ s.fuel) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj R, .num lanes, .bool true]) s
-      fun v w h' => v = .num (F64.fin false 5629499534213120 (-50)) ∧ Q w h' := by
+      fun v w h' => v = .num (F64.fin false 5629499534213120 (-50)) ∧ Frame (fpRS d.env I fpPF fpWL fpFQ) s w ∧
+        s.fuel ≤ w.fuel + kP + kW + kF + 300 ∧ Q w h' := by
   replace hPrep := ReactDSSI.Hold.mk hPrep
   replace hLoop := ReactDSSI.Hold.mk hLoop
   replace hFinish := ReactDSSI.Hold.mk hFinish
@@ -280,6 +288,13 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   have hE5 := envEntry_frame hF5 (e := s.envs.size) (by simp only [js_simp]; exact hE4s) (binds_avoid hfpFB (Nat.le_refl _))
   have hE5s : s.envs.size < w5.envs.size := envs_frame hF5 (by simp only [js_simp]; exact hE4s)
   js [hpn, hv, hl, ha, hE5, hE5s, hne, Ne.symm hne, hG4b, Ne.symm hG4b, FDI.fdiCtx, Sem.inner, hQ]
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
+  all_goals first | rfl | exact hQ | omega | (simp only [js_simp] at hfu1 hfu2 hfu3 hfu4 hfu5 ⊢; omega) |
+    skip
+  simp only [fpRS]
+  frame_go' [*, hne, Ne.symm hne, hG1]
 
 end
 
