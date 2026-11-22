@@ -1,4 +1,4 @@
-import JSProofs.FuncExpr
+import JSProofs.Loops3
 
 /-!
 # The `js` tactic's step, by the computation's head symbol (zippy docs/react-proofs.md)
@@ -25,6 +25,8 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
   let some name := fn.constName? | return none
   if name == ``Logic.ForWP then
     return some (← `(tactic| (refine for_iter ?s1 ?s2 ?_; (case s1 => js_side); (case s2 => js_side))))
+  if name == ``Logic.DoWP then
+    return some (← `(tactic| (refine do_iter ?s1 ?s2 ?_; (case s1 => js_side); (case s2 => js_side))))
   if name == ``StmtsWP then
     let args := t.getAppArgs
     let l ← whnfR (args[args.size - 5]!)
@@ -56,6 +58,7 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
     return none
   | ``ES.Sem.cond => return some (← `(tactic| apply wp_cond))
   | ``ES.Sem.forS => return some (← `(tactic| apply wp_forVar))
+  | ``ES.Sem.doWhile => return some (← `(tactic| apply wp_doWhile))
   | ``ES.Sem.unary =>
     let op := xa[0]?
     if op.any (·.isConstOf ``ES.UnOp.neg) then return some (← `(tactic| apply wp_negNum))

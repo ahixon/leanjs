@@ -338,3 +338,12 @@ open Lean Meta Simp in
 /-- A closed `intV` (the result of `~x`, shifts on 32-bit integers), evaluated. -/
 simproc [js_simp] intVEval (intV _) := reduceClosed
 end Logic
+
+namespace Logic
+open Lean Meta Simp in
+/-- A closed `F64.isZero` (`!0`, `!1` and the like), evaluated. -/
+simproc [js_simp] f64IsZeroEval (F64.isZero _) := reduceClosed
+open Lean Meta Simp in
+/-- A closed `==` on Numbers' representations, evaluated. -/
+simproc [js_simp] f64BeqEval (@BEq.beq F64 _ _ _) := reduceClosed
+end Logic
