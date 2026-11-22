@@ -42,7 +42,11 @@ theorem reset_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
     (g2 : bG[JSStr.ofString "hydrationParentFiber"]? = some b2) (g2m : b2.mutable = true) (g2v : b2.value.isSome = true)
     (g3 : bG[JSStr.ofString "isHydrating"]? = some b3) (g3m : b3.mutable = true) (g3v : b3.value.isSome = true) :
     WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
-      v = .undefined ∧ Frame (fpR d.env) s w ∧ s.fuel ≤ w.fuel + 10 ∧ h' = h := by
+      v = .undefined ∧ Frame (fpR d.env) s w ∧ s.fuel ≤ w.fuel + 10 ∧ h' = h ∧
+      Scope.declLike? (w.envEntry d.env) = some (((bG.modify (JSStr.ofString "hydrationParentFiber")
+          (fun bd => { bd with value := some .null })).modify (JSStr.ofString "nextHydratableInstance")
+          (fun bd => { bd with value := some .null })).modify (JSStr.ofString "isHydrating")
+          (fun bd => { bd with value := some (.bool false) }), oG) := by
   apply wp_callGen RHSGen.resetHydrationState_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleR d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
