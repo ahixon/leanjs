@@ -12,6 +12,32 @@ value does not depend on the state; here each element has its own WP, at the sta
 open ES ES.M HostRuns
 open Std (HashMap)
 
+namespace ES
+open Conv
+
+/-- Setting an array's `length` to what it is: the property rewritten with the same value. -/
+theorem setProp_length_eq (A : ObjId) (len : Nat) (xs : Nat → Value) (t : State)
+    (hA : ArrayObj A len xs t) (hlen : len < 2 ^ 26) :
+    setProp A (.str kLength) (numV len) true t =
+      .ok () (t.setProp A (.str kLength) (.data (.num (ofSmallInt len)) true false false)) := by
+  obtain ⟨hs, hk, hx, hl, hel, hnone⟩ := hA
+  have hlb : len < intBound := by simp only [intBound]; omega
+  have hnv : numV len = .num (ofSmallInt len) := by simp [numV, ofNat_eq_ofSmallInt len hlb]
+  have hd : maxDepth = 19996 + 4 := by decide
+  have hlk : (PropKey.str kLength == PropKey.str kLength) = true := by simp
+  simp only [setProp, M.bind_eq, M.bind_apply, hnv]
+  unfold Obj'.set; rw [hd, set_array_own _ A _ _ t _ _ _ hs hk hl, ES.defineOwnProperty]
+  simp only [M.bind_eq, M.bind_apply, objKind, readObj_entry' _ _ _ hs, hk, M.bindRes_ok, hlk, ↓reduceIte]
+  rw [ES.arraySetLength]
+  simp only [M.bind_eq, M.bind_apply, toNumber_num, M.bindRes_ok]
+  simp only [Pure.pure, M.pure, M.bindRes_ok, toUint32_ofSmallInt len (by omega), toNat?_ofSmallInt len hlb,
+    readObj_entry' _ _ _ hs, hl, Option.getD_some, beq_self_eq_true, Bool.not_true, Bool.false_eq_true, ↓reduceIte,
+    ge_iff_le, Nat.le_refl, decide_true, ofNat_eq_ofSmallInt len hlb]
+  simp [M.bind_eq, M.bind_apply, readObj_entry' _ _ _ hs, hl, toNat?_ofSmallInt len hlb,
+    ordinaryDefineOwnProperty_value _ _ _ _ _ _ _ hs hl, Pure.pure, M.pure]
+
+end ES
+
 namespace Logic
 
 section
@@ -27,7 +53,7 @@ theorem wp_array2 {n : Nat} {h : σ} {e1 e2 : Sem.CExpr} {v1 v2 : Value} {ctx : 
     (h1 : WP eng answer n h (e1 ctx) (emptyArrayState s) fun v w h' => v = v1 ∧ w = emptyArrayState s ∧ h' = h)
     (h2 : WP eng answer n h (e2 ctx) (arr1State s v1) fun v w h' => v = v2 ∧ w = arr1State s v1 ∧ h' = h)
     (hQ : ∀ t', ArrayObj s.heap.size 2 (fun j => if j = 1 then v2 else if j = 0 then v1 else .undefined) t' →
-      t'.envs = s.envs → t'.fuel = s.fuel → t'.heap.size = s.heap.size + 1 →
+      t'.envs = s.envs → t'.fuel = s.fuel → t'.heap.size = s.heap.size + 1 → Frame {} s t' →
       (∀ o, o < s.heap.size → t'.objEntry o = s.objEntry o) → t'.realms = s.realms →
       (t'.objEntry s.heap.size).proto = .obj s.curRealm.arrayProto → Q (.obj s.heap.size) t' h) :
     WP eng answer n h (Sem.array #[.expr e1, .expr e2] ctx) s Q := by
@@ -63,10 +89,15 @@ theorem wp_array2 {n : Nat} {h : σ} {e1 e2 : Sem.CExpr} {v1 v2 : Value} {ctx : 
   refine wp_of_eq rfl ?_
   have hA2 := arrayObj_append s.heap.size 1 _ v2 _ hA1 (by decide)
   obtain ⟨t', hs', hA', he', hfu', hz', ho', hr', hp'⟩ := setProp_length_same s.heap.size 2 _ _ hA2 (by decide)
+  have hFr : Frame {} s t' := by
+    rw [setProp_length_eq s.heap.size 2 _ _ hA2 (by decide)] at hs'
+    rw [← (Res.ok.inj hs').2]
+    simp only [arr1State, emptyArrayState]
+    repeat (first | with_reducible refine frame_setProp_new ?_ (Nat.le_refl _) _ _ | with_reducible exact frame_allocObj (frame_refl _ s) _)
   apply wp_mbind
   refine wp_of_eq hs' ?_
   have hsz : s.heap.size < (emptyArrayState s).heap.size := by simp [emptyArrayState]
-  refine wp_of_eq rfl (hQ t' hA' ?_ ?_ ?_ ?_ ?_ ?_)
+  refine wp_of_eq rfl (hQ t' hA' ?_ ?_ ?_ hFr ?_ ?_ ?_)
   · rw [he']; simp [arr1State, emptyArrayState]
   · rw [hfu']; simp [arr1State, emptyArrayState]
   · rw [hz']; simp [arr1State, emptyArrayState]
