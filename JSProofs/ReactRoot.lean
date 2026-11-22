@@ -36,7 +36,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 20 ≤ s.fuel)
     (hcode : d.code = GRFGen.getRootForUpdatedFiber_func) (hcls : d.isClassCtor = false)
     (hmode : d.thisMode = .strict)
-    (hG : d.env < s.envs.size) (hGe : s.envEntry d.env = .decl bG oG)
+    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGN : bG[JSStr.ofString "nestedUpdateCount"]? = some bdN)
     (hGNv : bdN.value = some (.num (F64.fin false 0 (-1074))))
     (hS : S < s.heap.size) (hSk : (s.objEntry S).kind.isPlain = true)

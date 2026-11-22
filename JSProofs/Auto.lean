@@ -266,8 +266,18 @@ theorem setEnv_envEntry (s : State) (e : EnvId) (ev : Env) (i : EnvId) :
 
 /-! ## The simp set -/
 
-attribute [js_simp] DeclsWP List.toList_toArray Scope.lookup_succ Scope.resolve Scope.lookup GetsC SetsC PutsC Scope.declLike? setEnv_envEntry Env.withBindings bodyState_envEntry FDI.fdiMap FDI.createParam FDI.bindParam FDI.createVar FDI.createLex List.range_succ List.range_zero List.nil_append List.cons_append List.foldl_cons List.foldl_nil List.foldl_append List.size_toArray List.length_cons List.length_nil Std.HashMap.getElem?_modify Std.HashMap.getElem?_insert Std.HashMap.getElem?_empty Std.HashMap.contains_eq_isSome_getElem? Option.isSome_some Option.isSome_none State.setEnv_envs_size State.setEnv_fuel setEnv_heap setEnv_objEntry bodyState_envs_size bodyState_fuel bodyState_objEntry bodyState_heap State.setProp_envs State.setProp_fuel State.setProp_size Option.map_some Option.map_none Bool.false_eq_true toBoolean litValue retVal Compl.updateEmpty Option.orElse HOrElse.hOrElse OrElse.orElse Bool.not_false Bool.not_true Bool.true_and Bool.false_and Bool.and_true Bool.or_false Bool.false_or Bool.true_or Bool.or_true Bool.and_false Nat.lt_add_one and_true true_and lit_getElem?_zero lit_getElem?_succ lit_getElem!_zero lit_getElem!_succ Option.getD_some List.contains_toArray List.contains_cons List.contains_nil
+attribute [js_simp] DeclsWP List.toList_toArray Scope.lookup_succ Scope.resolve Scope.lookup GetsC SetsC PutsC setEnv_envEntry Env.withBindings bodyState_envEntry FDI.fdiMap FDI.createParam FDI.bindParam FDI.createVar FDI.createLex List.range_succ List.range_zero List.nil_append List.cons_append List.foldl_cons List.foldl_nil List.foldl_append List.size_toArray List.length_cons List.length_nil Std.HashMap.getElem?_modify Std.HashMap.getElem?_insert Std.HashMap.getElem?_empty Std.HashMap.contains_eq_isSome_getElem? Option.isSome_some Option.isSome_none State.setEnv_envs_size State.setEnv_fuel setEnv_heap setEnv_objEntry bodyState_envs_size bodyState_fuel bodyState_objEntry bodyState_heap State.setProp_envs State.setProp_fuel State.setProp_size Option.map_some Option.map_none Bool.false_eq_true toBoolean litValue retVal Compl.updateEmpty Option.orElse HOrElse.hOrElse OrElse.orElse Bool.not_false Bool.not_true Bool.true_and Bool.false_and Bool.and_true Bool.or_false Bool.false_or Bool.true_or Bool.or_true Bool.and_false Nat.lt_add_one and_true true_and lit_getElem?_zero lit_getElem?_succ lit_getElem!_zero lit_getElem!_succ Option.getD_some List.contains_toArray List.contains_cons List.contains_nil
 attribute [js_simp] jsstrBeq jsstrEq numEval strictEqEval PropKey.str.injEq
+
+/-- `declLike?` by constructor, and through an `if` (so that a hypothesis about `declLike? (s.envEntry e)` applies,
+instead of a `match` on an unknown record). -/
+@[js_simp] theorem declLike_decl (b : HashMap JSStr Binding) (o : Option EnvId) :
+    Scope.declLike? (.decl b o) = some (b, o) := rfl
+@[js_simp] theorem declLike_func (b : HashMap JSStr Binding) (o : Option EnvId) (ts : ThisStatus) (tv : Value)
+    (f : ObjId) (nt : Value) : Scope.declLike? (.func b o ts tv f nt) = some (b, o) := rfl
+@[js_simp] theorem declLike_ite (c : Prop) [Decidable c] (a b : Env) :
+    Scope.declLike? (if c then a else b) = if c then Scope.declLike? a else Scope.declLike? b := by
+  split <;> rfl
 
 /-- Normalizing a goal after a step: the generated denotations' bookkeeping, the states' reads, literal names,
 and the given facts (the caller's state). -/
