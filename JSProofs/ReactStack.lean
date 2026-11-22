@@ -43,8 +43,8 @@ theorem push_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t value : Valu
     WP eng answer n h (callImpl eng (.obj fo) t #[.obj Cu, value]) s fun v w h' =>
       v = .undefined ∧ Frame ⟨[(d.env, "index")], [(VS, .str (numberToJSStr nv)), (Cu, .str "current")], false⟩ s w ∧
       s.fuel ≤ w.fuel + 10 ∧ h' = h ∧
-      (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
-        ∃ bd, bm[JSStr.ofString "index"]? = some bd ∧ bd.value = some (.num nv)) ∧
+      Scope.declLike? (w.envEntry d.env) =
+        some (bG.modify (JSStr.ofString "index") (fun bd => { bd with value := some (.num nv) }), oG) ∧
       (w.objEntry VS).props.get? (.str (numberToJSStr nv)) = some (.data cur true oe oc) ∧
       (w.objEntry Cu).props.get? (.str "current") = some (.data value true ce cc) := by
   apply wp_callGen PushGen.push_eq (by decide) hlt hk (by omega) hcls hmode
@@ -62,7 +62,6 @@ theorem push_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t value : Valu
     Ne.symm hVC, hCc, hslot, hidx, hlen, hiL, hnl, FDI.fdiCtx, Sem.inner]
   all_goals (repeat' apply And.intro)
   all_goals first | rfl | omega | (simp only [js_simp]; omega) | (refine ⟨_, rfl, _, by simp, rfl⟩) | frame_go' [*, hne, Ne.symm hne, hG1] | skip
-  exact ⟨_, rfl, _, by simp [hGI]; rfl, rfl⟩
 
 set_option maxRecDepth 10000 in
 theorem push_exact {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t value : Value} {s : State}
@@ -168,8 +167,8 @@ theorem pop_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     WP eng answer n h (callImpl eng (.obj fo) t #[.obj Cu]) s fun v w h' =>
       v = .undefined ∧ Frame ⟨[(d.env, "index")], [(VS, .str (numberToJSStr iv)), (Cu, .str "current")], false⟩ s w ∧
       s.fuel ≤ w.fuel + 10 ∧ h' = h ∧
-      (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
-        ∃ bd, bm[JSStr.ofString "index"]? = some bd ∧ bd.value = some (.num (Conv.subF iv F64.one))) ∧
+      Scope.declLike? (w.envEntry d.env) =
+        some (bG.modify (JSStr.ofString "index") (fun bd => { bd with value := some (.num (Conv.subF iv F64.one)) }), oG) ∧
       (w.objEntry VS).props.get? (.str (numberToJSStr iv)) = some (.data .null true oe oc) ∧
       (w.objEntry Cu).props.get? (.str "current") = some (.data saved true ce cc) := by
   apply wp_callGen PopGen.pop_eq (by decide) hlt hk (by omega) hcls hmode
@@ -192,7 +191,6 @@ theorem pop_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   trace_state
   all_goals (repeat' apply And.intro)
   all_goals first | rfl | omega | (simp only [js_simp]; omega) | frame_go' [*, hne, Ne.symm hne, hG1] | skip
-  exact ⟨_, rfl, _, by simp [hGI]; rfl, rfl⟩
 
 
 set_option maxRecDepth 40000 in
