@@ -29,7 +29,7 @@ set_option maxRecDepth 20000 in
 /-- **`updateWorkInProgressHook()`**, the first hook of a re-render: a clone of the current first hook. -/
 theorem first_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
     {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdC bdW bdF : Binding} {C1 C0 H0 : ObjId}
-    {ms bs bq q mv : Value} {aw ae ac mw me mc nw ne nc w1 e1 c1 w2 e2 c2 w3 e3 c3 w4 e4 c4 : Bool}
+    {ms bs bq q : Value} {aw ae ac mw me mc nw ne w1 e1 c1 w2 e2 c2 w3 e3 c3 w4 e4 c4 : Bool}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 20 ≤ s.fuel)
     (hcode : d.code = UWHGen.updateWorkInProgressHook_func) (hcls : d.isClassCtor = false)
     (hmode : d.thisMode = .strict)
@@ -55,7 +55,7 @@ theorem first_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
         (fun bd => { bd with value := some (.obj H0) })).modify (JSStr.ofString "workInProgressHook")
         (fun bd => { bd with value := some (.obj s.heap.size) }), oG) ∧
       (w.objEntry C1).props.get? (.str "memoizedState") = some (.data (.obj s.heap.size) true me mc) ∧
-      s.heap.size < w.heap.size ∧ (w.objEntry s.heap.size).kind.isPlain = true ∧
+      w.heap.size = s.heap.size + 1 ∧ (w.objEntry s.heap.size).kind.isPlain = true ∧
       (w.objEntry s.heap.size).props.get? (.str "memoizedState") = some (.data ms true true true) ∧
       (w.objEntry s.heap.size).props.get? (.str "baseState") = some (.data bs true true true) ∧
       (w.objEntry s.heap.size).props.get? (.str "baseQueue") = some (.data bq true true true) ∧

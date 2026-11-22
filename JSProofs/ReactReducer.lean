@@ -106,6 +106,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
       v = .obj s.heap.size ∧ Frame (fpR d.env H H0 Q) s w ∧ s.fuel ≤ w.fuel + 60 ∧ h' = h ∧
       ArrayObj s.heap.size 2 (fun j => if j = 1 then dv else if j = 0 then vE else .undefined) w ∧
       (w.objEntry s.heap.size).proto = .obj s.realms[d.realm]!.arrayProto ∧
+      (w.objEntry s.heap.size).props.get? (.sym WK.iterator) = none ∧
       Scope.declLike? (w.envEntry d.env) = some (bG.modify (JSStr.ofString "didReceiveUpdate")
         (fun bd => { bd with value := some (.bool true) }), oG) ∧
       (w.objEntry H).props.get? (.str "memoizedState") = some (.data vE true hm.2.1 hm.2.2) ∧
@@ -145,10 +146,10 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
   case e2 =>
     js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUv, hUn, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner, Nat.ne_of_lt hH, Nat.ne_of_gt hH, Nat.lt_succ_of_lt hH, Nat.ne_of_lt hQ, Nat.ne_of_gt hQ, Nat.lt_succ_of_lt hQ, emptyArrayState, arr1State]
   case fin =>
-    intro t' hA he hfu hz hFr ho hr hp
-    simp (config := { maxDischargeDepth := 6 }) only [js_simp, ↓reduceIte, ↓reduceDIte, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUv, hUn, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner, State.curRealm, realm_setProp, realm_setEnv, realm_withFuel, realm_bodyState, realms_setProp, realms_setEnv, realms_withFuel, realms_bodyState] at hA hz hp hfu
+    intro t' hA he hfu hz hFr hsym ho hr hp
+    simp (config := { maxDischargeDepth := 6 }) only [js_simp, ↓reduceIte, ↓reduceDIte, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUv, hUn, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner, State.curRealm, realm_setProp, realm_setEnv, realm_withFuel, realm_bodyState, realms_setProp, realms_setEnv, realms_withFuel, realms_bodyState] at hA hz hp hfu hsym
     clear ho he hr
-    refine ⟨?v, frame_restore (frame_mono (frame_trans (fp1 := fpR d.env H H0 Q) ?F1 hFr) ?b1 ?b2 ?b3) s, by rw [hfu]; omega, rfl, hA, hp,
+    refine ⟨?v, frame_restore (frame_mono (frame_trans (fp1 := fpR d.env H H0 Q) ?F1 hFr) ?b1 ?b2 ?b3) s, by rw [hfu]; omega, rfl, hA, hp, hsym,
       ?dl, ?m1, ?m2, ?m3, ?m4, ?m5, ?m6, ?m7⟩
     case v => js_norm [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUv, hUn, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
     case F1 => simp only [fpR]; frame_go' [*, hne, Ne.symm hne, hG1]

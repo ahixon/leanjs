@@ -54,6 +54,7 @@ theorem wp_array2 {n : Nat} {h : σ} {e1 e2 : Sem.CExpr} {v1 v2 : Value} {ctx : 
     (h2 : WP eng answer n h (e2 ctx) (arr1State s v1) fun v w h' => v = v2 ∧ w = arr1State s v1 ∧ h' = h)
     (hQ : ∀ t', ArrayObj s.heap.size 2 (fun j => if j = 1 then v2 else if j = 0 then v1 else .undefined) t' →
       t'.envs = s.envs → t'.fuel = s.fuel → t'.heap.size = s.heap.size + 1 → Frame {} s t' →
+      (t'.objEntry s.heap.size).props.get? (.sym WK.iterator) = none →
       (∀ o, o < s.heap.size → t'.objEntry o = s.objEntry o) → t'.realms = s.realms →
       (t'.objEntry s.heap.size).proto = .obj s.curRealm.arrayProto → Q (.obj s.heap.size) t' h) :
     WP eng answer n h (Sem.array #[.expr e1, .expr e2] ctx) s Q := by
@@ -89,15 +90,27 @@ theorem wp_array2 {n : Nat} {h : σ} {e1 e2 : Sem.CExpr} {v1 v2 : Value} {ctx : 
   refine wp_of_eq rfl ?_
   have hA2 := arrayObj_append s.heap.size 1 _ v2 _ hA1 (by decide)
   obtain ⟨t', hs', hA', he', hfu', hz', ho', hr', hp'⟩ := setProp_length_same s.heap.size 2 _ _ hA2 (by decide)
+  have ht' : (((arr1State s v1).setProp s.heap.size (PropKey.ofNat 1) (.data v2 true true true)).setProp s.heap.size
+      (.str kLength) (.data (.num (Conv.ofNat (1 + 1))) true false false)).setProp s.heap.size (.str kLength)
+      (.data (.num (Conv.ofSmallInt ((2 : Nat) : Int))) true false false) = t' := by
+    have h2 := hs'
+    rw [setProp_length_eq s.heap.size 2 _ _ hA2 (by decide)] at h2
+    exact (Res.ok.inj h2).2
+  have hsz : s.heap.size < (s.allocObj { proto := .obj s.curRealm.arrayProto, kind := .array }).heap.size := by simp
+  have hsym : (t'.objEntry s.heap.size).props.get? (.sym WK.iterator) = none := by
+    rw [← ht']
+    simp only [arr1State, emptyArrayState]
+    repeat rw [State.setProp_entry_self _ _ _ _ (by simp)]
+    rw [State.allocObj_entry_new]
+    simp [PropKey.ofNat, PropMap.get?_insert_ne, PropMap.get?_empty]
   have hFr : Frame {} s t' := by
-    rw [setProp_length_eq s.heap.size 2 _ _ hA2 (by decide)] at hs'
-    rw [← (Res.ok.inj hs').2]
+    rw [← ht']
     simp only [arr1State, emptyArrayState]
     repeat (first | with_reducible refine frame_setProp_new ?_ (Nat.le_refl _) _ _ | with_reducible exact frame_allocObj (frame_refl _ s) _)
   apply wp_mbind
   refine wp_of_eq hs' ?_
   have hsz : s.heap.size < (emptyArrayState s).heap.size := by simp [emptyArrayState]
-  refine wp_of_eq rfl (hQ t' hA' ?_ ?_ ?_ hFr ?_ ?_ ?_)
+  refine wp_of_eq rfl (hQ t' hA' ?_ ?_ ?_ hFr hsym ?_ ?_ ?_)
   · rw [he']; simp [arr1State, emptyArrayState]
   · rw [hfu']; simp [arr1State, emptyArrayState]
   · rw [hz']; simp [arr1State, emptyArrayState]
