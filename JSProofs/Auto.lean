@@ -288,7 +288,7 @@ and the given facts (the caller's state). -/
 syntax "js_norm" ("[" Lean.Parser.Tactic.simpArg,* "]")? : tactic
 macro_rules
   | `(tactic| js_norm) => `(tactic| js_norm [])
-  | `(tactic| js_norm [$xs,*]) => `(tactic| simp only [js_simp, ↓reduceIte, ↓reduceDIte, $xs,*])
+  | `(tactic| js_norm [$xs,*]) => `(tactic| simp (config := { maxDischargeDepth := 6 }) only [js_simp, ↓reduceIte, ↓reduceDIte, $xs,*])
 
 section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}

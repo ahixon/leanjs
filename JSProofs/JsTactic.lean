@@ -1,4 +1,4 @@
-import JSProofs.Loops2
+import JSProofs.FuncExpr
 
 /-!
 # The `js` tactic's step, by the computation's head symbol (zippy docs/react-proofs.md)
@@ -58,6 +58,7 @@ def ruleFor (t : Lean.Expr) : MetaM (Option (TSyntax `tactic)) := do
   | ``ES.Sem.forS => return some (← `(tactic| apply wp_forVar))
   | ``ES.Sem.unary => return some (← `(tactic| apply wp_not))
   | ``ES.Sem.object => return some (← `(tactic| apply wp_object))
+  | ``ES.Sem.func => return some (← `(tactic| (refine wp_funcExpr ⟨rfl, rfl, rfl, rfl, rfl⟩ ?s1 ?_; (case s1 => (simp only [js_simp]; assumption)))))
   | ``ES.Sem.seq => return some (← `(tactic| apply wp_seqExpr))
   | ``ES.Sem.getValue => return some (← `(tactic| apply wp_getMemberC))
   | ``ES.Sem.call => return some (← `(tactic| (refine wp_callIdentC ?s1 ?_; (case s1 => js_side))))
