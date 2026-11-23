@@ -21,6 +21,11 @@ def F0 (g : EnvId) : Footprint :=
   ⟨[(g, JSStr.ofString "viewTransitionMutationContext"), (g, JSStr.ofString "tagCaches"),
     (g, JSStr.ofString "currentHoistableRoot")], [], false⟩
 
+@[simp] theorem F0_props (g : EnvId) : (F0 g).props = [] := rfl
+@[simp] theorem F0_jobs (g : EnvId) : (F0 g).jobs = false := rfl
+@[simp] theorem F0_binds (g : EnvId) : (F0 g).binds = [(g, JSStr.ofString "viewTransitionMutationContext"),
+    (g, JSStr.ofString "tagCaches"), (g, JSStr.ofString "currentHoistableRoot")] := rfl
+
 section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
 
@@ -62,7 +67,10 @@ theorem cme_root {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hGHC : ∀ w h1, Frame (F0 d.env) s w → 300 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fGH) .undefined #[.obj Cont]) w fun v w' h' =>
         Frame {} w w' ∧ w.fuel ≤ w'.fuel + 100)
-    (hRT : ∀ w h1, Frame (F0 d.env) s w → KR + 200 ≤ w.fuel →
+    (hRT : ∀ w h1, Frame (F0 d.env) s w →
+      (∀ bm o, Scope.declLike? (w.envEntry d.env) = some (bm, o) →
+        ∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.mutable = true ∧
+          bd.value.isSome = true) → KR + 200 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fRT) .undefined #[.obj FR, .obj R, lv]) w fun v w' h' =>
         v = .undefined ∧ w.fuel ≤ w'.fuel + KR + 100 ∧ PC w' h' ∧ Frame fpC w w' ∧
         ∀ bm o, Scope.declLike? (w'.envEntry d.env) = some (bm, o) →
@@ -123,7 +131,14 @@ theorem cme_root {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (fun hj => by simpa [Footprint.union] using hj)
   js_until [] [hRT1, hRTlt1, hEa, hEb, hEc, hSa, hSb, hGd, hfw1, hGRT, hGRTv, hRTo, hRTk, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hRT1, hRTlt1, hEa, hEb, hEc, hSa, hSb, hGd, hfw1, hGRT, hGRTv, hRTo, hRTk, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (hRT _ _ (by unfold F0; frame_go' [*]) (by js_norm [hRT1, hRTlt1, hEa, hEb, hEc, hSa, hSb, hGd, hfw1, hGRT, hGRTv, hRTo, hRTk, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
+  refine wp_mono (hRT _ _ (by unfold F0; frame_go' [*]) ?vt (by js_norm [hRT1, hRTlt1, hEa, hEb, hEc, hSa, hSb, hGd, hfw1, hGRT, hGRTv, hRTo, hRTk, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
+  case vt =>
+    intro bm o hd
+    rw [setEnv_envEntry, if_pos ⟨rfl, hGd⟩] at hd
+    simp only [declLike_withBindings (declLike_withBindings (declLike_withBindings hGe _) _) _,
+      Option.some.injEq, Prod.mk.injEq] at hd
+    obtain ⟨rfl, rfl⟩ := hd
+    simp [Std.HashMap.getElem?_modify, hGV, hGVm]
   rintro v2 w2 h2 ⟨rfl, hfu2, hP2, hF2, hVT2⟩
   have hEa2 := envEntry_frame hF2 (e := s.envs.size) (by js_norm [hRT1, hRTlt1, hEa, hEb, hEc, hSa, hSb, hGd, hfw1, hGRT, hGRTv, hRTo, hRTk, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
     (List.all_eq_true.mpr fun p hp => by simp [(hfpC p hp).1, e1])

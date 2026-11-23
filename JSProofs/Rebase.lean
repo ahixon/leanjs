@@ -20,20 +20,46 @@ theorem lt_heap_of_frame {fp : Footprint} {s u : State} (hw : Frame fp s u) {o :
 theorem lt_envs_of_frame {fp : Footprint} {s u : State} (hw : Frame fp s u) {e : EnvId} (h : e < s.envs.size) :
     e < u.envs.size := Nat.lt_of_lt_of_le h hw.envs_le
 
+/-- A frame, then nothing changed. -/
+theorem frame_then_empty {fp : Footprint} {s u w : State} (h1 : Frame fp s u) (h2 : Frame {} u w) : Frame fp s w :=
+  frame_mono (frame_trans h1 h2) (fun p hp => by simpa [Footprint.union] using hp)
+    (fun p hp => by simpa [Footprint.union] using hp) (fun hj => by simpa [Footprint.union] using hj)
+
+/-- A frame, then one within its bindings and touching no object. -/
+theorem frame_then_sub {fp fq : Footprint} {s u w : State} (h1 : Frame fp s u) (h2 : Frame fq u w)
+    (hb : ∀ p, p ∈ fq.binds → p ∈ fp.binds) (hp : fq.props = []) (hj : fq.jobs = false) : Frame fp s w :=
+  frame_mono (frame_trans h1 h2)
+    (fun p hp' => by
+      simp only [Footprint.union, List.mem_append] at hp'
+      rcases hp' with h | h
+      · exact h
+      · exact hb p h)
+    (fun p hp' => by simp [Footprint.union, hp] at hp'; exact hp')
+    (fun hj' => by simp [Footprint.union, hj, hj'])
+
 end Logic
 
-/-- One premise at the framed state `u` from the entry state's (see the module doc). -/
-macro "rebase_tac" hw:term : tactic => `(tactic| first
+/-- One premise at the framed state `u` from the entry state's (see the module doc): the cheap cases. -/
+macro "rebase_quick" hw:term : tactic => `(tactic| first
   | with_reducible assumption
   | exact lt_heap_of_frame $hw (by with_reducible assumption)
   | exact lt_envs_of_frame $hw (by with_reducible assumption)
-  | (rw [objEntry_frame0 $hw (by with_reducible assumption)]; with_reducible assumption)
-  | (rw [envEntry_frame0 $hw (by with_reducible assumption)]; with_reducible assumption)
-  | (rw [($hw).obj_eq _ (by with_reducible assumption) (fun _ hh => by simp at hh)]; with_reducible assumption)
-  | (rw [($hw).obj_eq _ (by with_reducible assumption) (fun _ hh => by simp [Footprint.union] at hh; simp_all)];
+  | (rw [objEntry_frame0 $hw (by with_reducible assumption)] <;> with_reducible assumption)
+  | (rw [envEntry_frame0 $hw (by with_reducible assumption)] <;> with_reducible assumption)
+  | (rw [($hw).obj_eq _ (by with_reducible assumption) (fun _ hh => by simp [Footprint.union] at hh)] <;> with_reducible assumption))
+
+/-- An object outside a footprint that mentions other objects (`simp_all` with the premises that they differ). -/
+macro "rebase_objs" hw:term : tactic => `(tactic|
+  (rw [($hw).obj_eq _ (by with_reducible assumption) (fun _ hh => by
+    simp [Footprint.union] at hh
+    first | exact absurd hh.1.symm (by assumption) | exact absurd hh.1 (by assumption) | simp_all)] <;>
       with_reducible assumption))
+
+/-- One premise at the framed state `u` from the entry state's. -/
+macro "rebase_tac" hw:term : tactic => `(tactic| first | rebase_quick $hw | rebase_objs $hw)
 
 /-- As `rebase_tac`, and module bindings through `hbw` (`declLike_frame`'s: the bindings outside the footprint). -/
 macro "rebase_tac'" hw:term "," hbw:term : tactic => `(tactic| first
-  | rebase_tac $hw
-  | (rw [$hbw _ (by simp)]; with_reducible assumption))
+  | rebase_quick $hw
+  | (rw [$hbw _ (by simp [Footprint.union])] <;> with_reducible assumption)
+  | rebase_objs $hw)

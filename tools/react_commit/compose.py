@@ -52,7 +52,11 @@ def compose(path, thm, prefix, subst, given, drop=()):
     ren = {}
     for nm, kind, typ in bs:
         if nm in drop: continue
-        ren[nm] = "(" + subst[nm] + ")" if nm in subst else prefix + nm
+        if nm in subst:
+            v = subst[nm]
+            ren[nm] = v if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_'.]*", v) else "(" + v + ")"
+        else:
+            ren[nm] = prefix + nm
     added = []; args = []
     for nm, kind, typ in bs:
         if nm in drop: continue
