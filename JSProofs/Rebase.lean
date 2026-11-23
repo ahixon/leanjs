@@ -20,6 +20,11 @@ theorem lt_heap_of_frame {fp : Footprint} {s u : State} (hw : Frame fp s u) {o :
 theorem lt_envs_of_frame {fp : Footprint} {s u : State} (hw : Frame fp s u) {e : EnvId} (h : e < s.envs.size) :
     e < u.envs.size := Nat.lt_of_lt_of_le h hw.envs_le
 
+/-- Through a footprint without objects every existing object is as it was. -/
+theorem obj_eq_np {fp : Footprint} {s u : State} (hw : Frame fp s u) (hp : fp.props = []) {o : ObjId}
+    (ho : o < s.heap.size) : u.objEntry o = s.objEntry o :=
+  hw.obj_eq o ho (fun _ hh => by rw [hp] at hh; exact absurd hh (List.not_mem_nil))
+
 /-- A frame, then nothing changed. -/
 theorem frame_then_empty {fp : Footprint} {s u w : State} (h1 : Frame fp s u) (h2 : Frame {} u w) : Frame fp s w :=
   frame_mono (frame_trans h1 h2) (fun p hp => by simpa [Footprint.union] using hp)
@@ -46,7 +51,7 @@ macro "rebase_quick" hw:term : tactic => `(tactic| first
   | exact lt_envs_of_frame $hw (by with_reducible assumption)
   | (rw [objEntry_frame0 $hw (by with_reducible assumption)] <;> with_reducible assumption)
   | (rw [envEntry_frame0 $hw (by with_reducible assumption)] <;> with_reducible assumption)
-  | (rw [($hw).obj_eq _ (by with_reducible assumption) (fun _ hh => by simp [Footprint.union] at hh)] <;> with_reducible assumption))
+  | (rw [obj_eq_np $hw rfl (by with_reducible assumption)] <;> with_reducible assumption))
 
 /-- An object outside a footprint that mentions other objects (`simp_all` with the premises that they differ). -/
 macro "rebase_objs" hw:term : tactic => `(tactic|
