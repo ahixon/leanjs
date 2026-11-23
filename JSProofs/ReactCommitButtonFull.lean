@@ -263,7 +263,7 @@ theorem cme_button_full {n : Nat}
     all_goals rebase_tac hw
   case hRE =>
     intro w h1 hw hfw
-    refine wp_mono (ReactCommitRec.cre_spec (s := w) (fo := fRE) (d := RE_d) (t := .undefined) (F := B) (fl := fl) (fw := fw) (fe := fe) (fc := fc) (hlt := ?_) (hk := ?_) (hf := by omega) (hcode := ?_) (hcls := ?_) (hmode := ?_) (hF := ?_) (hFk := ?_) (hFf := ?_) (h2 := ?_) (h4096 := ?_)) (fun _ _ _ ⟨_, hF, hfu, hh⟩ => ⟨hF, hfu, hh⟩)
+    refine wp_mono (ReactCommitRec.cre_spec (s := w) (fo := fRE) (d := RE_d) (t := .undefined) (F := B) (fl := fl) (fw := fw) (fe := fe) (fc := fc) (hlt := ?_) (hk := ?_) (hf := by omega) (hcode := ?_) (hcls := ?_) (hmode := ?_) (hF := ?_) (hFk := ?_) (hFf := ?_) (h2 := ?_) (h4096 := ?_)) (fun _ _ _ ⟨_, hF, hfu, hh, _⟩ => ⟨hF, hfu, hh⟩)
     all_goals rebase_tac hw
   case hCH =>
     intro w h1 hw hfw

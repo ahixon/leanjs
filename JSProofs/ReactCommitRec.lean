@@ -32,7 +32,7 @@ theorem cre_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (h2 : numberBinOp .bitAnd fl (F64.fin false 4503599627370496 (-51)) = F64.fin false 0 (-1074))
     (h4096 : numberBinOp .bitAnd fl (F64.fin false 4503599627370496 (-40)) = F64.fin false 0 (-1074)) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj F]) s fun v w h' =>
-      v = .undefined ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 40 ∧ h' = h := by
+      v = .undefined ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 40 ∧ h' = h ∧ w.heap = s.heap := by
   apply wp_callGen CREGen.commitReconciliationEffects_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "finishedWork"] := by rw [hcode]; rfl
