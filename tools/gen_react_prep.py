@@ -49,9 +49,12 @@ ti, th = sig(TOP, "microtask_render_fin", "    WP eng answer (j + 6)")
 rp = hyp_type([b for b in th if hname(b) == "r_Prep"][0])
 PFP = "(ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H)"
 P1 = (f"(fun w' (_ : σ) => Frame (((((ReactMicrotaskClick.fpPerf d.env R A).union {{}}).union {{}}).union "
-      f"(ReactRenderSync.fpPre d.env I)).union {PFP}) s w' ∧ ReactPrepareFresh.PrepBinds w' d.env oG p_X ∧ "
+      f"(ReactRenderSync.fpPre d.env I)).union {PFP}) s w' ∧ ReactPrepareFresh.PrepBinds w' d.env oG R p_X ∧ "
       f"ReactPrepareFresh.PrepFields w' p_X p_H p_F p_Fa p_Qo p_U p_vT p_vL p_vC p_vMP p_vMS p_vUQ p_vS p_vI p_vR p_vRC "
-      f"p_fl p_hc p_fl' p_al ∧ ∃ v a b, (w'.objEntry I).props.get? (.str \"H\") = some (.data v true a b))")
+      f"p_fl p_hc p_fl' p_al ∧ (∃ v a b, (w'.objEntry I).props.get? (.str \"H\") = some (.data v true a b)) ∧ "
+      f"∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString \"executionContext\"]? = some bd ∧ "
+      f"bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString \"workInProgressTransitions\"]? = some bd ∧ "
+      f"bd.value = some .null))")
 INST = {"P1": P1, "fpPF": PFP, "kP": "400", "j": "(j + 2)"}
 rp_i = subst(rp, INST)
 lemma = f"""set_option maxHeartbeats 8000000 in
@@ -69,7 +72,7 @@ theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : Ob
     (pI : p_X ≠ I ∧ p_A ≠ I ∧ p_Qo ≠ I ∧ p_U ≠ I ∧ p_F ≠ I ∧ p_Fa ≠ I ∧ p_H ≠ I)
     {chr(10).join("    " + x for x in hyps)} :
     {rp_i} := by
-  intro sP hP fuP sW hW fuW sR hR fuR w h1 hpre fuw ⟨iv, ia, ib, hIHw⟩
+  intro sP hP fuP sW hW fuW sR hR fuR w h1 hpre fuw ⟨iv, ia, ib, hIHw⟩ ⟨bme, hbme, ⟨bdx, hbdx, hbdxm, hbdxv⟩, ⟨bdt, hbdt, hbdtv⟩⟩
   have hT := frame_trans (frame_trans (frame_trans hP hW) hR) hpre
   obtain ⟨bW, hWd, hWx⟩ := declLike_frame hT hG hGe
   refine wp_mono (ReactPrepareFresh.call_spec (n := j) (d := {{ dPF with env := d.env }}) (bG := bW)
@@ -77,7 +80,10 @@ theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : Ob
     {" ".join(args)}) ?_
   intro v w' h' ⟨_, hF', hfu', hh, hAP, hPB, hPF⟩
   subst hh
-  refine ⟨hF', by omega, hAP, frame_trans hT hF', hPB, hPF, iv, ia, ib, ?_⟩
+  obtain ⟨bw', hdw', hbw'⟩ := declLike_frame hF' (envs_frame hT hG) hbme
+  refine ⟨hF', by omega, hAP, frame_trans hT hF', hPB, hPF, ⟨iv, ia, ib, ?_⟩, bw', hdw',
+    ⟨bdx, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdx, hbdxm, hbdxv⟩,
+    ⟨bdt, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdt, hbdtv⟩⟩
   rw [props_frame hF' (heap_frame hT hI) (by simp [ReactPrepareFresh.fp, ReactCreateWIP.fp, pI.1, pI.2.1, pI.2.2.1,
     pI.2.2.2.1, pI.2.2.2.2.1, pI.2.2.2.2.2.1, pI.2.2.2.2.2.2])]; exact hIHw
 """

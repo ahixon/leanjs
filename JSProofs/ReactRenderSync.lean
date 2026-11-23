@@ -103,7 +103,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hWLo : fWL < s.heap.size) (hWLk : (s.objEntry fWL).kind = .func dWL) (hIWL : I ≠ fWL)
     (hFQo : fFQ < s.heap.size) (hFQk : (s.objEntry fFQ).kind = .func dFQ) (hIFQ : I ≠ fFQ)
     -- (`prepareFreshStack(root, lanes)`)
-    (hPrep : ∀ w h1, Frame (fpPre d.env I) s w → s.fuel ≤ w.fuel + 60 → (∃ v a b, (w.objEntry I).props.get? (.str "H") = some (.data v true a b)) →
+    (hPrep : ∀ w h1, Frame (fpPre d.env I) s w → s.fuel ≤ w.fuel + 60 → (∃ v a b, (w.objEntry I).props.get? (.str "H") = some (.data v true a b)) → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) →
       WP eng answer n h1 (callImpl eng (.obj fPF) .undefined #[.obj R, .num lanes]) w fun _ w' h' =>
         Frame fpPF w w' ∧ w.fuel ≤ w'.fuel + kP ∧ AfterPrep w' d.env oG ∧ P1 w' h')
     (hfpPB : fpPF.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
@@ -189,9 +189,15 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hGL, hGLv, hGT, hGTm, hGTv, hGPF, hGPFv, hPF2, hobj2 hPFo hIPF, hPFk, FDI.fdiCtx, Sem.inner]
   -- (`prepareFreshStack(root, lanes)`)
   refine ⟨by js_norm [CallableC, *, hobj2 hPFo hIPF], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hPrep) _ h2 ?fr3 ?fu3 ?ih3) ?post3
+  refine wp_mono ((ReactDSSI.Hold.get hPrep) _ h2 ?fr3 ?fu3 ?ih3 ?ec3) ?post3
   case fr3 => simp only [fpPre]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu3 => simp only [js_simp]; simp at hfu1 hfu2; omega
+  case ec3 =>
+    refine ⟨?bm, ?d1, ⟨?b1, ?d2, ?d3, ?d4⟩, ⟨?b2, ?d5, ?d6⟩⟩
+    case d1 => js_norm [*, hne, Ne.symm hne]; rfl
+    case d2 => simp [Std.HashMap.getElem?_modify, hGX]; rfl
+    case d5 => simp [Std.HashMap.getElem?_modify, hGT]; rfl
+    all_goals first | rfl | simp [hGXm] | simp [hGTm] | skip
   case ih3 =>
     refine ⟨.obj C, he, hc, ?_⟩
     simp only [js_simp]
