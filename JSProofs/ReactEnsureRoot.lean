@@ -151,6 +151,51 @@ theorem call_scheduled {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value
     intro b w1 h1 hQ
     js [hQ, FDI.fdiCtx, Sem.inner]
 
+set_option maxRecDepth 20000 in
+/-- **The root already scheduled and a microtask already marked** (`ensureRootIsScheduled(root)` after a commit inside
+the microtask whose `flushSpawnedWork` already scheduled the next one): sync work marked pending, nothing else. -/
+theorem call_flagged {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
+    {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdF bdL bdM bdD : Binding} {R : ObjId}
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 20 ≤ s.fuel)
+    (hcode : d.code = ERSGen.ensureRootIsScheduled_func) (hcls : d.isClassCtor = false)
+    (hmode : d.thisMode = .strict)
+    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
+    (hGF : bG[JSStr.ofString "firstScheduledRoot"]? = some bdF) (hGFv : bdF.value = some (.obj R))
+    (hGL : bG[JSStr.ofString "lastScheduledRoot"]? = some bdL) (hGLv : bdL.value = some (.obj R))
+    (hGM : bG[JSStr.ofString "mightHavePendingSyncWork"]? = some bdM) (hGMm : bdM.mutable = true)
+    (hGMv : bdM.value.isSome = true)
+    (hGD : bG[JSStr.ofString "didScheduleMicrotask"]? = some bdD) (hGDv : bdD.value = some (.bool true))
+    (hR : R < s.heap.size) (hRk : (s.objEntry R).kind.isPlain = true) :
+    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj R]) s fun v w h' =>
+      v = .undefined ∧ Frame (fp d.env) s w ∧ s.fuel ≤ w.fuel + 20 ∧ h' = h ∧ Scheduled w d.env oG R := by
+  apply wp_callGen ERSGen.ensureRootIsScheduled_eq (by decide) hlt hk (by omega) hcls hmode
+    (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
+  have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root"] := by rw [hcode]; rfl
+  have hv : d.code.info.fdi.varNames = #[] := by rw [hcode]; rfl
+  have hl : FDI.lexDecls d = #[] := by simp [FDI.lexDecls, hcode, ERSGen.ensureRootIsScheduled_func, Func.info]
+  have ha : d.code.isAsync = false := by rw [hcode]; rfl
+  have hne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
+  have hG1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  have hRR : isStrictlyEqual (.obj R) (.obj R) = true := by simp [isStrictlyEqual, sameValue]
+  clear hcode
+  simp only [ERSGen.ensureRootIsScheduled]
+  js [hRR, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGF, hGFv, hGL, hGLv, hGM, hGMm, hGMv, hGD,
+    hGDv, hR, hRk, FDI.fdiCtx, Sem.inner]
+  refine ⟨?fr, ?fu, ?sc⟩
+  case fu => first | omega | (simp [bodyState, entryState]; omega) | (simp [bodyState, entryState, State.withFuel]; omega)
+  case sc =>
+    refine ⟨bG.modify (JSStr.ofString "mightHavePendingSyncWork") (fun bd => { bd with value := some (.bool true) }), ?_, ?_⟩
+    · simp only [restore_envEntry]
+      rw [setEnv_envEntry_self _ _ _ (by simp; omega)]
+      simp only [declLike_withBindings', bodyState_envEntry_lt (s := s) (fo := fo) (d := d) (t := t) (args := #[.obj R]) _ hG, hGe, Option.map]
+    · simp [Std.HashMap.getElem?_modify, hGF, hGFv, hGL, hGLv, hGM, hGD, hGDv]
+  case fr =>
+    simp only [fp]
+    refine frame_restore ?_ s
+    refine frame_setEnv_with_in ?_ hG (bodyState_envEntry_lt (s := s) (fo := fo) (d := d) (t := t)
+      (args := #[.obj R]) _ hG) (by rw [hGe]; rfl) (by simp) _
+    frame_go' []
+
 end
 
 end ReactEnsureRoot
