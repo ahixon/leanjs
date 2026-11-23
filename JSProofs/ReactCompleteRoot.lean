@@ -38,11 +38,12 @@ theorem root_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value} {
     {ppw ppe ppc tgw tge tgc snw sne snc m0w m0e m0c m1w m1e m1c caw cae cac cbw cbe cbc pcw pce pcc hcw hce hcc
       aw ae ac cw ce cc yw ye yc xlw xle xlc xcw xce xcc xsw xse xsc xfw xfe xfc rwe rwc sbw sbe sbc se sc le lc
       e0 c0 e1 c1 e2 c2 e3 c3 lw lle llc ue uc xe xc re rc fe fc vce vcc : Bool}
+    {oG : Option EnvId}
     (hW : fW < s.heap.size) (hWk : (s.objEntry fW).kind = .func dW) (hf : 200 ≤ s.fuel)
     (hWcode : dW.code = CWGen.completeWork_func) (hWcls : dW.isClassCtor = false) (hWmode : dW.thisMode = .strict)
     (hWenv : dW.env = g)
     -- (react-dom's module record: the functions, the stack, the cursors, the cache context)
-    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, none))
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
     (hGPT : bG[JSStr.ofString "popTreeContext"]? = some bdPT) (hGPTv : bdPT.value = some (.obj fPT))
     (hGPP : bG[JSStr.ofString "popProvider"]? = some bdPP) (hGPPv : bdPP.value = some (.obj fPP))
     (hGPHC : bG[JSStr.ofString "popHostContainer"]? = some bdPHC) (hGPHCv : bdPHC.value = some (.obj fPHC))
@@ -145,7 +146,7 @@ theorem root_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value} {
   simp only [CWGen.completeWork]
   js [hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hR, hRk, hRpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hR, hRk, hRpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (ReactCompleteHelpers.ptc_none (bG := bG) (X := R) (by js_norm [hPT]) (by js_norm [hPTk])
+  refine wp_mono (ReactCompleteHelpers.ptc_none (bG := bG) (oG := oG) (X := R) (by js_norm [hPT]) (by js_norm [hPTk])
     (by simp only [js_simp]; omega) hPTcode hPTcls hPTmode (by rw [hPTenv]; js_norm [hG1])
     (by rw [hPTenv]; js_norm [hG, hG1, hne, Ne.symm hne, hGe]) hGTF hGTFv hGTC hGTCv) ?_
   intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, hr1⟩
@@ -172,7 +173,7 @@ theorem root_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value} {
   have n3 : numberToJSStr (F64.fin false 6755399441055744 (-51)) = JSStr.ofString "3" := by decide
   have s32 : Conv.subF (F64.fin false 6755399441055744 (-51)) F64.one = F64.fin false 4503599627370496 (-51) := by decide
   refine ⟨by js_norm [CallableC, hw1o fPP hPP, hw1o fO hOo, hw1o VS hVS, hw1o Cu hCu, hw1o Cx hCx, hw1o, hK1, hG1', hnK1, hnG1, Ne.symm hnK1, Ne.symm hnG1, hK2, hG2, hw1G, hGe, hne, Ne.symm hne, Nat.lt_of_lt_of_le hPP hw1z, hPP, hPPk], ?_⟩
-  refine wp_mono (ReactRootPops.pop_provider (bG := bG) (oG := none) (bdI := bdI) (bdV := bdV) (bdC := bdVC) (bdO := bdO)
+  refine wp_mono (ReactRootPops.pop_provider (bG := bG) (oG := oG) (bdI := bdI) (bdV := bdV) (bdC := bdVC) (bdO := bdO)
     (VS := VS) (Cu := Cu) (Cx := Cx) (fO := fO) (dO := dO) (iv := F64.fin false 6755399441055744 (-51)) (L := L)
     (cur := vu) (saved := o3) (cv := cxv) (ce := ue) (cc := uc) (oe := e3) (oc := c3) (lw := lw) (le := lle) (lc := llc)
     (xe := xe) (xc := xc) (i := 3)
@@ -220,7 +221,7 @@ theorem root_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value} {
   have hO2 := ob2 fO hOo (by simp [dO1, dO2, dO3])
   refine ⟨by js_norm [CallableC, ob2 fPHC hPHC (by simp [fPHCn.1, fPHCn.2.1, fPHCn.2.2.1]), hPHCk, Nat.lt_of_lt_of_le hPHC z2], ?_⟩
   refine wp_mono (ReactRootPops.pop_host_container
-    (bG := bG.modify (JSStr.ofString "index") (fun bd => { bd with value := some (.num (F64.fin false 4503599627370496 (-51))) })) (oG := none)
+    (bG := bG.modify (JSStr.ofString "index") (fun bd => { bd with value := some (.num (F64.fin false 4503599627370496 (-51))) })) (oG := oG)
     (bdI := { bdI with value := some (.num (F64.fin false 4503599627370496 (-51))) }) (bdV := bdV) (bdCS := bdCS) (bdCF := bdCF) (bdRI := bdRI)
     (bdO := bdO) (VS := VS) (CS := CS) (CF := CF) (RI := RI) (fO := fO) (dO := dO) (L := L) (o0 := o0) (o1 := o1)
     (o2 := o2) (vr := vr) (vf := vf) (vc := vc) (e0 := e0) (c0 := c0) (e1 := e1) (c1 := c1) (e2 := e2) (c2 := c2)

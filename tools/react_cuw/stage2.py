@@ -28,7 +28,7 @@ block = f"""  have hWk1 := (k1 fW hW).trans hWk
       (St.objEntry o).props.get? k = (s.objEntry o).props.get? k := fun o k hk ho => by rw [gW2]; exact p1 o k hk ho
   have gE2 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
   have gF2 : 380 ≤ St.fuel := by rw [hSt]; js_norm; omega
-  have gG2 : Scope.declLike? (St.envEntry g) = some ({bG2}, none) := by
+  have gG2 : Scope.declLike? (St.envEntry g) = some ({bG2}, oG) := by
     rw [hSt]; js_norm [hw1G, hGe, hG, Nat.lt_of_lt_of_le hG1 E1, hne, Ne.symm hne,
       Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1), Ne.symm (Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1))]
   have gB2 : ∀ x, x ≠ JSStr.ofString "workInProgress" → ({bG2})[x]? = bG[x]? := fun x hx => by

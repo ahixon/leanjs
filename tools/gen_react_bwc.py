@@ -36,7 +36,6 @@ units=[]
 for x in order:
     t=pt[x]
     if x=="hf" or re.fullmatch(r"\s*\d+ ≤ s\.fuel\s*", t): arg="(Nat.le_trans (by decide) gSF)"
-    elif x=="hoG": arg="rfl"
     elif x=="hGe": arg="gSd"
     elif x=="hC1l": arg="gSC1l"
     elif x=="hGDR": arg="(by js_norm [hGDR])"

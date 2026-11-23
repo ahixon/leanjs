@@ -55,11 +55,12 @@ theorem unit_spec {n : Nat} {h : σ} {fU : ObjId} {dU : FuncData} {tU : Value} {
     {ppw3 ppe3 ppc3 tgw3 tge3 tgc3 snw3 sne3 snc3 m0w m0e m0c m1w m1e m1c caw cae cac cbw cbe cbc pcw pce pcc hcw3 hce3
       hcc3 aw3 ae3 ac3 cw3 ce3 cc3 se3 sc3 le3 lc3 fw3 fe3 fc3 rw3 re3 rc3 sw3 se3' sc3' e0 c0 e1 c1 e2' c2 e3' c3 lw lle llc
       ue uc xe xc re rc fe' fc' vce vcc : Bool}
+    {oG : Option EnvId}
     (hUo : fU < s.heap.size) (hUk : (s.objEntry fU).kind = .func dU) (hf : 600 ≤ s.fuel)
     (hUcode : dU.code = CUWGen.completeUnitOfWork_func) (hUcls : dU.isClassCtor = false)
     (hUmode : dU.thisMode = .strict) (hUenv : dU.env = g)
     -- (react-dom's module record)
-    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, none))
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
     (hGCW : bG[JSStr.ofString "completeWork"]? = some bdCW) (hGCWv : bdCW.value = some (.obj fW))
     (hGEL : bG[JSStr.ofString "entangledRenderLanes"]? = some bdEL) (hGELv : bdEL.value = some ln)
     (hGWIP : bG[JSStr.ofString "workInProgress"]? = some bdWIP) (hGWIPm : bdWIP.mutable = true)
@@ -215,7 +216,7 @@ theorem unit_spec {n : Nat} {h : σ} {fU : ObjId} {dU : FuncData} {tU : Value} {
       (w.objEntry R).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074))
         (numberBinOp .bitOr a2 (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr a (F64.fin false 0 (-1074))))))) true le3 lc3) ∧
       (w.objEntry C).props.get? (.str "return") = some (.data (.obj R) true rwe2 rwc2)) ∧
-      ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, none) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
+      ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
         bd.value = some .null ∧
         ∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true := by
   apply wp_callGen CUWGen.completeUnitOfWork_eq (by decide) hUo hUk (by omega) hUcls hUmode
@@ -280,7 +281,7 @@ theorem unit_spec {n : Nat} {h : σ} {fU : ObjId} {dU : FuncData} {tU : Value} {
   have gE2 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
   have gF2 : 380 ≤ St.fuel := by rw [hSt]; js_norm; omega
   have gFe2 : w1.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
-  have gG2 : Scope.declLike? (St.envEntry g) = some (bG.modify (JSStr.ofString "workInProgress") (fun bd => { bd with value := some (.obj C) }), none) := by
+  have gG2 : Scope.declLike? (St.envEntry g) = some (bG.modify (JSStr.ofString "workInProgress") (fun bd => { bd with value := some (.obj C) }), oG) := by
     rw [hSt]; js_norm [hw1G, hGe, hG, Nat.lt_of_lt_of_le hG1 E1, hne, Ne.symm hne,
       Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1), Ne.symm (Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1))]
   have gB2 : ∀ x, x ≠ JSStr.ofString "workInProgress" → (bG.modify (JSStr.ofString "workInProgress") (fun bd => { bd with value := some (.obj C) }))[x]? = bG[x]? := fun x hx => by
@@ -333,7 +334,7 @@ theorem unit_spec {n : Nat} {h : σ} {fU : ObjId} {dU : FuncData} {tU : Value} {
   have gE3 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
   have gF3 : 260 ≤ St.fuel := by rw [hSt]; js_norm; omega
   have gFe3 : w2.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
-  have gG3 : Scope.declLike? (St.envEntry g) = some ((bG.modify (JSStr.ofString "workInProgress") (fun bd => { bd with value := some (.obj C) })).modify (JSStr.ofString "workInProgress") (fun bd => { bd with value := some (.obj R) }), none) := by
+  have gG3 : Scope.declLike? (St.envEntry g) = some ((bG.modify (JSStr.ofString "workInProgress") (fun bd => { bd with value := some (.obj C) })).modify (JSStr.ofString "workInProgress") (fun bd => { bd with value := some (.obj R) }), oG) := by
     rw [hSt]; js_norm [hw2G, hGe, hG, Nat.lt_of_lt_of_le hG1 hw2E, hne, Ne.symm hne,
       Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 hw2E), Ne.symm (Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 hw2E))]
   have gB3 : ∀ x, x ≠ JSStr.ofString "workInProgress" → ((bG.modify (JSStr.ofString "workInProgress") (fun bd => { bd with value := some (.obj C) })).modify (JSStr.ofString "workInProgress") (fun bd => { bd with value := some (.obj R) }))[x]? = bG[x]? := fun x hx => by

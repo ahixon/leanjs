@@ -148,7 +148,7 @@ usedw = set(ID.findall(" ".join(ebinds) + " " + concl + " " + " ".join(extra0)))
 for _ in range(3):
     usedw |= set(ID.findall(" ".join(b for nm, b in ibinds if nm in usedw)))
 ibinds = [b for nm, b in ibinds if nm in usedw]
-extra = ["(hoG : oG = none)", "(hG : d.env < s.envs.size)",
+extra = ["", "(hG : d.env < s.envs.size)",
          "(hRo : R < s.heap.size) (hRk : (s.objEntry R).kind.isPlain = true)",
          "(hRcur : (s.objEntry R).props.get? (.str \"current\") = some (.data (.obj p_H) p_ruw p_rue p_ruc))",
          "(hH : p_H < s.heap.size) (hHk : (s.objEntry p_H).kind.isPlain = true)",
@@ -276,7 +276,7 @@ for n, k, t in wb:
         else: args.append(f"({n} := {r})")
 for o in IDN:
     if o in wnames and o not in ("s", "n", "h", "eng", "σ", "answer") and wd[o] is not None and dict((a, b) for a, b, c in wb)[o] == "{":
-        args.append(f"({o} := {'none' if o == 'oG' else IDN[o]})")
+        args.append(f"({o} := {IDN[o] if o != 'oG' else 'oG'})")
 NKN = len(re.search(r"\(hcb : ∀ x, x ∈ \[(.*?)\] →", wtxt).group(1).split(", "))
 alltext = " ".join(t for n, k, t in wb if k == "(") + " " + wtxt[wtxt.rindex("fun v w' h' =>"):]
 phantom = [n for n, k, t in wb if k == "{" and n not in DROP and n not in IDN and
@@ -340,7 +340,7 @@ POST = """  case post =>
   obtain ⟨bmR, hbmR, ⟨_, gEC, gECm, gECi⟩, ⟨_, gTr, gTrv⟩, hMF1⟩ := hRec
   have hbR : bmR = bm1 := by rw [hbm1] at hbmR; cases hbmR; rfl
   rw [hbR] at gEC gTr
-  have hbmL' : Scope.declLike? (w'.envEntry d.env) = some (bmL, none) := by rw [← hPUenv]; exact hbmL
+  have hbmL' : Scope.declLike? (w'.envEntry d.env) = some (bmL, oG) := by rw [← hPUenv]; exact hbmL
   refine ⟨hFw, hfuw, ?AL, ?RY, ?RD⟩
   case AL =>
     unfold ReactRenderSync.AfterLoop ReactRenderSync.Writable
@@ -351,7 +351,7 @@ POST = """  case post =>
   case RY =>
     exact ⟨Nat.lt_of_lt_of_le hGs (Nat.le_trans hT.envs_le hFw.envs_le), Nat.lt_of_lt_of_le hFQo (Nat.le_trans hT.heap_le hFw.heap_le),
       by rw [kind_frame (frame_trans hT hFw) hFQo]; exact hFQk,
-      ⟨bmL, none, _, _, hbmL', by rw [NB (JSStr.ofString "concurrentQueuesIndex") (by simp (config := { decide := true }) [@@FPD@@])]; exact gQ, gQm, gQv,
+      ⟨bmL, oG, _, _, hbmL', by rw [NB (JSStr.ofString "concurrentQueuesIndex") (by simp (config := { decide := true }) [@@FPD@@])]; exact gQ, gQm, gQv,
         by rw [NB (JSStr.ofString "concurrentlyUpdatedLanes") (by simp (config := { decide := true }) [@@FPD@@])]; exact gU, gUm, gUv⟩⟩
   case RD =>
     intro e w2 w3 hEnd hEB hFQ hQD c
@@ -384,7 +384,6 @@ POST = """  case post =>
     @@HOPROOF@@
 """.replace("@@FPD@@", FPD).replace("@@FPW@@", S(FPW)).replace("@@FADEFS@@", FADEFS).replace("@@DLN@@", DLN).replace("@@HOPROOF@@", HOPROOF.replace("\\n", "\n"))
 proof = f"""  intro sP hP fuP sW hW fuW sR hR fuR w1 w h1 ⟨hFA1, hPB, hPF, ⟨iv, ia, ib, hIHv⟩, hRec⟩ hOwn fuw
-  subst hoG
   have hsR : s.envs.size ≤ sR.envs.size := Nat.le_trans hP.envs_le (Nat.le_trans hW.envs_le hR.envs_le)
   have hT := frame_trans hFA1 hOwn
   have hGs : d.env < s.envs.size := hG
@@ -396,7 +395,7 @@ proof = f"""  intro sP hP fuP sW hW fuW sR hR fuR w1 w h1 ⟨hFA1, hPB, hPF, ⟨
   unfold ReactPrepareFresh.PrepFields at hPF
   obtain {PBPAT} := hPB
   obtain {PFPAT} := hPF
-  have hbmw : Scope.declLike? (w.envEntry l_dPU.env) = some (bm1, none) := by rw [hPUenv, hE]; exact hbm1
+  have hbmw : Scope.declLike? (w.envEntry l_dPU.env) = some (bm1, oG) := by rw [hPUenv, hE]; exact hbm1
   refine wp_mono (ReactWorkLoopTop.wls_top (s := s) (w := w) (bW := bm1) {' '.join(args)}
     (hFA := hT) (hGw := hbmw)
     (hcb := fun x hx => by

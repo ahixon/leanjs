@@ -69,10 +69,11 @@ counter reset, `reconcileChildFibersImpl` (`impl_null`), the thenable state clea
 theorem fibers_null {n : Nat} {h : σ} {fR : ObjId} {dR : FuncData} {tR rf ln : Value} {s : State}
     {bR bG : HashMap JSStr Binding} {g : EnvId} {bdRI bdT bdTS bdDel bdST : Binding} {fI fDel : ObjId}
     {dI dDel : FuncData}
+    {oG : Option EnvId}
     (hR : fR < s.heap.size) (hRk : (s.objEntry fR).kind = .func dR) (hf : 50 ≤ s.fuel)
     (hRcode : dR.code = CCRGen.fn34_func) (hRcls : dR.isClassCtor = false) (hRmode : dR.thisMode = .strict)
     (hE : dR.env < s.envs.size) (hEe : Scope.declLike? (s.envEntry dR.env) = some (bR, some g))
-    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, none)) (hgU : g ≠ dR.env)
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG)) (hgU : g ≠ dR.env)
     (hRRI : bR[JSStr.ofString "reconcileChildFibersImpl"]? = some bdRI) (hRRIv : bdRI.value = some (.obj fI))
     (hRnT : bR[JSStr.ofString "thenableIndexCounter$1"]? = none) (hRnS : bR[JSStr.ofString "thenableState$1"]? = none)
     (hGT : bG[JSStr.ofString "thenableIndexCounter$1"]? = some bdT) (hGTm : bdT.mutable = true)
@@ -91,7 +92,7 @@ theorem fibers_null {n : Nat} {h : σ} {fR : ObjId} {dR : FuncData} {tR rf ln : 
       v = .null ∧ Frame (fpN g) s w ∧ s.fuel ≤ w.fuel + 50 ∧ h' = h ∧ w.realm = s.realm ∧
       Scope.declLike? (w.envEntry g) = some ((bG.modify (JSStr.ofString "thenableIndexCounter$1")
         (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) })).modify (JSStr.ofString "thenableState$1")
-        (fun bd => { bd with value := some .null }), none) := by
+        (fun bd => { bd with value := some .null }), oG) := by
   apply wp_callGen CCRGen.fn34_eq (by decide) hR hRk (by omega) hRcls hRmode
     (by rw [hRcode]; rfl) (by rw [hRcode]; rfl) (ReactReconcileFibers.simpleR dR hRcode) (by rw [hRcode]; rfl)
     (by rw [hRcode]; rfl)
@@ -118,7 +119,7 @@ theorem fibers_null {n : Nat} {h : σ} {fR : ObjId} {dR : FuncData} {tR rf ln : 
   have hStU : St.envEntry dR.env = s.envEntry dR.env := by
     rw [hSt]; js_norm [hE, hne, Ne.symm hne, hgU, Ne.symm hgU, hE1]
   have hStg : Scope.declLike? (St.envEntry g) = some (bG.modify (JSStr.ofString "thenableIndexCounter$1")
-      (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) }), none) := by
+      (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) }), oG) := by
     rw [hSt]; js_norm [hG, hG1, hGe, hneG, Ne.symm hneG]
   have hStK : St.envEntry s.envs.size = (bodyState s fR dR tR #[rf, .null, .null, ln]).envEntry s.envs.size := by
     rw [hSt]; js_norm [hneG, Ne.symm hneG]
@@ -172,6 +173,7 @@ theorem children_null {n : Nat} {h : σ} {fC : ObjId} {dC : FuncData} {tC ln : V
     {fR : ObjId} {dR : FuncData}
     {bR bG : HashMap JSStr Binding} {g : EnvId} {bdRI bdT bdTS bdDel bdST bdRCF : Binding} {fI fDel H X : ObjId}
     {dI dDel : FuncData} {hcw hce hcc cw cc : Bool} {ch0 : Value}
+    {oG : Option EnvId}
     (hRC : fC < s.heap.size) (hRCk : (s.objEntry fC).kind = .func dC) (hf : 60 ≤ s.fuel)
     (hRCcode : dC.code = RChGen.reconcileChildren_func) (hRCcls : dC.isClassCtor = false)
     (hRCmode : dC.thisMode = .strict) (hRCenv : dC.env = g)
@@ -183,7 +185,7 @@ theorem children_null {n : Nat} {h : σ} {fC : ObjId} {dC : FuncData} {tC ln : V
     (hR : fR < s.heap.size) (hRk : (s.objEntry fR).kind = .func dR)
     (hRcode : dR.code = CCRGen.fn34_func) (hRcls : dR.isClassCtor = false) (hRmode : dR.thisMode = .strict)
     (hE : dR.env < s.envs.size) (hEe : Scope.declLike? (s.envEntry dR.env) = some (bR, some g))
-    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, none)) (hgU : g ≠ dR.env)
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG)) (hgU : g ≠ dR.env)
     (hRRI : bR[JSStr.ofString "reconcileChildFibersImpl"]? = some bdRI) (hRRIv : bdRI.value = some (.obj fI))
     (hRnT : bR[JSStr.ofString "thenableIndexCounter$1"]? = none) (hRnS : bR[JSStr.ofString "thenableState$1"]? = none)
     (hGT : bG[JSStr.ofString "thenableIndexCounter$1"]? = some bdT) (hGTm : bdT.mutable = true)
@@ -202,7 +204,7 @@ theorem children_null {n : Nat} {h : σ} {fC : ObjId} {dC : FuncData} {tC ln : V
       v = .undefined ∧ Frame (fpCN g X) s w ∧ s.fuel ≤ w.fuel + 60 ∧ h' = h ∧ w.realm = s.realm ∧
       Scope.declLike? (w.envEntry g) = some ((bG.modify (JSStr.ofString "thenableIndexCounter$1")
         (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) })).modify (JSStr.ofString "thenableState$1")
-        (fun bd => { bd with value := some .null }), none) ∧
+        (fun bd => { bd with value := some .null }), oG) ∧
       (w.objEntry X).props.get? (.str "child") = some (.data .null true cw cc) := by
   apply wp_callGen RChGen.reconcileChildren_eq (by decide) hRC hRCk (by omega) hRCcls hRCmode
     (by rw [hRCcode]; rfl) (by rw [hRCcode]; rfl) (ReactReconcileChildren.simpleC dC hRCcode) (by rw [hRCcode]; rfl)

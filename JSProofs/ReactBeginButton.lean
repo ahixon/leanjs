@@ -37,11 +37,12 @@ theorem button_spec {n : Nat} {h : σ} {fB : ObjId} {dB : FuncData} {tB : Value}
     {bR : HashMap JSStr Binding} {bdRI bdDel bdST : Binding} {fI fDel : ObjId} {dI dDel : FuncData}
     {mpw mpe mpc hcw hce hcc hrw hre hrc ppw ppe ppc tgw tge tgc tyw tye tyc msw mse msc xrw xre xrc lw lc cw cc
       kw ke kc csw cse csc : Bool} {ch0 l0 : Value}
+    {oG : Option EnvId}
     (hBW : fB < s.heap.size) (hBWk : (s.objEntry fB).kind = .func dB) (hf : 200 ≤ s.fuel)
     (hBWcode : dB.code = BWGen.beginWork_func) (hBWcls : dB.isClassCtor = false) (hBWmode : dB.thisMode = .strict)
     (hBWenv : dB.env = g)
     -- (react-dom's module record)
-    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, none))
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
     (hGDR : bG[JSStr.ofString "didReceiveUpdate"]? = some bdDR) (hGDRm : bdDR.mutable = true)
     (hGDRi : bdDR.value.isSome = true)
     (hGPH : bG[JSStr.ofString "pushHostContext"]? = some bdPH) (hGPHv : bdPH.value = some (.obj fPH))
@@ -140,7 +141,7 @@ theorem button_spec {n : Nat} {h : σ} {fB : ObjId} {dB : FuncData} {tB : Value}
     simp [Std.HashMap.getElem?_modify, Ne.symm hx]
   refine ⟨by js_norm [CallableC, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, Ne.symm x1, Ne.symm x2, Ne.symm x3, Ne.symm x4, Ne.symm x5, Ne.symm x6, Ne.symm x7, Ne.symm x8, Ne.symm x9, Ne.symm x10, Ne.symm x11, hPs, hG2, hne2, Ne.symm hne2, hK2, hK2', Ne.symm hK2', hpn, hv, hl, ha, hBWenv, hG, hG1, hne, Ne.symm hne, hGe, hH, hHk, hHmp, hX, hXk, hXpp, hXtag, hP01, Ne.symm hP01, hGDR, hGDRm, hGDRi, hHX, Ne.symm hHX, hXl, FDI.fdiCtx, Sem.inner, hXty, hXms, hXr, hXc, hGPH, hGPHv, hPH, hPHk, hGSS, hGSSv, hSS, hSSk, hGMR, hGMRv, hMR, hMRk, hGRC, hGRCv, hRC, hRCk, hP1, hP1k, hP1c, hGCSC, hGCSCv, hGGC, hGGCv, hGCo, hGCk, hCS, hCSk, hCSc, hPHenv], ?_⟩
   refine wp_mono (ReactButtonHelpers.phc_button (bG := bG.modify (JSStr.ofString "didReceiveUpdate")
-      (fun bd => { bd with value := some (.bool true) })) (oG := none) (bdCS := bdCSC) (bdGC := bdGC) (CS := CS)
+      (fun bd => { bd with value := some (.bool true) })) (oG := oG) (bdCS := bdCSC) (bdGC := bdGC) (CS := CS)
       (fGC := fGC) (dGC := dGC) (X := X) (mw := msw) (me := mse) (mc := msc) (yw := tyw) (ye := tye) (yc := tyc)
       (cw := csw) (ce := cse) (cc := csc)
       (by js_norm [x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, Ne.symm x1, Ne.symm x2, Ne.symm x3, Ne.symm x4, Ne.symm x5, Ne.symm x6, Ne.symm x7, Ne.symm x8, Ne.symm x9, Ne.symm x10, Ne.symm x11, hPs, hG2, hne2, Ne.symm hne2, hK2, hK2', Ne.symm hK2', hpn, hv, hl, ha, hBWenv, hG, hG1, hne, Ne.symm hne, hGe, hH, hHk, hHmp, hX, hXk, hXpp, hXtag, hP01, Ne.symm hP01, hGDR, hGDRm, hGDRi, hHX, Ne.symm hHX, hXl, FDI.fdiCtx, Sem.inner, hXty, hXms, hXr, hXc, hGPH, hGPHv, hPH, hPHk, hGSS, hGSSv, hSS, hSSk, hGMR, hGMRv, hMR, hMRk, hGRC, hGRCv, hRC, hRCk, hP1, hP1k, hP1c, hGCSC, hGCSCv, hGGC, hGGCv, hGCo, hGCk, hCS, hCSk, hCSc, hPHenv]) (by js_norm [x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, Ne.symm x1, Ne.symm x2, Ne.symm x3, Ne.symm x4, Ne.symm x5, Ne.symm x6, Ne.symm x7, Ne.symm x8, Ne.symm x9, Ne.symm x10, Ne.symm x11, hPs, hG2, hne2, Ne.symm hne2, hK2, hK2', Ne.symm hK2', hpn, hv, hl, ha, hBWenv, hG, hG1, hne, Ne.symm hne, hGe, hH, hHk, hHmp, hX, hXk, hXpp, hXtag, hP01, Ne.symm hP01, hGDR, hGDRm, hGDRi, hHX, Ne.symm hHX, hXl, FDI.fdiCtx, Sem.inner, hXty, hXms, hXr, hXc, hGPH, hGPHv, hPH, hPHk, hGSS, hGSSv, hSS, hSSk, hGMR, hGMRv, hMR, hMRk, hGRC, hGRCv, hRC, hRCk, hP1, hP1k, hP1c, hGCSC, hGCSCv, hGGC, hGGCv, hGCo, hGCk, hCS, hCSk, hCSc, hPHenv]) (by simp only [js_simp]; omega) hPHcode hPHcls hPHmode
@@ -267,7 +268,7 @@ theorem button_spec {n : Nat} {h : σ} {fB : ObjId} {dB : FuncData} {tB : Value}
     simp only [js_simp, ↓reduceIte, hE, Nat.lt_succ_of_lt hE, r1, r2, Ne.symm r1, Ne.symm r2, hRg, Ne.symm hRg] at e1 e2 e3
     rw [e3, e2, e1]
   have hGe3 : Scope.declLike? (w3.envEntry g) = some (bG.modify (JSStr.ofString "didReceiveUpdate")
-      (fun bd => { bd with value := some (.bool true) }), none) := by
+      (fun bd => { bd with value := some (.bool true) }), oG) := by
     rw [hw3G]; js_norm [hGe]
   have hE3 : dR.env < w3.envs.size := Nat.lt_of_lt_of_le hE (by omega)
   have hHX' := Ne.symm hHX

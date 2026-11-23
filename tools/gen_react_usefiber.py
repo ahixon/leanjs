@@ -18,7 +18,7 @@ prem=prem.replace("(hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d
     -- (useFiber's record: the reconciler's closure, whose outer record is the module's)
     (hE : dU.env < s.envs.size) (hEe : Scope.declLike? (s.envEntry dU.env) = some (bR, some g))
     (hEn : bR[JSStr.ofString "createWorkInProgress"]? = none)
-    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, none))
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
     (hGC : bG[JSStr.ofString "createWorkInProgress"]? = some bdCW) (hGCv : bdCW.value = some (.obj fo))
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 40 ≤ s.fuel)""")
 post=post.replace("s.fuel ≤ w.fuel + 20","s.fuel ≤ w.fuel + 40").replace("Frame (fp X)","Logic.Frame (ReactCreateWIP.fp X)")

@@ -39,7 +39,6 @@ set_option maxRecDepth 100000 in
   have wP_a : dWL.code.isAsync = false := by rw [hWLcode]; rfl
   have wP_ne : s.envs.size ≠ dPU.env := Nat.ne_of_gt R_hG
   have wP_G1 : dPU.env < s.envs.size + 1 := Nat.lt_succ_of_lt R_hG
-  subst hoG
   clear hWLcode
   simp only [WLSGen.workLoopSync]
   js [wP_n, wP_v, wP_l, wP_a, hWLenv, R_hG, wP_G1, wP_ne, Ne.symm wP_ne, R_hGe, FDI.fdiCtx, Sem.inner]
@@ -59,7 +58,7 @@ set_option maxRecDepth 100000 in
   have gE1' : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
   have gF1 : 2390 ≤ St.fuel := by rw [hSt]; js_norm; omega
   have gFe1 : s.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
-  have gG1 : Scope.declLike? (St.envEntry dPU.env) = some (bG0, none) := by
+  have gG1 : Scope.declLike? (St.envEntry dPU.env) = some (bG0, oG) := by
     rw [hSt]; js_norm [R_hG, wP_G1, wP_ne, Ne.symm wP_ne, R_hGe]
   have gB1 : ∀ x : JSStr, True → bG0[x]? = bG0[x]? := fun _ _ => rfl
   have gV1 : ∀ e, e < s.envs.size → St.envEntry e = s.envEntry e := by
@@ -122,7 +121,7 @@ set_option maxRecDepth 100000 in
   have gE2 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
   have gF2 : 1570 ≤ St.fuel := by rw [hSt]; js_norm; omega
   have gFe2 : wS1.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
-  have gG2 : Scope.declLike? (St.envEntry K_d.env) = some (bm1, none) := by rw [hKdEnv, hSt]; js_norm [hbm1]
+  have gG2 : Scope.declLike? (St.envEntry K_d.env) = some (bm1, oG) := by rw [hKdEnv, hSt]; js_norm [hbm1]
   have gB2 : ∀ x, (dPU.env, x) ∉ (@@FPR@@).binds → bm1[x]? = bG0[x]? := hbw1x
   have gV2 : ∀ e, e < s.envs.size → e ≠ dPU.env → St.envEntry e = s.envEntry e := fun e he hne => by
     rw [hSt]; js_norm; exact vS1 e he hne
@@ -167,7 +166,7 @@ set_option maxRecDepth 100000 in
   have rr2 : wS2.realms = s.realms := by rw [hF2.realms_eq, gR2']
   try simp only [js_simp] at hfu2
   have f2 : 1000 ≤ wS2.fuel := by omega
-  have hbm2' : Scope.declLike? (wS2.envEntry dPU.env) = some (bm2, none) := by rw [← hKdEnv]; exact hbm2
+  have hbm2' : Scope.declLike? (wS2.envEntry dPU.env) = some (bm2, oG) := by rw [← hKdEnv]; exact hbm2
   refine for_iter (by first | omega | (simp only [js_simp]; omega)) (by omega) ?_
   js [hw2K, hbm2', hbdW2, hbdW2v, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E2, Nat.ne_of_gt (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E2),
     Nat.lt_of_lt_of_le wP_G1 E2, Nat.ne_of_gt (Nat.lt_of_lt_of_le wP_G1 E2), R_hG, wP_G1, wP_ne, Ne.symm wP_ne, hGPUv,
@@ -187,7 +186,7 @@ set_option maxRecDepth 100000 in
   have gE3 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
   have gF3 : 990 ≤ St.fuel := by rw [hSt]; js_norm; omega
   have gFe3 : wS2.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
-  have gG3 : Scope.declLike? (St.envEntry dPU.env) = some (bm2, none) := by rw [hSt]; js_norm [hbm2']
+  have gG3 : Scope.declLike? (St.envEntry dPU.env) = some (bm2, oG) := by rw [hSt]; js_norm [hbm2']
   have gB3 : ∀ x, (dPU.env, x) ∉ (@@FPR@@).binds → (K_d.env, x) ∉ (@@FPK@@).binds → bm2[x]? = bG0[x]? :=
     fun x h1 h2 => by rw [hbw2x x h2, hbw1x x h1]
   have gV3 : ∀ e, e < s.envs.size → e ≠ dPU.env → St.envEntry e = s.envEntry e := fun e he hne => by

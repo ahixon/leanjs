@@ -3,7 +3,7 @@
     -- (updateFunctionComponent and its callees, functions of react-dom's module)
     (hUF : fUF < s.heap.size) (hUFk : (s.objEntry fUF).kind = .func dUF)
     (hUFcode : dUF.code = UFCGen.updateFunctionComponent_func) (hUFcls : dUF.isClassCtor = false)
-    (hUFmode : dUF.thisMode = .strict) (hUFenv : dUF.env = d.env) (hoG : oG = none)
+    (hUFmode : dUF.thisMode = .strict) (hUFenv : dUF.env = d.env)
     (hGP : bG[JSStr.ofString "prepareToReadContext"]? = some bdP) (hGPv : bdP.value = some (.obj fP))
     (hPR : fP < s.heap.size) (hPRk : (s.objEntry fP).kind = .func dP) (hPRcode : dP.code = PRCGen.prepareToReadContext_func)
     (hPRcls : dP.isClassCtor = false) (hPRmode : dP.thisMode = .strict) (hPRenv : dP.env = d.env)

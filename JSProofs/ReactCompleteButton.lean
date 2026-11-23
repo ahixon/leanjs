@@ -39,11 +39,12 @@ theorem button_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value}
     {fPT fPH fMU fBP fPI : ObjId} {dPT dPH dMU dBP dPI : FuncData} {fl sf m : F64} {cl : Value}
     {mpw mpe mpc ppw ppe ppc tgw tge tgc tyw tye tyc snw sne snc aw ae ac cw ce cc hcw hce hcc fe fc se sc le lc me mc
       cfw cfe cfc htw hte htc : Bool}
+    {oG : Option EnvId}
     (hW : fW < s.heap.size) (hWk : (s.objEntry fW).kind = .func dW) (hf : 120 ≤ s.fuel)
     (hWcode : dW.code = CWGen.completeWork_func) (hWcls : dW.isClassCtor = false) (hWmode : dW.thisMode = .strict)
     (hWenv : dW.env = g)
     -- (react-dom's module record)
-    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, none))
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
     (hGPT : bG[JSStr.ofString "popTreeContext"]? = some bdPT) (hGPTv : bdPT.value = some (.obj fPT))
     (hGPH : bG[JSStr.ofString "popHostContext"]? = some bdPH) (hGPHv : bdPH.value = some (.obj fPH))
     (hGMU : bG[JSStr.ofString "markUpdate"]? = some bdMU) (hGMUv : bdMU.value = some (.obj fMU))
@@ -117,7 +118,7 @@ theorem button_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value}
   simp only [CWGen.completeWork]
   js [hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hX, hXk, hXpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hX, hXk, hXpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (ReactCompleteHelpers.ptc_none (bG := bG) (X := X) (by js_norm [hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hX, hXk, hXpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner]) (by js_norm [hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hX, hXk, hXpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner])
+  refine wp_mono (ReactCompleteHelpers.ptc_none (bG := bG) (oG := oG) (X := X) (by js_norm [hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hX, hXk, hXpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner]) (by js_norm [hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hX, hXk, hXpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner])
     (by simp only [js_simp]; omega) hPTcode hPTcls hPTmode (by rw [hPTenv]; js_norm [hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hX, hXk, hXpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner])
     (by rw [hPTenv]; js_norm [hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hX, hXk, hXpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner]) hGTF hGTFv hGTC hGTCv) ?_
   intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, hr1⟩
@@ -141,7 +142,7 @@ theorem button_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value}
   refine wp_switchC CWSwitch.lex ?_
   js [hw1K, hw1G, hw1o, hX, hXk, hXtag, hK1, hG1', hnK1, hnG1, Ne.symm hnK1, Ne.symm hnG1, hK2, hG2, Nat.lt_of_lt_of_le hX hw1z, hpn, hv, hl, ha, hGe, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner, hXpp, hXty, hXsn, hH, hHk, hHmp, hP01, Ne.symm hP01, hHX, Ne.symm hHX, hGPH, hGPHv, hPH, hPHk, hPHenv]
   refine ⟨by js_norm [CallableC, hw1K, hw1G, hw1o, hX, hXk, hXtag, hK1, hG1', hnK1, hnG1, Ne.symm hnK1, Ne.symm hnG1, hK2, hG2, Nat.lt_of_lt_of_le hX hw1z, hpn, hv, hl, ha, hGe, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner, hXpp, hXty, hXsn, hH, hHk, hHmp, hP01, Ne.symm hP01, hHX, Ne.symm hHX, hGPH, hGPHv, hPH, hPHk, hPHenv, hGCF, hGCFv, hGHT, hGHTv, hCF, hCFk, hCFc, hHT, hHTk, hHTc, Nat.lt_of_lt_of_le hCF hw1z, Nat.lt_of_lt_of_le hHT hw1z, Nat.lt_of_lt_of_le hPH hw1z], ?_⟩
-  refine wp_mono (ReactCompleteHelpers.phc_none (bG := bG) (X := X) (R := R) (CF := CF) (HT := HT) (fw := cfw)
+  refine wp_mono (ReactCompleteHelpers.phc_none (bG := bG) (oG := oG) (X := X) (R := R) (CF := CF) (HT := HT) (fw := cfw)
     (fe := cfe) (fc := cfc) (tw := htw) (te := hte) (tc := htc)
     (by js_norm [hw1K, hw1G, hw1o, hX, hXk, hXtag, hK1, hG1', hnK1, hnG1, Ne.symm hnK1, Ne.symm hnG1, hK2, hG2, Nat.lt_of_lt_of_le hX hw1z, hpn, hv, hl, ha, hGe, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner, hXpp, hXty, hXsn, hH, hHk, hHmp, hP01, Ne.symm hP01, hHX, Ne.symm hHX, hGPH, hGPHv, hPH, hPHk, hPHenv, hGCF, hGCFv, hGHT, hGHTv, hCF, hCFk, hCFc, hHT, hHTk, hHTc, Nat.lt_of_lt_of_le hCF hw1z, Nat.lt_of_lt_of_le hHT hw1z, Nat.lt_of_lt_of_le hPH hw1z]) (by js_norm [hw1K, hw1G, hw1o, hX, hXk, hXtag, hK1, hG1', hnK1, hnG1, Ne.symm hnK1, Ne.symm hnG1, hK2, hG2, Nat.lt_of_lt_of_le hX hw1z, hpn, hv, hl, ha, hGe, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner, hXpp, hXty, hXsn, hH, hHk, hHmp, hP01, Ne.symm hP01, hHX, Ne.symm hHX, hGPH, hGPHv, hPH, hPHk, hPHenv, hGCF, hGCFv, hGHT, hGHTv, hCF, hCFk, hCFc, hHT, hHTk, hHTc, Nat.lt_of_lt_of_le hCF hw1z, Nat.lt_of_lt_of_le hHT hw1z, Nat.lt_of_lt_of_le hPH hw1z]) (by simp only [js_simp]; omega) hPHcode hPHcls hPHmode
     (by rw [hPHenv]; js_norm [hw1K, hw1G, hw1o, hX, hXk, hXtag, hK1, hG1', hnK1, hnG1, Ne.symm hnK1, Ne.symm hnG1, hK2, hG2, Nat.lt_of_lt_of_le hX hw1z, hpn, hv, hl, ha, hGe, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner, hXpp, hXty, hXsn, hH, hHk, hHmp, hP01, Ne.symm hP01, hHX, Ne.symm hHX, hGPH, hGPHv, hPH, hPHk, hPHenv, hGCF, hGCFv, hGHT, hGHTv, hCF, hCFk, hCFc, hHT, hHTk, hHTc, Nat.lt_of_lt_of_le hCF hw1z, Nat.lt_of_lt_of_le hHT hw1z, Nat.lt_of_lt_of_le hPH hw1z]) (by rw [hPHenv]; js_norm [hw1K, hw1G, hw1o, hX, hXk, hXtag, hK1, hG1', hnK1, hnG1, Ne.symm hnK1, Ne.symm hnG1, hK2, hG2, Nat.lt_of_lt_of_le hX hw1z, hpn, hv, hl, ha, hGe, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner, hXpp, hXty, hXsn, hH, hHk, hHmp, hP01, Ne.symm hP01, hHX, Ne.symm hHX, hGPH, hGPHv, hPH, hPHk, hPHenv, hGCF, hGCFv, hGHT, hGHTv, hCF, hCFk, hCFc, hHT, hHTk, hHTc, Nat.lt_of_lt_of_le hCF hw1z, Nat.lt_of_lt_of_le hHT hw1z, Nat.lt_of_lt_of_le hPH hw1z]) hGCF hGCFv hGHT hGHTv
@@ -298,10 +299,11 @@ theorem counter_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value
     {bdPT bdBP bdTF bdTC : Binding} {fPT fBP : ObjId} {dPT dBP : FuncData} {a b c e f : F64}
     {ppw ppe ppc tgw tge tgc aw ae ac cw ce cc yw ye yc xlw xle xlc xcw xce xcc xsw xse xsc xfw xfe xfc rwe rwc sbw sbe sbc
       se sc le lc : Bool}
+    {oG : Option EnvId}
     (hW : fW < s.heap.size) (hWk : (s.objEntry fW).kind = .func dW) (hf : 80 ≤ s.fuel)
     (hWcode : dW.code = CWGen.completeWork_func) (hWcls : dW.isClassCtor = false) (hWmode : dW.thisMode = .strict)
     (hWenv : dW.env = g)
-    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, none))
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
     (hGPT : bG[JSStr.ofString "popTreeContext"]? = some bdPT) (hGPTv : bdPT.value = some (.obj fPT))
     (hGBP : bG[JSStr.ofString "bubbleProperties"]? = some bdBP) (hGBPv : bdBP.value = some (.obj fBP))
     (hGTF : bG[JSStr.ofString "treeForkProvider"]? = some bdTF) (hGTFv : bdTF.value = some .null)
@@ -351,7 +353,7 @@ theorem counter_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value
   simp only [CWGen.completeWork]
   js [hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hC, hCk, hCpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hC, hCk, hCpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (ReactCompleteHelpers.ptc_none (bG := bG) (X := C) (by js_norm [hPT]) (by js_norm [hPTk])
+  refine wp_mono (ReactCompleteHelpers.ptc_none (bG := bG) (oG := oG) (X := C) (by js_norm [hPT]) (by js_norm [hPTk])
     (by simp only [js_simp]; omega) hPTcode hPTcls hPTmode (by rw [hPTenv]; js_norm [hG1])
     (by rw [hPTenv]; js_norm [hG, hG1, hne, Ne.symm hne, hGe]) hGTF hGTFv hGTC hGTCv) ?_
   intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, hr1⟩

@@ -1585,7 +1585,7 @@ theorem wls_top {n : Nat}
     (hUFcls : dUF.isClassCtor = false)
     (hUFmode : dUF.thisMode = .strict)
     (hUFenv : dUF.env = K_d.env)
-    (hoG : oG = none)
+   
     (hGP : bG0[JSStr.ofString "prepareToReadContext"]? = some bdP)
     (hGPv : bdP.value = some (.obj fP))
     (hPR : fP < s.heap.size)
@@ -1959,7 +1959,7 @@ theorem wls_top {n : Nat}
       (∃ a b, (w'.objEntry X).props.get? (.str "deletions") = some (.data .null true a b)) ∧
       (∃ a b, (w'.objEntry X).props.get? (.str "type") = some (.data ((.str (JSStr.ofString "button"))) true a b)) ∧
       ReactNewProps.NewProps w' Cn F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") ∧ w.heap.size ≤ Cn ∧
-      ∃ bm, Scope.declLike? (w'.envEntry dPU.env) = some (bm, none) ∧
+      ∃ bm, Scope.declLike? (w'.envEntry dPU.env) = some (bm, oG) ∧
       (∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧ bd.value = some .null) ∧
       (∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true) ∧
       (∃ bd, bm[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧

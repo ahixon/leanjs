@@ -42,7 +42,6 @@ theorem counter_unit_spec @@BINDERS@@
   have pP_a : dPU.code.isAsync = false := by rw [hPUcode]; rfl
   have pP_ne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
   have pP_G1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
-  subst hoG
   clear hPUcode
   simp only [PUWGen.performUnitOfWork]
   js [pP_n, pP_v, pP_l, pP_a, hPUenv, hG, pP_G1, pP_ne, Ne.symm pP_ne, hGe, hGBW, hGBWv, hBW, hBWk, hC1, hC1k, hC1alt, hGEL, hGELv,
@@ -58,7 +57,7 @@ theorem counter_unit_spec @@BINDERS@@
   have gE1' : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
   have gF1 : 550 ≤ St.fuel := by rw [hSt]; js_norm; omega
   have gFe1 : s.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
-  have gG1 : Scope.declLike? (St.envEntry d.env) = some (bG, none) := by
+  have gG1 : Scope.declLike? (St.envEntry d.env) = some (bG, oG) := by
     rw [hSt]; js_norm [hG, pP_G1, pP_ne, Ne.symm pP_ne, hGe]
   have gR1 : St.realms = s.realms := by rw [hSt]; rfl
   have gO1 : ∀ o, St.objEntry o = s.objEntry o := by intro o; rw [hSt]; js_norm

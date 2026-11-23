@@ -145,7 +145,7 @@ FPDEFS = ("Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, React
           "ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, "
           "List.cons_append, List.nil_append, List.mem_append, List.mem_cons")
 DD = ", ".join([f"dd_{o}_{w}" for o, w in DIST] + [f"Ne.symm dd_{o}_{w}" for o, w in DIST])
-stmt_full = stmt + f" :\n    WP eng answer (n + 10) h (callImpl eng (.obj fWL) tWL #[]) s fun v w h' =>\n      v = .undefined ∧ Frame ({FP}) s w ∧ s.fuel ≤ w.fuel + 2400 ∧ h' = h ∧\n      ∃ Cn F, @@FACTS@@ ∧ @@EXTRA@@ ∧\n      ReactNewProps.NewProps w Cn F OP (JSStr.ofString \"Count: \" ++ numberToJSStr xE ++ JSStr.ofString \"\") ∧ s.heap.size ≤ Cn ∧\n      ∃ bm, Scope.declLike? (w.envEntry dPU.env) = some (bm, none) ∧\n      (∃ bd, bm[JSStr.ofString \"workInProgress\"]? = some bd ∧ bd.value = some .null) ∧\n      (∃ bd, bm[JSStr.ofString \"workInProgressRootExitStatus\"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true) ∧\n      (∃ bd, bm[JSStr.ofString \"lastContextDependency\"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧\n      (∃ bd, bm[JSStr.ofString \"currentlyRenderingFiber$1\"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)"
+stmt_full = stmt + f" :\n    WP eng answer (n + 10) h (callImpl eng (.obj fWL) tWL #[]) s fun v w h' =>\n      v = .undefined ∧ Frame ({FP}) s w ∧ s.fuel ≤ w.fuel + 2400 ∧ h' = h ∧\n      ∃ Cn F, @@FACTS@@ ∧ @@EXTRA@@ ∧\n      ReactNewProps.NewProps w Cn F OP (JSStr.ofString \"Count: \" ++ numberToJSStr xE ++ JSStr.ofString \"\") ∧ s.heap.size ≤ Cn ∧\n      ∃ bm, Scope.declLike? (w.envEntry dPU.env) = some (bm, oG) ∧\n      (∃ bd, bm[JSStr.ofString \"workInProgress\"]? = some bd ∧ bd.value = some .null) ∧\n      (∃ bd, bm[JSStr.ofString \"workInProgressRootExitStatus\"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true) ∧\n      (∃ bd, bm[JSStr.ofString \"lastContextDependency\"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧\n      (∃ bd, bm[JSStr.ofString \"currentlyRenderingFiber$1\"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)"
 tmpl = open(os.path.join(ROOT, "tools", "react_wls", "tmpl.lean.in")).read()
 out = tmpl.replace("@@FPK@@", FPK).replace("@@FPR@@", FPR).replace("@@FP@@", FP).replace("@@STMT@@", stmt_full).replace("@@FPDEFS@@", FPDEFS).replace("@@DD@@", DD)
 bounds_file = J("ReactWorkLoop.lean")
@@ -173,7 +173,7 @@ ex2 = {"hGe": "gG2", "hC1pp": W("r1"), "hC1ty": W("r2"), "hC1f": W("r3"), "hC1l"
        "hGWIP": "hbdW1", "hGWIPm": "hbdW1m", "hGWIPi": "hbdW1v", "hGDR": "hbdD1", "hGDRm": "hbdD1m",
        "hGDRi": "(by rw [hbdD1v]; rfl)", "hGHy": "hbdH1", "hGHyv": "hbdH1v",
        "hPUo": "(Nat.lt_of_lt_of_le R_hlt gZ2)", "hPUk": "(by rw [gK2 fPU R_hlt]; exact R_hk)", "hPUcode": "R_hcode",
-       "hPUcls": "R_hcls", "hPUmode": "R_hmode", "hPUenv": "hKdEnv.symm", "hoG": "rfl"}
+       "hPUcls": "R_hcls", "hPUmode": "R_hmode", "hPUenv": "hKdEnv.symm"}
 DS2 = FPDEFS + ", " + DD
 a2 = A.transfer(J("ReactUnitCounter.lean"), "counter_unit_spec", r2, ex2, {}, bounds, 2, DS2, envbounds=envb,
                 bside=f"(by simp [{FPDEFS}] <;> decide)", envne=" (by assumption)", protos=True)

@@ -30,6 +30,7 @@ set_option maxHeartbeats 40000000 in
 set_option maxRecDepth 100000 in
 /-- **`performUnitOfWork(button)`**: the button begun and completed, the counter and the root completed. -/
 theorem button_unit_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State} {fCU : ObjId} {dCU : FuncData} {bdBW bdCU : Binding} {bG : HashMap JSStr Binding} {g : EnvId} {fW : ObjId} {dW : FuncData} {bdCW : Binding} {bdEL : Binding} {bdWIP : Binding} {bdES : Binding} {ln : Value} {wv : Value} {H : ObjId} {X : ObjId} {P0 : ObjId} {P1 : ObjId} {D : ObjId} {CFb : ObjId} {HT : ObjId} {Rb : ObjId} {bdPT : Binding} {bdPH : Binding} {bdMU : Binding} {bdBP : Binding} {bdPI : Binding} {bdTF : Binding} {bdTC : Binding} {bdCFb : Binding} {bdHT : Binding} {fPT : ObjId} {fPH : ObjId} {fMU : ObjId} {fBP : ObjId} {fPI : ObjId} {dPT : FuncData} {dPH : FuncData} {dMU : FuncData} {dBP : FuncData} {dPI : FuncData} {fl : F64} {sf : F64} {m : F64} {cl : Value} {mpw : Bool} {mpe : Bool} {mpc : Bool} {ppw : Bool} {ppe : Bool} {ppc : Bool} {tgw : Bool} {tge : Bool} {tgc : Bool} {tyw : Bool} {tye : Bool} {tyc : Bool} {snw : Bool} {sne : Bool} {snc : Bool} {aw : Bool} {ae : Bool} {ac : Bool} {hcw : Bool} {hce : Bool} {hcc : Bool} {fe : Bool} {fc : Bool} {se : Bool} {sc : Bool} {le : Bool} {lc : Bool} {me : Bool} {mc : Bool} {cfw : Bool} {cfe : Bool} {cfc : Bool} {htw : Bool} {hte : Bool} {htc : Bool} {rwe : Bool} {rwc : Bool} {sbw : Bool} {sbe : Bool} {sbc : Bool} {C : ObjId} {A : ObjId} {pp2 : ObjId} {cl2 : Value} {e2 : F64} {f2 : F64} {a2 : F64} {ppw2 : Bool} {ppe2 : Bool} {ppc2 : Bool} {tgw2 : Bool} {tge2 : Bool} {tgc2 : Bool} {aw2 : Bool} {ae2 : Bool} {ac2 : Bool} {cw2 : Bool} {ce2 : Bool} {cc2 : Bool} {yw2 : Bool} {ye2 : Bool} {yc2 : Bool} {se2 : Bool} {sc2 : Bool} {le2 : Bool} {lc2 : Bool} {xlw2 : Bool} {xle2 : Bool} {xlc2 : Bool} {xfw2 : Bool} {xfe2 : Bool} {xfc2 : Bool} {rwe2 : Bool} {rwc2 : Bool} {sbw2 : Bool} {sbe2 : Bool} {sbc2 : Bool} {RH : ObjId} {R : ObjId} {FR : ObjId} {MS0 : ObjId} {MS1 : ObjId} {CA : ObjId} {pp3 : Value} {cl3 : Value} {e3 : F64} {fR : F64} {bdPP : Binding} {bdPHC : Binding} {bdCC : Binding} {bdI : Binding} {bdV : Binding} {bdVC : Binding} {bdCS : Binding} {bdCF : Binding} {bdRI : Binding} {bdO : Binding} {fPP : ObjId} {fPHC : ObjId} {fO : ObjId} {dPP : FuncData} {dPHC : FuncData} {dO : FuncData} {VS : ObjId} {Cu : ObjId} {Cx : ObjId} {CS : ObjId} {CF : ObjId} {RI : ObjId} {L : F64} {o0 : Value} {o1 : Value} {o2 : Value} {o3 : Value} {vu : Value} {cxv : Value} {vr : Value} {vf : Value} {vc : Value} {ppw3 : Bool} {ppe3 : Bool} {ppc3 : Bool} {tgw3 : Bool} {tge3 : Bool} {tgc3 : Bool} {snw3 : Bool} {sne3 : Bool} {snc3 : Bool} {m0w : Bool} {m0e : Bool} {m0c : Bool} {m1w : Bool} {m1e : Bool} {m1c : Bool} {caw : Bool} {cae : Bool} {cac : Bool} {cbw : Bool} {cbe : Bool} {cbc : Bool} {pcw : Bool} {pce : Bool} {pcc : Bool} {hcw3 : Bool} {hce3 : Bool} {hcc3 : Bool} {aw3 : Bool} {ae3 : Bool} {ac3 : Bool} {cw3 : Bool} {ce3 : Bool} {cc3 : Bool} {se3 : Bool} {sc3 : Bool} {le3 : Bool} {lc3 : Bool} {fw3 : Bool} {fe3 : Bool} {fc3 : Bool} {rw3 : Bool} {re3 : Bool} {rc3 : Bool} {sw3 : Bool} {se3' : Bool} {sc3' : Bool} {e0 : Bool} {c0 : Bool} {e1 : Bool} {c1 : Bool} {e2' : Bool} {c2 : Bool} {e3' : Bool} {c3 : Bool} {lw : Bool} {lle : Bool} {llc : Bool} {ue : Bool} {uc : Bool} {xe : Bool} {xc : Bool} {re : Bool} {rc : Bool} {fe' : Bool} {fc' : Bool} {vce : Bool} {vcc : Bool} {b_fB : ObjId} {b_dB : FuncData} {b_tB : Value} {b_str : JSStr} {b_bdDR : Binding} {b_bdPH : Binding} {b_bdSS : Binding} {b_bdMR : Binding} {b_bdRC : Binding} {b_bdGC : Binding} {b_bdRCF : Binding} {b_bdT : Binding} {b_bdTS : Binding} {b_fPH : ObjId} {b_fSS : ObjId} {b_fMR : ObjId} {b_fC : ObjId} {b_fGC : ObjId} {b_fR : ObjId} {b_dPH : FuncData} {b_dSS : FuncData} {b_dMR : FuncData} {b_dC : FuncData} {b_dGC : FuncData} {b_dR : FuncData} {b_bR : HashMap JSStr Binding} {b_bdRI : Binding} {b_bdDel : Binding} {b_bdST : Binding} {b_fI : ObjId} {b_fDel : ObjId} {b_dI : FuncData} {b_dDel : FuncData} {b_mpw : Bool} {b_mpe : Bool} {b_mpc : Bool} {b_hcw : Bool} {b_hce : Bool} {b_hcc : Bool} {b_hrw : Bool} {b_hre : Bool} {b_hrc : Bool} {b_ppw : Bool} {b_ppe : Bool} {b_ppc : Bool} {b_tgw : Bool} {b_tge : Bool} {b_tgc : Bool} {b_tyw : Bool} {b_tye : Bool} {b_tyc : Bool} {b_msw : Bool} {b_mse : Bool} {b_msc : Bool} {b_xrw : Bool} {b_xre : Bool} {b_xrc : Bool} {b_lw : Bool} {b_lc : Bool} {b_cw : Bool} {b_cc : Bool} {b_kw : Bool} {b_ke : Bool} {b_kc : Bool} {b_csw : Bool} {b_cse : Bool} {b_csc : Bool} {b_ch0 : Value} {b_l0 : Value} {mpv : Value} {mpe' mpc' : Bool}
+    {oG : Option EnvId}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 840 ≤ s.fuel)
     (hcode : d.code = PUWGen.performUnitOfWork_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (henv : d.env = g)
@@ -42,7 +43,7 @@ theorem button_unit_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Val
     (dCUX : fCU ≠ X) (dBWX : b_fB ≠ X)
     (hdXall : ∀ Y ∈ [A, C, CF, CS, Cu, Cx, FR, H, HT, MS0, MS1, R, RH, RI, VS, fBP, fMU, fO, fPH, fPHC, fPI, fPP, fPT, fW], Y ≠ X)
     (hG : g < s.envs.size)
-    (hGe : Scope.declLike? (s.envEntry g) = some (bG, none))
+    (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
     (hGCW : bG[JSStr.ofString "completeWork"]? = some bdCW)
     (hGCWv : bdCW.value = some (.obj fW))
     (hGEL : bG[JSStr.ofString "entangledRenderLanes"]? = some bdEL)
@@ -268,7 +269,7 @@ theorem button_unit_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Val
     (b_hBWmode : b_dB.thisMode = .strict)
     (b_hBWenv : b_dB.env = g)
     (b_hG : g < s.envs.size)
-    (b_hGe : Scope.declLike? (s.envEntry g) = some (bG, none))
+    (b_hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
     (b_hGDR : bG[JSStr.ofString "didReceiveUpdate"]? = some b_bdDR)
     (b_hGDRm : b_bdDR.mutable = true)
     (b_hGDRi : b_bdDR.value.isSome = true)
@@ -389,7 +390,7 @@ theorem button_unit_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Val
         (numberBinOp .bitOr a2 (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr (F64.fin false 0 (-1074)) (F64.fin false 0 (-1074))))))) true le3 lc3) ∧
       (w.objEntry C).props.get? (.str "return") = some (.data (.obj R) true rwe2 rwc2) ∧
         (w.objEntry X).props.get? (.str "memoizedProps") = some (.data (.obj P1) true mpe' mpc')) ∧
-      ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, none) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
+      ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
         bd.value = some .null ∧
         ∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true := by
   apply wp_callGen PUWGen.performUnitOfWork_eq (by decide) hlt hk (by omega) hcls hmode
@@ -439,7 +440,7 @@ theorem button_unit_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Val
   have gE1' : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
   have gF1 : 830 ≤ St.fuel := by rw [hSt]; js_norm; omega
   have gFe1 : s.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
-  have gG1 : Scope.declLike? (St.envEntry g) = some (bG, none) := by rw [hSt]; js_norm [hG, hG1, hne, Ne.symm hne, hGe]
+  have gG1 : Scope.declLike? (St.envEntry g) = some (bG, oG) := by rw [hSt]; js_norm [hG, hG1, hne, Ne.symm hne, hGe]
   have gB1 : ∀ x, x ≠ JSStr.ofString "workInProgress" → bG[x]? = bG[x]? := fun _ _ => rfl
   have gV1 : ∀ e, e < s.envs.size → St.envEntry e = s.envEntry e := by
     intro e he; rw [hSt]; js_norm [he, Nat.ne_of_lt he, Ne.symm (Nat.ne_of_lt he), Nat.lt_succ_of_lt he]
@@ -496,7 +497,7 @@ theorem button_unit_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Val
   have gE2 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
   have gF2 : 600 ≤ St.fuel := by rw [hSt]; js_norm; omega
   have gFe2 : w1.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
-  have gG2 : Scope.declLike? (St.envEntry g) = some (bw, none) := by
+  have gG2 : Scope.declLike? (St.envEntry g) = some (bw, oG) := by
     rw [hSt]; js_norm [hbw, hG, Nat.lt_of_lt_of_le hG1 E1, hne, Ne.symm hne,
       Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1), Ne.symm (Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1))]
   have gB2 : ∀ x, (g, x) ∉ (ReactBeginButton.fpBB g X).binds → bw[x]? = bG[x]? := hbwx

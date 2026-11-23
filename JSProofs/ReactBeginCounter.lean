@@ -308,7 +308,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     -- (updateFunctionComponent and its callees, functions of react-dom's module)
     (hUF : fUF < s.heap.size) (hUFk : (s.objEntry fUF).kind = .func dUF)
     (hUFcode : dUF.code = UFCGen.updateFunctionComponent_func) (hUFcls : dUF.isClassCtor = false)
-    (hUFmode : dUF.thisMode = .strict) (hUFenv : dUF.env = d.env) (hoG : oG = none)
+    (hUFmode : dUF.thisMode = .strict) (hUFenv : dUF.env = d.env)
     (hGP : bG[JSStr.ofString "prepareToReadContext"]? = some bdP) (hGPv : bdP.value = some (.obj fP))
     (hPR : fP < s.heap.size) (hPRk : (s.objEntry fP).kind = .func dP) (hPRcode : dP.code = PRCGen.prepareToReadContext_func)
     (hPRcls : dP.isClassCtor = false) (hPRmode : dP.thisMode = .strict) (hPRenv : dP.env = d.env)
@@ -377,7 +377,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitOr fl1 (F64.fin false 4503599627370496 (-52)))) true fe fc) ∧
       (w.objEntry C).kind.isPlain = true ∧ C < w.heap.size ∧ s.heap.size ≤ C ∧
       (∃ F, ReactNewProps.NewProps w C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) ∧
-      ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, none) ∧
+      ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
         (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true ∧
@@ -394,7 +394,6 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
   have hne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
   have hG1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
   subst hPp
-  subst hoG
   clear hBWcode
   simp only [BWGen.beginWork]
   js [hpn, hv, hl, ha, hBWenv, hG, hG1, hne, Ne.symm hne, hGe, hC0, hC0k, hC0mp, hC1, hC1k, hC1pp, beq_self_eq_true, hGCS, hGCSv, hCS,
@@ -451,7 +450,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       Nat.ne_of_lt (Nat.lt_trans he hEw1'), Nat.ne_of_gt (Nat.lt_trans he hEw1')]
     rw [envEntry_frame0 hF1 (by js_norm [Nat.lt_succ_of_lt he])]; js_norm [Nat.ne_of_lt he, Nat.ne_of_gt he]
   have gSd : Scope.declLike? (St.envEntry d.env) = some (bG.modify (JSStr.ofString "didReceiveUpdate")
-      (fun bd => { bd with value := some (.bool false) }), none) := by
+      (fun bd => { bd with value := some (.bool false) }), oG) := by
     rw [hSt]; js_norm [hGw1', hnw1G, Ne.symm hnw1G, hw1G, hGe, hne, Ne.symm hne]
   have gSR : St.realms = s.realms := by rw [hSt]; show w1.realms = s.realms; rw [hF1.realms_eq]; rfl
   have gSF : 505 ≤ St.fuel := by rw [hSt]; simp only [js_simp]; omega
@@ -476,7 +475,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     rw [hSt]; js_norm [hEw1', hnw1, Ne.symm hnw1, hne, Ne.symm hne]
   clear hSt
   refine wp_mono (ReactUpdateFunction.click_spec (bG := bG.modify (JSStr.ofString "didReceiveUpdate")
-      (fun bd => { bd with value := some (.bool false) })) (oG := none) (bdDR := { bdDR with value := some (.bool false) })
+      (fun bd => { bd with value := some (.bool false) })) (oG := oG) (bdDR := { bdDR with value := some (.bool false) })
       (ln := .num (F64.fin false 0 (-1074))) (tUF := .undefined) (ec := false) (ee := false) (ew := false) (fw := false)
       (kc := false) (ke := false) (kw := false) (le := false) (r_pc := false) (r_pe := false) (r_pw := false) (rw := false)
       (tRW := .undefined) (ue := false) (yc := false) (ye := false) (yw := false) (uw := uw) (uc := uc)
@@ -628,7 +627,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (rhC0c := (by rw [gSp C0 _ hC0 (fun h => by first | decide | exact absurd h (by assumption) | exact absurd h (Ne.symm (by assumption)) | exact absurd h ((hdW _ (by simp)).1))]; exact rhC0c))
       (rhRFc := (by rw [gSp C1 _ hC1 (fun h => by first | decide | exact absurd h (by assumption) | exact absurd h (Ne.symm (by assumption)) | exact absurd h ((hdW _ (by simp)).1))]; exact rhRFc))
       (rhRFX := rhRFX) (hUF := (Nat.lt_of_lt_of_le hUF gSz)) (hUFk := (by rw [gSk fUF hUF]; exact hUFk))
-      (hUFcode := hUFcode) (hUFcls := hUFcls) (hUFmode := hUFmode) (hUFenv := hUFenv) (hoG := rfl)
+      (hUFcode := hUFcode) (hUFcls := hUFcls) (hUFmode := hUFmode) (hUFenv := hUFenv)
       (hGP := (by js_norm [hGP])) (hGPv := hGPv) (hPR := (Nat.lt_of_lt_of_le hPR gSz))
       (hPRk := (by rw [gSk fP hPR]; exact hPRk)) (hPRcode := hPRcode) (hPRcls := hPRcls) (hPRmode := hPRmode)
       (hPRenv := hPRenv) (hGRWb := (by js_norm [hGRWb])) (hGRWbv := hGRWbv) (hGCD := (by js_norm [hGCD]))

@@ -32,9 +32,10 @@ theorem simplePT (d : FuncData) (hc : d.code = PTCGen.popTreeContext_func) : FDI
 set_option maxRecDepth 40000 in
 /-- **`popTreeContext(fiber)`** when the fiber is neither the tree fork provider nor the id provider: nothing. -/
 theorem ptc_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State} {X : ObjId} {bG : HashMap JSStr Binding} {bdF bdC : Binding}
+    {oG : Option EnvId}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 20 ≤ s.fuel)
     (hcode : d.code = PTCGen.popTreeContext_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
-    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, none))
+    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGF : bG[JSStr.ofString "treeForkProvider"]? = some bdF) (hGFv : bdF.value = some .null)
     (hGC : bG[JSStr.ofString "treeContextProvider"]? = some bdC) (hGCv : bdC.value = some .null) :
     WP eng answer n h (callImpl eng (.obj fo) t #[.obj X]) s fun v w h' =>
@@ -62,9 +63,10 @@ set_option maxRecDepth 40000 in
 no host transition: nothing. -/
 theorem phc_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State} {X R CF HT : ObjId} {bG : HashMap JSStr Binding} {bdCF bdHT : Binding}
     {fw fe fc tw te tc : Bool}
+    {oG : Option EnvId}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 20 ≤ s.fuel)
     (hcode : d.code = PopHCGen.popHostContext_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
-    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, none))
+    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGCF : bG[JSStr.ofString "contextFiberStackCursor"]? = some bdCF) (hGCFv : bdCF.value = some (.obj CF))
     (hGHT : bG[JSStr.ofString "hostTransitionProviderCursor"]? = some bdHT) (hGHTv : bdHT.value = some (.obj HT))
     (hCF : CF < s.heap.size) (hCFk : (s.objEntry CF).kind.isPlain = true)

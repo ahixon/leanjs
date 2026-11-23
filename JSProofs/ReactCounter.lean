@@ -22,7 +22,7 @@ section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
 
 /-- The `onClick` arrow function's code (`() => setN(n + 1)`), as `CounterGen` compiles it. -/
-def onClickFunc : Func := (Func.mk none FuncKind.arrow false false #[] (FuncBody.expr (Expr.call (Expr.ident "setN") #[(Arg.expr (Expr.binary BinOp.add (Expr.ident "n") (Expr.lit (Lit.num (F64.fin false 4503599627370496 (-52))))))] false false)) { strict := true, span := { start := 244, stop := 261 : Span }, simpleParams := true, expectedArgs := 0, hasDirectEval := false, usesArguments := false, usesThis := false, paramsHaveExpressions := false, id := 1, fdi := { paramNames := #[], hasDuplicates := false, varNames := #[], hasFunctions := false, functionNames := #[], hasLexical := false, lexNames := #[], argumentsNeeded := false, hasAnnexB := false, usesDispose := false : FDIInfo } : FuncInfo })
+def onClickFunc : Func := (Func.mk none FuncKind.arrow false false #[] (FuncBody.expr (Expr.call (Expr.ident "setN") #[(Arg.expr (Expr.binary BinOp.add (Expr.ident "n") (Expr.lit (Lit.num (F64.fin false 4503599627370496 (-52))))))] false false)) { strict := true, span := { start := 299, stop := 316 : Span }, simpleParams := true, expectedArgs := 0, hasDirectEval := false, usesArguments := false, usesThis := false, paramsHaveExpressions := false, id := 2, fdi := { paramNames := #[], hasDuplicates := false, varNames := #[], hasFunctions := false, functionNames := #[], hasLexical := false, lexNames := #[], argumentsNeeded := false, hasAnnexB := false, usesDispose := false : FDIInfo } : FuncInfo })
 
 /-- A frame from `s` carried on to a state `W` that agrees with `w` on everything `s` had. -/
 theorem frame_of_agree {fp : Footprint} {s w W : State} (hF : Frame fp s w)

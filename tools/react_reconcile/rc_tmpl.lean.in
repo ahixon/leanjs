@@ -56,7 +56,7 @@ theorem click_spec @@PREM@@ :
   have hStE : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
   have hStF : St.fuel = s.fuel - 1 := by rw [hSt]; js_norm
   have hStU : St.envEntry dU.env = s.envEntry dU.env := by rw [hSt]; js_norm [hE, hne, Ne.symm hne]
-  have hStg : Scope.declLike? (St.envEntry g) = some (bG, none) := by rw [hSt]; js_norm [hG, hGe, hneG, Ne.symm hneG]
+  have hStg : Scope.declLike? (St.envEntry g) = some (bG, oG) := by rw [hSt]; js_norm [hG, hGe, hneG, Ne.symm hneG]
   have hStK : St.envEntry s.envs.size = (bodyState s fC dC tC #[.obj C0, .obj RF, .obj El, ln]).envEntry s.envs.size := by
     rw [hSt]
   have hF0 : Frame {} s St := by rw [hSt]; exact frame_bodyState (frame_refl _ s) _ _ _ _

@@ -51,13 +51,12 @@ theorem click_spec @@PREM@@ :
   have ha : dUF.code.isAsync = false := by rw [hUFcode]; rfl
   have hne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
   have hG1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
-  subst hoG
   clear hUFcode
   simp only [UFCGen.updateFunctionComponent]
   js [hpn, hv, hl, ha, hUFenv, hG, hG1, hne, Ne.symm hne, hGe, hGP, hGPv, hPR, hPRk, FDI.fdiCtx, Sem.inner]
   -- (`prepareToReadContext(workInProgress)`)
   refine ⟨by js_norm [CallableC, hPR, hPRk], ?_⟩
-  refine wp_mono (ReactRenderPrep.prepare_spec (bG := bG) (oG := none) hPR hPRk (by js_norm; omega) hPRcode hPRcls hPRmode
+  refine wp_mono (ReactRenderPrep.prepare_spec (bG := bG) (oG := oG) hPR hPRk (by js_norm; omega) hPRcode hPRcls hPRmode
     (by js_norm [hPRenv, hG, hG1]) (by js_norm [hPRenv, hGe, hne, Ne.symm hne]) hGF1 hGF1m hGF1i hGL1 hGL1m hGL1i
     hC1 hC1k hC1d) ?postP
   intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, hr1, hd1⟩
@@ -85,7 +84,7 @@ theorem click_spec @@PREM@@ :
   refine ⟨by js_norm [CallableC, hw1o, hRW, hRWk, Nat.lt_of_lt_of_le hRW hw1z], ?_⟩
   refine wp_mono (ReactRenderHooks.click_spec (bG := ((bG.modify (JSStr.ofString "currentlyRenderingFiber$1")
       (fun bd => { bd with value := some (.obj C1) })).modify (JSStr.ofString "lastContextDependency")
-      (fun bd => { bd with value := some .null }))) (oG := none) (tRW := .undefined) (rw := false) (ue := false) (le := false) (uw := uw) (uc := uc)
+      (fun bd => { bd with value := some .null }))) (oG := oG) (tRW := .undefined) (rw := false) (ue := false) (le := false) (uw := uw) (uc := uc)
       @@RWARGS@@) ?postRW
   intro v2 w2 h2 ⟨E, C, F, dF', hvE, hF2, hfu2, hh2, hr2, hEt, hEty, hEkey, hEref, hEpr, hCch, hCoc, hEb, hCb, hEge, hCge, hEk, hCk,
     hCp, hCr, hFk, hFcode, hFenv, hFthis, hcomp, hmod, hRSIH, hC1m', hC1u', hC1l', hk1, hk2, hk3, hk4, hk5, hH0b', hQp',
@@ -114,7 +113,7 @@ theorem click_spec @@PREM@@ :
   -- (`checkDidRenderIdHook()`: false)
   have hCDw2 : fCD < w2.heap.size := Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hCD hw1z) hw2z
   refine ⟨by js_norm [CallableC, hw2CD, hCDk, hCDw2], ?_⟩
-  refine wp_mono (ReactRenderPrep.check_spec (oG := none) (bdI := bdLI) (by js_norm [hCDw2]) (by js_norm [hw2CD, hCDk])
+  refine wp_mono (ReactRenderPrep.check_spec (oG := oG) (bdI := bdLI) (by js_norm [hCDw2]) (by js_norm [hw2CD, hCDk])
     (by js_norm; omega) hCDcode hCDcls hCDmode (by js_norm [hCDenv, hGw2]) (by rw [hCDenv]; js_norm [hne, Ne.symm hne, hEw2, hGw2]; exact hmod)
     (by js_norm [hGLI, ReactFinishHooks.resetMap]) hGLIm hGLIv) ?postCD
   intro v3 w3 h3 ⟨hv3, hF3, hfu3, hh3, hr3, hmod3⟩
@@ -173,7 +172,7 @@ theorem click_spec @@PREM@@ :
         (JSStr.ofString "workInProgressHook") (fun bd => { bd with value := some (.obj w1.heap.size) })).modify
         (JSStr.ofString "didReceiveUpdate") (fun bd => { bd with value := some (.bool true) })).modify
         (JSStr.ofString "shouldDoubleInvokeUserFnsInHooksDEV") (fun bd => { bd with value := some (.bool false) })))).modify (JSStr.ofString "localIdCounter")
-        (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) })), none) := by
+        (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) })), oG) := by
     rw [hSt]; js_norm [hne, Ne.symm hne, hGw3]; exact hmod3
   have hSC1k : (St.objEntry C1).kind.isPlain = true := by rw [hSt]; js_norm [hC1k3, Nat.lt_of_lt_of_le hC1w2 hw3z]
   have hSC1c : (St.objEntry C1).props.get? (.str "child") = some (.data ch0 true cw cc) := by

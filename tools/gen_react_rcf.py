@@ -19,7 +19,7 @@ post=post.replace("s.fuel ≤ w.fuel + 120","s.fuel ≤ w.fuel + 150").replace("
 post=post.rstrip()+""" ∧
       Scope.declLike? (w.envEntry g) = some ((bG.modify (JSStr.ofString "thenableIndexCounter$1")
         (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) })).modify (JSStr.ofString "thenableState$1")
-        (fun bd => { bd with value := some .null }), none)"""
+        (fun bd => { bd with value := some .null }), oG)"""
 extra=open(here+"rcf_extra.lean.in").read().rstrip("\n")
 kk=prem.rindex(")")
 prem=prem[:kk+1]+"\n"+extra+prem[kk+1:]

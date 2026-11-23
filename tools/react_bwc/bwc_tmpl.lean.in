@@ -78,7 +78,6 @@ theorem click_spec @@PREM@@ :
   have hne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
   have hG1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
   subst hPp
-  subst hoG
   clear hBWcode
   simp only [BWGen.beginWork]
   js [hpn, hv, hl, ha, hBWenv, hG, hG1, hne, Ne.symm hne, hGe, hC0, hC0k, hC0mp, hC1, hC1k, hC1pp, beq_self_eq_true, hGCS, hGCSv, hCS,
@@ -135,7 +134,7 @@ theorem click_spec @@PREM@@ :
       Nat.ne_of_lt (Nat.lt_trans he hEw1'), Nat.ne_of_gt (Nat.lt_trans he hEw1')]
     rw [envEntry_frame0 hF1 (by js_norm [Nat.lt_succ_of_lt he])]; js_norm [Nat.ne_of_lt he, Nat.ne_of_gt he]
   have gSd : Scope.declLike? (St.envEntry d.env) = some (bG.modify (JSStr.ofString "didReceiveUpdate")
-      (fun bd => { bd with value := some (.bool false) }), none) := by
+      (fun bd => { bd with value := some (.bool false) }), oG) := by
     rw [hSt]; js_norm [hGw1', hnw1G, Ne.symm hnw1G, hw1G, hGe, hne, Ne.symm hne]
   have gSR : St.realms = s.realms := by rw [hSt]; show w1.realms = s.realms; rw [hF1.realms_eq]; rfl
   have gSF : 505 ≤ St.fuel := by rw [hSt]; simp only [js_simp]; omega
@@ -160,7 +159,7 @@ theorem click_spec @@PREM@@ :
     rw [hSt]; js_norm [hEw1', hnw1, Ne.symm hnw1, hne, Ne.symm hne]
   clear hSt
   refine wp_mono (ReactUpdateFunction.click_spec (bG := bG.modify (JSStr.ofString "didReceiveUpdate")
-      (fun bd => { bd with value := some (.bool false) })) (oG := none) (bdDR := { bdDR with value := some (.bool false) })
+      (fun bd => { bd with value := some (.bool false) })) (oG := oG) (bdDR := { bdDR with value := some (.bool false) })
       (ln := .num (F64.fin false 0 (-1074))) (tUF := .undefined) (ec := false) (ee := false) (ew := false) (fw := false)
       (kc := false) (ke := false) (kw := false) (le := false) (r_pc := false) (r_pe := false) (r_pw := false) (rw := false)
       (tRW := .undefined) (ue := false) (yc := false) (ye := false) (yw := false) (uw := uw) (uc := uc)

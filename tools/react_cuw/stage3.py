@@ -60,7 +60,7 @@ block = f"""  have hw2K := envEntry_frame hF2 (e := s.envs.size) (by rw [hSt]; j
     rw [gW3]; exact p2 o k hk ho
   have gE3 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
   have gF3 : 260 ≤ St.fuel := by rw [hSt]; js_norm; omega
-  have gG3 : Scope.declLike? (St.envEntry g) = some ({bG3}, none) := by
+  have gG3 : Scope.declLike? (St.envEntry g) = some ({bG3}, oG) := by
     rw [hSt]; js_norm [hw2G, hGe, hG, Nat.lt_of_lt_of_le hG1 hw2E, hne, Ne.symm hne,
       Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 hw2E), Ne.symm (Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 hw2E))]
   have gB3 : ∀ x, x ≠ JSStr.ofString "workInProgress" → ({bG3})[x]? = bG[x]? := fun x hx => by

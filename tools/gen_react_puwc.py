@@ -50,7 +50,7 @@ open(J("ReactUnitCounter.lean"), "w").write(out)
 bounds = A.caller_bounds(J("ReactUnitCounter.lean"), "counter_unit_spec")
 envb = A.caller_envbounds(J("ReactUnitCounter.lean"), "counter_unit_spec")
 ren = {"n": "n"}
-a1 = A.transfer(J("ReactBeginCounter.lean"), "click_spec", {"tB": ".undefined", "oG": "none"}, {"hGe": "gG1", "hoG": "rfl"}, {}, bounds, 1, "",
+a1 = A.transfer(J("ReactBeginCounter.lean"), "click_spec", {"tB": ".undefined"}, {"hGe": "gG1"}, {}, bounds, 1, "",
                 envbounds=envb, objall=True)
 out = open(J("ReactUnitCounter.lean")).read().replace("@@ARGS1@@", a1)
 open(J("ReactUnitCounter.lean"), "w").write(out)

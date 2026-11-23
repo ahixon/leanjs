@@ -28,12 +28,13 @@ set_option maxRecDepth 20000 in
 theorem spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {pp : Value} {s : State} {fU : ObjId} {dU : FuncData} {tU : Value}
     {bR bG : HashMap JSStr Binding} {g : EnvId} {bdCW : Binding}
     {H X : ObjId} {fl : F64} {vT vCL vL vC vMP vMS vUQ vS vI vR vRC o0 o1 o2 o3 o4 o5 o6 o7 o8 o9 o10 o11 o12 o13 o14 o15 : Value} {r0w r0e r0c r1w r1e r1c r2w r2e r2c r3w r3e r3c r4w r4e r4c r5w r5e r5c r6w r6e r6c r7w r7e r7c r8w r8e r8c r9w r9e r9c r10w r10e r10c r11w r11e r11c r12w r12e r12c r13w r13e r13c e0 c0 e1 c1 e2 c2 e3 c3 e4 c4 e5 c5 e6 c6 e7 c7 e8 c8 e9 c9 e10 c10 e11 c11 e12 c12 e13 c13 e14 c14 e15 c15 : Bool}
+    {oG : Option EnvId}
     (hU : fU < s.heap.size) (hUk : (s.objEntry fU).kind = .func dU) (hUcode : dU.code = CCRGen.useFiber_func)
     (hUcls : dU.isClassCtor = false) (hUmode : dU.thisMode = .strict)
     -- (useFiber's record: the reconciler's closure, whose outer record is the module's)
     (hE : dU.env < s.envs.size) (hEe : Scope.declLike? (s.envEntry dU.env) = some (bR, some g))
     (hEn : bR[JSStr.ofString "createWorkInProgress"]? = none)
-    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, none))
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
     (hGC : bG[JSStr.ofString "createWorkInProgress"]? = some bdCW) (hGCv : bdCW.value = some (.obj fo))
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 40 ≤ s.fuel)
     (hcode : d.code = CWIPGen.createWorkInProgress_func) (hcls : d.isClassCtor = false)

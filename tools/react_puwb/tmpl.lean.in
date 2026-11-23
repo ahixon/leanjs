@@ -33,7 +33,7 @@ theorem button_unit_spec @@BINDERS@@
     @@PREMISES@@ :
     WP eng answer (n + 5) h (callImpl eng (.obj fo) t #[.obj X]) s fun v w h' =>
       v = .undefined ∧ Frame (@@FP@@) s w ∧ s.fuel ≤ w.fuel + 840 ∧ h' = h ∧
-      ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, none) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
+      ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
         bd.value = some .null := by
   apply wp_callGen PUWGen.performUnitOfWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleP d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
@@ -59,7 +59,7 @@ theorem button_unit_spec @@BINDERS@@
   have gE1' : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
   have gF1 : 830 ≤ St.fuel := by rw [hSt]; js_norm; omega
   have gFe1 : s.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
-  have gG1 : Scope.declLike? (St.envEntry g) = some (bG, none) := by rw [hSt]; js_norm [hG, hG1, hne, Ne.symm hne, hGe]
+  have gG1 : Scope.declLike? (St.envEntry g) = some (bG, oG) := by rw [hSt]; js_norm [hG, hG1, hne, Ne.symm hne, hGe]
   have gB1 : ∀ x, x ≠ JSStr.ofString "workInProgress" → bG[x]? = bG[x]? := fun _ _ => rfl
   have gV1 : ∀ e, e < s.envs.size → St.envEntry e = s.envEntry e := by
     intro e he; rw [hSt]; js_norm [he, Nat.ne_of_lt he, Ne.symm (Nat.ne_of_lt he), Nat.lt_succ_of_lt he]
@@ -116,7 +116,7 @@ theorem button_unit_spec @@BINDERS@@
   have gE2 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
   have gF2 : 600 ≤ St.fuel := by rw [hSt]; js_norm; omega
   have gFe2 : w1.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
-  have gG2 : Scope.declLike? (St.envEntry g) = some (bw, none) := by
+  have gG2 : Scope.declLike? (St.envEntry g) = some (bw, oG) := by
     rw [hSt]; js_norm [hbw, hG, Nat.lt_of_lt_of_le hG1 E1, hne, Ne.symm hne,
       Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1), Ne.symm (Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1))]
   have gB2 : ∀ x, (g, x) ∉ (ReactBeginButton.fpBB g X).binds → bw[x]? = bG[x]? := hbwx

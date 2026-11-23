@@ -58,7 +58,7 @@ theorem click_spec @@PREM@@ :
   have hStU : St.envEntry dU.env = s.envEntry dU.env := by
     rw [hSt]; js_norm [hE, hne, Ne.symm hne, hgU, Ne.symm hgU, hE1]
   have hStg : Scope.declLike? (St.envEntry g) = some (bG.modify (JSStr.ofString "thenableIndexCounter$1")
-      (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) }), none) := by
+      (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) }), oG) := by
     rw [hSt]; js_norm [hG, hG1, hGe, hneG, Ne.symm hneG]
   have hStK : St.envEntry s.envs.size = (bodyState s fR dR tR #[.obj RF, .obj H, .obj El, ln]).envEntry s.envs.size := by
     rw [hSt]; js_norm [hneG, Ne.symm hneG]
