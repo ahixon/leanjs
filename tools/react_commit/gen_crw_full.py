@@ -30,8 +30,6 @@ for i, b in enumerate(cr):
         cr[i] = f"({nm} : ∀ s2, Frame {FPT} s s2 → {body})"
         qgiven[nm[3:]] = f"{nm} w hw"
 cren = {nm: csubst.get(nm, "CR_" + nm) for nm, k, t in mb if nm not in ("n", "h", "s")}
-spf = [t for nm, k, t in mb if nm == "CM_SP_hfpE"][0]
-cr.append(f"(CR_CM_SP_hfpE : {_rename(spf, cren)})")
 cr += ["(CR_hdenv : CR_d.env = d.env)"]
 binds = "\n    ".join(outer + cr + ["(hf : 59500 ≤ s.fuel)"])
 post_hdr = _theorem_header(CF, "cpr_full")
@@ -70,7 +68,7 @@ stmt = f"""theorem crw_full {binds} :
     refine' wp_mono (cpr_full (s := w) (n := n) (bG := bw) {cimp} (hf := by omega)
       (hlt := lt_heap_of_frame hw hCRo) (hG := by rw [CR_hdenv]; exact lt_envs_of_frame hw hG)
       (hGe := by rw [CR_hdenv]; exact hdw) {qg}
-      (CM_SP_hfpE := fun p hp => ⟨Nat.lt_of_lt_of_le (CR_CM_SP_hfpE p hp).1 hw.envs_le, (CR_CM_SP_hfpE p hp).2⟩) ..) ?rpost
+      (CM_SP_E_hP := by rw [hw.realms_eq]; exact CR_CM_SP_E_hP) ..) ?rpost
     case rpost =>
       rintro v w' h' ⟨-, hfu, w0, hPc, hF0⟩
       exact ⟨by omega, ⟨w, w0, hw, hPc, hF0⟩, frame_trans hw (frame_trans hPc.2 hF0)⟩

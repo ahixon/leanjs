@@ -46,6 +46,28 @@ theorem call_spec {n : Nat} {h : σ} {fo c : ObjId} {bd : BuiltinData} {fn : Bui
     jobs_prefix := ⟨#[(.obj c, #[])], rfl⟩
     jobs_eq := fun h => absurd h (by simp) }
 
+
+/-- `call_spec`, the host untouched. -/
+theorem call_spec_h {n : Nat} {h : σ} {fo c : ObjId} {bd : BuiltinData} {fn : BuiltinFn} {w : State}
+    (hlt : fo < w.heap.size) (hk : (w.objEntry fo).kind = .builtin bd) (hfn : eng.builtins[bd.id]? = some fn)
+    (hq : QueuesJob fn fo bd) (hf : w.fuel ≠ 0) (hc : CallableC w (.obj c)) :
+    WP eng answer n h (callImpl eng (.obj fo) .undefined #[.obj c]) w fun _ w' h' =>
+      Frame ⟨[], [], true⟩ w w' ∧ w.fuel ≤ w'.fuel + 6 ∧ w'.jobs = w.jobs.push (.obj c, #[]) ∧ h' = h := by
+  rw [wp_iff_wpr, callImpl_builtin eng fo bd fn .undefined _ w hlt hk hfn hf, ← wp_iff_wpr]
+  apply wp_inCallee
+  have hok := objKind_of (u := { { w with fuel := w.fuel - 1 } with realm := bd.realm, script := w.script }) hlt hk
+  refine wp_of_eq (hq _ c hok (isCallable_of hc)) ⟨?_, by simp; omega, rfl, rfl⟩
+  exact {
+    envs_le := Nat.le_refl _
+    heap_le := Nat.le_refl _
+    env_agree := fun _ _ => envAgree_refl _ _
+    obj_agree := fun _ _ => objAgree_refl _ _
+    env_eq := fun _ _ _ => rfl
+    obj_eq := fun _ _ _ => rfl
+    realms_eq := rfl
+    jobs_prefix := ⟨#[(.obj c, #[])], rfl⟩
+    jobs_eq := fun h => absurd h (by simp) }
+
 end
 
 end QueueJob

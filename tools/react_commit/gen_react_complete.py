@@ -70,7 +70,8 @@ for m in re.finditer(r'\(∃ fa fb, \(x\.objEntry (\w+)\)\.props\.get\? \(\.str 
     j = m.end(); d0 = 1
     while d0: d0 += {"(": 1, ")": -1}.get(HANDOFF[j], 0); j += 1
     HS[(m.group(1), m.group(2))] = "some (.data " + HANDOFF[m.end():j - 1] + ")"
-BSRC = {"executionContext", "workInProgressRoot", "pendingEffectsLanes", "concurrentlyUpdatedLanes", "isFlushingWork"}
+BSRC = {"executionContext", "workInProgressRoot", "pendingEffectsLanes", "concurrentlyUpdatedLanes", "isFlushingWork",
+        "mightHavePendingSyncWork", "didScheduleMicrotask"}
 MFK = {("R", "callbackNode"), ("R", "callbackPriority"), ("A", "1")}
 cimp = {n for n, k, t in cb if k == "{"}
 lfree = {n for n, k, t in lb if k == "{"}
@@ -214,12 +215,12 @@ def B(o): return f"(Nat.lt_of_lt_of_le {allp[o]} hFA2.heap_le)"
 pre, args = [], []
 for (o, k), i in [(k, v) for k, v in PIDX.items() if isinstance(k, tuple)]:
     pre.append(f"obtain ⟨_, _, P{i}⟩ := H{i}")
-pre.append(f"obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨⟨_, _, _, hA1⟩, ⟨_, _, _, hCP⟩, ⟨_, _, _, hCN⟩⟩, _⟩ := H{PIDX['MF']}")
+pre.append(f"obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨⟨_, _, _, hA1⟩, ⟨_, _, _, hCP⟩, ⟨_, _, _, hCN⟩⟩, ⟨bmG, hbmG, ⟨_, gMS, gMSm, gMSv⟩, ⟨_, gDS, gDSm, gDSv⟩⟩⟩ := H{PIDX['MF']}")
 pre.append(f"obtain ⟨bmE, hbmE, ⟨_, gEC, gECv, gECm⟩, ⟨_, gWR, gWRv⟩⟩ := H{PIDX['EB']}")
 pre.append(f"obtain ⟨bmQ, oQ, hbmQ, _, gCU, gCUv⟩ := H{PIDX['QD']}")
 pre.append(f"obtain ⟨bmP, hbmP, _, gPE, gPEm, gPEv⟩ := H{PIDX['PE']}")
 pre.append(f"obtain ⟨bmV, hbmV, ⟨_, r1, r1v⟩, ⟨_, r4, r4v⟩, ⟨_, r5, r5v⟩, ⟨_, r6, r6v⟩⟩ := H{PIDX['RV']}")
-for v in ["bmF", "bmE", "bmP", "bmV"]:
+for v in ["bmF", "bmG", "bmE", "bmP", "bmV"]:
     pre.append(f"have e_{v} : bm = {v} := by rw [hRD.record] at h{v}; cases h{v}; rfl")
     pre.append(f"subst e_{v}")
 pre.append("have e_bmQ : bm = bmQ := by rw [hRD.record] at hbmQ; cases hbmQ; rfl")
@@ -238,7 +239,9 @@ PRE = "\n  ".join(pre)
 # supplied premises' proofs
 BIND = {"executionContext": {"get": "gEC", "value": "gECv", "mutable": "gECm"}, "workInProgressRoot": {"get": "gWR", "value": "gWRv"},
         "pendingEffectsLanes": {"get": "gPE", "mutable": "gPEm", "value": "gPEv"},
-        "concurrentlyUpdatedLanes": {"get": "gCU", "value": "gCUv"}, "isFlushingWork": {"get": "hbdF", "value": "hbdFv"}}
+        "concurrentlyUpdatedLanes": {"get": "gCU", "value": "gCUv"}, "isFlushingWork": {"get": "hbdF", "value": "hbdFv"},
+        "mightHavePendingSyncWork": {"get": "gMS", "mutable": "gMSm", "value": "gMSv"},
+        "didScheduleMicrotask": {"get": "gDS", "mutable": "gDSm", "value": "gDSv"}}
 bvar = {}
 for n in sup:
     t = norm(ren(usubst(cwd[n], SUBV)))

@@ -1178,7 +1178,6 @@ theorem cmr_full {n : Nat}
     (SP_hLPo : SP_fLP < s.heap.size)
     (SP_hPEo : SP_fPE < s.heap.size)
     (SP_hEno : SP_fEn < s.heap.size)
-    (SP_hEnc : ∃ dd, (s.objEntry SP_fEn).kind = .func dd)
     (SP_hFSo : SP_fFS < s.heap.size)
     (SP_dRF : R ≠ FR)
     (SP_dLF : SP_fLP ≠ FR)
@@ -1188,21 +1187,12 @@ theorem cmr_full {n : Nat}
     {SP_gP : EnvId}
     (SP_hgP : SP_gP ≠ SP_d.env)
     (SP_hgPs : SP_gP < s.envs.size)
-    {SP_fpE : Footprint}
     (SP_hRP : ∀ s0, Frame (((((FPC d.env FR RSI RDSI).union (ReactMarkFinished.FPM FR MF_EA MF_XA)).union (ReactBeforeMutation.FB d.env)).union ((((FPRE ME_d.env RSI RDSI).union ((ReactCommitRoot.F0 ME_M_d.env).union (Footprint.union ⟨[(ME_M_d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ⟨[(ME_M_CT_BT_CH_d.env, JSStr.ofString "viewTransitionMutationContext")], [(ME_M_CT_dom, .str ME_M_CT_BT_CH_kP)], false⟩)))).union ⟨[(ME_d.env, JSStr.ofString "selectionInformation"),
         (ME_d.env, JSStr.ofString "eventsEnabled"), (ME_d.env, JSStr.ofString "_enabled")],
         [(FR, .str (JSStr.ofString "current"))], false⟩)).union (ReactFlushLayout.FPL LE_d.env RSI RDSI)) s s0 → ∀ w h1, Frame (FPS SP_d.env) s0 w → 60 ≤ w.fuel →
-      WP eng answer ((n + 8) + 1) h1 (callImpl eng (.obj SP_fRP) .undefined #[]) w fun v w' h' =>
+      WP eng answer ((n + 6) + 3) h1 (callImpl eng (.obj SP_fRP) .undefined #[]) w fun v w' h' =>
         Frame ⟨[(SP_gP, JSStr.ofString "needsPaint")], [], false⟩ w w' ∧ Frame (FP1 SP_d.env SP_gP) s0 w' ∧
         w.fuel ≤ w'.fuel + 60 ∧ h' = h1)
-    (SP_hEn : ∀ s0, Frame (((((FPC d.env FR RSI RDSI).union (ReactMarkFinished.FPM FR MF_EA MF_XA)).union (ReactBeforeMutation.FB d.env)).union ((((FPRE ME_d.env RSI RDSI).union ((ReactCommitRoot.F0 ME_M_d.env).union (Footprint.union ⟨[(ME_M_d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ⟨[(ME_M_CT_BT_CH_d.env, JSStr.ofString "viewTransitionMutationContext")], [(ME_M_CT_dom, .str ME_M_CT_BT_CH_kP)], false⟩)))).union ⟨[(ME_d.env, JSStr.ofString "selectionInformation"),
-        (ME_d.env, JSStr.ofString "eventsEnabled"), (ME_d.env, JSStr.ofString "_enabled")],
-        [(FR, .str (JSStr.ofString "current"))], false⟩)).union (ReactFlushLayout.FPL LE_d.env RSI RDSI)) s s0 → ∀ w h1, Frame (FPA SP_d.env SP_gP FR) s0 w → 60 ≤ w.fuel →
-      WP eng answer ((n + 8) + 1) h1 (callImpl eng (.obj SP_fEn) .undefined #[.obj FR]) w
-        fun v w' h' => Frame SP_fpE w w' ∧ Frame ((FPA SP_d.env SP_gP FR).union SP_fpE) s0 w' ∧ w.fuel ≤ w'.fuel + 60 ∧ h' = h1)
-    (SP_hfpE : ∀ p, p ∈ SP_fpE.binds → p.1 < s.envs.size ∧ (p.1 = SP_d.env → p.2 ∉ [JSStr.ofString "nestedUpdateCount",
-      JSStr.ofString "rootWithNestedUpdates", JSStr.ofString "flushSyncWorkAcrossRoots_impl"]))
-    (SP_hfpEp : ∀ p, p ∈ SP_fpE.props → p.1 ≠ FR ∧ p.1 ≠ SP_fFS)
     {SP_L_d : FuncData}
     {SP_L_pl : F64}
     {SP_L_lw : Bool}
@@ -1280,19 +1270,60 @@ theorem cmr_full {n : Nat}
     (SP_W_hmode : SP_W_d.thisMode = .strict)
     (SP_W_gF : bG[JSStr.ofString "isFlushingWork"]? = some SP_W_bF)
     (SP_W_gFv : SP_W_bF.value = some (.bool true))
+    {SP_E_d : FuncData}
+    {SP_E_bdF : Binding}
+    {SP_E_bdL : Binding}
+    {SP_E_bdM : Binding}
+    {SP_E_bdD : Binding}
+    {SP_E_bdS : Binding}
+    {SP_E_bdQ : Binding}
+    {SP_E_fS : ObjId}
+    {SP_E_fQ : ObjId}
+    {SP_E_dS : FuncData}
+    {SP_E_bQ : BuiltinData}
+    {SP_E_fn : BuiltinFn}
+    (SP_E_hk : (s.objEntry SP_fEn).kind = .func SP_E_d)
+    (SP_E_hcode : SP_E_d.code = ERSGen.ensureRootIsScheduled_func)
+    (SP_E_hcls : SP_E_d.isClassCtor = false)
+    (SP_E_hmode : SP_E_d.thisMode = .strict)
+    (SP_E_hGF : bG[JSStr.ofString "firstScheduledRoot"]? = some SP_E_bdF)
+    (SP_E_hGFv : SP_E_bdF.value = some (.obj FR))
+    (SP_E_hGL : bG[JSStr.ofString "lastScheduledRoot"]? = some SP_E_bdL)
+    (SP_E_hGLv : SP_E_bdL.value = some (.obj FR))
+    (SP_E_hGM : bG[JSStr.ofString "mightHavePendingSyncWork"]? = some SP_E_bdM)
+    (SP_E_hGMm : SP_E_bdM.mutable = true)
+    (SP_E_hGMv : SP_E_bdM.value.isSome = true)
+    (SP_E_hGD : bG[JSStr.ofString "didScheduleMicrotask"]? = some SP_E_bdD)
+    (SP_E_hGDm : SP_E_bdD.mutable = true)
+    (SP_E_hGDv : SP_E_bdD.value = some (.bool false))
+    (SP_E_hGS : bG[JSStr.ofString "scheduleImmediateRootScheduleTask"]? = some SP_E_bdS)
+    (SP_E_hGSv : SP_E_bdS.value = some (.obj SP_E_fS))
+    (SP_E_hSo : SP_E_fS < s.heap.size)
+    (SP_E_hSk : (s.objEntry SP_E_fS).kind = .func SP_E_dS)
+    (SP_E_hScode : SP_E_dS.code = SIRGen.scheduleImmediateRootScheduleTask_func)
+    (SP_E_hScls : SP_E_dS.isClassCtor = false)
+    (SP_E_hSmode : SP_E_dS.thisMode = .strict)
+    (SP_E_hSenv : SP_E_dS.env = SP_E_d.env)
+    (SP_E_hGQ : bG[JSStr.ofString "scheduleMicrotask"]? = some SP_E_bdQ)
+    (SP_E_hGQv : SP_E_bdQ.value = some (.obj SP_E_fQ))
+    (SP_E_hQo : SP_E_fQ < s.heap.size)
+    (SP_E_hQk : (s.objEntry SP_E_fQ).kind = .builtin SP_E_bQ)
+    (SP_E_hfn : eng.builtins[SP_E_bQ.id]? = some SP_E_fn)
+    (SP_E_hq : QueueJob.QueuesJob SP_E_fn SP_E_fQ SP_E_bQ)
+    (SP_E_hP : ((s.realms[SP_E_dS.realm]!).intrinsics["%Function.prototype%"]?).isSome = true)
     (SP_P_hdenv : SP_P_d.env = SP_d.env)
     (SP_W_hdenv : SP_W_d.env = SP_d.env)
-    (SP_hfpEF : (SP_d.env, JSStr.ofString "isFlushingWork") ∉ SP_fpE.binds)
+    (SP_E_hdenv : SP_E_d.env = SP_d.env)
     (SP_hdenv : SP_d.env = d.env)
     (hf : 29400 ≤ s.fuel) :
     WP eng answer (n + 11) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, .num (F64.fin false 4503599627370496 (-51)),
       (.num (F64.fin false 0 (-1074))), (.num (F64.fin false 0 (-1074))), (.num (F64.fin false 0 (-1074))), sst]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + 5 * 5800 + 400 ∧ (∃ w0, (fun (w : State) (h : σ) => ∃ w0, (fun (w : State) (h : σ) => (∃ w0 h0, ME_M_CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, ME_M_CT_BT_CH_U_R2 w0 h)) w0 h) w0 h' ∧ Frame {} w0 w) ∧ Frame ((((((FPC d.env FR RSI RDSI).union (ReactMarkFinished.FPM FR MF_EA MF_XA)).union (ReactBeforeMutation.FB d.env)).union ((((FPRE ME_d.env RSI RDSI).union ((ReactCommitRoot.F0 ME_M_d.env).union (Footprint.union ⟨[(ME_M_d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ⟨[(ME_M_CT_BT_CH_d.env, JSStr.ofString "viewTransitionMutationContext")], [(ME_M_CT_dom, .str ME_M_CT_BT_CH_kP)], false⟩)))).union ⟨[(ME_d.env, JSStr.ofString "selectionInformation"),
         (ME_d.env, JSStr.ofString "eventsEnabled"), (ME_d.env, JSStr.ofString "_enabled")],
-        [(FR, .str (JSStr.ofString "current"))], false⟩)).union (ReactFlushLayout.FPL LE_d.env RSI RDSI)).union ((ReactSpawned.FPA SP_d.env SP_gP FR).union SP_fpE)) s w := by
+        [(FR, .str (JSStr.ofString "current"))], false⟩)).union (ReactFlushLayout.FPL LE_d.env RSI RDSI)).union ((ReactSpawned.FPA SP_d.env SP_gP FR).union (ReactEnsureCall.fpEn SP_d.env))) s w := by
   refine cmr_spec (n := n + 9) (K := 5800) (sl := .num (F64.fin false 0 (-1074))) (ul := .num (F64.fin false 0 (-1074))) (srl := .num (F64.fin false 0 (-1074))) (fpM := (ReactMarkFinished.FPM FR MF_EA MF_XA)) (fpB := (ReactBeforeMutation.FB d.env)) (fpME := ((((FPRE ME_d.env RSI RDSI).union ((ReactCommitRoot.F0 ME_M_d.env).union (Footprint.union ⟨[(ME_M_d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ⟨[(ME_M_CT_BT_CH_d.env, JSStr.ofString "viewTransitionMutationContext")], [(ME_M_CT_dom, .str ME_M_CT_BT_CH_kP)], false⟩)))).union ⟨[(ME_d.env, JSStr.ofString "selectionInformation"),
         (ME_d.env, JSStr.ofString "eventsEnabled"), (ME_d.env, JSStr.ofString "_enabled")],
-        [(FR, .str (JSStr.ofString "current"))], false⟩)) (Q1 := (fun (w : State) (h : σ) => (∃ w0, (fun (w : State) (h : σ) => (∃ w0 h0, ME_M_CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, ME_M_CT_BT_CH_U_R2 w0 h)) w0 h) ∧ BindIs w d.env (JSStr.ofString "pendingEffectsStatus") (.num (F64.fin false 4503599627370496 (-51))) ∧ BindIs w d.env (JSStr.ofString "executionContext") (.num ec) ∧ PropIs w RSI (JSStr.ofString "T") tv ∧ PropIs w RDSI (JSStr.ofString "p") pv)) (fpLE := (ReactFlushLayout.FPL LE_d.env RSI RDSI)) (Q2 := (fun (w : State) (h : σ) => (∃ w0, (fun (w : State) (h : σ) => (∃ w0 h0, ME_M_CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, ME_M_CT_BT_CH_U_R2 w0 h)) w0 h) ∧ BindIs w d.env (JSStr.ofString "pendingEffectsStatus") (.num (F64.fin false 6755399441055744 (-51))))) (fpSP := ((ReactSpawned.FPA SP_d.env SP_gP FR).union SP_fpE)) (Q3 := (fun (w : State) (h : σ) => ∃ w0, (fun (w : State) (h : σ) => (∃ w0 h0, ME_M_CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, ME_M_CT_BT_CH_U_R2 w0 h)) w0 h)) (fo := fo) (d := d) (t := t) (bG := bG) (oG := oG) (bRL := bRL) (bCU := bCU) (bM := bM) (bVE := bVE) (bTT := bTT) (bSV := bSV) (bT := bT) (bD := bD) (bE := bE) (bB := bB) (bS := bS) (bME := bME) (bLE := bLE) (bSP := bSP) (FR := FR) (R := R) (RSI := RSI) (RDSI := RDSI) (fM := fM) (fB := fB) (fME := fME) (fLE := fLE) (fSP := fSP) (E := E) (sst := sst) (tv := tv) (pv := pv) (ev0 := ev0) (rs := rs) (rf := rf) (ec := ec) (rlw := rlw) (rle := rle) (rlc := rlc) (rcw := rcw) (rce := rce) (rcc := rcc) (rsw := rsw) (rse := rse) (rsc := rsc) (rfw := rfw) (rfe := rfe) (rfc := rfc) (cne := cne) (cnc := cnc) (cpe := cpe) (cpc := cpc) (te := te) (tc := tc) (pe := pe) (pc := pc) (cnw := cnw) (cpw := cpw) (hlt := hlt) (hk := hk) (hcode := hcode) (hcls := hcls) (hmode := hmode) (hG := hG) (hGe := hGe) (gRL := gRL) (gRLm := gRLm) (gRLv := gRLv) (gCU := gCU) (gCUv := gCUv) (gM := gM) (gMv := gMv) (gVE := gVE) (gVEm := gVEm) (gVEv := gVEv) (gTT := gTT) (gTTm := gTTm) (gTTv := gTTv) (gSV := gSV) (gSVm := gSVm) (gSVv := gSVv) (gT := gT) (gTv := gTv) (gD := gD) (gDv := gDv) (gE := gE) (gEv := gEv) (gEm := gEm) (gB := gB) (gBv := gBv) (gS := gS) (gSm := gSm) (gSv := gSv) (gME := gME) (gMEv := gMEv) (gLE := gLE) (gLEv := gLEv) (gSP := gSP) (gSPv := gSPv) (hR := hR) (hRk := hRk) (hRl := hRl) (hRc := hRc) (hRs := hRs) (hRf := hRf) (hrs := hrs) (hrf := hrf) (hrs2 := hrs2) (hFR := hFR) (hFRk := hFRk) (hFRn := hFRn) (hFRp := hFRp) (hRSI := hRSI) (hRSIk := hRSIk) (hRSIt := hRSIt) (hRDSI := hRDSI) (hRDSIk := hRDSIk) (hRDSIp := hRDSIp) (hMo := hMo) (hBo := hBo) (hMEo := hMEo) (hLEo := hLEo) (hSPo := hSPo) (dRF := dRF) (dTD := dTD) (dTF := dTF) (dDF := dDF) (dTR := dTR) (dDR := dDR) (dBF := dBF) (dBT := dBT) (dBD := dBD) (dMF := dMF) (dMT := dMT) (dMD := dMD) (dLF := dLF) (dLT := dLT) (dLD := dLD) (dSF := dSF) (dST := dST) (dSD := dSD) (hK := by omega)
+        [(FR, .str (JSStr.ofString "current"))], false⟩)) (Q1 := (fun (w : State) (h : σ) => (∃ w0, (fun (w : State) (h : σ) => (∃ w0 h0, ME_M_CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, ME_M_CT_BT_CH_U_R2 w0 h)) w0 h) ∧ BindIs w d.env (JSStr.ofString "pendingEffectsStatus") (.num (F64.fin false 4503599627370496 (-51))) ∧ BindIs w d.env (JSStr.ofString "executionContext") (.num ec) ∧ PropIs w RSI (JSStr.ofString "T") tv ∧ PropIs w RDSI (JSStr.ofString "p") pv)) (fpLE := (ReactFlushLayout.FPL LE_d.env RSI RDSI)) (Q2 := (fun (w : State) (h : σ) => (∃ w0, (fun (w : State) (h : σ) => (∃ w0 h0, ME_M_CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, ME_M_CT_BT_CH_U_R2 w0 h)) w0 h) ∧ BindIs w d.env (JSStr.ofString "pendingEffectsStatus") (.num (F64.fin false 6755399441055744 (-51))))) (fpSP := ((ReactSpawned.FPA SP_d.env SP_gP FR).union (ReactEnsureCall.fpEn SP_d.env))) (Q3 := (fun (w : State) (h : σ) => ∃ w0, (fun (w : State) (h : σ) => (∃ w0 h0, ME_M_CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, ME_M_CT_BT_CH_U_R2 w0 h)) w0 h)) (fo := fo) (d := d) (t := t) (bG := bG) (oG := oG) (bRL := bRL) (bCU := bCU) (bM := bM) (bVE := bVE) (bTT := bTT) (bSV := bSV) (bT := bT) (bD := bD) (bE := bE) (bB := bB) (bS := bS) (bME := bME) (bLE := bLE) (bSP := bSP) (FR := FR) (R := R) (RSI := RSI) (RDSI := RDSI) (fM := fM) (fB := fB) (fME := fME) (fLE := fLE) (fSP := fSP) (E := E) (sst := sst) (tv := tv) (pv := pv) (ev0 := ev0) (rs := rs) (rf := rf) (ec := ec) (rlw := rlw) (rle := rle) (rlc := rlc) (rcw := rcw) (rce := rce) (rcc := rcc) (rsw := rsw) (rse := rse) (rsc := rsc) (rfw := rfw) (rfe := rfe) (rfc := rfc) (cne := cne) (cnc := cnc) (cpe := cpe) (cpc := cpc) (te := te) (tc := tc) (pe := pe) (pc := pc) (cnw := cnw) (cpw := cpw) (hlt := hlt) (hk := hk) (hcode := hcode) (hcls := hcls) (hmode := hmode) (hG := hG) (hGe := hGe) (gRL := gRL) (gRLm := gRLm) (gRLv := gRLv) (gCU := gCU) (gCUv := gCUv) (gM := gM) (gMv := gMv) (gVE := gVE) (gVEm := gVEm) (gVEv := gVEv) (gTT := gTT) (gTTm := gTTm) (gTTv := gTTv) (gSV := gSV) (gSVm := gSVm) (gSVv := gSVv) (gT := gT) (gTv := gTv) (gD := gD) (gDv := gDv) (gE := gE) (gEv := gEv) (gEm := gEm) (gB := gB) (gBv := gBv) (gS := gS) (gSm := gSm) (gSv := gSv) (gME := gME) (gMEv := gMEv) (gLE := gLE) (gLEv := gLEv) (gSP := gSP) (gSPv := gSPv) (hR := hR) (hRk := hRk) (hRl := hRl) (hRc := hRc) (hRs := hRs) (hRf := hRf) (hrs := hrs) (hrf := hrf) (hrs2 := hrs2) (hFR := hFR) (hFRk := hFRk) (hFRn := hFRn) (hFRp := hFRp) (hRSI := hRSI) (hRSIk := hRSIk) (hRSIt := hRSIt) (hRDSI := hRDSI) (hRDSIk := hRDSIk) (hRDSIp := hRDSIp) (hMo := hMo) (hBo := hBo) (hMEo := hMEo) (hLEo := hLEo) (hSPo := hSPo) (dRF := dRF) (dTD := dTD) (dTF := dTF) (dDF := dDF) (dTR := dTR) (dDR := dDR) (dBF := dBF) (dBT := dBT) (dBD := dBD) (dMF := dMF) (dMT := dMT) (dMD := dMD) (dLF := dLF) (dLT := dLT) (dLD := dLD) (dSF := dSF) (dST := dST) (dSD := dSD) (hK := by omega)
     (hBf := ?hBf) (hfpB := ?hfpB) (hfpBp := ?hfpBp) (hBc := ⟨_, B_hk⟩) (hSPf := ?hSPf) (hSPc := ⟨_, SP_hk⟩) (hLEf := ?hLEf) (hfpLE := ?hfpLE) (hfpLEp := ?hfpLEp) (hLEc := ⟨_, LE_hk⟩) (hMEf := ?hMEf) (hfpME := ?hfpME) (hfpMEp := ?hfpMEp) (hMEc := ⟨_, ME_hk⟩) (hMf := ?hMf) (hfpM := ?hfpM) (hfpMp := ?hfpMp) (hMc := ⟨_, MF_hk⟩)
   case hMf =>
     intro w h1 hw hfw
@@ -1418,14 +1449,14 @@ theorem cmr_full {n : Nat}
     obtain ⟨_, _, bTT', hd3, hb3, hv3, hm3⟩ := htt
     rw [hdw] at hd3; cases hd3
     obtain ⟨plw', ple', plc', hpl'⟩ := hpl
-    refine' wp_mono (ReactSpawned.fsp_full (s := w) (n := n + 8) (fo := fSP) (t := .undefined) (bG := bw) (oG := oG)
+    refine' wp_mono (ReactSpawned.fsp_full (s := w) (n := n + 6) (fo := fSP) (t := .undefined) (bG := bw) (oG := oG)
       (FR := FR) (R := R) (bS := bS') (bVE := bVE') (bTT := bTT') (tt := .null) (plw := plw') (ple := ple') (plc := plc')
-      (d := SP_d) (bVT := SP_bVT) (bRP := SP_bRP) (bER := SP_bER) (bFW := SP_bFW) (bEL := SP_bEL) (bRE := SP_bRE) (bRel := SP_bRel) (bLB := SP_bLB) (bLP := SP_bLP) (bIH := SP_bIH) (bPE := SP_bPE) (bEn := SP_bEn) (bNC := SP_bNC) (bRN := SP_bRN) (bFS := SP_bFS) (fRP := SP_fRP) (fRel := SP_fRel) (fLP := SP_fLP) (fPE := SP_fPE) (fEn := SP_fEn) (fFS := SP_fFS) (vt := SP_vt) (rs := SP_rs) (rf := SP_rf) (rsw := SP_rsw) (rse := SP_rse) (rsc := SP_rsc) (rfw := SP_rfw) (rfe := SP_rfe) (rfc := SP_rfc) (snw := SP_snw) (sne := SP_sne) (snc := SP_snc) (gP := SP_gP) (fpE := SP_fpE) (L_d := SP_L_d) (L_pl := SP_L_pl) (L_lw := SP_L_lw) (L_le := SP_L_le) (L_lc := SP_L_lc) (L_cw := SP_L_cw) (L_ce := SP_L_ce) (L_cc := SP_L_cc) (T_d := SP_T_d) (P_d := SP_P_d) (P_bdM := SP_P_bdM) (P_bdL := SP_P_bdL) (P_bdW := SP_P_bdW) (P_bdP := SP_P_bdP) (P_fM := SP_P_fM) (P_fL := SP_P_fL) (P_fW := SP_P_fW) (P_fP := SP_P_fP) (P_dM := SP_P_dM) (P_dL := SP_P_dL) (P_dW := SP_P_dW) (P_dP := SP_P_dP) (W_d := SP_W_d) (W_bF := SP_W_bF) (hf := by omega) (hlt := lt_heap_of_frame hw hSPo)
+      (d := SP_d) (bVT := SP_bVT) (bRP := SP_bRP) (bER := SP_bER) (bFW := SP_bFW) (bEL := SP_bEL) (bRE := SP_bRE) (bRel := SP_bRel) (bLB := SP_bLB) (bLP := SP_bLP) (bIH := SP_bIH) (bPE := SP_bPE) (bEn := SP_bEn) (bNC := SP_bNC) (bRN := SP_bRN) (bFS := SP_bFS) (fRP := SP_fRP) (fRel := SP_fRel) (fLP := SP_fLP) (fPE := SP_fPE) (fEn := SP_fEn) (fFS := SP_fFS) (vt := SP_vt) (rs := SP_rs) (rf := SP_rf) (rsw := SP_rsw) (rse := SP_rse) (rsc := SP_rsc) (rfw := SP_rfw) (rfe := SP_rfe) (rfc := SP_rfc) (snw := SP_snw) (sne := SP_sne) (snc := SP_snc) (gP := SP_gP) (L_d := SP_L_d) (L_pl := SP_L_pl) (L_lw := SP_L_lw) (L_le := SP_L_le) (L_lc := SP_L_lc) (L_cw := SP_L_cw) (L_ce := SP_L_ce) (L_cc := SP_L_cc) (T_d := SP_T_d) (P_d := SP_P_d) (P_bdM := SP_P_bdM) (P_bdL := SP_P_bdL) (P_bdW := SP_P_bdW) (P_bdP := SP_P_bdP) (P_fM := SP_P_fM) (P_fL := SP_P_fL) (P_fW := SP_P_fW) (P_fP := SP_P_fP) (P_dM := SP_P_dM) (P_dL := SP_P_dL) (P_dW := SP_P_dW) (P_dP := SP_P_dP) (W_d := SP_W_d) (W_bF := SP_W_bF) (E_d := SP_E_d) (E_bdF := SP_E_bdF) (E_bdL := SP_E_bdL) (E_bdM := SP_E_bdM) (E_bdD := SP_E_bdD) (E_bdS := SP_E_bdS) (E_bdQ := SP_E_bdQ) (E_fS := SP_E_fS) (E_fQ := SP_E_fQ) (E_dS := SP_E_dS) (E_bQ := SP_E_bQ) (E_fn := SP_E_fn) (hf := by omega) (hlt := lt_heap_of_frame hw hSPo)
       (hG := by rw [SP_hdenv]; exact lt_envs_of_frame hw hG) (hGe := by rw [SP_hdenv]; exact hdw)
       (gS := hb1) (gSm := hm1) (gSv := hv1) (gVE := hb2) (gVEv := hv2) (gTT := hb3) (gTTm := hm3)
       (gTTv := hv3) (hFRl := hpl') (hgPs := Nat.lt_of_lt_of_le SP_hgPs hw.envs_le)
-      (hfpE := fun p hp => ⟨Nat.lt_of_lt_of_le (SP_hfpE p hp).1 hw.envs_le, (SP_hfpE p hp).2⟩)
-      (hRP := SP_hRP w hw) (hEn := SP_hEn w hw) ..) ?spost
+      (E_hP := by rw [hw.realms_eq]; exact SP_E_hP)
+      (hRP := SP_hRP w hw) ..) ?spost
     case spost =>
       rintro v w' h' ⟨-, hfu, rfl, hF⟩
       exact ⟨frame_trans hw hF, by omega, hPC⟩

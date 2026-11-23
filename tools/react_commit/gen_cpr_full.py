@@ -52,10 +52,6 @@ for i, b in enumerate(cm):
         body = re.sub(r"(?<![A-Za-z0-9_'.])s(?![A-Za-z0-9_'])", "s1", body)
         cm[i] = f"({nm} : ∀ s1, Frame {FPE} s s1 → {body})"
         qgiven[nm[3:]] = f"{nm} w hw"
-# SP_hfpE: its bound at cmr's entry; stated at completeRoot's entry
-spf = [t for nm, k, t in mb if nm == "SP_hfpE"][0]
-_cren = {nm: csubst.get(nm, "CM_" + nm) for nm, k, t in mb if nm not in ("n", "h", "s")}
-cm.append(f"(CM_SP_hfpE : {_rename(spf, _cren)})")
 cm += ["(CM_hdenv : CM_d.env = d.env)",
        "(dLPE : CM_ME_M_CT_BT_LP ≠ FR) (dNPE : CM_ME_M_CT_BT_NP ≠ FR) (dOPE : CM_ME_M_CT_BT_CH_U_OP ≠ FR)"]
 pn, _ = compose(NE, "pending_none", "PN_", subst={"fo": "fPE", "t": ".undefined", "bG": "bG", "oG": "oG"}, given={},
@@ -111,7 +107,7 @@ stmt = f"""theorem cpr_full {binds} :
     refine' wp_mono (ReactCommitRootFn.cmr_full (s := w) (n := n) (bG := bw) {cimp} (hf := by omega)
       (hlt := lt_heap_of_frame hw hCMo) (hG := by rw [CM_hdenv]; exact lt_envs_of_frame hw hG)
       (hGe := by rw [CM_hdenv]; exact hdw) {cexp} {qg}
-      (SP_hfpE := fun p hp => ⟨Nat.lt_of_lt_of_le (CM_SP_hfpE p hp).1 hw.envs_le, (CM_SP_hfpE p hp).2⟩) ..) ?cpost
+      (SP_E_hP := by rw [hw.realms_eq]; exact CM_SP_E_hP) ..) ?cpost
     case cpost =>
       rintro v w' h' ⟨-, hfu, hP, hFc⟩
       exact ⟨by omega, hP, frame_trans hw hFc⟩

@@ -1,7 +1,7 @@
 """Generates JSProofs/ReactSpawnedFull.lean (zippy docs/react-proofs.md): fsp_spec with releaseRootPooledCache
 (rrp_spec, premises L_), lanesToEventPriority (ltep_sync, T_), flushPendingEffects (pending_none, P_) and
-flushSyncWorkAcrossRoots_impl (fsw_flushing, W_) discharged at the call states. requestPaint and ensureRootIsScheduled
-stay contracts (the scheduler's, and the next microtask's)."""
+flushSyncWorkAcrossRoots_impl (fsw_flushing, W_) and ensureRootIsScheduled (en_call, E_) discharged at the call states. requestPaint
+stays a contract (the scheduler's)."""
 import sys
 sys.path.insert(0, "tools/react_commit")
 from compose import binders, compose
@@ -10,32 +10,65 @@ SP = "JSProofs/ReactSpawned.lean"
 SC = "JSProofs/ReactSpawnedCallees.lean"
 NE = "JSProofs/ReactNoEffects.lean"
 fb = binders(SP, "fsp_spec")
-drop_outer = {"hRel", "hLP", "hPE", "hFSs", "hRelc", "hLPc", "hPEc", "hFSc", "K", "hK"}
+drop_outer = {"hRel", "hLP", "hPE", "hFSs", "hRelc", "hLPc", "hPEc", "hFSc", "K", "hK", "hEn", "hEnc", "fpE", "hfpE", "hfpEp"}
+FPEN = "(ReactEnsureCall.fpEn d.env)"
 outer = [f"{k}{nm} : {t}{'}' if k == '{' else ')'}" for nm, k, t in fb if nm not in drop_outer]
-outer = [b.replace("K ≤ w.fuel", "60 ≤ w.fuel").replace("w.fuel ≤ w'.fuel + K", "w.fuel ≤ w'.fuel + 60") for b in outer]
+outer = [b.replace("WP eng answer (n + 1) h1 (callImpl eng (.obj fRP)", "WP eng answer (n + 3) h1 (callImpl eng (.obj fRP)").replace("fpE", FPEN).replace("K ≤ w.fuel", "60 ≤ w.fuel").replace("w.fuel ≤ w'.fuel + K", "w.fuel ≤ w'.fuel + 60") for b in outer]
 L, _ = compose(SC, "rrp_spec", "L_", subst={"fo": "fRel", "t": ".undefined", "FR": "FR"}, given={},
                drop=("n", "h", "s", "hf", "hlt", "hFR", "hFRk"))
 T, _ = compose(SC, "ltep_sync", "T_", subst={"fo": "fLP", "t": ".undefined"}, given={}, drop=("n", "h", "s", "hf", "hlt"))
 P, _ = compose(NE, "pending_none", "P_", subst={"fo": "fPE", "t": ".undefined", "bG": "bG", "oG": "oG"}, given={},
                drop=("n", "h", "s", "hf", "hlt", "hG", "hGe", "hGS", "hGSv", "hGV", "hGVv", "bdS", "bdV"))
+EC = "JSProofs/ReactEnsureCall.lean"
+E, _ = compose(EC, "en_call", "E_", subst={"fo": "fEn", "t": ".undefined", "bG": "bG", "oG": "oG", "R": "FR"}, given={},
+               drop=("n", "h", "s", "hf", "hlt", "hG", "hGe", "hR", "hRk"))
 W, _ = compose(SC, "fsw_flushing", "W_", subst={"fo": "fFS", "t": ".undefined", "bG": "bG", "oG": "oG"}, given={},
                drop=("n", "h", "s", "hf", "hlt", "hG", "hGe"))
 extra = ["(hf : 760 ≤ s.fuel)", "(P_hdenv : P_d.env = d.env)", "(W_hdenv : W_d.env = d.env)",
-         "(hfpEF : (d.env, JSStr.ofString \"isFlushingWork\") ∉ fpE.binds)"]
-binds = "\n    ".join(outer + L + T + P + W + extra)
+         "(E_hdenv : E_d.env = d.env)"]
+binds = "\n    ".join(outer + L + T + P + W + E + extra)
 fargs = " ".join(f"({nm} := {nm})" for nm, k, t in fb if nm not in drop_outer and nm not in ("n", "h", "s"))
 def imps(path, thm, pre, skip):
     return " ".join(f"({nm} := {pre}{nm})" for nm, k, t in binders(path, thm) if k == "{" and nm not in skip)
 l_imp = imps(SC, "rrp_spec", "L_", ("n", "h", "s", "fo", "t", "FR"))
 p_imp = imps(NE, "pending_none", "P_", ("n", "h", "s", "fo", "t", "bG", "oG", "bdS", "bdV"))
 w_imp = imps(SC, "fsw_flushing", "W_", ("n", "h", "s", "fo", "t", "bG", "oG"))
+e_imp = imps(EC, "en_call", "E_", ("n", "h", "s", "fo", "t", "bG", "oG", "R"))
 RB = "first | rebase_quick hw | (rw [hbw _ (by simp [FPA, FPS, Footprint.union])] <;> with_reducible assumption) | (rw [kind_frame hw (by with_reducible assumption)] <;> with_reducible assumption)"
 stmt = f"""theorem fsp_full {binds} :
-    WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + 6 * 60 + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union fpE) s w := by
-  refine fsp_spec (K := 60) {fargs} (hK := by omega)
-    (hRelc := ⟨_, L_hk⟩) (hLPc := ⟨_, T_hk⟩) (hPEc := ⟨_, P_hk⟩) (hFSc := ⟨_, W_hk⟩)
-    (hRel := ?hRel) (hLP := ?hLP) (hPE := ?hPE) (hFSs := ?hFSs)
+    WP eng answer (n + 4) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
+      v = .undefined ∧ s.fuel ≤ w.fuel + 6 * 60 + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union {FPEN}) s w := by
+  refine fsp_spec (n := n + 2) (K := 60) (fpE := {FPEN}) {fargs} (hK := by omega)
+    (hRelc := ⟨_, L_hk⟩) (hLPc := ⟨_, T_hk⟩) (hPEc := ⟨_, P_hk⟩) (hFSc := ⟨_, W_hk⟩) (hEnc := ⟨_, E_hk⟩)
+    (hRel := ?hRel) (hLP := ?hLP) (hPE := ?hPE) (hFSs := ?hFSs) (hEn := ?hEn) (hfpE := ?hfpE) (hfpEp := ?hfpEp)
+  case hfpE =>
+    intro p hp
+    simp only [ReactEnsureCall.fpEn, List.mem_cons, List.mem_nil_iff, or_false] at hp
+    rcases hp with rfl | rfl <;> exact ⟨hG, fun _ => by simp (config := {{ decide := true }})⟩
+  case hfpEp =>
+    intro p hp
+    simp [ReactEnsureCall.fpEn] at hp
+  case hEn =>
+    intro w h1 hw hfw
+    obtain ⟨bw, hdw, hbw⟩ := declLike_frame hw hG hGe
+    refine wp_mono (ReactEnsureCall.en_call (n := n) (s := w) (fo := fEn) (t := .undefined) (bG := bw) (oG := oG) (R := FR)
+      {e_imp} (hlt := lt_heap_of_frame hw hEno) (hf := by omega) (hk := by rw [kind_frame hw hEno]; exact E_hk)
+      (hcode := E_hcode) (hcls := E_hcls) (hmode := E_hmode)
+      (hG := by rw [E_hdenv]; exact lt_envs_of_frame hw hG) (hGe := by rw [E_hdenv]; exact hdw)
+      (hGF := by rw [hbw _ (by simp [FPA, FPS, Footprint.union])]; exact E_hGF) (hGFv := E_hGFv)
+      (hGL := by rw [hbw _ (by simp [FPA, FPS, Footprint.union])]; exact E_hGL) (hGLv := E_hGLv)
+      (hGM := by rw [hbw _ (by simp [FPA, FPS, Footprint.union])]; exact E_hGM) (hGMm := E_hGMm) (hGMv := E_hGMv)
+      (hGD := by rw [hbw _ (by simp [FPA, FPS, Footprint.union])]; exact E_hGD) (hGDm := E_hGDm) (hGDv := E_hGDv)
+      (hGS := by rw [hbw _ (by simp [FPA, FPS, Footprint.union])]; exact E_hGS) (hGSv := E_hGSv)
+      (hSo := lt_heap_of_frame hw E_hSo) (hSk := by rw [kind_frame hw E_hSo]; exact E_hSk)
+      (hScode := E_hScode) (hScls := E_hScls) (hSmode := E_hSmode) (hSenv := E_hSenv)
+      (hGQ := by rw [hbw _ (by simp [FPA, FPS, Footprint.union])]; exact E_hGQ) (hGQv := E_hGQv)
+      (hQo := lt_heap_of_frame hw E_hQo) (hQk := by rw [kind_frame hw E_hQo]; exact E_hQk) (hfn := E_hfn) (hq := E_hq)
+      (hP := by rw [hw.realms_eq]; exact E_hP)
+      (hR := lt_heap_of_frame hw hFR) (hRk := by rw [kind_frame hw hFR]; exact hFRk)) ?_
+    rintro v w' h' ⟨-, hF, hfu, rfl, -⟩
+    rw [E_hdenv] at hF
+    exact ⟨hF, frame_trans hw hF, by omega, rfl⟩
   case hRel =>
     intro w h1 hw hfw
     refine wp_mono (ReactSpawnedCallees.rrp_spec (s := w) (fo := fRel) (t := .undefined) (FR := FR) {l_imp}
@@ -77,20 +110,22 @@ stmt = f"""theorem fsp_full {binds} :
       (hcode := W_hcode) (hcls := W_hcls) (hmode := W_hmode)
       (hG := by rw [W_hdenv]; exact lt_envs_of_frame hw hG) (hGe := by rw [W_hdenv]; exact hdw)
       (gF := by
-        rw [hbw _ (by simp [FPA, FPS, Footprint.union]; exact hfpEF)]; exact W_gF)
+        rw [hbw _ (by simp [FPA, FPS, Footprint.union, ReactEnsureCall.fpEn])]; exact W_gF)
       (gFv := W_gFv)) ?_
     rintro v w' h' ⟨hF, hfu, rfl⟩
     exact ⟨hF, by omega, rfl⟩
 """
 out = f'''import JSProofs.ReactSpawned
 import JSProofs.ReactSpawnedCallees
+import JSProofs.ReactEnsureCall
 
 /-!
 # flushSpawnedWork with its small callees (zippy docs/react-proofs.md)
 
 `fsp_full`: `fsp_spec` with `releaseRootPooledCache`, `lanesToEventPriority`, `flushPendingEffects` and the inner
 `flushSyncWorkAcrossRoots_impl` discharged at the call states (generated by `tools/react_commit/gen_fsp_full.py`).
-`requestPaint` (the scheduler's) and `ensureRootIsScheduled` (which queues the next microtask) stay contracts.
+`ensureRootIsScheduled` too (`ReactEnsureCall.en_call`: the root already scheduled, the next microtask queued
+through the host's `queueMicrotask`). `requestPaint` (the scheduler's) stays a contract.
 -/
 
 open ES ES.M HostRuns Logic

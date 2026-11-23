@@ -61,7 +61,7 @@ SP_SUBST = {"fo": "fSP", "t": ".undefined", "bG": "bG", "oG": "oG", "FR": "FR", 
 F4 = f"((({F2}.union (ReactCommitRoot.F0 ME_M_d.env)).union (ReactFlushLayout.FPL LE_d.env RSI RDSI)))"
 if "hSPf" in DO:
     drop_outer |= {"hSPf", "hSPc", "fpSP", "Q3"}
-    outer_ren["fpSP"] = "((ReactSpawned.FPA SP_d.env SP_gP FR).union SP_fpE)"
+    outer_ren["fpSP"] = "((ReactSpawned.FPA SP_d.env SP_gP FR).union (ReactEnsureCall.fpEn SP_d.env))"
     outer_ren["Q3"] = f"(fun (w : State) (h : σ) => ∃ w0, {PCME} w0 h)"
 def _balanced(t, i):
     """index just after the parenthesised group starting at t[i] == '('"""
@@ -134,7 +134,7 @@ FCUR = ren_outer("(((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).
 if "hSPf" in DO:
     sb, _ = compose(SPF, "fsp_full", "SP_", subst=SP_SUBST, given={},
                     drop=tuple(["n", "h", "s", "hf", "hlt", "hG", "hGe"] + SP_SUPPLIED))
-    sb = [re.sub(r"(?<![A-Za-z0-9_'.])n(?![A-Za-z0-9_'])", "(n + 8)", b) for b in sb]
+    sb = [re.sub(r"(?<![A-Za-z0-9_'.])n(?![A-Za-z0-9_'])", "(n + 6)", b) for b in sb]
     for i, b in enumerate(sb):
         nm = b[1:b.index(" : ")]
         if nm in ("SP_hRP", "SP_hEn"):
@@ -306,14 +306,14 @@ if "hSPf" in DO:
     {BI.format(bd="bVE'", hd="hd2", hb="hb2", hv="hv2", hm="hm2", src="hve")}
     {BI.format(bd="bTT'", hd="hd3", hb="hb3", hv="hv3", hm="hm3", src="htt")}
     obtain ⟨plw', ple', plc', hpl'⟩ := hpl
-    refine' wp_mono (ReactSpawned.fsp_full (s := w) (n := n + 8) (fo := fSP) (t := .undefined) (bG := bw) (oG := oG)
+    refine' wp_mono (ReactSpawned.fsp_full (s := w) (n := n + 6) (fo := fSP) (t := .undefined) (bG := bw) (oG := oG)
       (FR := FR) (R := R) (bS := bS') (bVE := bVE') (bTT := bTT') (tt := .null) (plw := plw') (ple := ple') (plc := plc')
       {spimp} (hf := by omega) (hlt := lt_heap_of_frame hw hSPo)
       (hG := by rw [SP_hdenv]; exact lt_envs_of_frame hw hG) (hGe := by rw [SP_hdenv]; exact hdw)
       (gS := hb1) (gSm := hm1) (gSv := hv1) (gVE := hb2) (gVEv := hv2) (gTT := hb3) (gTTm := hm3)
       (gTTv := hv3) (hFRl := hpl') (hgPs := Nat.lt_of_lt_of_le SP_hgPs hw.envs_le)
-      (hfpE := fun p hp => ⟨Nat.lt_of_lt_of_le (SP_hfpE p hp).1 hw.envs_le, (SP_hfpE p hp).2⟩)
-      (hRP := SP_hRP w hw) (hEn := SP_hEn w hw) ..) ?spost
+      (E_hP := by rw [hw.realms_eq]; exact SP_E_hP)
+      (hRP := SP_hRP w hw) ..) ?spost
     case spost =>
       rintro v w' h' ⟨-, hfu, rfl, hF⟩
       exact ⟨frame_trans hw hF, by omega, hPC⟩

@@ -10,7 +10,8 @@ CF = "JSProofs/ReactCommitEntryFull.lean"
 cb = binders(CF, "crw_full")
 FIB = {"R", "CR_CM_ME_M_K", "CR_CM_LE_L_K", "CR_CM_ME_M_CT_B", "CR_CM_LE_L_B"}
 FRESH = ["CR_CM_ME_M_CT_BT_NP"]
-WB = {"concurrentlyUpdatedLanes", "executionContext", "isFlushingWork", "workInProgressRoot", "pendingEffectsLanes"}
+WB = {"concurrentlyUpdatedLanes", "executionContext", "isFlushingWork", "workInProgressRoot", "pendingEffectsLanes",
+      "mightHavePendingSyncWork", "didScheduleMicrotask"}
 S = re.compile(r"(?<![A-Za-z0-9_'.])s(?![A-Za-z0-9_'])")
 bdw = {}
 for n, k, t in cb:
@@ -108,7 +109,7 @@ stmt = f"""theorem crw_top {binds} :
   obtain rfl : bw = bW := by rw [hdw] at hGw; cases hGw; rfl
   refine' ReactCommitEntry.crw_full (s := w) (bG := bw) {cimp} (hf := hf) (hlt := lt_heap_of_frame hFA hlt)
     (hG := lt_envs_of_frame hFA hG) (hGe := hdw) {sg} {qg}
-    (CR_CM_SP_hfpE := fun p hp => ⟨Nat.lt_of_lt_of_le (CR_CM_SP_hfpE p hp).1 hFA.envs_le, (CR_CM_SP_hfpE p hp).2⟩) ..
+    (CR_CM_SP_E_hP := by rw [hFA.realms_eq]; exact CR_CM_SP_E_hP) ..
   all_goals {RB}
 """
 out = f'''import JSProofs.ReactCommitEntryFull
