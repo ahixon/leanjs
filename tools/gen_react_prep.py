@@ -51,7 +51,7 @@ PFP = "(ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H)"
 P1 = (f"(fun w' (_ : σ) => Frame (((((ReactMicrotaskClick.fpPerf d.env R A).union {{}}).union {{}}).union "
       f"(ReactRenderSync.fpPre d.env I)).union {PFP}) s w' ∧ ReactPrepareFresh.PrepBinds w' d.env oG R p_X ∧ "
       f"ReactPrepareFresh.PrepFields w' p_X p_H p_F p_Fa p_Qo p_U p_vT p_vL p_vC p_vMP p_vMS p_vUQ p_vS p_vI p_vR p_vRC "
-      f"p_fl p_hc p_fl' p_al ∧ (∃ v a b, (w'.objEntry I).props.get? (.str \"H\") = some (.data v true a b)) ∧ "
+      f"p_fl p_hc p_fl' p_al p_x0e p_x0c p_x1e p_x1c p_x2e p_x2c p_x3e p_x3c p_x4e p_x4c p_x5e p_x5c p_x6e p_x6c p_x7e p_x7c p_x8e p_x8c p_x9e p_x9c p_x10e p_x10c p_x11e p_x11c p_x12e p_x12c p_x13e p_x13c p_x14e p_x14c p_x15e p_x15c p_hcle p_hclc p_fle p_flc p_fale p_falc p_qpe p_qpc p_une p_unc ∧ (∃ v a b, (w'.objEntry I).props.get? (.str \"H\") = some (.data v true a b)) ∧ "
       f"∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString \"executionContext\"]? = some bd ∧ "
       f"bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString \"workInProgressTransitions\"]? = some bd ∧ "
       f"bd.value = some .null))")

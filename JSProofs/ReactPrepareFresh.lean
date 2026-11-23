@@ -58,28 +58,29 @@ def fp (g : EnvId) (X A Qo U F Fa H : ObjId) : Footprint :=
 /-- What `prepareFreshStack` leaves on the fibers and queues the work loop reads: the current root's alternate `X`
 reset from it (`createWorkInProgress`), the update's lane on the fibers from the updated one to the root, the hook
 queue's pending ring (`finishQueueingConcurrentUpdates`). -/
-def PrepFields (w : State) (X H F Fa Qo U : ObjId) (vT vL vC vMP vMS vUQ vS vI vR vRC : Value) (fl hc fl' al : F64) : Prop :=
-  (∃ a b, (w.objEntry X).props.get? (.str "pendingProps") = some (.data .null true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "type") = some (.data vT true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "deletions") = some (.data .null true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "lanes") = some (.data vL true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "child") = some (.data vC true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "memoizedProps") = some (.data vMP true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "memoizedState") = some (.data vMS true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "updateQueue") = some (.data vUQ true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "dependencies") = some (.data .null true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "sibling") = some (.data vS true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "index") = some (.data vI true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "ref") = some (.data vR true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "refCleanup") = some (.data vRC true a b)) ∧
-  (∃ a b, (w.objEntry X).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr hc (F64.fin false 4503599627370496 (-51)))) true a b)) ∧
-  (∃ a b, (w.objEntry H).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr hc (F64.fin false 4503599627370496 (-51)))) true a b)) ∧
-  (∃ a b, (w.objEntry F).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr fl' (F64.fin false 4503599627370496 (-51)))) true a b)) ∧
-  (∃ a b, (w.objEntry Fa).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr al (F64.fin false 4503599627370496 (-51)))) true a b)) ∧
-  (∃ a b, (w.objEntry Qo).props.get? (.str "pending") = some (.data (.obj U) true a b)) ∧
-  (∃ a b, (w.objEntry U).props.get? (.str "next") = some (.data (.obj U) true a b))
+def PrepFields (w : State) (X H F Fa Qo U : ObjId) (vT vL vC vMP vMS vUQ vS vI vR vRC : Value) (fl hc fl' al : F64)
+    (x0e x0c x1e x1c x2e x2c x3e x3c x4e x4c x5e x5c x6e x6c x7e x7c x8e x8c x9e x9c x10e x10c x11e x11c x12e x12c x13e x13c x14e x14c x15e x15c hcle hclc fle flc fale falc qpe qpc une unc : Bool) : Prop :=
+  ((w.objEntry X).props.get? (.str "pendingProps") = some (.data .null true x0e x0c)) ∧
+  ((w.objEntry X).props.get? (.str "type") = some (.data vT true x1e x1c)) ∧
+  ((w.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true x2e x2c)) ∧
+  ((w.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true x3e x3c)) ∧
+  ((w.objEntry X).props.get? (.str "deletions") = some (.data .null true x4e x4c)) ∧
+  ((w.objEntry X).props.get? (.str "lanes") = some (.data vL true x6e x6c)) ∧
+  ((w.objEntry X).props.get? (.str "child") = some (.data vC true x7e x7c)) ∧
+  ((w.objEntry X).props.get? (.str "memoizedProps") = some (.data vMP true x8e x8c)) ∧
+  ((w.objEntry X).props.get? (.str "memoizedState") = some (.data vMS true x9e x9c)) ∧
+  ((w.objEntry X).props.get? (.str "updateQueue") = some (.data vUQ true x10e x10c)) ∧
+  ((w.objEntry X).props.get? (.str "dependencies") = some (.data .null true x11e x11c)) ∧
+  ((w.objEntry X).props.get? (.str "sibling") = some (.data vS true x12e x12c)) ∧
+  ((w.objEntry X).props.get? (.str "index") = some (.data vI true x13e x13c)) ∧
+  ((w.objEntry X).props.get? (.str "ref") = some (.data vR true x14e x14c)) ∧
+  ((w.objEntry X).props.get? (.str "refCleanup") = some (.data vRC true x15e x15c)) ∧
+  ((w.objEntry X).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr hc (F64.fin false 4503599627370496 (-51)))) true x5e x5c)) ∧
+  ((w.objEntry H).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr hc (F64.fin false 4503599627370496 (-51)))) true hcle hclc)) ∧
+  ((w.objEntry F).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr fl' (F64.fin false 4503599627370496 (-51)))) true fle flc)) ∧
+  ((w.objEntry Fa).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr al (F64.fin false 4503599627370496 (-51)))) true fale falc)) ∧
+  ((w.objEntry Qo).props.get? (.str "pending") = some (.data (.obj U) true qpe qpc)) ∧
+  ((w.objEntry U).props.get? (.str "next") = some (.data (.obj U) true une unc))
 
 /-- The module's variables `prepareFreshStack` sets that the work loop reads. -/
 def PrepBinds (w : State) (g : EnvId) (oG : Option EnvId) (R X : ObjId) : Prop :=
@@ -211,7 +212,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (n_X_A : X ≠ A) (n_X_Qo : X ≠ Qo) (n_X_U : X ≠ U) (n_X_F : X ≠ F) (n_X_Fa : X ≠ Fa) (n_X_H : X ≠ H) (n_A_Qo : A ≠ Qo) (n_A_U : A ≠ U) (n_A_F : A ≠ F) (n_A_Fa : A ≠ Fa) (n_A_H : A ≠ H) (n_Qo_U : Qo ≠ U) (n_Qo_F : Qo ≠ F) (n_Qo_Fa : Qo ≠ Fa) (n_Qo_H : Qo ≠ H) (n_U_F : U ≠ F) (n_U_Fa : U ≠ Fa) (n_U_H : U ≠ H) (n_F_Fa : F ≠ Fa) (n_F_H : F ≠ H) (n_Fa_H : Fa ≠ H) (n_R_X : R ≠ X) (n_R_A : R ≠ A) (n_R_Qo : R ≠ Qo) (n_R_U : R ≠ U) (n_R_F : R ≠ F) (n_R_Fa : R ≠ Fa) (n_R_H : R ≠ H) (n_fR_X : fR ≠ X) (n_fR_A : fR ≠ A) (n_fR_Qo : fR ≠ Qo) (n_fR_U : fR ≠ U) (n_fR_F : fR ≠ F) (n_fR_Fa : fR ≠ Fa) (n_fR_H : fR ≠ H) (n_fC_X : fC ≠ X) (n_fC_A : fC ≠ A) (n_fC_Qo : fC ≠ Qo) (n_fC_U : fC ≠ U) (n_fC_F : fC ≠ F) (n_fC_Fa : fC ≠ Fa) (n_fC_H : fC ≠ H) (n_fK_X : fK ≠ X) (n_fK_A : fK ≠ A) (n_fK_Qo : fK ≠ Qo) (n_fK_U : fK ≠ U) (n_fK_F : fK ≠ F) (n_fK_Fa : fK ≠ Fa) (n_fK_H : fK ≠ H) (n_fE_X : fE ≠ X) (n_fE_A : fE ≠ A) (n_fE_Qo : fE ≠ Qo) (n_fE_U : fE ≠ U) (n_fE_F : fE ≠ F) (n_fE_Fa : fE ≠ Fa) (n_fE_H : fE ≠ H) (n_fQ_X : fQ ≠ X) (n_fQ_A : fQ ≠ A) (n_fQ_Qo : fQ ≠ Qo) (n_fQ_U : fQ ≠ U) (n_fQ_F : fQ ≠ F) (n_fQ_Fa : fQ ≠ Fa) (n_fQ_H : fQ ≠ H) (n_fM_X : fM ≠ X) (n_fM_A : fM ≠ A) (n_fM_Qo : fM ≠ Qo) (n_fM_U : fM ≠ U) (n_fM_F : fM ≠ F) (n_fM_Fa : fM ≠ Fa) (n_fM_H : fM ≠ H) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) s fun v w h' =>
       v = .obj X ∧ Frame (fp d.env X A Qo U F Fa H) s w ∧ s.fuel ≤ w.fuel + 400 ∧ h' = h ∧
-      ReactRenderSync.AfterPrep w d.env oG ∧ PrepBinds w d.env oG R X ∧ PrepFields w X H F Fa Qo U vT vL vC vMP vMS vUQ vS vI vR vRC fl hc fl' al := by
+      ReactRenderSync.AfterPrep w d.env oG ∧ PrepBinds w d.env oG R X ∧ PrepFields w X H F Fa Qo U vT vL vC vMP vMS vUQ vS vI vR vRC fl hc fl' al x0e x0c x1e x1c x2e x2c x3e x3c x4e x4c x5e x5c x6e x6c x7e x7c x8e x8c x9e x9c x10e x10c x11e x11c x12e x12c x13e x13c x14e x14c x15e x15c hcle hclc fle flc fale falc qpe qpc une unc := by
   apply wp_callGen PFSGen.prepareFreshStack_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root", JSStr.ofString "lanes"] := by rw [hcode]; rfl
@@ -420,15 +421,15 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
                 hq1, hq2⟩
             case pf =>
               simp only [PrepFields, js_simp]
-              refine ⟨⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_pendingProps⟩, ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_type⟩,
-                ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_flags⟩, ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_subtreeFlags⟩,
-                ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_deletions⟩, ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_lanes⟩,
-                ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_child⟩, ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_memoizedProps⟩,
-                ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_memoizedState⟩, ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_updateQueue⟩,
-                ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_dependencies⟩, ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_sibling⟩,
-                ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_index⟩, ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_ref⟩,
-                ⟨_, _, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_refCleanup⟩, ⟨_, _, z6⟩, ⟨_, _, z5⟩, ⟨_, _, z3⟩, ⟨_, _, z4⟩,
-                ⟨_, _, z1⟩, ⟨_, _, z2⟩⟩
+              refine ⟨(pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_pendingProps, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_type,
+                (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_flags, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_subtreeFlags,
+                (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_deletions, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_lanes,
+                (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_child, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_memoizedProps,
+                (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_memoizedState, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_updateQueue,
+                (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_dependencies, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_sibling,
+                (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_index, (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_ref,
+                (pX _ (by simp [ReactFinishQueueing.fpOne, ReactMarkLane.fp, n_X_A, n_X_Qo, n_X_U, n_X_F, n_X_Fa, n_X_H])).trans q_refCleanup, z6, z5, z3, z4,
+                z1, z2⟩
             · simp only [ReactFinishQueueing.fpOne, ReactMarkLane.fp, h_fQenv] at hF5
               simp only [ReactCreateWIP.fp] at hF2
               simp only [fp, ReactCreateWIP.fp, List.cons_append, List.nil_append]
