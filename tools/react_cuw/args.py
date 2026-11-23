@@ -52,13 +52,15 @@ def caller_bounds(path, thm):
         if not imp and r: m[r.group(1)] = nm
     return m
 
-def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=(), bside="(by decide)", envbounds=None, objall=False):
+def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=(), bside="(by decide)", envbounds=None, objall=False, domread=None, envne="", protos=False):
     """Premise terms at stage k: gZk (heap), gKk (kinds), gPk (props unless written), gEk (envs), gFk (fuel),
     gBk (bindings other than the loop's)."""
     ex = dict(explicit)
     for imp, nm, ty in binders(path, thm):
         if imp or nm in ex: continue
         src = ren.get(nm, nm)
+        if domread and ty.startswith("ReactHostContainer.DomRead"):
+            ex[nm] = domread.replace("SRC", src); continue
         m = re.fullmatch(r"(\d+) ≤ s\.fuel", ty)
         if m: ex[nm] = f"(Nat.le_trans (by decide) gF{k})"; continue
         m = re.fullmatch(r"(\w+) < s\.heap\.size", ty)
@@ -66,6 +68,9 @@ def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=(), bside=
             o = objren.get(m.group(1), m.group(1)); ex[nm] = f"(Nat.lt_of_lt_of_le {bounds[o]} gZ{k})"; continue
         m = re.fullmatch(r"(\w+(?:\.\w+)?) < s\.envs\.size", ty)
         if m: ex[nm] = f"(by first | exact Nat.lt_of_lt_of_le {src} gE{k} | (rw [{ren.get('_envfix','hWenv')}] at *; exact Nat.lt_of_lt_of_le {src} gE{k}))"; continue
+        m = re.match(r"\(s\.objEntry (\w+)\)\.proto", ty)
+        if m and protos:
+            o = objren.get(m.group(1), m.group(1)); ex[nm] = f"(by rw [gQ{k} {o} {bounds[o]}]; exact {src})"; continue
         m = re.match(r"\(s\.objEntry (\w+)\)\.kind", ty)
         if m:
             o = objren.get(m.group(1), m.group(1)); ex[nm] = f"(by rw [gK{k} {o} {bounds[o]}]; exact {src})"; continue
@@ -81,7 +86,7 @@ def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=(), bside=
             hd, _, tl = m.group(1).partition(".")
             key = objren.get(hd, hd) + ("." + tl if tl else "")
             if key in envbounds:
-                ex[nm] = f"(by rw [gV{k} _ {envbounds[key]}]; exact {src})"; continue
+                ex[nm] = f"(by rw [gV{k} _ {envbounds[key]}{envne}]; exact {src})"; continue
         m = re.match(r"bG\[JSStr\.ofString \"([^\"]*)\"\]\? = ", ty)
         if m: ex[nm] = f"(by rw [gB{k} _ {bside}]; exact {src})"; continue
         if objall and "s.objEntry" in ty:
