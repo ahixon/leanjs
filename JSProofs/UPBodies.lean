@@ -1,0 +1,30 @@
+import JSProofs.UPGen
+
+/-!
+# updateProperties' for-in bodies (zippy docs/react-proofs.md)
+
+The two generic loops' bodies (`for (k in lastProps)`, `for (k in nextProps)`) as statements and their `Sem` forms;
+the interpreter's `evalStmt` of each is its `Sem` form by `rfl` (compiled from the same source as `UPGen`'s).
+-/
+
+open ES
+
+namespace UPBodies
+
+def body1Stmt : ES.Stmt := (ES.Stmt.expr (ES.Expr.seq #[(ES.Expr.paren (ES.Expr.assign ES.AssignOp.assign (ES.Pattern.ident (ES.JSStr.ofString "propKey$221")) (ES.Expr.member (ES.Expr.ident (ES.JSStr.ofString "lastProps")) (ES.MemberKey.computed (ES.Expr.ident (ES.JSStr.ofString "propKey$252"))) false))), (ES.Expr.logical ES.LogOp.and (ES.Expr.logical ES.LogOp.and (ES.Expr.logical ES.LogOp.and (ES.Expr.call (ES.Expr.member (ES.Expr.ident (ES.JSStr.ofString "lastProps")) (ES.MemberKey.name (ES.JSStr.ofString "hasOwnProperty")) false) #[(ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "propKey$252")))] false false) (ES.Expr.binary ES.BinOp.ne (ES.Expr.lit ES.Lit.null) (ES.Expr.ident (ES.JSStr.ofString "propKey$221")))) (ES.Expr.unary ES.UnOp.not (ES.Expr.call (ES.Expr.member (ES.Expr.ident (ES.JSStr.ofString "nextProps")) (ES.MemberKey.name (ES.JSStr.ofString "hasOwnProperty")) false) #[(ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "propKey$252")))] false false))) (ES.Expr.call (ES.Expr.ident (ES.JSStr.ofString "setProp")) #[(ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "domElement"))), (ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "tag"))), (ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "propKey$252"))), (ES.Arg.expr (ES.Expr.lit ES.Lit.null)), (ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "nextProps"))), (ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "propKey$221")))] false false))]))
+
+def body1Sem : Sem.CStmt := (Sem.exprStmt (Sem.seq #[(Sem.assign (Sem.identRef "propKey$221") (Sem.getValue (Sem.memberRef (Sem.ident "lastProps") (Sem.Key.computed (Sem.ident "propKey$252")) false))), (Sem.logical LogOp.and (Sem.logical LogOp.and (Sem.logical LogOp.and (Sem.call (Sem.memberRef (Sem.ident "lastProps") (Sem.Key.name "hasOwnProperty") false) (Sem.args #[(Sem.ArgD.expr (Sem.ident "propKey$252"))]) false (CalleeDesc.prop "hasOwnProperty")) (Sem.binary BinOp.ne (Sem.lit Lit.null) (Sem.ident "propKey$221"))) (Sem.unary UnOp.not (Sem.call (Sem.memberRef (Sem.ident "nextProps") (Sem.Key.name "hasOwnProperty") false) (Sem.args #[(Sem.ArgD.expr (Sem.ident "propKey$252"))]) false (CalleeDesc.prop "hasOwnProperty")))) (Sem.call (Sem.identRef "setProp") (Sem.args #[(Sem.ArgD.expr (Sem.ident "domElement")), (Sem.ArgD.expr (Sem.ident "tag")), (Sem.ArgD.expr (Sem.ident "propKey$252")), (Sem.ArgD.expr (Sem.lit Lit.null)), (Sem.ArgD.expr (Sem.ident "nextProps")), (Sem.ArgD.expr (Sem.ident "propKey$221"))]) false (CalleeDesc.ident "setProp")))]))
+
+set_option maxRecDepth 100000 in
+set_option maxHeartbeats 4000000 in
+theorem body1_eval (j : Nat) (ctx : Ctx) : evalStmt (j + 12) ctx body1Stmt = body1Sem ctx := rfl
+
+def body2Stmt : ES.Stmt := (ES.Stmt.expr (ES.Expr.seq #[(ES.Expr.paren (ES.Expr.assign ES.AssignOp.assign (ES.Pattern.ident (ES.JSStr.ofString "propKey$221")) (ES.Expr.member (ES.Expr.ident (ES.JSStr.ofString "nextProps")) (ES.MemberKey.computed (ES.Expr.ident (ES.JSStr.ofString "lastProp"))) false))), (ES.Expr.paren (ES.Expr.assign ES.AssignOp.assign (ES.Pattern.ident (ES.JSStr.ofString "propKey")) (ES.Expr.member (ES.Expr.ident (ES.JSStr.ofString "lastProps")) (ES.MemberKey.computed (ES.Expr.ident (ES.JSStr.ofString "lastProp"))) false))), (ES.Expr.logical ES.LogOp.or (ES.Expr.logical ES.LogOp.or (ES.Expr.logical ES.LogOp.or (ES.Expr.unary ES.UnOp.not (ES.Expr.call (ES.Expr.member (ES.Expr.ident (ES.JSStr.ofString "nextProps")) (ES.MemberKey.name (ES.JSStr.ofString "hasOwnProperty")) false) #[(ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "lastProp")))] false false)) (ES.Expr.binary ES.BinOp.seq (ES.Expr.ident (ES.JSStr.ofString "propKey$221")) (ES.Expr.ident (ES.JSStr.ofString "propKey")))) (ES.Expr.paren (ES.Expr.logical ES.LogOp.and (ES.Expr.binary ES.BinOp.eq (ES.Expr.lit ES.Lit.null) (ES.Expr.ident (ES.JSStr.ofString "propKey$221"))) (ES.Expr.binary ES.BinOp.eq (ES.Expr.lit ES.Lit.null) (ES.Expr.ident (ES.JSStr.ofString "propKey")))))) (ES.Expr.call (ES.Expr.ident (ES.JSStr.ofString "setProp")) #[(ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "domElement"))), (ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "tag"))), (ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "lastProp"))), (ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "propKey$221"))), (ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "nextProps"))), (ES.Arg.expr (ES.Expr.ident (ES.JSStr.ofString "propKey")))] false false))]))
+
+def body2Sem : Sem.CStmt := (Sem.exprStmt (Sem.seq #[(Sem.assign (Sem.identRef "propKey$221") (Sem.getValue (Sem.memberRef (Sem.ident "nextProps") (Sem.Key.computed (Sem.ident "lastProp")) false))), (Sem.assign (Sem.identRef "propKey") (Sem.getValue (Sem.memberRef (Sem.ident "lastProps") (Sem.Key.computed (Sem.ident "lastProp")) false))), (Sem.logical LogOp.or (Sem.logical LogOp.or (Sem.logical LogOp.or (Sem.unary UnOp.not (Sem.call (Sem.memberRef (Sem.ident "nextProps") (Sem.Key.name "hasOwnProperty") false) (Sem.args #[(Sem.ArgD.expr (Sem.ident "lastProp"))]) false (CalleeDesc.prop "hasOwnProperty"))) (Sem.binary BinOp.seq (Sem.ident "propKey$221") (Sem.ident "propKey"))) (Sem.logical LogOp.and (Sem.binary BinOp.eq (Sem.lit Lit.null) (Sem.ident "propKey$221")) (Sem.binary BinOp.eq (Sem.lit Lit.null) (Sem.ident "propKey")))) (Sem.call (Sem.identRef "setProp") (Sem.args #[(Sem.ArgD.expr (Sem.ident "domElement")), (Sem.ArgD.expr (Sem.ident "tag")), (Sem.ArgD.expr (Sem.ident "lastProp")), (Sem.ArgD.expr (Sem.ident "propKey$221")), (Sem.ArgD.expr (Sem.ident "nextProps")), (Sem.ArgD.expr (Sem.ident "propKey"))]) false (CalleeDesc.ident "setProp")))]))
+
+set_option maxRecDepth 100000 in
+set_option maxHeartbeats 4000000 in
+theorem body2_eval (j : Nat) (ctx : Ctx) : evalStmt (j + 12) ctx body2Stmt = body2Sem ctx := rfl
+
+end UPBodies
