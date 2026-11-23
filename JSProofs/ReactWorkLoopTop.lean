@@ -1956,7 +1956,7 @@ theorem wls_top {n : Nat}
       (∃ a b, (w'.objEntry C1).props.get? (.str "flags") = some (.data ((.num (numberBinOp .bitOr (numberBinOp .bitAnd R_e_fl (F64.fin false 5062151534280704 (-22))) (F64.fin false 4503599627370496 (-52))))) true a b)) ∧
       (∃ a b, (w'.objEntry C1).props.get? (.str "child") = some (.data ((.obj X)) true a b)) ∧
       (∃ a b, (w'.objEntry X).props.get? (.str "sibling") = some (.data .null true a b)) ∧
-      ReactNewProps.NewProps w' Cn F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") ∧
+      ReactNewProps.NewProps w' Cn F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") ∧ w.heap.size ≤ Cn ∧
       ∃ bm, Scope.declLike? (w'.envEntry dPU.env) = some (bm, none) ∧
       (∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧ bd.value = some .null) ∧
       (∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true) ∧

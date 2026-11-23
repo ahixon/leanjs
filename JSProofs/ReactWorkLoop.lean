@@ -1133,7 +1133,7 @@ theorem work_loop_spec {n : Nat} {h : σ} {s : State} {fWL : ObjId} {dWL : FuncD
       (∃ a b, (w.objEntry C1).props.get? (.str "flags") = some (.data ((.num (numberBinOp .bitOr (numberBinOp .bitAnd R_e_fl (F64.fin false 5062151534280704 (-22))) (F64.fin false 4503599627370496 (-52))))) true a b)) ∧
       (∃ a b, (w.objEntry C1).props.get? (.str "child") = some (.data ((.obj X)) true a b)) ∧
       (∃ a b, (w.objEntry X).props.get? (.str "sibling") = some (.data .null true a b)) ∧
-      ReactNewProps.NewProps w Cn F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") ∧
+      ReactNewProps.NewProps w Cn F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") ∧ s.heap.size ≤ Cn ∧
       ∃ bm, Scope.declLike? (w.envEntry dPU.env) = some (bm, none) ∧
       (∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧ bd.value = some .null) ∧
       (∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true) ∧
@@ -1354,7 +1354,7 @@ theorem work_loop_spec {n : Nat} {h : σ} {s : State} {fWL : ObjId} {dWL : FuncD
   all_goals (try refine ⟨Cn, F2, ?_⟩)
   all_goals (repeat' apply And.intro)
   all_goals first | rfl | omega | exact frame_restore (frame_withFuel FW3 _) s | (rw [hKdEnv] at FW3; exact frame_restore (frame_withFuel FW3 _) s) |
-    (simp only [restore_objEntry, withFuel_objEntry, setEnv_objEntry]; first | exact hFacts3.1 | exact hFacts3.2.1 | exact hFacts3.2.2.1 | exact hFacts3.2.2.2.1 | exact hFacts3.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.2.2.2 | exact EX0 | exact EX1 | exact EX2 | exact EX3 | exact EX4 | exact EX5 | exact NP3.2.1 | exact NP3.2.2.1 | exact NP3.2.2.2.1 | exact NP3.2.2.2.2.1 | exact NP3.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.2) | (simp only [js_simp]; exact NP3.1) | exact ⟨bm3, rfl, BL⟩ | (simp only [restore_envEntry, withFuel_envEntry]; exact ⟨bm3, hbm3, BL⟩)
+    (simp only [restore_objEntry, withFuel_objEntry, setEnv_objEntry]; first | exact hFacts3.1 | exact hFacts3.2.1 | exact hFacts3.2.2.1 | exact hFacts3.2.2.2.1 | exact hFacts3.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.2.2.2 | exact EX0 | exact EX1 | exact EX2 | exact EX3 | exact EX4 | exact EX5 | exact NP3.2.1 | exact NP3.2.2.1 | exact NP3.2.2.2.1 | exact NP3.2.2.2.2.1 | exact NP3.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.2) | (simp only [js_simp]; exact NP3.1) | exact Nat.le_trans gZ2 hCge2 | exact ⟨bm3, rfl, BL⟩ | (simp only [restore_envEntry, withFuel_envEntry]; exact ⟨bm3, hbm3, BL⟩)
 
 end
 

@@ -232,7 +232,7 @@ set_option maxRecDepth 100000 in
   all_goals (try refine ⟨Cn, F2, ?_⟩)
   all_goals (repeat' apply And.intro)
   all_goals first | rfl | omega | exact frame_restore (frame_withFuel FW3 _) s | (rw [hKdEnv] at FW3; exact frame_restore (frame_withFuel FW3 _) s) |
-    (simp only [restore_objEntry, withFuel_objEntry, setEnv_objEntry]; first | @@PROJ@@ | @@EXTRAPROJ@@ | exact NP3.2.1 | exact NP3.2.2.1 | exact NP3.2.2.2.1 | exact NP3.2.2.2.2.1 | exact NP3.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.2) | (simp only [js_simp]; exact NP3.1) | exact ⟨bm3, rfl, BL⟩ | (simp only [restore_envEntry, withFuel_envEntry]; exact ⟨bm3, hbm3, BL⟩)
+    (simp only [restore_objEntry, withFuel_objEntry, setEnv_objEntry]; first | @@PROJ@@ | @@EXTRAPROJ@@ | exact NP3.2.1 | exact NP3.2.2.1 | exact NP3.2.2.2.1 | exact NP3.2.2.2.2.1 | exact NP3.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.2) | (simp only [js_simp]; exact NP3.1) | exact Nat.le_trans gZ2 hCge2 | exact ⟨bm3, rfl, BL⟩ | (simp only [restore_envEntry, withFuel_envEntry]; exact ⟨bm3, hbm3, BL⟩)
 
 end
 

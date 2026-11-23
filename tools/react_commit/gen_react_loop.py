@@ -93,7 +93,30 @@ concl = re.sub(r"\s+", " ", P1.strip())
 concl = concl.replace("(j + 2)", "(n + 10)")
 concl = re.sub(r"(?<![\w'])fpWL(?![\w'])", f"({S(FPW)})", concl)
 concl = re.sub(r"(?<![\w'])kW(?![\w'])", "2400", concl)
-concl = re.sub(r"(?<![\w'])PRu(?![\w'])", "(fun _ _ => True)", concl)
+
+_post = S(wpost)
+VAL = {}
+for m in re.finditer(r"\(w'\.objEntry (\w+)\)\.props\.get\? \(\.str \"(\w+)\"\) = some \(\.data ", _post):
+    j = m.end(); d0 = 1
+    while d0: d0 += {"(": 1, ")": -1}.get(_post[j], 0); j += 1
+    VAL[(m.group(1), m.group(2))] = text(parse(_post[m.end():j - 1])[0])
+for k in ["flags", "lanes", "deletions", "sibling"]:
+    VAL[("p_X", k)] = text(parse(usubst(SRC[("p_X", k)], sub))[1][1])
+HKEYS = [("p_X", "subtreeFlags"), ("p_X", "childLanes"), ("p_X", "child"), ("p_X", "flags"), ("p_X", "lanes"),
+         ("p_X", "deletions"), ("p_X", "sibling"), ("p_Fa", "flags"), ("p_Fa", "deletions"), ("p_Fa", "subtreeFlags"),
+         ("p_Fa", "child"), ("p_Fa", "sibling"), ("l_X", "flags"), ("l_X", "subtreeFlags"), ("l_X", "sibling")]
+def pv(v): return v if re.fullmatch(r"[\w.']+", v) else "(" + v + ")"
+hf = [f'(∃ fa fb, (x.objEntry {o}).props.get? (.str "{k}") = some (.data {pv(VAL[(o, k)])} true fa fb))' for o, k in HKEYS]
+NPS = re.search(r"ReactNewProps\.NewProps w' Cn F (\w+) (\(JSStr\.ofString \"Count: \" \+\+ numberToJSStr \w+ \+\+ JSStr\.ofString \"\"\))", _post)
+hf += ['(∃ fa fb, (x.objEntry l_X).props.get? (.str "memoizedProps") = some (.data (.obj Cn) true fa fb))',
+       f"ReactNewProps.NewProps x Cn F {NPS.group(1)} {NPS.group(2)}",
+       "ReactRenderSync.EndBinds x d.env oG v_ec", "ReactFinishQueueing.QueuesDone x d.env",
+       '(∃ bm, Scope.declLike? (x.envEntry d.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "pendingEffectsLanes"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)']
+FAE0 = re.search(r"Frame \((\(\(\(\(ReactMicrotaskClick\.fpPerf.*?ReactPrepareFresh\.fp d\.env p_X p_A p_Qo p_U p_F p_Fa p_H\))\) s w'", concl).group(1)
+FALL = (f"((((({FAE0}).union (ReactRenderSync.fpOwn eR)).union ({S(FPW)})).union (ReactRenderSync.fpEnd eE d.env I)).union "
+        f"(ReactFinishQueueing.fp d.env))")
+HANDOFF = f"(fun x (_ : σ) => ∃ eR eE, Frame {FALL} s x ∧ ∃ Cn F, " + " ∧ ".join(hf) + ")"
+concl = re.sub(r"(?<![\w'])PRu(?![\w'])", HANDOFF, concl)
 concl = usubst(concl, sub)
 used = set(ID.findall(concl))
 ebinds, ibinds = [], []
@@ -262,8 +285,37 @@ FADEFS = ("Logic.Footprint.union, ReactMicrotaskClick.fpPerf, ReactSchedTaskRoot
 FPD = ("Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, "
        "ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, "
        "ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC")
+HSRC = {("p_X", "subtreeFlags"): "q7", ("p_X", "childLanes"): "q8", ("p_X", "child"): "x1", ("p_Fa", "flags"): "x4",
+        ("p_Fa", "deletions"): "x2", ("p_Fa", "subtreeFlags"): "q4", ("p_Fa", "child"): "x5", ("p_Fa", "sibling"): "x3",
+        ("l_X", "flags"): "q1", ("l_X", "subtreeFlags"): "q2", ("l_X", "sibling"): "x6"}
+DDN = ", ".join(f"{b[1:].split(' :')[0]}, Ne.symm {b[1:].split(' :')[0]}" for b in ebinds if b.startswith("(l_dd_") or b.startswith("(l_B_hdXall") is False and False)
+DDN = ", ".join(n + ", Ne.symm " + n for n in [b[1:].split(" :")[0] for b in ebinds] if n.startswith("l_dd_"))
+def W2(o):  # o's bound at the loop's end
+    return f"(Nat.lt_of_lt_of_le {allp[o]} (frame_trans hT hFw).heap_le)"
+ENDF = ("rw [props_frame hFQ (Nat.lt_of_lt_of_le {B} hEnd.heap_le) (by simp [ReactFinishQueueing.fp]), "
+        "props_frame hEnd {B} (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn])]")
+hop = ["case HO =>", "  refine ⟨sR.envs.size, e, frame_restore TOT c, Cn, F, " + ", ".join(["?h" + str(i) for i in range(len(HKEYS) + 5)]) + "⟩"]
+for i, (o, k) in enumerate(HKEYS):
+    B = W2(o)
+    tr = ENDF.format(B=B)
+    if (o, k) in HSRC:
+        src = HSRC[(o, k)]
+        if src.startswith("x"):
+            hop.append(f"  case h{i} => obtain ⟨fa, fb, hq⟩ := {src}; exact ⟨fa, fb, by show (w3.objEntry {o}).props.get? _ = _; {tr}; exact hq⟩")
+        else:
+            hop.append(f"  case h{i} => exact ⟨_, _, by show (w3.objEntry {o}).props.get? _ = _; {tr}; exact {src}⟩")
+    else:
+        pf = pfn[(o, k)]
+        hop.append(f"  case h{i} => exact ⟨_, _, by show (w3.objEntry {o}).props.get? _ = _; {tr}; rw [props_frame hFw (Nat.lt_of_lt_of_le {allp[o]} hT.heap_le) (by simp (config := {{ decide := true }}) [{FPD}, {DDN}]), hO _ (lt_heap_of_frame hFA1 {allp[o]})]; exact {pf}⟩")
+n = len(HKEYS)
+hop.append(f"  case h{n} => exact ⟨_, _, by show (w3.objEntry l_X).props.get? _ = _; {ENDF.format(B=W2('l_X'))}; exact q10⟩")
+hop.append(f"  case h{n+1} => exact ReactNewProps.NewProps.frame (frame_restore (frame_trans hEnd hFQ) c) hNP (fun k hk => by have hCI : Cn ≠ I := Nat.ne_of_gt (Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le l_hI hT.heap_le) hCn); simp [Logic.Footprint.union, ReactRenderSync.fpEnd, ReactRenderSync.fpOwn, ReactFinishQueueing.fp, hCI] at hk)")
+hop.append(f"  case h{n+2} => obtain ⟨be, hbe, ⟨bx, gx, gxv, gxm⟩, ⟨bwr, gwr, gwrv⟩⟩ := hEB; have hbe2 : be = b2 := (by rw [hb2] at hbe; cases hbe; rfl); subst hbe2; exact ⟨b3, hb3, ⟨bx, by rw [B3 _ (by simp [ReactFinishQueueing.fp])]; exact gx, gxv, gxm⟩, ⟨bwr, by rw [B3 _ (by simp [ReactFinishQueueing.fp])]; exact gwr, gwrv⟩⟩")
+hop.append(f"  case h{n+3} => exact hQD")
+hop.append(f"""  case h{n+4} => exact ⟨b3, hb3, _, by rw [B3 _ (by simp (config := {{ decide := true }}) [ReactFinishQueueing.fp]), B2 _ (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn]), NB _ (by simp (config := {{ decide := true }}) [{FPD}])]; exact gPE, gPEm, gPEv⟩""")
+HOPROOF = "\n    ".join(hop)
 POST = """  case post =>
-  rintro v w' h' ⟨hv, hFw, hfuw, hh, Cn, F, -, -, -, -, -, -, -, -, bmL, hbmL, ⟨_, gWn, gWnv⟩, ⟨_, gXs, gXsv, gXsm⟩,
+  rintro v w' h' ⟨hv, hFw, hfuw, hh, Cn, F, ⟨q1, q2, q3, q4, q5, q6, q7, q8, q9, q10⟩, x1, x2, x3, x4, x5, x6, hNP, hCn, bmL, hbmL, ⟨_, gWn, gWnv⟩, ⟨_, gXs, gXsv, gXsm⟩,
     ⟨_, gLc, gLcm, gLci⟩, ⟨_, gCr, gCrm, gCri⟩⟩
   subst hh
   have hGw : l_dPU.env < w.envs.size := by rw [hPUenv]; exact Nat.lt_of_lt_of_le hGs hT.envs_le
@@ -313,8 +365,9 @@ POST = """  case post =>
       ⟨Nat.lt_of_lt_of_le hRo TOT.heap_le, by show (w3.objEntry R).kind.isPlain = true; rw [kind_frame TOT hRo]; exact hRk,
         _, _, _, by show (w3.objEntry R).props.get? _ = _; rw [props_frame TOT hRo (by simp (config := { decide := true }) [@@FPD@@, @@FADEFS@@, ReactRenderSync.fpEnd, ReactRenderSync.fpOwn, ReactFinishQueueing.fp, dr_RI, dr_CF, dr_CS, dr_Cu, @@DLN@@])]; exact hRcur⟩,
       ⟨Nat.lt_of_lt_of_le hH TOT.heap_le, by show (w3.objEntry p_H).kind.isPlain = true; rw [kind_frame TOT hH]; exact hHk,
-        _, _, _, by show (w3.objEntry p_H).props.get? _ = _; rw [props_frame TOT hH (by simp (config := { decide := true }) [@@FPD@@, @@FADEFS@@, ReactRenderSync.fpEnd, ReactRenderSync.fpOwn, ReactFinishQueueing.fp, @@DLN@@])]; exact hHa⟩⟩⟩, trivial⟩
-""".replace("@@FPD@@", FPD).replace("@@FPW@@", S(FPW)).replace("@@FADEFS@@", FADEFS).replace("@@DLN@@", DLN)
+        _, _, _, by show (w3.objEntry p_H).props.get? _ = _; rw [props_frame TOT hH (by simp (config := { decide := true }) [@@FPD@@, @@FADEFS@@, ReactRenderSync.fpEnd, ReactRenderSync.fpOwn, ReactFinishQueueing.fp, @@DLN@@])]; exact hHa⟩⟩⟩, ?HO⟩
+    @@HOPROOF@@
+""".replace("@@FPD@@", FPD).replace("@@FPW@@", S(FPW)).replace("@@FADEFS@@", FADEFS).replace("@@DLN@@", DLN).replace("@@HOPROOF@@", HOPROOF.replace("\\n", "\n"))
 proof = f"""  intro sP hP fuP sW hW fuW sR hR fuR w1 w h1 ⟨hFA1, hPB, hPF, ⟨iv, ia, ib, hIHv⟩, hRec⟩ hOwn fuw
   subst hoG
   have hsR : s.envs.size ≤ sR.envs.size := Nat.le_trans hP.envs_le (Nat.le_trans hW.envs_le hR.envs_le)
