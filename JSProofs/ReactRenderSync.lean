@@ -103,7 +103,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hWLo : fWL < s.heap.size) (hWLk : (s.objEntry fWL).kind = .func dWL) (hIWL : I ≠ fWL)
     (hFQo : fFQ < s.heap.size) (hFQk : (s.objEntry fFQ).kind = .func dFQ) (hIFQ : I ≠ fFQ)
     -- (`prepareFreshStack(root, lanes)`)
-    (hPrep : ∀ w h1, Frame (fpPre d.env I) s w → s.fuel ≤ w.fuel + 60 →
+    (hPrep : ∀ w h1, Frame (fpPre d.env I) s w → s.fuel ≤ w.fuel + 60 → (∃ v a b, (w.objEntry I).props.get? (.str "H") = some (.data v true a b)) →
       WP eng answer n h1 (callImpl eng (.obj fPF) .undefined #[.obj R, .num lanes]) w fun _ w' h' =>
         Frame fpPF w w' ∧ w.fuel ≤ w'.fuel + kP ∧ AfterPrep w' d.env oG ∧ P1 w' h')
     (hfpPB : fpPF.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
@@ -189,9 +189,13 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hGL, hGLv, hGT, hGTm, hGTv, hGPF, hGPFv, hPF2, hobj2 hPFo hIPF, hPFk, FDI.fdiCtx, Sem.inner]
   -- (`prepareFreshStack(root, lanes)`)
   refine ⟨by js_norm [CallableC, *, hobj2 hPFo hIPF], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hPrep) _ h2 ?fr3 ?fu3) ?post3
+  refine wp_mono ((ReactDSSI.Hold.get hPrep) _ h2 ?fr3 ?fu3 ?ih3) ?post3
   case fr3 => simp only [fpPre]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu3 => simp only [js_simp]; simp at hfu1 hfu2; omega
+  case ih3 =>
+    refine ⟨.obj C, he, hc, ?_⟩
+    simp only [js_simp]
+    rw [props_frame hF2 (by simp only [js_simp]; exact hI1) (by simp [js_simp])]; simpa using hIH1
   case post3 =>
   intro r w3 h3 ⟨hF3, hfu3, ⟨bm, bdE, bdS, hW3, hW3E, hW3Ev, hW3S, hW3Sv⟩, hP1⟩
   try simp only [js_simp] at hfu3
