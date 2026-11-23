@@ -95,12 +95,12 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hWD : ReactHostContainer.DomRead eng answer n s {} Win "document" (.obj Doc))
     (hGA : ∀ w h1, Frame {} s w → 100 ≤ w.fuel →
       WP eng answer n h1 (callImpl eng (.obj fGA) .undefined #[.obj Doc]) w fun v w' h' =>
-        v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 60)
+        v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 60 ∧ h' = h1)
     (hIF : ∀ w, Frame {} s w → GetsTo w (.obj Win) (JSStr.ofString "HTMLIFrameElement") fun v => v = .obj IFC)
     (hInst : ∀ w h1, Frame {} s w → WP eng answer (n + 1) h1 (instanceofOperator (.obj E) (.obj IFC)) w fun b w' h' =>
-      b = false ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 20) :
+      b = false ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 20 ∧ h' = h1) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj Cont]) s fun v w h' =>
-      v = .obj E ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 200 := by
+      v = .obj E ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 200 ∧ h' = h := by
   apply wp_callGen GAEDGen.getActiveElementDeep_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleD d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "containerInfo"] := by rw [hcode]; rfl
@@ -162,7 +162,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   refine wp_mono (hGA _ _ ?_ ?_) ?_
   · frame_go' [*]
   · js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega
-  rintro v1 w1 h1 ⟨rfl, hF1, hfu1⟩
+  rintro v1 w1 h1 ⟨rfl, hF1, hfu1, rfl⟩
   have hE1 := envEntry_frame0 hF1 (e := s.envs.size) (by js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
   have hS1 : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (by js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) hF1.envs_le
   have hfw1 : 100 ≤ w1.fuel := by simp [bodyState, entryState] at hfu1; omega
@@ -173,7 +173,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   js_until [] [hE1, hS1, hfw1, e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsTo_eq' (hIF _ (by frame_go' [*])) ?_
   refine wp_instanceof (wp_mono (hInst _ _ (by frame_go' [*])) ?_)
-  rintro b2 w2 h2 ⟨rfl, hF2, hfu2⟩
+  rintro b2 w2 h2 ⟨rfl, hF2, hfu2, rfl⟩
   have hE2 := envEntry_frame0 hF2 (e := s.envs.size) (by js_norm [hE1, hS1, e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
   have hS2 : s.envs.size < w2.envs.size := Nat.lt_of_lt_of_le (by js_norm [hE1, hS1, e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) hF2.envs_le
   have hfw2 : 50 ≤ w2.fuel := by simp [State.withFuel] at hfu2; omega

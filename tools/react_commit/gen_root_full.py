@@ -78,7 +78,7 @@ cr_args = " ".join(f"({nm} := {nm})" for nm, k, t in cr if k == "(" and nm not i
 
 stmt = f"""theorem cme_root_full {binds} :
     WP eng answer (n + 9) h (callImpl eng (.obj fo) t #[.obj R, .obj FR, lv]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + 4700 ∧ {PCr} w h' := by
+      v = .undefined ∧ s.fuel ≤ w.fuel + 4700 ∧ {PCr} w h' ∧ Frame ((ReactCommitRoot.F0 d.env).union {FC}) s w := by
   refine ReactCommitRoot.cme_root (n := n + 7) (KR := 4200) (PC := {PCr}) (fpC := {FC}) {cr_args}
     (hf := by omega) (hGHc := ⟨_, GH_hk⟩) (hRTc := ⟨_, T_hk⟩) (hREc := ⟨_, RE_hk⟩) (hGHC := ?hGHC) (hRT := ?hRT)
     (hRE := ?hRE) (hfpC := ?hfpC) (hfpCp := ?hfpCp) (hPCst := fun _ _ _ hp _ _ => hp)

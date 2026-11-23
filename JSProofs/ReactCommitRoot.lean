@@ -1,6 +1,7 @@
 import JSProofs.CMESwitch
 import JSProofs.Setter
 import JSProofs.ReactHostContainer
+import JSProofs.Rebase
 
 /-!
 # commitMutationEffectsOnFiber for the root (zippy docs/react-proofs.md)
@@ -85,7 +86,7 @@ theorem cme_root {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hPCst : ∀ w w' h', PC w h' → w'.heap = w.heap → (∀ e, e < s.envs.size → e ≠ d.env → w'.envEntry e = w.envEntry e) →
       PC w' h') :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj R, .obj FR, lv]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + KR + 500 ∧ PC w h' := by
+      v = .undefined ∧ s.fuel ≤ w.fuel + KR + 500 ∧ PC w h' ∧ Frame ((F0 d.env).union fpC) s w := by
   apply wp_callGen CMEGen.commitMutationEffectsOnFiber_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "finishedWork", JSStr.ofString "root",
@@ -179,9 +180,13 @@ theorem cme_root {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   have hfw3 : 100 ≤ w3.fuel := by simp only [State.setEnv_fuel] at hfu3; omega
   have hfr3 : w2.fuel ≤ w3.fuel + 40 := by simp only [State.setEnv_fuel] at hfu3; omega
   js_until [] [hEa3, hEb3, hEc3, hSa3, hSb3, hGd3, hR3, hfw3, hd2, hbwH, hbwE, hbwN, hbV2, hbV2m, hbV2i, hR2, hRlt2, hRE2, hRElt2, hfw2, hEa2, hEb2, hSa2, hSb2, hGd2, hGRE, hGREv, hREo, hREk, hGN, hGNv, hRT1, hRTlt1, hEa, hEb, hEc, hSa, hSb, hGd, hfw1, hGRT, hGRTv, hRTo, hRTk, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine ⟨by omega, hPCst w2 _ _ hP2 (by exact hH3) (fun e he hne => ?_)⟩
-  exact (setEnv_envEntry_ne w3 d.env _ e (Ne.symm hne)).trans ((envEntry_frame0 hF3
-    (by simpa using Nat.lt_trans he hSb2)).trans (setEnv_envEntry_ne w2 d.env _ e (Ne.symm hne)))
+  refine ⟨by omega, hPCst w2 _ _ hP2 (by exact hH3) (fun e he hne => ?_), ?fr⟩
+  · exact (setEnv_envEntry_ne w3 d.env _ e (Ne.symm hne)).trans ((envEntry_frame0 hF3
+      (by simpa using Nat.lt_trans he hSb2)).trans (setEnv_envEntry_ne w2 d.env _ e (Ne.symm hne)))
+  case fr =>
+    refine frame_restore (frame_setEnv_with_in (frame_then_empty hFs3 hF3) hG ?k1 ?k2 (by simp [Footprint.union, F0]) _) s
+    case k1 => rw [hEc3]; exact setEnv_envEntry_self _ _ _ (by simpa using hGd2)
+    case k2 => simp only [declLike_isSome_withBindings]; rw [hd2]; rfl
 
 end
 
