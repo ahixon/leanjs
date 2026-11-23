@@ -327,6 +327,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true cw cc) ∧
       (w.objEntry C).props.get? (.str "children") =
         some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
+      (w.objEntry C).kind.isPlain = true ∧ C < w.heap.size ∧ s.heap.size ≤ C ∧
       ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, none) ∧
         (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
@@ -677,9 +678,12 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     FDI.fdiCtx, Sem.inner]
   have hC1St : C1 < St.heap.size := Nat.lt_of_lt_of_le hC1 hSz
   refine ⟨Nat.lt_of_lt_of_le hC1St hF4.heap_le, by rw [kind_frame hF4 hC1St]; exact hSC1k, C, frame_restore FW s, ?_,
-    rfl, rfl, hCch4, ?_⟩
+    rfl, rfl, hCch4, ?_, Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hCb hSz2) hF4.heap_le, ?_, ?_⟩
   · simp only [js_simp] at hfu1 hfu2 hfu3
     omega
+  · show (w4.objEntry C).kind.isPlain = true
+    rw [kind_frame hF4 (Nat.lt_of_lt_of_le hCb hSz2), hSo2 C hCb hCC1, hCk]; rfl
+  · exact Nat.le_trans (by have := hF1.heap_le; simp only [js_simp] at this; exact this) hCge
   · exact Exists.intro _ ⟨by first | rfl | (rw [restore_envEntry]; exact hmod4),
       by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, hGDR, hGDRm, hGDRi],
       by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, rhGT, rhGTm, rhGTi],

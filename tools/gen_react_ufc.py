@@ -144,6 +144,7 @@ post=f"""
       (w.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true cw cc) ∧
       (w.objEntry C).props.get? (.str "children") =
         some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
+      (w.objEntry C).kind.isPlain = true ∧ C < w.heap.size ∧ s.heap.size ≤ C ∧
       ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, none) ∧
         (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
