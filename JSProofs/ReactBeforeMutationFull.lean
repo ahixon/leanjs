@@ -11,6 +11,7 @@ import JSProofs.ReactSelection
 
 open ES ES.M HostRuns Logic
 open Std (HashMap)
+open ReactFacts (BindIs)
 
 namespace ReactBeforeMutation
 
@@ -164,7 +165,12 @@ theorem cbm_full {n : Nat}
     (hf : 1200 ≤ s.fuel)
     (C_hdenv : C_d.env = d.env) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, .num lanes]) s fun v w h' =>
-      v = .undefined ∧ h' = h ∧ Frame (FB d.env) s w ∧ s.fuel ≤ w.fuel + 1000 := by
+      v = .undefined ∧ h' = h ∧ Frame (FB d.env) s w ∧ s.fuel ≤ w.fuel + 1000 ∧
+      (∃ SI, s.heap.size ≤ SI ∧ SI < w.heap.size ∧ (w.objEntry SI).kind.isPlain = true ∧
+        (∃ a b c, (w.objEntry SI).props.get? (.str (JSStr.ofString "focusedElem")) = some (.data (.obj E) a b c)) ∧
+        (∃ v a b c, (w.objEntry SI).props.get? (.str (JSStr.ofString "selectionRange")) = some (.data v a b c)) ∧
+        BindIs w d.env (JSStr.ofString "selectionInformation") (.obj SI)) ∧
+      BindIs w d.env (JSStr.ofString "eventsEnabled") ev0 ∧ BindIs w d.env (JSStr.ofString "_enabled") (.bool false) := by
   refine cbm_spec (fo := fo) (d := d) (t := t) (bG := bG) (oG := oG) (bdEv := bdEv) (bdEn := bdEn) (bdGD := bdGD) (bdHS := bdHS) (bdSI := bdSI) (bdNE := bdNE) (bdCC := bdCC) (bdAV := bdAV) (FR := FR) (R := R) (Cont := Cont) (E := E) (Rc := Rc) (K := K) (fGD := fGD) (fHS := fHS) (fCC := fCC) (ev0 := ev0) (lanes := lanes) (sf := sf) (cw := cw) (ce := ce) (cc := cc) (aw := aw) (ae := ae) (ac := ac) (tw := tw) (te := te) (tc := tc) (kw := kw) (ke := ke) (kc := kc) (sw := sw) (se := se) (sc := sc) (hlt := hlt) (hk := hk) (hcode := hcode) (hcls := hcls) (hmode := hmode) (hG := hG) (hGe := hGe) (hGEv := hGEv) (hGEvm := hGEvm) (hGEvi := hGEvi) (hGEn := hGEn) (hGEnv := hGEnv) (hGEnm := hGEnm) (hGGD := hGGD) (hGGDv := hGGDv) (hGHS := hGHS) (hGHSv := hGHSv) (hGSI := hGSI) (hGSIm := hGSIm) (hGSIi := hGSIi) (hGNE := hGNE) (hGNEm := hGNEm) (hGNEi := hGNEi) (hGCC := hGCC) (hGCCv := hGCCv) (hGAV := hGAV) (hGAVm := hGAVm) (hGAVi := hGAVi) (hFR := hFR) (hFRk := hFRk) (hFRc := hFRc) (hR := hR) (hRk := hRk) (hRa := hRa) (hRt := hRt) (hRc := hRc) (hRs := hRs) (hsf := hsf) (hlanes := hlanes) (hGDo := hGDo) (hGDc := hGDc) (hHSo := hHSo) (hCCo := hCCo) (hGDC := hGDC) (hf := by omega) (hHSc := ⟨_, S_hk⟩) (hCCc := ⟨_, C_hk⟩) (hHSC := ?hHSC) (hCCC := ?hCCC)
   case hHSC =>
     intro w h1 hw hfw

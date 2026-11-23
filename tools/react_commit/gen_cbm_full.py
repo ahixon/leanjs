@@ -4,7 +4,7 @@ record the call state's: FB's bindings differ; objects as they were, FB writes n
 a contract."""
 import sys
 sys.path.insert(0, "tools/react_commit")
-from compose import binders, compose
+from compose import binders, compose, _theorem_header
 
 BM = "JSProofs/ReactBeforeMutation.lean"
 SE = "JSProofs/ReactSelection.lean"
@@ -28,9 +28,11 @@ s_imp = " ".join(f"({nm} := S_{nm})" for nm, k, t in binders(SE, "hsc_spec")
                  if k == "{" and nm not in ("n", "h", "s", "fo", "t", "E"))
 c_imp = " ".join(f"({nm} := C_{nm})" for nm, k, t in binders(BM, "cbmc_root")
                  if k == "{" and nm not in ("n", "h", "s", "fo", "t", "R", "bG", "oG", "bdN"))
+_h = _theorem_header(BM, "cbm_spec")
+POST = _h[_h.rindex("fun v w h' =>") + len("fun v w h' =>"):].strip()
 stmt = f"""theorem cbm_full {binds} :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, .num lanes]) s fun v w h' =>
-      v = .undefined ∧ h' = h ∧ Frame (FB d.env) s w ∧ s.fuel ≤ w.fuel + 1000 := by
+      {POST} := by
   refine cbm_spec {fargs} (hf := by omega) (hHSc := ⟨_, S_hk⟩) (hCCc := ⟨_, C_hk⟩) (hHSC := ?hHSC) (hCCC := ?hCCC)
   case hHSC =>
     intro w h1 hw hfw
@@ -71,6 +73,7 @@ import JSProofs.ReactSelection
 
 open ES ES.M HostRuns Logic
 open Std (HashMap)
+open ReactFacts (BindIs)
 
 namespace ReactBeforeMutation
 

@@ -3,6 +3,7 @@ import JSProofs.CBMGen
 import JSProofs.Setter
 import JSProofs.ReactHostContainer
 import JSProofs.Rebase
+import JSProofs.ReactFacts
 import JSProofs.Loops5
 import JSProofs.Loops4
 import JSProofs.Switch
@@ -16,6 +17,7 @@ nothing, `nextEffect` null (`cbmc_root`).
 
 open ES ES.M HostRuns Logic
 open Std (HashMap)
+open ReactFacts (BindIs)
 
 namespace ReactBeforeMutation
 
@@ -80,6 +82,12 @@ theorem simple (d : FuncData) (hc : d.code = CBMGen.commitBeforeMutationEffects_
   constructor <;> rw [hc] <;> try rfl
   simp [CBMGen.commitBeforeMutationEffects_func, Func.params, Func.info]
 
+/-- The object allocated on a state whose scope was just written sits at the earlier state's heap size. -/
+theorem allocObj_entry_setEnv (s : State) (e : EnvId) (v : Env) (ob : Obj) :
+    ((s.setEnv e v).allocObj ob).objEntry s.heap.size = ob := by
+  have := State.allocObj_entry_new (s := s.setEnv e v) (ob := ob)
+  simpa using this
+
 /-- What `commitBeforeMutationEffects` writes before its walk. -/
 def FB (g : EnvId) : Footprint :=
   ⟨[(g, JSStr.ofString "eventsEnabled"), (g, JSStr.ofString "selectionInformation"), (g, JSStr.ofString "_enabled"),
@@ -134,7 +142,12 @@ theorem cbm_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
         ∀ bm o, Scope.declLike? (w'.envEntry d.env) = some (bm, o) →
           ∃ bd, bm[JSStr.ofString "nextEffect"]? = some bd ∧ bd.value = some .null) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, .num lanes]) s fun v w h' =>
-      v = .undefined ∧ h' = h ∧ Frame (FB d.env) s w ∧ s.fuel ≤ w.fuel + 1000 := by
+      v = .undefined ∧ h' = h ∧ Frame (FB d.env) s w ∧ s.fuel ≤ w.fuel + 1000 ∧
+      (∃ SI, s.heap.size ≤ SI ∧ SI < w.heap.size ∧ (w.objEntry SI).kind.isPlain = true ∧
+        (∃ a b c, (w.objEntry SI).props.get? (.str (JSStr.ofString "focusedElem")) = some (.data (.obj E) a b c)) ∧
+        (∃ v a b c, (w.objEntry SI).props.get? (.str (JSStr.ofString "selectionRange")) = some (.data v a b c)) ∧
+        BindIs w d.env (JSStr.ofString "selectionInformation") (.obj SI)) ∧
+      BindIs w d.env (JSStr.ofString "eventsEnabled") ev0 ∧ BindIs w d.env (JSStr.ofString "_enabled") (.bool false) := by
   apply wp_callGen CBMGen.commitBeforeMutationEffects_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root", JSStr.ofString "firstChild",
@@ -225,7 +238,56 @@ theorem cbm_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   have hbAV := hbw3 (JSStr.ofString "appearingViewTransitions") (by simp)
   have hfw3 : 50 ≤ w3.fuel := by simp [State.withFuel, State.allocObj, State.withHeap, State.setProp] at hfu3; omega
   js_until [] [hE3, hS3, hGd3, hd3, hbN3, hbN3v, hbAV, hfw3, Std.HashMap.getElem?_modify, hRne, Ne.symm hRne, hCne, Ne.symm hCne, hRlt', hClt', hE2, hEd2, hS2, hGd2, hfw2, hob2 R hR, hob2 fCC hCCo, hlt2 R hR, hlt2 fCC hCCo, hE1, hEd1, hS1, hGd1, hfw1, hob1 R hR, hob1 fHS hHSo, hob1 fCC hCCo, hob1 FR hFR, hlt1 R hR, hlt1 fHS hHSo, hlt1 fCC hCCo, hGHS, hGHSv, hHSk, hGCC, hGCCv, hCCk, hGSI, hGSIm, hGSIi, hGNE, hGNEm, hGNEi, hGAV, hGAVm, hGAVi, hRk, hRa, hRt, hRc, hRs, hsf, hlanes, e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine ⟨frame_restore (frame_setEnv_with_in (frame_withFuel hFs3 _) hG ?k1 ?k2 (by simp [FB]) _) s, ?fu⟩
+  refine ⟨frame_restore (frame_setEnv_with_in (frame_withFuel hFs3 _) hG ?k1 ?k2 (by simp [FB]) _) s, ?fu, ?si, ?ev, ?en⟩
+  case si =>
+    have hSI3 := obj_eq_np hF3 rfl (o := w2.heap.size)
+      (by simp only [withFuel_heap, State.setProp_size, State.allocObj_size, State.setEnv_heap_size]; exact Nat.lt_succ_self _)
+    simp only [withFuel_objEntry, setProp_objEntry, State.setEnv_objEntry, setEnv_objEntry, State.setProp_size,
+      State.allocObj_size, withFuel_heap, State.setEnv_heap_size, true_and, Nat.lt_succ_self, ↓reduceIte,
+      allocObj_entry_setEnv] at hSI3
+    refine ⟨w2.heap.size, ?l1, ?l2, ?l3, ⟨true, true, true, ?l4⟩, ⟨.null, true, true, true, ?l5⟩, ?l6⟩
+    case l1 =>
+      rcases Nat.eq_zero_or_pos s.heap.size with h0 | hp
+      · omega
+      · have := hlt2 (s.heap.size - 1) (by omega); omega
+    case l2 =>
+      have hz : w2.heap.size < _ := Nat.lt_succ_self w2.heap.size
+      refine Nat.lt_of_lt_of_le ?_ hF3.heap_le
+      simp only [withFuel_heap, State.setProp_size, State.allocObj_size, State.setEnv_heap_size]
+      exact hz
+    case l3 => rw [hSI3]; rfl
+    case l4 =>
+      rw [hSI3]; simp only [Obj.withProps_props]
+      rw [PropMap.get?_insert_ne _ _ _ _ (by decide), PropMap.get?_insert_self]
+    case l5 => rw [hSI3]; simp only [Obj.withProps_props, PropMap.get?_insert_self]
+    case l6 =>
+      obtain ⟨bdS, hbS, hbSv, hbSm⟩ : ∃ b, bw3[JSStr.ofString "selectionInformation"]? = some b ∧
+          b.value = some (.obj w2.heap.size) ∧ b.mutable = true := by
+        rw [hbw3 _ (by simp)]
+        simp [Std.HashMap.getElem?_modify, hGSI, hGSIm]
+      unfold BindIs
+      rw [restore_envEntry, setEnv_envEntry_self _ _ _ (by simpa [envs_withFuel'] using hGd3)]
+      simp only [declLike_withBindings', hd3, Option.map]
+      exact ⟨_, _, bdS, rfl, by simp [Std.HashMap.getElem?_modify, hbS], hbSv, hbSm⟩
+  case ev =>
+    obtain ⟨bdX, hbX, hbXv, hbXm⟩ : ∃ b, bw3[JSStr.ofString "eventsEnabled"]? = some b ∧ b.value = some (ev0) ∧
+        b.mutable = true := by
+      rw [hbw3 _ (by simp)]
+      simp [Std.HashMap.getElem?_modify, hGEv, hGEvm, hGEn, hGEnv]
+    unfold BindIs
+    rw [restore_envEntry, setEnv_envEntry_self _ _ _ (by simpa [envs_withFuel'] using hGd3)]
+    simp only [declLike_withBindings', hd3, Option.map]
+    exact ⟨_, _, bdX, rfl, by simp [Std.HashMap.getElem?_modify, hbX], hbXv, hbXm⟩
+  case en =>
+    obtain ⟨bdX, hbX, hbXv, hbXm⟩ : ∃ b, bw3[JSStr.ofString "_enabled"]? = some b ∧ b.value = some (.bool false) ∧
+        b.mutable = true := by
+      rw [hbw3 _ (by simp)]
+      simp [Std.HashMap.getElem?_modify, hGEn, hGEnm]
+    unfold BindIs
+    rw [restore_envEntry, setEnv_envEntry_self _ _ _ (by simpa [envs_withFuel'] using hGd3)]
+    simp only [declLike_withBindings', hd3, Option.map]
+    exact ⟨_, _, bdX, rfl, by simp [Std.HashMap.getElem?_modify, hbX], hbXv, hbXm⟩
+
   case k1 => rfl
   case k2 => rw [hd3]; rfl
   case fu =>
