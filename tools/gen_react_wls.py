@@ -250,15 +250,19 @@ rfact = lambda N: RC[9 + N - 1]
 cimpl = {n for n, k, t in _binders(CP, "counter_unit_spec") if k == "{"} - set(A2)
 csub = {}
 cb2 = dict((n, t) for n, k, t in _binders(CP, "counter_unit_spec"))
-for pn, sup in ex2.items():
+_lw = dict((n, t) for n, k, t in _binders(bounds_file, "work_loop_spec"))
+_args2 = dict(A2)
+for pn, sup in list(ex2.items()) + [(k, v) for k, v in _args2.items() if k not in ex2]:
     m = re.fullmatch(r"\(by rw \[gW2\]; exact r(\d+)\)", sup)
-    if not m or pn not in cb2: continue
+    m2 = re.search(r"exact (\w+)\)\s*$", sup) if not m else None
+    if pn not in cb2 or not (m or (m2 and m2.group(1) in _lw)): continue
     prem = re.sub(r"\s+", " ", _rename(cb2[pn].strip(), A2))
-    src_f = rfact(int(m.group(1)))
+    src_f = rfact(int(m.group(1))) if m else re.sub(r"\s+", " ", _lw[m2.group(1)].strip())
     match(parse(prem.split(" = ", 1)[1]), parse(src_f.split(" = ", 1)[1]), cimpl, csub)
 EX = [("r18", rfact(18), 1, "Rw"), ("r5", rfact(5), 1, "C1"), ("r13", rfact(13), 1, "C1"),
       ("hC1f2", usubst(_rename(CC[20], A2), csub), 2, "C1"), ("hch", usubst(_rename(CC[17], A2), csub), 2, "C1"),
-      ("x12", usubst(_rename(CC[12], A2), csub), 2, "X")]
+      ("x12", usubst(_rename(CC[12], A2), csub), 2, "X"), ("x4", usubst(_rename(CC[4], A2), csub), 2, "X"),
+      ("x1", usubst(_rename(CC[1], A2), csub), 2, "X")]
 KEEP = {"w", "some", "true", "false", "F64", "numberBinOp", "JSStr"}
 extra, haves, projs = [], [], []
 for i, (hyp, c, stage, obj) in enumerate(EX):

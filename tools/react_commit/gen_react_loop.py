@@ -104,7 +104,8 @@ for k in ["flags", "lanes", "deletions", "sibling"]:
     VAL[("p_X", k)] = text(parse(usubst(SRC[("p_X", k)], sub))[1][1])
 HKEYS = [("p_X", "subtreeFlags"), ("p_X", "childLanes"), ("p_X", "child"), ("p_X", "flags"), ("p_X", "lanes"),
          ("p_X", "deletions"), ("p_X", "sibling"), ("p_Fa", "flags"), ("p_Fa", "deletions"), ("p_Fa", "subtreeFlags"),
-         ("p_Fa", "child"), ("p_Fa", "sibling"), ("l_X", "flags"), ("l_X", "subtreeFlags"), ("l_X", "sibling")]
+         ("p_Fa", "child"), ("p_Fa", "sibling"), ("l_X", "flags"), ("l_X", "subtreeFlags"), ("l_X", "sibling"),
+         ("l_X", "deletions"), ("l_X", "type")]
 def pv(v): return v if re.fullmatch(r"[\w.']+", v) else "(" + v + ")"
 hf = [f'(∃ fa fb, (x.objEntry {o}).props.get? (.str "{k}") = some (.data {pv(VAL[(o, k)])} true fa fb))' for o, k in HKEYS]
 NPS = re.search(r"ReactNewProps\.NewProps w' Cn F (\w+) (\(JSStr\.ofString \"Count: \" \+\+ numberToJSStr \w+ \+\+ JSStr\.ofString \"\"\))", _post)
@@ -288,7 +289,8 @@ FPD = ("Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHos
        "ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC")
 HSRC = {("p_X", "subtreeFlags"): "q7", ("p_X", "childLanes"): "q8", ("p_X", "child"): "x1", ("p_Fa", "flags"): "x4",
         ("p_Fa", "deletions"): "x2", ("p_Fa", "subtreeFlags"): "q4", ("p_Fa", "child"): "x5", ("p_Fa", "sibling"): "x3",
-        ("l_X", "flags"): "q1", ("l_X", "subtreeFlags"): "q2", ("l_X", "sibling"): "x6"}
+        ("l_X", "flags"): "q1", ("l_X", "subtreeFlags"): "q2", ("l_X", "sibling"): "x6", ("l_X", "deletions"): "x7",
+        ("l_X", "type"): "x8"}
 DDN = ", ".join(f"{b[1:].split(' :')[0]}, Ne.symm {b[1:].split(' :')[0]}" for b in ebinds if b.startswith("(l_dd_") or b.startswith("(l_B_hdXall") is False and False)
 DDN = ", ".join(n + ", Ne.symm " + n for n in [b[1:].split(" :")[0] for b in ebinds] if n.startswith("l_dd_"))
 def W2(o):  # o's bound at the loop's end
@@ -326,7 +328,7 @@ hop.append(f"""  case h{n+6} =>
 hop.append(f"  case h{n+7} => exact ⟨b3, hb3, ⟨_, (nb _ (by simp)).trans g1, g1v⟩, ⟨_, (nb _ (by simp)).trans g4, g4v⟩, ⟨_, (nb _ (by simp)).trans g5, g5v⟩, ⟨_, (nb _ (by simp)).trans g6, g6v⟩⟩")
 HOPROOF = "\n    ".join(hop)
 POST = """  case post =>
-  rintro v w' h' ⟨hv, hFw, hfuw, hh, Cn, F, ⟨q1, q2, q3, q4, q5, q6, q7, q8, q9, q10⟩, x1, x2, x3, x4, x5, x6, hNP, hCn, bmL, hbmL, ⟨_, gWn, gWnv⟩, ⟨_, gXs, gXsv, gXsm⟩,
+  rintro v w' h' ⟨hv, hFw, hfuw, hh, Cn, F, ⟨q1, q2, q3, q4, q5, q6, q7, q8, q9, q10⟩, x1, x2, x3, x4, x5, x6, x7, x8, hNP, hCn, bmL, hbmL, ⟨_, gWn, gWnv⟩, ⟨_, gXs, gXsv, gXsm⟩,
     ⟨_, gLc, gLcm, gLci⟩, ⟨_, gCr, gCrm, gCri⟩⟩
   subst hh
   have hGw : l_dPU.env < w.envs.size := by rw [hPUenv]; exact Nat.lt_of_lt_of_le hGs hT.envs_le

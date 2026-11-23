@@ -6,19 +6,27 @@ sys.path.insert(0, "tools/react_commit")
 from compose import _theorem_header, _rename
 
 def call_args(src, callee):
+    """the named arguments `(name := value)` of the call `refine wp_mono (callee ...)` (the whole call, at depth 1)"""
     i = src.index(f"refine wp_mono ({callee} ")
-    j = i + len(f"refine wp_mono ({callee} ")
+    st = i + len("refine wp_mono ")
+    d = 0
+    for e in range(st, len(src)):
+        d += {"(": 1, ")": -1}.get(src[e], 0)
+        if d == 0: break
+    body = src[st + 1:e]
     out = {}
-    while True:
-        while src[j] in " \n": j += 1
-        m = re.compile(r"\((\w+) := ").match(src, j)
-        if not m: break
-        k = m.end(); d = 1
-        while d > 0:
-            if src[k] == "(": d += 1
-            elif src[k] == ")": d -= 1
-            k += 1
-        out[m.group(1)] = src[m.end():k - 1]; j = k
+    j = 0; d = 0
+    while j < len(body):
+        c = body[j]
+        if c == "(" and d == 0:
+            m = re.compile(r"\((\w+'?) := ").match(body, j)
+            if m:
+                k = m.end(); dd = 1
+                while dd > 0:
+                    dd += {"(": 1, ")": -1}.get(body[k], 0); k += 1
+                out[m.group(1)] = body[m.end():k - 1]; j = k; continue
+        d += {"(": 1, ")": -1}.get(c, 0)
+        j += 1
     return out
 
 def facts_group(path, thm):
