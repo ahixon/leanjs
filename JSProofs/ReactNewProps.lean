@@ -20,7 +20,7 @@ def NewProps (w : State) (C F OP : ObjId) (t : JSStr) : Prop :=
   (w.objEntry C).props.get? (.str (JSStr.ofString "onClick")) = some (.data (.obj F) true true true) ∧
   (w.objEntry C).props.get? (.str (JSStr.ofString "children")) = some (.data (.str t) true true true) ∧
   (w.objEntry C).props.get? (.str (JSStr.ofString "hasOwnProperty")) = none ∧
-  (w.objEntry C).props.get? (.str (JSStr.ofString "ref")) = none
+  (w.objEntry C).props.get? (.str (JSStr.ofString "ref")) = none ∧ C < F
 
 theorem NewProps.frame {fp : Footprint} {s w : State} {C F OP : ObjId} {t : JSStr} (hF : Frame fp s w)
     (h : NewProps s C F OP t) (hn : ∀ k, (C, k) ∉ fp.props) : NewProps w C F OP t := by

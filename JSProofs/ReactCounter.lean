@@ -457,7 +457,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
       State.allocObj_entry_new]
   case np =>
-    refine ⟨by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_of_lt (Nat.lt_succ_self _)) hSt2, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_of_lt (Nat.lt_succ_self _)) hSt2, ?_, ?_, ?_, ?_, ?_, ?_, ?_, Nat.lt_succ_self _⟩
     · simp only [restore_objEntry]; rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_kind, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)),
         Obj.withProps_kind, arrowState_objEntry_lt _ _ _ _ _
         (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,

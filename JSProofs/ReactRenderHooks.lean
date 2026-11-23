@@ -532,7 +532,8 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     | rfl | exact hfuel | exact hframe | exact Ek2 | exact Ck2 | exact Cp2 | exact Cr2 | exact Eb2 | exact Cb2 | exact Ege2 | exact Cge2 | exact Et | exact Ety | exact Ek | exact Er | exact Ep | exact Cch | exact Coc | exact Fk
     | exact hFcode | exact hFenv | exact hFthis | exact dK2 | exact hdl2 | exact hRSIH2 | exact m1 | exact u1
     | exact l1 | exact k1 | exact k2 | exact k3 | exact k4 | exact k5 | exact h0 | exact q1 | exact q2 | exact q3
-    | (simp only [restore_objEntry]; first | exact NP2.2.2.2.1 | exact NP2.2.2.2.2.2.2.1)
+    | (simp only [restore_objEntry]; first | exact NP2.2.2.2.1 | exact NP2.2.2.2.2.2.2.1 | exact NP2.2.2.2.2.2.2.2.2)
+    | exact NP2.2.2.2.2.2.2.2.2
     | skip
 
 

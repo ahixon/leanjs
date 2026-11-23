@@ -563,7 +563,7 @@ theorem counter_unit_spec {n : Nat} {h : σ} {s : State} {fPU : ObjId} {dPU : Fu
     all_goals (repeat' apply And.intro)
     all_goals try (refine ⟨F, ?_⟩; unfold ReactNewProps.NewProps; repeat' apply And.intro)
     all_goals first | exact Nat.le_trans gZ1 hCge1 | (simp [js_simp, Nat.lt_of_lt_of_le hC1 z1, PropMap.get?_insert_ne _ _ _ _ hml, PropMap.get?_insert_ne _ _ _ _ hmf, hC1l1, hC1f1]; done) | (js_norm [x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, xret, hch, hCch, hCk1', hCb1, dXC1, Ne.symm dXC1, Nat.lt_of_lt_of_le hC1 z1]; done) | skip
-    all_goals (by_cases hc : C1 = C ∧ C < w1.heap.size <;> first | exact absurd hc.1 hCC1 | ((try simp only [hc, ite_true, ite_false]) <;> simp [js_simp, PropMap.get?_insert_ne _ _ _ _ hmc, hCch, hCk1', hCC1, hNP1.2.1, hNP1.2.2.1, hNP1.2.2.2.1, hNP1.2.2.2.2.1, hNP1.2.2.2.2.2.2.1, hNP1.2.2.2.2.2.2.2]))
+    all_goals (by_cases hc : C1 = C ∧ C < w1.heap.size <;> first | exact absurd hc.1 hCC1 | ((try simp only [hc, ite_true, ite_false]) <;> simp [js_simp, PropMap.get?_insert_ne _ _ _ _ hmc, hCch, hCk1', hCC1, hNP1.2.1, hNP1.2.2.1, hNP1.2.2.2.1, hNP1.2.2.2.2.1, hNP1.2.2.2.2.2.2.1, hNP1.2.2.2.2.2.2.2.1, hNP1.2.2.2.2.2.2.2.2]))
 
 end
 

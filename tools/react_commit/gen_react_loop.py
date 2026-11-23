@@ -111,7 +111,8 @@ NPS = re.search(r"ReactNewProps\.NewProps w' Cn F (\w+) (\(JSStr\.ofString \"Cou
 hf += ['(∃ fa fb, (x.objEntry l_X).props.get? (.str "memoizedProps") = some (.data (.obj Cn) true fa fb))',
        f"ReactNewProps.NewProps x Cn F {NPS.group(1)} {NPS.group(2)}",
        "ReactRenderSync.EndBinds x d.env oG v_ec", "ReactFinishQueueing.QueuesDone x d.env",
-       '(∃ bm, Scope.declLike? (x.envEntry d.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "pendingEffectsLanes"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)']
+       '(∃ bm, Scope.declLike? (x.envEntry d.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "pendingEffectsLanes"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)',
+       "s.heap.size ≤ Cn"]
 FAE0 = re.search(r"Frame \((\(\(\(\(ReactMicrotaskClick\.fpPerf.*?ReactPrepareFresh\.fp d\.env p_X p_A p_Qo p_U p_F p_Fa p_H\))\) s w'", concl).group(1)
 FALL = (f"((((({FAE0}).union (ReactRenderSync.fpOwn eR)).union ({S(FPW)})).union (ReactRenderSync.fpEnd eE d.env I)).union "
         f"(ReactFinishQueueing.fp d.env))")
@@ -294,7 +295,7 @@ def W2(o):  # o's bound at the loop's end
     return f"(Nat.lt_of_lt_of_le {allp[o]} (frame_trans hT hFw).heap_le)"
 ENDF = ("rw [props_frame hFQ (Nat.lt_of_lt_of_le {B} hEnd.heap_le) (by simp [ReactFinishQueueing.fp]), "
         "props_frame hEnd {B} (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn])]")
-hop = ["case HO =>", "  refine ⟨sR.envs.size, e, frame_restore TOT c, Cn, F, " + ", ".join(["?h" + str(i) for i in range(len(HKEYS) + 5)]) + "⟩"]
+hop = ["case HO =>", "  refine ⟨sR.envs.size, e, frame_restore TOT c, Cn, F, " + ", ".join(["?h" + str(i) for i in range(len(HKEYS) + 6)]) + "⟩"]
 for i, (o, k) in enumerate(HKEYS):
     B = W2(o)
     tr = ENDF.format(B=B)
@@ -313,6 +314,7 @@ hop.append(f"  case h{n+1} => exact ReactNewProps.NewProps.frame (frame_restore 
 hop.append(f"  case h{n+2} => obtain ⟨be, hbe, ⟨bx, gx, gxv, gxm⟩, ⟨bwr, gwr, gwrv⟩⟩ := hEB; have hbe2 : be = b2 := (by rw [hb2] at hbe; cases hbe; rfl); subst hbe2; exact ⟨b3, hb3, ⟨bx, by rw [B3 _ (by simp [ReactFinishQueueing.fp])]; exact gx, gxv, gxm⟩, ⟨bwr, by rw [B3 _ (by simp [ReactFinishQueueing.fp])]; exact gwr, gwrv⟩⟩")
 hop.append(f"  case h{n+3} => exact hQD")
 hop.append(f"""  case h{n+4} => exact ⟨b3, hb3, _, by rw [B3 _ (by simp (config := {{ decide := true }}) [ReactFinishQueueing.fp]), B2 _ (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn]), NB _ (by simp (config := {{ decide := true }}) [{FPD}])]; exact gPE, gPEm, gPEv⟩""")
+hop.append(f"  case h{n+5} => exact Nat.le_trans hT.heap_le hCn")
 HOPROOF = "\n    ".join(hop)
 POST = """  case post =>
   rintro v w' h' ⟨hv, hFw, hfuw, hh, Cn, F, ⟨q1, q2, q3, q4, q5, q6, q7, q8, q9, q10⟩, x1, x2, x3, x4, x5, x6, hNP, hCn, bmL, hbmL, ⟨_, gWn, gWnv⟩, ⟨_, gXs, gXsv, gXsm⟩,
