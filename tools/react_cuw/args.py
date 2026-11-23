@@ -50,7 +50,7 @@ def caller_bounds(path, thm):
         if not imp and r: m[r.group(1)] = nm
     return m
 
-def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=()):
+def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=(), bside="(by decide)", envbounds=None):
     """Premise terms at stage k: gZk (heap), gKk (kinds), gPk (props unless written), gEk (envs), gFk (fuel),
     gBk (bindings other than the loop's)."""
     ex = dict(explicit)
@@ -72,6 +72,20 @@ def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=()):
             o = objren.get(m.group(1), m.group(1)); key = m.group(2)
             ex[nm] = (f"(by rw [gP{k} {o} (.str \"{key}\") (by simp [{ds}] <;> decide) {bounds[o]}]; exact {src})")
             continue
-        m = re.match(r"\w+\[JSStr\.ofString \"([^\"]*)\"\]\? = ", ty)
-        if m: ex[nm] = f"(by rw [gB{k} _ (by decide)]; exact {src})"; continue
+        m = re.match(r"Scope\.declLike\? \(s\.envEntry ([\w.]+)\) = ", ty)
+        if m and envbounds:
+            hd, _, tl = m.group(1).partition(".")
+            key = objren.get(hd, hd) + ("." + tl if tl else "")
+            if key in envbounds:
+                ex[nm] = f"(by rw [gV{k} _ {envbounds[key]}]; exact {src})"; continue
+        m = re.match(r"bG\[JSStr\.ofString \"([^\"]*)\"\]\? = ", ty)
+        if m: ex[nm] = f"(by rw [gB{k} _ {bside}]; exact {src})"; continue
     return args(path, thm, ren, ex)
+
+def caller_envbounds(path, thm):
+    """Env -> the caller's premise `E < s.envs.size`."""
+    m = {}
+    for imp, nm, ty in binders(path, thm):
+        r = re.fullmatch(r"([\w.]+) < s\.envs\.size", ty)
+        if not imp and r: m[r.group(1)] = nm
+    return m
