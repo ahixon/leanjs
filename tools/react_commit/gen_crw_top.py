@@ -9,6 +9,7 @@ from compose import binders, _theorem_header
 CF = "JSProofs/ReactCommitEntryFull.lean"
 cb = binders(CF, "crw_full")
 FIB = {"R", "CR_CM_ME_M_K", "CR_CM_LE_L_K", "CR_CM_ME_M_CT_B", "CR_CM_LE_L_B"}
+FRESH = ["CR_CM_ME_M_CT_BT_NP"]
 WB = {"concurrentlyUpdatedLanes", "executionContext", "isFlushingWork", "workInProgressRoot", "pendingEffectsLanes"}
 S = re.compile(r"(?<![A-Za-z0-9_'.])s(?![A-Za-z0-9_'])")
 bdw = {}
@@ -29,6 +30,8 @@ for n, k, t in cb:
     if tt.startswith("∀ s2"): quant.append(n); continue
     m = re.match(r'bG\[JSStr\.ofString "([\w$]+)"\]', tt)
     if m and m.group(1) in WB: sup.append(n); continue
+    # objects the render creates: everything about them is at w
+    if any(re.search(r"(?<![\w'])" + o + r"(?![\w'])", tt) for o in FRESH) and S.search(tt): sup.append(n); continue
     if any(tt.startswith(bd + ".") for bd in bdw): sup.append(n); continue
     m = re.match(r'\(s\.objEntry (\w+)\)\.props\.get\? \(\.str (?:\(JSStr\.ofString )?"([\w$]+)"', tt)
     if m and (m.group(1) in FIB or (m.group(1) == "FR" and m.group(2) in ("callbackNode", "callbackPriority"))
