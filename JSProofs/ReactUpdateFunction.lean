@@ -330,6 +330,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) ∧
       (w.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitOr fl1 (F64.fin false 4503599627370496 (-52)))) true fe fc) ∧
       (w.objEntry C).kind.isPlain = true ∧ C < w.heap.size ∧ s.heap.size ≤ C ∧
+      (∃ F, ReactNewProps.NewProps w C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) ∧
       ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, none) ∧
         (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
@@ -448,7 +449,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (hRWcls := hRWcls) (hRWmode := hRWmode) (hRWenv := hRWenv) (dFH := dFH) (dRQ := dRQ)) ?postRW
   intro v2 w2 h2 ⟨E, C, F, dF', hvE, hF2, hfu2, hh2, hr2, hEt, hEty, hEkey, hEref, hEpr, hCch, hCoc, hEb, hCb, hEge, hCge, hEk, hCk,
     hCp, hCr, hFk, hFcode, hFenv, hFthis, hcomp, hmod, hRSIH, hC1m', hC1u', hC1l', hk1, hk2, hk3, hk4, hk5, hH0b', hQp',
-    hQr', hQl'⟩
+    hQr', hQl', hNP⟩
   subst v2 h2
   -- (what renderWithHooks left: its footprint's objects are C1, the new hook, H0, Q, RSI)
   have hfpW : ∀ o, o ≠ C1 → o ≠ w1.heap.size → o ≠ H0 → o ≠ Q → o ≠ RSI →
@@ -670,6 +671,12 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     rw [props_frame hF4 (Nat.lt_of_lt_of_le hCb hSz2) (by simp [ReactReconcileChildren.fpC, ReactReconcileFibers.fpR,
       ReactReconcileImpl.fpI, ReactCreateWIP.fp, hCC1]), hSo2 C hCb hCC1]
     exact hCch
+  have hNP4 : ReactNewProps.NewProps w4 C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") := by
+    refine ReactNewProps.NewProps.frame hF4 ?_ ?_
+    · unfold ReactNewProps.NewProps at hNP ⊢; rw [hSo2 C hCb hCC1]; exact ⟨Nat.lt_of_lt_of_le hNP.1 hSz2, hNP.2⟩
+    · intro k hk
+      have hCX : C ≠ X := Nat.ne_of_gt (Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le rhX hw1z) hCge)
+      simp [ReactReconcileChildren.fpC, ReactReconcileFibers.fpR, ReactReconcileImpl.fpI, ReactCreateWIP.fp, hCC1, hCX] at hk
   have FW := frame_extend' FSt hF4 (fun q hq _ => by revert q; simp [ReactReconcileChildren.fpC, ReactReconcileFibers.fpR, fpUF])
     (fun q hq _ => by
       simp only [ReactReconcileChildren.fpC, ReactReconcileFibers.fpR, List.mem_append, List.mem_cons, List.mem_nil_iff,
@@ -684,7 +691,8 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     FDI.fdiCtx, Sem.inner]
   have hC1St : C1 < St.heap.size := Nat.lt_of_lt_of_le hC1 hSz
   refine ⟨Nat.lt_of_lt_of_le hC1St hF4.heap_le, by rw [kind_frame hF4 hC1St]; exact hSC1k, C, frame_restore FW s, ?_,
-    rfl, rfl, hCch4, ?_, ?_, ?_, Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hCb hSz2) hF4.heap_le, ?_, ?_⟩
+    rfl, rfl, hCch4, ?_, ?_, ?_, Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hCb hSz2) hF4.heap_le, ?_,
+    ⟨F, by first | exact hNP4 | (unfold ReactNewProps.NewProps at hNP4 ⊢; simp only [restore_objEntry, restore_heap]; exact hNP4)⟩, ?_⟩
   · simp only [js_simp] at hfu1 hfu2 hfu3
     omega
   · rw [props_frame hF4 hC1St (by simp [ReactReconcileChildren.fpC, ReactReconcileFibers.fpR, ReactReconcileImpl.fpI, ReactCreateWIP.fp, rhRFX, Ne.symm rhRFX])]; exact hSC1l

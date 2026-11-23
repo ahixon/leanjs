@@ -1,6 +1,7 @@
 import JSProofs.ReactUseState
 import JSProofs.ReactJsx
 import JSProofs.CounterGen
+import JSProofs.ReactNewProps
 
 /-!
 # The counter component's re-render after a click (zippy docs/react-proofs.md)
@@ -222,7 +223,8 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry H0).props.get? (.str "baseQueue") = some (.data (.obj U) true e3 c3) ∧
       (w.objEntry Q).props.get? (.str "pending") = some (.data .null true qp.2.1 qp.2.2) ∧
       (w.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2) ∧
-      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data vE true ql.2.1 ql.2.2) := by
+      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data vE true ql.2.1 ql.2.2) ∧
+      ReactNewProps.NewProps w C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") := by
   apply wp_callGen CounterGen.Counter_eq (by decide) hK hKk (by omega) hKcls hKmode
     (by rw [hKcode]; rfl) (by rw [hKcode]; rfl) (simpleK dK hKcode) (by rw [hKcode]; rfl) (by rw [hKcode]; rfl)
   have hpn : dK.code.info.fdi.paramNames = #[] := by rw [hKcode]; rfl
@@ -430,7 +432,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     Nat.lt_of_lt_of_le (Nat.lt_of_succ_lt hA1.1) (Nat.le_trans (by rw [hWz]; exact Nat.le_add_right _ _) hSz),
     Nat.lt_of_lt_of_le hEK (by rw [← hWE]; exact hSE), ?Eb, Nat.le_trans (Nat.le_of_lt (Nat.lt_of_succ_lt hA1.1))
     (Nat.le_add_right _ _), ?fr, ?fu, hh3, hEt, hEty, hEkey, hEref, hEpr, ?ch, ?oc, hEk, ?Ck, ?Cp, ?Cr,
-    by rw [hF3e]; exact hFnew.1, rfl, rfl, rfl, ?dK, ?dG, ?c1, ?k1, ?k2, ?k3, ?k4, ?k5, ?h0, ?q1, ?q2, ?q3⟩
+    by rw [hF3e]; exact hFnew.1, rfl, rfl, rfl, ?dK, ?dG, ?c1, ?k1, ?k2, ?k3, ?k4, ?k5, ?h0, ?q1, ?q2, ?q3, ?np⟩
   case ch => rw [hC3]; js_norm [hCC, hCC2]
   case oc => rw [hC3]; js_norm [hCC, hCC2]
   case Eb =>
@@ -454,6 +456,32 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     rw [hC3, ES.setProp_proto, ES.setProp_proto, arrowState_objEntry_lt _ _ _ _ _
       (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
       State.allocObj_entry_new]
+  case np =>
+    refine ⟨by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_of_lt (Nat.lt_succ_self _)) hSt2, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · simp only [restore_objEntry]; rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_kind, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)),
+        Obj.withProps_kind, arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]
+    · simp only [restore_objEntry]; rw [hC3, ES.setProp_proto, ES.setProp_proto, arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]
+    · simp only [restore_objEntry]; rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props,
+        State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]
+      exact ReactNewProps.keys_two _ _ _ _ (by decide)
+    · simp only [restore_objEntry]; rw [hC3]; js_norm [hCC, hCC2]
+    · simp only [restore_objEntry]; rw [hC3]; js_norm [hCC, hCC2]
+    · simp only [restore_objEntry]; rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide),
+        State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide), arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]
+      simp [PropMap.get?_empty]
+    · simp only [restore_objEntry]; rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide),
+        State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide), arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]
+      simp [PropMap.get?_empty]
   case dK => rw [hSe _ hEKW]; exact hWd
   case dG => rw [hfinE _ (envs_frame hFs hG) (Nat.ne_of_lt hG)]; exact hdl1
   case c1 => rw [hfin _ (hw C1 hC1)]; exact hm1

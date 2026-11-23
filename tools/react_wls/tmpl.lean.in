@@ -131,7 +131,7 @@ set_option maxRecDepth 100000 in
   refine wp_mono (ReactUnitCounter.counter_unit_spec @@ARGS2@@) ?_
   intro vS2 wS2 hS2 ⟨hv2, hF2, hfu2, hh2, ⟨bm2, hbm2, ⟨bdW2, hbdW2, hbdW2v, hbdW2m⟩, ⟨bdD2, hbdD2, hbdD2m, hbdD2i⟩,
     ⟨bdT2, hbdT2, hbdT2m, hbdT2i⟩, ⟨bdS2, hbdS2, hbdS2m, hbdS2i⟩⟩, Cn, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12,
-    x13, x14, x15, xret, hch, hCch, hC1l2, hC1f2, hCk2, hCb2, hCge2⟩
+    x13, x14, x15, xret, hch, hCch, hC1l2, hC1f2, hCk2, hCb2, hCge2, ⟨F2, hNP2⟩⟩
   subst hv2 hh2
   have hKne : s.envs.size ≠ K_d.env := by rw [hKdEnv]; exact wP_ne
   have hw2K := envEntry_frame hF2 (e := s.envs.size) (by rw [hSt]; js_norm [Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E1])
@@ -211,14 +211,18 @@ set_option maxRecDepth 100000 in
   clear hSt
   have E3 : s.envs.size + 1 ≤ wS3.envs.size := Nat.le_trans E3a hF3.envs_le
   try simp only [js_simp] at hfu3
+@@EXTRAHAVES@@
   have f3 : 100 ≤ wS3.fuel := by omega
   refine for_iter (by first | omega | (simp only [js_simp]; omega)) (by omega) ?_
   js [hw3K, hbm3, hbdW3, hbdW3v, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E3, Nat.ne_of_gt (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E3),
     Nat.lt_of_lt_of_le wP_G1 E3, Nat.ne_of_gt (Nat.lt_of_lt_of_le wP_G1 E3), R_hG, wP_G1, wP_ne, Ne.symm wP_ne,
     wP_n, wP_v, wP_l, wP_a, FDI.fdiCtx, Sem.inner]
+  all_goals (try refine ⟨Cn, F2, ?_⟩)
+  all_goals (repeat' apply And.intro)
+  all_goals (try refine ⟨Cn, F2, ?_⟩)
   all_goals (repeat' apply And.intro)
   all_goals first | rfl | omega | exact frame_restore (frame_withFuel FW3 _) s | (rw [hKdEnv] at FW3; exact frame_restore (frame_withFuel FW3 _) s) |
-    (simp only [restore_objEntry, withFuel_objEntry, setEnv_objEntry]; first | @@PROJ@@)
+    (simp only [restore_objEntry, withFuel_objEntry, setEnv_objEntry]; first | @@PROJ@@ | @@EXTRAPROJ@@ | exact NP3.2.1 | exact NP3.2.2.1 | exact NP3.2.2.2.1 | exact NP3.2.2.2.2.1 | exact NP3.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.2) | (simp only [js_simp]; exact NP3.1)
 
 end
 

@@ -376,6 +376,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) ∧
       (w.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitOr fl1 (F64.fin false 4503599627370496 (-52)))) true fe fc) ∧
       (w.objEntry C).kind.isPlain = true ∧ C < w.heap.size ∧ s.heap.size ≤ C ∧
+      (∃ F, ReactNewProps.NewProps w C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) ∧
       ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, none) ∧
         (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
@@ -638,12 +639,12 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (hC1f := (by rw [gSp C1 _ hC1 (fun h => by first | decide | exact absurd h (by assumption) | exact absurd h (Ne.symm (by assumption)) | exact absurd h ((hdW _ (by simp)).1))]; exact hC1f))
       (hdW := hdW) (hdUe := hdUe)) ?postU
   intro v2 w2 h2 ⟨C, hv2, hF2, hfu2, hh2, hr2, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, xret,
-    hch, hCch, hC1l2, hC1f2, hCk2, hCb2, hCge2, hB2⟩
+    hch, hCch, hC1l2, hC1f2, hCk2, hCb2, hCge2, hNP2, hB2⟩
   subst v2 h2
   have FW := frame_extend' gFSt hF2 (fun q hq _ => hq) (fun q hq _ => hq) (fun _ => rfl)
   have hfw : s.fuel ≤ w2.fuel + 530 := by simp only [js_simp] at hfu1; omega
   exact ⟨C, rfl, frame_restore FW s, hfw, rfl, rfl, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15,
-    xret, hch, hCch, hC1l2, hC1f2, hCk2, hCb2, Nat.le_trans gSz hCge2, hB2⟩
+    xret, hch, hCch, hC1l2, hC1f2, hCk2, hCb2, Nat.le_trans gSz hCge2, hNP2, hB2⟩
 
 end
 

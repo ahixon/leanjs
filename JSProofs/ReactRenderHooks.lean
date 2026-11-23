@@ -230,7 +230,8 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry H0).props.get? (.str "baseQueue") = some (.data (.obj U) true e3 c3) ∧
       (w.objEntry Q).props.get? (.str "pending") = some (.data .null true qp.2.1 qp.2.2) ∧
       (w.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2) ∧
-      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data (.num xE) true ql.2.1 ql.2.2) := by
+      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data (.num xE) true ql.2.1 ql.2.2) ∧
+      ReactNewProps.NewProps w C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") := by
   apply wp_callGen RWHGen.renderWithHooks_eq (by decide) hRW hRWk (by omega) hRWcls hRWmode
     (by rw [hRWcode]; rfl) (by rw [hRWcode]; rfl) (simpleRW dRW hRWcode) (by rw [hRWcode]; rfl) (by rw [hRWcode]; rfl)
   have hpn : dRW.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
@@ -389,7 +390,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (dAP := dAP) (dfV := dfV) (dAIP := dAIP) (dfN := dfN) (dIP := dIP) (dOP := dOP) (dIJ := dIJ) (dfJ := dfJ)
       (hKd := hKd) (hJd := hJd)) ?post
   intro v w h1 ⟨E, C, F, dF', hvE, hEb, hCb, hFb, hKb, hEKb, hEge, hCge, hFc, hfuc, hhc, hEt, hEty, hEkey, hEref, hEpr, hCch, hCoc, hEk', hCk', hCp', hCr', hFk, hFcode, hFenv, hFthis,
-    hdK', hdG, hm1, hk1, hk2, hk3, hk4, hk5, hH0b, hQp1, hQr1, hQl1⟩
+    hdK', hdG, hm1, hk1, hk2, hk3, hk4, hk5, hH0b, hQp1, hQr1, hQl1, hNP⟩
   subst v h1
   rw [hStz] at hFc
   -- (renderWithHooks' own record, untouched by the component)
@@ -480,6 +481,12 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     rw [(hF2.obj_agree C (by simp only [js_simp]; exact hCb)).2.1]; simp only [js_simp]; exact hCp'
   have Cr2 := (hpw C _ hCb (by decide)).trans hCr'
   have Ege2 : s.heap.size ≤ E := by rw [← hStz]; exact hEge
+  have NP2 : ReactNewProps.NewProps w2 C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") := by
+    refine ReactNewProps.NewProps.frame hF2 ?_ ?_
+    · unfold ReactNewProps.NewProps at hNP ⊢; simp only [js_simp]; exact hNP
+    · intro k hk
+      have hIC : RSI ≠ C := Nat.ne_of_lt (Nat.lt_of_lt_of_le hI (by rw [← hStz]; exact hCge))
+      simp [ReactFinishHooks.fpF, Ne.symm hIC] at hk
   have Cge2 : s.heap.size ≤ C := by rw [← hStz]; exact hCge
   have Eb2 : E < w2.heap.size := Nat.lt_of_lt_of_le (by simp only [js_simp]; exact hEb) hF2.heap_le
   have Cb2 : C < w2.heap.size := Nat.lt_of_lt_of_le (by simp only [js_simp]; exact hCb) hF2.heap_le
@@ -525,6 +532,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     | rfl | exact hfuel | exact hframe | exact Ek2 | exact Ck2 | exact Cp2 | exact Cr2 | exact Eb2 | exact Cb2 | exact Ege2 | exact Cge2 | exact Et | exact Ety | exact Ek | exact Er | exact Ep | exact Cch | exact Coc | exact Fk
     | exact hFcode | exact hFenv | exact hFthis | exact dK2 | exact hdl2 | exact hRSIH2 | exact m1 | exact u1
     | exact l1 | exact k1 | exact k2 | exact k3 | exact k4 | exact k5 | exact h0 | exact q1 | exact q2 | exact q3
+    | (simp only [restore_objEntry]; first | exact NP2.2.2.2.1 | exact NP2.2.2.2.2.2.2.1)
     | skip
 
 

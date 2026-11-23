@@ -145,7 +145,7 @@ FPDEFS = ("Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, React
           "ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, "
           "List.cons_append, List.nil_append, List.mem_append, List.mem_cons")
 DD = ", ".join([f"dd_{o}_{w}" for o, w in DIST] + [f"Ne.symm dd_{o}_{w}" for o, w in DIST])
-stmt_full = stmt + f" :\n    WP eng answer (n + 10) h (callImpl eng (.obj fWL) tWL #[]) s fun v w h' =>\n      v = .undefined ∧ Frame ({FP}) s w ∧ s.fuel ≤ w.fuel + 2400 ∧ h' = h ∧\n      @@FACTS@@"
+stmt_full = stmt + f" :\n    WP eng answer (n + 10) h (callImpl eng (.obj fWL) tWL #[]) s fun v w h' =>\n      v = .undefined ∧ Frame ({FP}) s w ∧ s.fuel ≤ w.fuel + 2400 ∧ h' = h ∧\n      ∃ Cn F, @@FACTS@@ ∧ @@EXTRA@@ ∧\n      ReactNewProps.NewProps w Cn F OP (JSStr.ofString \"Count: \" ++ numberToJSStr xE ++ JSStr.ofString \"\")"
 tmpl = open(os.path.join(ROOT, "tools", "react_wls", "tmpl.lean.in")).read()
 out = tmpl.replace("@@FPK@@", FPK).replace("@@FPR@@", FPR).replace("@@FP@@", FP).replace("@@STMT@@", stmt_full).replace("@@FPDEFS@@", FPDEFS).replace("@@DD@@", DD)
 bounds_file = J("ReactWorkLoop.lean")
@@ -224,3 +224,61 @@ NF = FACTS.count("props.get?")
 PROJ = " | ".join("exact hFacts3" + ".2" * i + (".1" if i < NF - 1 else "") for i in range(NF))
 out = open(bounds_file).read().replace("@@ARGS3@@", a3).replace("@@FACTS@@", FACTS).replace("@@PROJ@@", PROJ)
 open(bounds_file, "w").write(out)
+
+# the fields the commit reads that the loop writes, beyond what the button's unit states: each the unit post's
+# conjunct renamed through its call's arguments (variables the call leaves to unification matched against the
+# stage-1 facts that supply them; the properties' attribute variables left existential), carried to the end
+from export_facts import call_args
+from unify import parse, match, text, subst as usubst
+src = open(bounds_file).read()
+from compose import binders as _binders, _theorem_header
+loopnames = {n for n, k, t in _binders(bounds_file, "work_loop_spec")}
+def conjs(path, thm):
+    h = re.sub(r"\s+", " ", _theorem_header(path, thm)); post = h[h.rindex("fun v w h' =>"):]
+    out = []
+    for m in re.finditer(r"\(w\.objEntry \w+\)\.props\.get\? \(\.str \"\w+\"\) = some \(", post):
+        j = m.end(); d = 1
+        while d:
+            d += {"(": 1, ")": -1}.get(post[j], 0); j += 1
+        out.append(post[m.start():j])
+    return out
+RP, CP = J("ReactUnitRoot.lean"), J("ReactUnitCounter.lean")
+A1, A2 = call_args(src, "ReactUnitRoot.root_spec"), call_args(src, "ReactUnitCounter.counter_unit_spec")
+RC = [_rename(c, A1) for c in conjs(RP, "root_spec")]
+CC = conjs(CP, "counter_unit_spec")
+rfact = lambda N: RC[9 + N - 1]
+cimpl = {n for n, k, t in _binders(CP, "counter_unit_spec") if k == "{"} - set(A2)
+csub = {}
+cb2 = dict((n, t) for n, k, t in _binders(CP, "counter_unit_spec"))
+for pn, sup in ex2.items():
+    m = re.fullmatch(r"\(by rw \[gW2\]; exact r(\d+)\)", sup)
+    if not m or pn not in cb2: continue
+    prem = re.sub(r"\s+", " ", _rename(cb2[pn].strip(), A2))
+    src_f = rfact(int(m.group(1)))
+    match(parse(prem.split(" = ", 1)[1]), parse(src_f.split(" = ", 1)[1]), cimpl, csub)
+EX = [("r18", rfact(18), 1, "Rw"), ("r5", rfact(5), 1, "C1"), ("r13", rfact(13), 1, "C1"),
+      ("hC1f2", usubst(_rename(CC[20], A2), csub), 2, "C1"), ("hch", usubst(_rename(CC[17], A2), csub), 2, "C1"),
+      ("x12", usubst(_rename(CC[12], A2), csub), 2, "X")]
+KEEP = {"w", "some", "true", "false", "F64", "numberBinOp", "JSStr"}
+extra, haves, projs = [], [], []
+for i, (hyp, c, stage, obj) in enumerate(EX):
+    key = re.search(r'\.str "(\w+)"', c).group(1)
+    rhs = parse(c.split(" = ", 1)[1])          # [some, [.data, V, W, E, C]]
+    dat = rhs[1]
+    V, W = text(dat[1]), text(dat[2])
+    Vp = V if re.fullmatch(r"[\w.]+", V) else "(" + V + ")"
+    stmt = lambda st: f"∃ a b, ({st}.objEntry {obj}).props.get? (.str \"{key}\") = some (.data {Vp} {W} a b)"
+    extra.append(f"({stmt('w')})")
+    bnd = bounds.get(obj, "hXs" if obj == "X" else None)
+    chain = f"props_frame hF3 (Nat.lt_of_lt_of_le {bnd} gZ3) {SIDE}, gW3"
+    if stage == 1: chain += f", props_frame hF2 (Nat.lt_of_lt_of_le {bnd} gZ2) {SIDE}, gW2'"
+    haves.append(f"  have EX{i} : {stmt('wS3')} := ⟨_, _, by\n    rw [{chain}]; exact {hyp}⟩")
+    projs.append(f"exact EX{i}")
+OBJS3 = ["VS", "Cu", "Cx", "CS", "CF", "RI", "Rw", "C1"]
+dn = ", ".join(f"Nat.ne_of_lt (Nat.lt_of_lt_of_le {bounds[o]} (Nat.le_trans gZ2 hCge2)), Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le {bounds[o]} (Nat.le_trans gZ2 hCge2)))" for o in OBJS3)
+haves.append(f"""  have NP3 : ReactNewProps.NewProps wS3 Cn F2 OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") :=
+    ReactNewProps.NewProps.frame hF3 (by unfold ReactNewProps.NewProps at hNP2 ⊢; rw [gW3, gH3]; exact hNP2)
+      (fun k hk => by simp [{FPDEFS}, hCnX, Ne.symm hCnX, {dn}] at hk)""")
+out = open(bounds_file).read().replace("@@EXTRA@@", " ∧\n      ".join(extra)).replace("@@EXTRAHAVES@@", "\n".join(haves)).replace("@@EXTRAPROJ@@", " | ".join(projs))
+open(bounds_file, "w").write(out)
+print("extra", len(extra), "csub", csub)
