@@ -381,8 +381,8 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
         (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true ∧
-        (∃ bd, bm[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true) ∧
-        (∃ bd, bm[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true) := by
+        (∃ bd, bm[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        (∃ bd, bm[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) := by
   apply wp_callGen BWGen.beginWork_eq (by decide) hBW hBWk (by omega) hBWcls hBWmode
     (by rw [hBWcode]; rfl) (by rw [hBWcode]; rfl) (simpleB dB hBWcode) (by rw [hBWcode]; rfl) (by rw [hBWcode]; rfl)
   have hpn : dB.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",

@@ -130,7 +130,7 @@ set_option maxRecDepth 100000 in
   have gFS2 : Frame (@@FP@@) s St := by rw [hSt]; exact frame_withFuel FW1 _
   refine wp_mono (ReactUnitCounter.counter_unit_spec @@ARGS2@@) ?_
   intro vS2 wS2 hS2 ⟨hv2, hF2, hfu2, hh2, ⟨bm2, hbm2, ⟨bdW2, hbdW2, hbdW2v, hbdW2m⟩, ⟨bdD2, hbdD2, hbdD2m, hbdD2i⟩,
-    ⟨bdT2, hbdT2, hbdT2m, hbdT2i⟩, ⟨bdS2, hbdS2, hbdS2m, hbdS2i, ⟨bdL2, hbdL2, hbdL2m⟩, ⟨bdF2, hbdF2, hbdF2m⟩⟩⟩, Cn, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12,
+    ⟨bdT2, hbdT2, hbdT2m, hbdT2i⟩, ⟨bdS2, hbdS2, hbdS2m, hbdS2i, ⟨bdL2, hbdL2, hbdL2m, hbdL2i⟩, ⟨bdF2, hbdF2, hbdF2m, hbdF2i⟩⟩⟩, Cn, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12,
     x13, x14, x15, xret, hch, hCch, hC1l2, hC1f2, hCk2, hCb2, hCge2, ⟨F2, hNP2⟩⟩
   subst hv2 hh2
   have hKne : s.envs.size ≠ K_d.env := by rw [hKdEnv]; exact wP_ne
@@ -214,14 +214,14 @@ set_option maxRecDepth 100000 in
 @@EXTRAHAVES@@
   have BL : (∃ bd, bm3[JSStr.ofString "workInProgress"]? = some bd ∧ bd.value = some .null) ∧
       (∃ bd, bm3[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true) ∧
-      (∃ bd, bm3[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true) ∧
-      (∃ bd, bm3[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true) := by
+      (∃ bd, bm3[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+      (∃ bd, bm3[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) := by
     obtain ⟨bw3, hbw3d, hbw3x⟩ := declLike_frame hF3 (Nat.lt_of_lt_of_le R_hG gE3) gG3
     have hb3 : bm3 = bw3 := by rw [hbw3d] at hbm3; cases hbm3; rfl
     subst hb3
     exact ⟨⟨bdW3, hbdW3, hbdW3v⟩, ⟨bdE3, hbdE3, hbdE3v, hbdE3m⟩,
-      ⟨bdL2, by rw [hbw3x _ (by simp [@@FPDEFS@@] <;> decide)]; exact hbdL2, hbdL2m⟩,
-      ⟨bdF2, by rw [hbw3x _ (by simp [@@FPDEFS@@] <;> decide)]; exact hbdF2, hbdF2m⟩⟩
+      ⟨bdL2, by rw [hbw3x _ (by simp [@@FPDEFS@@] <;> decide)]; exact hbdL2, hbdL2m, hbdL2i⟩,
+      ⟨bdF2, by rw [hbw3x _ (by simp [@@FPDEFS@@] <;> decide)]; exact hbdF2, hbdF2m, hbdF2i⟩⟩
   have f3 : 100 ≤ wS3.fuel := by omega
   refine for_iter (by first | omega | (simp only [js_simp]; omega)) (by omega) ?_
   js [hw3K, hbm3, hbdW3, hbdW3v, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E3, Nat.ne_of_gt (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E3),
