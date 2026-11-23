@@ -38,7 +38,7 @@ def FPA (g gP : EnvId) (FR : ObjId) : Footprint :=
 
 /-- What the click's commit leaves for the next `ensureRootIsScheduled`: the schedule after the call inside
 `flushSpawnedWork` and the root's lanes finished. -/
-def Done (w : State) (g : EnvId) (oG : Option EnvId) (FR : ObjId) (bdF : Binding) : Prop :=
+def Done (w : State) (g : EnvId) (oG : Option EnvId) (FR : ObjId) (bdF bEn : Binding) (fEn : ObjId) : Prop :=
   ReactEnsureRoot.Scheduled w g oG FR ∧
     (∃ a b c, (w.objEntry FR).props.get? (.str (JSStr.ofString "pendingLanes")) =
       some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧
@@ -46,11 +46,14 @@ def Done (w : State) (g : EnvId) (oG : Option EnvId) (FR : ObjId) (bdF : Binding
     (∃ bW bdW bdL lv, Scope.declLike? (w.envEntry g) = some (bW, oG) ∧
       bW[JSStr.ofString "workInProgressRoot"]? = some bdW ∧ bdW.value = some .null ∧
       bW[JSStr.ofString "workInProgressRootRenderLanes"]? = some bdL ∧ bdL.value = some lv ∧
-      bW[JSStr.ofString "firstScheduledRoot"]? = some bdF) ∧
+      bW[JSStr.ofString "firstScheduledRoot"]? = some bdF ∧ bW[JSStr.ofString "ensureRootIsScheduled"]? = some bEn) ∧
     (∃ a b c, (w.objEntry FR).props.get? (.str "next") = some (.data .null a b c)) ∧
     (∃ a b c, (w.objEntry FR).props.get? (.str "cancelPendingCommit") = some (.data .null a b c)) ∧
     (∃ a b c, (w.objEntry FR).props.get? (.str "timeoutHandle") =
-      some (.data (.num (F64.fin false 4503599627370496 (-52)).neg) a b c))
+      some (.data (.num (F64.fin false 4503599627370496 (-52)).neg) a b c)) ∧
+    g < w.envs.size ∧ FR < w.heap.size ∧ (w.objEntry FR).kind.isPlain = true ∧
+    fEn < w.heap.size ∧ ∃ dd, (w.objEntry fEn).kind = .func dd ∧ dd.code = ERSGen.ensureRootIsScheduled_func ∧
+      dd.isClassCtor = false ∧ dd.thisMode = .strict ∧ dd.env = g
 
 section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
@@ -113,7 +116,8 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hRelo : fRel < s.heap.size) (hRelc : ∃ dd, (s.objEntry fRel).kind = .func dd)
     (hLPo : fLP < s.heap.size) (hLPc : ∃ dd, (s.objEntry fLP).kind = .func dd)
     (hPEo : fPE < s.heap.size) (hPEc : ∃ dd, (s.objEntry fPE).kind = .func dd)
-    (hEno : fEn < s.heap.size) (hEnc : ∃ dd, (s.objEntry fEn).kind = .func dd)
+    (hEno : fEn < s.heap.size) (hEnc : ∃ dd, (s.objEntry fEn).kind = .func dd ∧
+      dd.code = ERSGen.ensureRootIsScheduled_func ∧ dd.isClassCtor = false ∧ dd.thisMode = .strict ∧ dd.env = d.env)
     (hFSo : fFS < s.heap.size) (hFSc : ∃ dd, (s.objEntry fFS).kind = .func dd)
     (dRF : R ≠ FR) (dLF : fLP ≠ FR) (dPF : fPE ≠ FR) (dEF : fEn ≠ FR) (dSF : fFS ≠ FR)
     {K : Nat} {gP : EnvId} (hgP : gP ≠ d.env) (hgPs : gP < s.envs.size) (hK : 6 * K + 400 ≤ s.fuel)
@@ -141,14 +145,14 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hfpE : ∀ p, p ∈ fpE.binds → p.1 < s.envs.size ∧ (p.1 = d.env → p.2 ∉ [JSStr.ofString "nestedUpdateCount",
       JSStr.ofString "rootWithNestedUpdates", JSStr.ofString "flushSyncWorkAcrossRoots_impl",
       JSStr.ofString "workInProgressRoot", JSStr.ofString "workInProgressRootRenderLanes",
-      JSStr.ofString "firstScheduledRoot"]))
+      JSStr.ofString "firstScheduledRoot", JSStr.ofString "ensureRootIsScheduled"]))
     (hfpEp : ∀ p, p ∈ fpE.props → p.1 ≠ FR ∧ p.1 ≠ fFS)
     (hFSs : ∀ w h1, Frame ((FPA d.env gP FR).union fpE) s w → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fFS) .undefined #[.num (F64.fin false 0 (-1074)), .bool false]) w
         fun v w' h' => Frame {} w w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + 6 * K + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union fpE) s w ∧
-        Done w d.env oG FR bFSR := by
+        Done w d.env oG FR bFSR bEn fEn := by
   apply wp_callGen FSPGen.flushSpawnedWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (ReactNoEffects.simple_spawned d hcode) (by rw [hcode]; rfl)
     (by rw [hcode]; rfl)
@@ -305,7 +309,7 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     case q2 => simp only [declLike_isSome_withBindings]; exact hdS
     exact frame_setEnv_new hFs3 (Nat.le_refl _) _
   js_until [] [hfw4, hE4, hEd4, hS4, hGd4, hob4 FR (hlt3 FR hFR), hob4 fEn (hlt3 fEn hEno), hob3 fEn (hlt2 fEn hEno), hob2 fEn hEno dEF, hlt4 FR hFR, hlt4 fEn hEno, hob3 FR (hlt2 FR hFR), hFRk2, hFRl2, gEn, gEnv, hfw3, hE3, hEd3, hS3, hGd3, hob3 FR (hlt2 FR hFR), hob3 R (hlt2 R hR), hob3 fPE (hlt2 fPE hPEo), hlt3 R hR, hlt3 FR hFR, hlt3 fPE hPEo, hob2 R hR dRF, hob2 fPE hPEo dPF, hFRk2, hFRl2, hlt2 R hR, hlt2 FR hFR, hob1 R hR, gIH, gIHv, gVE, gVEv, gTT, gTTm, gTTv, gPE, gPEv, hfw2, hE2, hEd2, hS2, hGd2, hFRk2, hFRl2, hob2 R hR dRF, hob2 fLP hLPo dLF, hlt2 R hR, hlt2 FR hFR, hlt2 fLP hLPo, gLB, gLBm, gLBv, gLP, gLPv, hfw1, hE1, hEd1, hS1, hGd1, hob1 R hR, hob1 FR hFR, hob1 fRel hRelo, hlt1 R hR, hlt1 FR hFR, hlt1 fRel hRelo, gER, gERm, gERv, gFW, gFWm, gFWv, gEL, gELv, gRE, gREv, gRel, gRelv, hR, hRk, hRs, hRf, hrs, hrf, hFR, hFRk, hFRl, e1, e1', e4, hG, hGe, gS, gSm, gSv, gVT, gVTm, gVTv, gRP, gRPv, hRPo, hRPk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  obtain ⟨dEn, hEnk⟩ := hEnc
+  obtain ⟨dEn, hEnk, hEnc1, hEnc2, hEnc3, hEnc4⟩ := hEnc
   refine ⟨by js_norm [CallableC, hlt4 fEn hEno, hob4 fEn (hlt3 fEn hEno), hob3 fEn (hlt2 fEn hEno), hob2 fEn hEno dEF, hEnk], ?_⟩
   refine wp_mono (hEn _ _ hFs4 (by omega)) ?_
   rintro v5 w5 h5 ⟨hF5, hFs5, hfu5, rfl, hSch5⟩
@@ -364,14 +368,14 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     have ebS : bS' = bS := by rw [hS1] at hdS'; simp only [Option.some.injEq, Prod.mk.injEq] at hdS'; exact hdS'.1.symm
     subst ebS
     have hx : ∀ x, x ∈ [JSStr.ofString "workInProgressRoot", JSStr.ofString "workInProgressRootRenderLanes",
-        JSStr.ofString "firstScheduledRoot"] → bS'[x]? = bG[x]? := fun x hx =>
+        JSStr.ofString "firstScheduledRoot", JSStr.ofString "ensureRootIsScheduled"] → bS'[x]? = bG[x]? := fun x hx =>
       hxS' x fun hm => by
         simp only [Footprint.union, List.mem_append] at hm
         rcases hm with hm | hm
         · simp only [List.mem_cons, List.mem_nil_iff, or_false] at hx
           simp only [FPA, FPS, Footprint.union, List.cons_append, List.nil_append, List.mem_cons, List.mem_nil_iff,
             Prod.mk.injEq, or_false] at hm
-          rcases hx with rfl | rfl | rfl <;> simp (config := { decide := true }) at hm
+          rcases hx with rfl | rfl | rfl | rfl <;> simp (config := { decide := true }) at hm
         · exact (hfpE _ hm).2 rfl (List.mem_append_right [JSStr.ofString "nestedUpdateCount", JSStr.ofString "rootWithNestedUpdates", JSStr.ofString "flushSyncWorkAcrossRoots_impl"] hx)
     have hpr : ∀ k, k ∈ [PropKey.str "next", .str "cancelPendingCommit", .str "timeoutHandle"] →
         (w5.objEntry FR).props.get? k = (s.objEntry FR).props.get? k := fun k hk =>
@@ -385,7 +389,16 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
           rcases hk with rfl | rfl | rfl <;> simp (config := { decide := true }) at hm
         · exact (hfpEp _ hm).1 rfl
     refine ⟨⟨_, rfl, ?_, ?_, ?_, ?_, bdm, by simp [Std.HashMap.getElem?_modify, g5], g5m⟩, ⟨_, _, _, hFRl5⟩,
-      ⟨_, bWR, bRL, lv, rfl, ?_, gWRv, ?_, gRLv, ?_⟩, ⟨nxw, nxe, nxc, ?_⟩, ⟨cpw, cpe, cpc, ?_⟩, ⟨thw, the, thc, ?_⟩⟩
+      ⟨_, bWR, bRL, lv, rfl, ?_, gWRv, ?_, gRLv, ?_, ?_⟩, ⟨nxw, nxe, nxc, ?_⟩, ⟨cpw, cpe, cpc, ?_⟩, ⟨thw, the, thc, ?_⟩,
+      ?eg, ?eh, ?ek, ?el, dEn, ?em, hEnc1, hEnc2, hEnc3, hEnc4⟩
+    case eg => exact Nat.lt_trans hG hS6
+    case eh => exact Nat.lt_of_lt_of_le (by first | exact hlt5 FR hFR | (simp only [js_simp]; exact hlt5 FR hFR) | (simp; exact hlt5 FR hFR)) hF6.heap_le
+    case ek => rw [hFRk5]; exact hFRk
+    case el => exact Nat.lt_of_lt_of_le (by first | exact hlt5 fEn hEno | (simp only [js_simp]; exact hlt5 fEn hEno)) hF6.heap_le
+    case em =>
+      rw [kind_frame hF6 (by first | exact hlt5 fEn hEno | (simp only [js_simp]; exact hlt5 fEn hEno))]
+      try simp only [js_simp]
+      rw [kind_frame hFs5 hEno]; exact hEnk
     · simp [Std.HashMap.getElem?_modify, g1]
     · simp [Std.HashMap.getElem?_modify, g2]
     · simp [Std.HashMap.getElem?_modify, g3]
@@ -393,6 +406,7 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     · simp [Std.HashMap.getElem?_modify, hx (JSStr.ofString "workInProgressRoot") (by simp), gWR]
     · simp [Std.HashMap.getElem?_modify, hx (JSStr.ofString "workInProgressRootRenderLanes") (by simp), gRL]
     · simp [Std.HashMap.getElem?_modify, hx (JSStr.ofString "firstScheduledRoot") (by simp), gFSR]
+    · simp [Std.HashMap.getElem?_modify, hx (JSStr.ofString "ensureRootIsScheduled") (by simp), gEn]
     · rw [hpr (.str "next") (by simp)]; exact hFRn
     · rw [hpr (.str "cancelPendingCommit") (by simp)]; exact hFRc
     · rw [hpr (.str "timeoutHandle") (by simp)]; exact hFRt

@@ -38,9 +38,9 @@ RB = "first | rebase_quick hw | (rw [hbw _ (by simp [FPA, FPS, Footprint.union])
 stmt = f"""theorem fsp_full {binds} :
     WP eng answer (n + 4) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + 6 * 60 + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union {FPEN}) s w ∧
-        Done w d.env oG FR bFSR := by
+        Done w d.env oG FR bFSR bEn fEn := by
   refine fsp_spec (n := n + 2) (K := 60) (fpE := {FPEN}) {fargs} (hK := by omega)
-    (hRelc := ⟨_, L_hk⟩) (hLPc := ⟨_, T_hk⟩) (hPEc := ⟨_, P_hk⟩) (hFSc := ⟨_, W_hk⟩) (hEnc := ⟨_, E_hk⟩)
+    (hRelc := ⟨_, L_hk⟩) (hLPc := ⟨_, T_hk⟩) (hPEc := ⟨_, P_hk⟩) (hFSc := ⟨_, W_hk⟩) (hEnc := ⟨_, E_hk, E_hcode, E_hcls, E_hmode, E_hdenv⟩)
     (hRel := ?hRel) (hLP := ?hLP) (hPE := ?hPE) (hFSs := ?hFSs) (hEn := ?hEn) (hfpE := ?hfpE) (hfpEp := ?hfpEp)
   case hfpE =>
     intro p hp

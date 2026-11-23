@@ -31,7 +31,8 @@ lh = ws(_theorem_header("JSProofs/ReactMicrotaskLoop.lean", "loop_hyp"))
 HANDOFF = GC["HANDOFF"]
 FPW = re.search(r"fun _ w' h' => Frame \((.*?)\) w w' ∧ w\.fuel ≤ w'\.fuel \+ 2400 ∧", lh).group(1)
 FC, PC = GC["FC"], GC["PC"]
-INST = {"PRu": HANDOFF, "fpWL": f"({FPW})", "kW": "2400", "fpC": FC, "kC": "59500", "PC": PC}
+INST = {"PRu": HANDOFF, "fpWL": f"({FPW})", "kW": "2400", "fpC": FC, "kC": "59500", "PC": PC,
+        "fpE": "(ReactEnsureRoot.fpS d.env)", "kE": "20"}
 INST = {k: sigma(v) for k, v in INST.items()}
 DROPT = {"r_Loop", "hComplete", "j"} | set(INST)
 seen, binds, targs, largs, cargs = {}, [], [], [], []
@@ -42,7 +43,33 @@ def add(name, k, t):
         return
     seen[name] = t2
     binds.append(f"{k}{name} : {t2}{'}' if k == '{' else ')'}")
+ENSURE = """fun sP hP1 hP2 sW hW1 hW2 w3 w h1 hPC hO hfw => by
+      have hPC' := hPC
+      obtain ⟨ws, w0a, ⟨⟨s1, w0b, -, ⟨⟨w0c, ⟨-, hD⟩, hFc⟩, -⟩, hFb⟩, -⟩, hFa⟩ := hPC
+      have eg : c_CR_CM_d.env = d.env := by rw [c_CR_CM_hdenv, c_CR_hdenv, hcdenv]
+      have ebG : c_bG = bG := by
+        have hc := c_hGe; rw [hcdenv, hGe] at hc; simp only [Option.some.injEq, Prod.mk.injEq] at hc; exact hc.1.symm
+      have eb : c_CR_CM_SP_bFSR = bdF := by
+        have h0 := c_CR_CM_SP_gFSR; rw [ebG, hGF] at h0; exact (Option.some.inj h0).symm
+      have eE : c_CR_CM_SP_bEn = v_bdE := by
+        have h0 := c_CR_CM_SP_gEn; rw [ebG, y_hGE] at h0; exact (Option.some.inj h0).symm
+      have ef : c_CR_CM_SP_fEn = v_fE := by
+        have h0 := c_CR_CM_SP_gEnv; rw [eE, y_hGEv] at h0; simp only [Option.some.injEq, Value.obj.injEq] at h0; exact h0.symm
+      rw [eg, eb, ef] at hD
+      have hlt : d.env < sW.envs.size := Nat.lt_of_lt_of_le hG (Nat.le_trans hP1.envs_le hW1.envs_le)
+      refine wp_mono (ReactEnsureAfter.ensure_call (sW := sW) (sP := sP) (Pu := Pu) hD
+        (frame_trans (frame_trans (frame_trans hFc hFb) hFa) hO)
+        (ReactEnsureAfter.binds_ne_of (e := sW.envs.size) (by simp [Logic.Footprint.union, ReactPerformWork.fpOwn])
+          (Nat.ne_of_gt hlt))
+        (by simp [Logic.Footprint.union, ReactPerformWork.fpOwn]) hfw (hPu sP hP1 hP2 sW hW1 hW2 w3 w h1 hPC' hO)) ?_
+      rintro v w' h' ⟨hS, hfu, hA, hPL, hPu'⟩
+      exact ⟨hS, hfu, hA, hPL, hPu'⟩"""
 for n, k, t in T:
+    if n == "hEnsure":
+        t2 = ws(usubst(sigma(t), INST))
+        i = t2.index(" → 20 ≤ w.fuel → WP")
+        add("hPu", "(", t2[:i] + " → ∀ w', Frame (ReactEnsureRoot.fpS d.env) w w' → Pu ((w'.restore sW).restore sP) h1")
+        targs.append(f"(hEnsure := {ENSURE})"); continue
     if n in DROPT: continue
     if n in SIG: targs.append(f"({n} := {pv(SIG[n])})"); continue
     add(n, k, usubst(t, {"j": "(m + 10)"})); targs.append(f"({n} := {n})")
@@ -67,6 +94,7 @@ stmt = (f"theorem microtask_all {{m : Nat}} " + "\n    ".join(binds) + " :\n    
 OPENS = open("JSProofs/ReactMicrotaskComplete.lean").read()
 OPENS = "\n".join(l for l in OPENS.split("\n") if l.startswith("open "))
 out = f'''import JSProofs.ReactMicrotaskComplete
+import JSProofs.ReactEnsureAfter
 
 /-!
 # The click's microtask: render and commit proved (zippy docs/react-proofs.md)

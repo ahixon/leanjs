@@ -62,7 +62,7 @@ F4 = f"((({F2}.union (ReactCommitRoot.F0 ME_M_d.env)).union (ReactFlushLayout.FP
 if "hSPf" in DO:
     drop_outer |= {"hSPf", "hSPc", "fpSP", "Q3"}
     outer_ren["fpSP"] = "((ReactSpawned.FPA SP_d.env SP_gP FR).union (ReactEnsureCall.fpEn SP_d.env))"
-    outer_ren["Q3"] = f"(fun (w : State) (h : σ) => (∃ w0, {PCME} w0 h) ∧ ReactSpawned.Done w d.env oG FR SP_bFSR)"
+    outer_ren["Q3"] = f"(fun (w : State) (h : σ) => (∃ w0, {PCME} w0 h) ∧ ReactSpawned.Done w d.env oG FR SP_bFSR SP_bEn SP_fEn)"
 def _balanced(t, i):
     """index just after the parenthesised group starting at t[i] == '('"""
     d = 0
