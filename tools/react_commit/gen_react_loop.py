@@ -318,10 +318,12 @@ hop.append(f"  case h{n+3} => exact hQD")
 hop.append(f"""  case h{n+4} => exact ⟨b3, hb3, _, by rw [B3 _ (by simp (config := {{ decide := true }}) [ReactFinishQueueing.fp]), B2 _ (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn]), NB _ (by simp (config := {{ decide := true }}) [{FPD}])]; exact gPE, gPEm, gPEv⟩""")
 hop.append(f"  case h{n+5} => exact Nat.le_trans hT.heap_le hCn")
 hop.append(f"""  case h{n+6} =>
-        obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨av, ae, ac, hA1⟩, ⟨pv, pe, pc, hCP⟩, ⟨nv, ne, nc, hCN⟩⟩ := hMF1
+        obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨⟨av, ae, ac, hA1⟩, ⟨pv, pe, pc, hCP⟩, ⟨nv, ne, nc, hCN⟩⟩, ⟨bmG, hbmG, ⟨bdM, hbdM, hbdMm, hbdMv⟩, ⟨bdD, hbdD, hbdDm, hbdDv⟩⟩⟩ := hMF1
+        have hbG : bmG = bmF := by rw [hbmF] at hbmG; simp only [Option.some.injEq, Prod.mk.injEq] at hbmG; exact hbmG.1.symm
+        rw [hbG] at hbdM hbdD
         have hbF : bmF = bm1 := by rw [hbm1] at hbmF; cases hbmF; rfl
-        rw [hbF] at hbdF
-        refine ⟨⟨b3, hb3, bdF, by rw [B3 _ (by simp (config := {{ decide := true }}) [ReactFinishQueueing.fp]), B2 _ (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn]), NB _ (by simp (config := {{ decide := true }}) [{FPD}])]; exact hbdF, hbdFv⟩, ⟨av, ae, ac, ?_⟩, ⟨pv, pe, pc, ?_⟩, ⟨nv, ne, nc, ?_⟩⟩
+        rw [hbF] at hbdF hbdM hbdD
+        refine ⟨⟨b3, hb3, bdF, by rw [B3 _ (by simp (config := {{ decide := true }}) [ReactFinishQueueing.fp]), B2 _ (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn]), NB _ (by simp (config := {{ decide := true }}) [{FPD}])]; exact hbdF, hbdFv⟩, ⟨⟨av, ae, ac, ?_⟩, ⟨pv, pe, pc, ?_⟩, ⟨nv, ne, nc, ?_⟩⟩, ⟨b3, hb3, ⟨bdM, by rw [B3 _ (by simp (config := {{ decide := true }}) [ReactFinishQueueing.fp]), B2 _ (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn]), NB _ (by simp (config := {{ decide := true }}) [{FPD}])]; exact hbdM, hbdMm, hbdMv⟩, ⟨bdD, by rw [B3 _ (by simp (config := {{ decide := true }}) [ReactFinishQueueing.fp]), B2 _ (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn]), NB _ (by simp (config := {{ decide := true }}) [{FPD}])]; exact hbdD, hbdDm, hbdDv⟩⟩⟩
         · show (w3.objEntry A).props.get? _ = _; {ENDF.format(B="(Nat.lt_of_lt_of_le hAo (frame_trans hT hFw).heap_le)")}; rw [props_frame hFw (Nat.lt_of_lt_of_le hAo hT.heap_le) (by simp (config := {{ decide := true }}) [{FPD}, dA_VS]), hO _ (lt_heap_of_frame hFA1 hAo)]; exact hA1
         · show (w3.objEntry R).props.get? _ = _; {ENDF.format(B="(Nat.lt_of_lt_of_le hRo (frame_trans hT hFw).heap_le)")}; rw [props_frame hFw (Nat.lt_of_lt_of_le hRo hT.heap_le) (by simp (config := {{ decide := true }}) [{FPD}]), hO _ (lt_heap_of_frame hFA1 hRo)]; exact hCP
         · show (w3.objEntry R).props.get? _ = _; {ENDF.format(B="(Nat.lt_of_lt_of_le hRo (frame_trans hT hFw).heap_le)")}; rw [props_frame hFw (Nat.lt_of_lt_of_le hRo hT.heap_le) (by simp (config := {{ decide := true }}) [{FPD}]), hO _ (lt_heap_of_frame hFA1 hRo)]; exact hCN""")

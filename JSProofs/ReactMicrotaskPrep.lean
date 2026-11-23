@@ -301,12 +301,14 @@ theorem prep_hyp {j : Nat} {s : State} {d dPF : FuncData} {R A I fPF : ObjId} {b
     ⟨bdt, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdt, hbdtv⟩, ?mf⟩
   case mf =>
     have hT' := frame_trans (frame_trans (frame_trans hW hR) hpre) hF'
-    obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨av, ae, ac, hA1⟩, ⟨pv, pe, pc, hCP⟩, ⟨nv, ne, nc, hCN⟩⟩ := hMF
+    obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨⟨av, ae, ac, hA1⟩, ⟨pv, pe, pc, hCP⟩, ⟨nv, ne, nc, hCN⟩⟩, ⟨bmG, hbmG, ⟨bdM, hbdM, hbdMm, hbdMv⟩, ⟨bdD, hbdD, hbdDm, hbdDv⟩⟩⟩ := hMF
+    have hbG : bmG = bmF := by rw [hbmF] at hbmG; simp only [Option.some.injEq, Prod.mk.injEq] at hbmG; exact hbmG.1.symm
+    rw [hbG] at hbdM hbdD
     obtain ⟨bwF, hdF, hxF⟩ := declLike_frame hT' (envs_frame hP hG) hbmF
     have hAo' : A < sP.heap.size := heap_frame hP hAo
     have hRo' : R < sP.heap.size := heap_frame hP hRo
     refine ⟨⟨bwF, hdF, bdF, by rw [hxF _ (by simp [Footprint.union, ReactRenderSync.fpPre, ReactPrepareFresh.fp])]; exact hbdF, hbdFv⟩,
-      ⟨av, ae, ac, ?_⟩, ⟨pv, pe, pc, ?_⟩, ⟨nv, ne, nc, ?_⟩⟩
+      ⟨⟨av, ae, ac, ?_⟩, ⟨pv, pe, pc, ?_⟩, ⟨nv, ne, nc, ?_⟩⟩, ⟨bwF, hdF, ⟨bdM, by rw [hxF _ (by simp [Footprint.union, ReactRenderSync.fpPre, ReactPrepareFresh.fp])]; exact hbdM, hbdMm, hbdMv⟩, ⟨bdD, by rw [hxF _ (by simp [Footprint.union, ReactRenderSync.fpPre, ReactPrepareFresh.fp])]; exact hbdD, hbdDm, hbdDv⟩⟩⟩
     · rw [props_frame hT' hAo' (by simp [Footprint.union, ReactRenderSync.fpPre, ReactPrepareFresh.fp, ReactCreateWIP.fp, Ne.symm p_dA])]; exact hA1
     · rw [props_frame hT' hRo' (by simp [Footprint.union, ReactRenderSync.fpPre, ReactPrepareFresh.fp, ReactCreateWIP.fp])]; exact hCP
     · rw [props_frame hT' hRo' (by simp [Footprint.union, ReactRenderSync.fpPre, ReactPrepareFresh.fp, ReactCreateWIP.fp])]; exact hCN

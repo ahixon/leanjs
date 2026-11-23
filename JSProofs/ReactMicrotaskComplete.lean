@@ -740,7 +740,7 @@ theorem complete_hyp {n : Nat} {eng : Engine} {answer : HostAnswer σ} {h : σ} 
   obtain ⟨_, _, P15⟩ := H15
   obtain ⟨_, _, P16⟩ := H16
   obtain ⟨_, _, P17⟩ := H17
-  obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨_, _, _, hA1⟩, ⟨_, _, _, hCP⟩, ⟨_, _, _, hCN⟩⟩ := H23
+  obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨⟨_, _, _, hA1⟩, ⟨_, _, _, hCP⟩, ⟨_, _, _, hCN⟩⟩, _⟩ := H23
   obtain ⟨bmE, hbmE, ⟨_, gEC, gECv, gECm⟩, ⟨_, gWR, gWRv⟩⟩ := H19
   obtain ⟨bmQ, oQ, hbmQ, _, gCU, gCUv⟩ := H20
   obtain ⟨bmP, hbmP, _, gPE, gPEm, gPEv⟩ := H21

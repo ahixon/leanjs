@@ -79,6 +79,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
         v = .num L ∧ Frame fpT w w' ∧ w.fuel ≤ w'.fuel + 60 ∧ P w' h')
     (hfpE : fpT.binds.all (fun q => q.1 != s.envs.size) = true)
     (hfpM : (d.env, JSStr.ofString "mightHavePendingSyncWork") ∉ fpT.binds)
+    (hfpD : (d.env, JSStr.ofString "didScheduleMicrotask") ∉ fpT.binds)
     (hfpP : (d.env, JSStr.ofString "pendingEffectsStatus") ∉ fpT.binds)
     (hfpL : (d.env, JSStr.ofString "flushSyncWorkAcrossRoots_impl") ∉ fpT.binds)
     (hfpC : (d.env, JSStr.ofString "currentEventTransitionLane") ∉ fpT.binds)
@@ -88,7 +89,9 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
       Frame ⟨[(d.env, "mightHavePendingSyncWork"), (s.envs.size, "nextLanes"), (s.envs.size, "prev"),
         (s.envs.size, "root")], [], false⟩ w2 w →
       (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
-        (bm[JSStr.ofString "mightHavePendingSyncWork"]?.bind (·.value)) = some (.bool true)) →
+        (bm[JSStr.ofString "mightHavePendingSyncWork"]?.bind (·.value)) = some (.bool true) ∧
+        (∃ bd, bm[JSStr.ofString "mightHavePendingSyncWork"]? = some bd ∧ bd.mutable = true) ∧
+        (∃ bd, bm[JSStr.ofString "didScheduleMicrotask"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false))) →
       s.fuel ≤ w.fuel + 120 →
       WP eng answer n h1 (callImpl eng (.obj fL) .undefined #[.num (F64.fin false 0 (-1074)), .bool false]) w
         fun _ w' h' => Frame fpF w w' ∧ w.fuel ≤ w'.fuel + kF ∧ Q (w'.restore s) h')
@@ -145,6 +148,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   obtain ⟨bW, hW, hWx⟩ := declLike_frame hF2 (e := d.env) (o := oG)
     (by simp only [js_simp]; first | exact hG1s | omega) (by js_norm [*]; rfl)
   have hWM := hWx _ hfpM
+  have hWD := hWx _ hfpD
   have hWP := hWx _ hfpP
   have hWL := hWx _ hfpL
   have hWC := hWx _ hfpC
@@ -162,9 +166,13 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   refine wp_mono ((ReactDSSI.Hold.get hFlush) w2 _ h2 hP2 ?frF ?mF ?fuF) ?post3
   case frF => frame_go' [*, hne, Ne.symm hne]
   case mF =>
-    refine ⟨_, by js_norm [*]; rfl, ?_⟩
-    simp only [Std.HashMap.getElem?_modify, js_simp, hWM, hGM, Option.map_some]
-    rfl
+    refine ⟨_, by js_norm [*]; rfl, ?mv, ⟨?mbd, ?m1, ?m2⟩, ⟨?dbd, ?d1, ?d2, ?d3⟩⟩
+    case mv => simp only [Std.HashMap.getElem?_modify, js_simp, hWM, hGM, Option.map_some]; rfl
+    case m1 => simp only [Std.HashMap.getElem?_modify, js_simp, hWM, hGM, Option.map_some]; rfl
+    case d1 => simp only [Std.HashMap.getElem?_modify, js_simp, hWD, hGD, Option.map_some]; rfl
+    case m2 => simp [hGMm]
+    case d2 => simp [hGDm]
+    case d3 => rfl
   case fuF => js_side
   case post3 =>
   intro b w3 h3 ⟨hF3, hfu3, hQ⟩

@@ -235,7 +235,10 @@ def SchedOut (w : State) (R A : ObjId) : Prop :=
 /-- Where the microtask starts the work: the flag set, the task scheduling's fields. -/
 def MicroFacts (w : State) (g : EnvId) (oG : Option EnvId) (R A : ObjId) : Prop :=
   (∃ bm, Scope.declLike? (w.envEntry g) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "isFlushingWork"]? = some bd ∧
-    bd.value = some (.bool true)) ∧ SchedOut w R A
+    bd.value = some (.bool true)) ∧ SchedOut w R A ∧
+  (∃ bm, Scope.declLike? (w.envEntry g) = some (bm, oG) ∧
+    (∃ bd, bm[JSStr.ofString "mightHavePendingSyncWork"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+    (∃ bd, bm[JSStr.ofString "didScheduleMicrotask"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false)))
 
 /-- **Step 3**: `processRootScheduleInMicrotask` after a click, every callee by its theorem: `now` (the scheduler's
 `unstable_now`; the host's `performance.now()` a hypothesis), `scheduleTaskForRootDuringMicrotask` (step 1),
@@ -353,7 +356,7 @@ theorem processRoot_click {m : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Va
     hlt hk (by omega) hcode hcls hmode hG hGe hGM hGMm hGMv hGD hGDm hGDv hGC hGCv hGF hGFv hGN hGNv hGT hGTv hGP0
     hGP0v hGL hGLv hNo hNk hTo hTk hLo hLk hR hRk hRn (by decide) (by decide) ?now ?task
     (by simp [ReactSchedTaskRoot.fp]) (by simp [ReactSchedTaskRoot.fp]) (by simp [ReactSchedTaskRoot.fp])
-    (by simp [ReactSchedTaskRoot.fp]) (by simp [ReactSchedTaskRoot.fp])
+    (by simp [ReactSchedTaskRoot.fp]) (by simp [ReactSchedTaskRoot.fp]) (by simp [ReactSchedTaskRoot.fp])
     (by simp [ReactSchedTaskRoot.fp, hAF, hRF]) ?flush
     (by simp only [List.all_cons, binds_avoid hfpB (Nat.le_refl _), Bool.and_true]; simp [hne])
     (by simp [hfpC])) fun v w h' ⟨hv, hq⟩ => ⟨hv, hq⟩
@@ -401,7 +404,7 @@ theorem processRoot_click {m : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Va
         simpa [Footprint.union, ReactProcessRoot.fpA, ReactSchedTaskRoot.fp, fpPre] using this,
         ⟨_, _, _, hA1'⟩, ⟨_, _, _, hCP'⟩, ⟨_, _, _, hCN'⟩⟩
   case flush =>
-    intro w2 w h1 ⟨hP2, ⟨⟨av, ae', ac', hA1s⟩, ⟨pv, pe', pc', hCPs⟩, ⟨nv, ne', nc', hCNs⟩⟩⟩ hF2 ⟨bm, hbm, hmt⟩ hfu
+    intro w2 w h1 ⟨hP2, ⟨⟨av, ae', ac', hA1s⟩, ⟨pv, pe', pc', hCPs⟩, ⟨nv, ne', nc', hCNs⟩⟩⟩ hF2 ⟨bm, hbm, hmt, ⟨bdM2, hbdM2, hbdM2m⟩, ⟨bdD2, hbdD2, hbdD2m, hbdD2v⟩⟩ hfu
     have hFs := frame_trans hP2 hF2
     have hA2 : A < w2.heap.size := heap_frame hP2 hA
     have hR2 : R < w2.heap.size := heap_frame hP2 hR
@@ -459,8 +462,13 @@ theorem processRoot_click {m : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Va
         rw [hF'.obj_eq _ (heap_frame hF2 hA2) (fun _ hk => by simp [ReactFlushSync.fpA] at hk), hF2.obj_eq _ hA2 (fun _ hk => by simp at hk)]
       have hRw : (w'.objEntry R) = w2.objEntry R := by
         rw [hF'.obj_eq _ (heap_frame hF2 hR2) (fun _ hk => by simp [ReactFlushSync.fpA] at hk), hF2.obj_eq _ hR2 (fun _ hk => by simp at hk)]
-      refine hPerf w' h1' ?_ ⟨hIF, ⟨_, _, _, by rw [hAw]; exact hA1s⟩, ⟨_, _, _, by rw [hRw]; exact hCPs⟩,
-        ⟨_, _, _, by rw [hRw]; exact hCNs⟩⟩ (by omega)
+      refine hPerf w' h1' ?_ ⟨hIF, ⟨⟨_, _, _, by rw [hAw]; exact hA1s⟩, ⟨_, _, _, by rw [hRw]; exact hCPs⟩,
+        ⟨_, _, _, by rw [hRw]; exact hCNs⟩⟩, ?flags⟩ (by omega)
+      case flags =>
+        obtain ⟨bF, hbF, hbFx⟩ := declLike_frame hF' (envs_frame hFs hG) (by first | exact hW | (rw [hLenv] at hW; exact hW) | (rw [← hLenv]; exact hW))
+        have hmv : bdM2.value.isSome = true := by rw [hbdM2] at hmt; simp at hmt; simp [hmt]
+        exact ⟨bF, hbF, ⟨bdM2, by rw [hbFx _ (by simp [ReactFlushSync.fpA])]; exact hbdM2, hbdM2m, hmv⟩,
+          ⟨bdD2, by rw [hbFx _ (by simp [ReactFlushSync.fpA])]; exact hbdD2, hbdD2m, hbdD2v⟩⟩
       refine frame_drop (frame_trans hFs hF') (fun q hq hq' => ?_) (fun q hq _ => by
         simpa [Footprint.union, fpPre, fpPerf, ReactFlushSync.fpA] using hq) (fun _ => rfl)
       simp only [Footprint.union, fpPre, ReactFlushSync.fpA, List.cons_append, List.nil_append, List.mem_cons,

@@ -214,7 +214,7 @@ def B(o): return f"(Nat.lt_of_lt_of_le {allp[o]} hFA2.heap_le)"
 pre, args = [], []
 for (o, k), i in [(k, v) for k, v in PIDX.items() if isinstance(k, tuple)]:
     pre.append(f"obtain ⟨_, _, P{i}⟩ := H{i}")
-pre.append(f"obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨_, _, _, hA1⟩, ⟨_, _, _, hCP⟩, ⟨_, _, _, hCN⟩⟩ := H{PIDX['MF']}")
+pre.append(f"obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨⟨_, _, _, hA1⟩, ⟨_, _, _, hCP⟩, ⟨_, _, _, hCN⟩⟩, _⟩ := H{PIDX['MF']}")
 pre.append(f"obtain ⟨bmE, hbmE, ⟨_, gEC, gECv, gECm⟩, ⟨_, gWR, gWRv⟩⟩ := H{PIDX['EB']}")
 pre.append(f"obtain ⟨bmQ, oQ, hbmQ, _, gCU, gCUv⟩ := H{PIDX['QD']}")
 pre.append(f"obtain ⟨bmP, hbmP, _, gPE, gPEm, gPEv⟩ := H{PIDX['PE']}")
