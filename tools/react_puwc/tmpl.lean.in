@@ -69,7 +69,7 @@ theorem counter_unit_spec @@BINDERS@@
     rw [hSt]; frame_go' [hG, pP_G1, pP_ne, Ne.symm pP_ne, hGe]
   refine wp_mono (ReactBeginCounter.click_spec @@ARGS1@@) ?_
   intro v1 w1 h1 ⟨C, hv1, hF1, hfu1, hh1, hr1, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15,
-    xret, hch, hCch, hCk1', hCb1, hCge1, ⟨bmB, hbmB, ⟨bdD, hbdD, hbdDm, hbdDi⟩, ⟨bdT1, hbdT1, hbdT1m, hbdT1i⟩, ⟨bdS1, hbdS1, hbdS1m, hbdS1i⟩⟩⟩
+    xret, hch, hCch, hC1l1, hC1f1, hCk1', hCb1, hCge1, ⟨bmB, hbmB, ⟨bdD, hbdD, hbdDm, hbdDi⟩, ⟨bdT1, hbdT1, hbdT1m, hbdT1i⟩, ⟨bdS1, hbdS1, hbdS1m, hbdS1i⟩⟩⟩
   subst hv1 hh1
   have hw1K := envEntry_frame hF1 (e := s.envs.size) (by rw [gE1']; exact Nat.lt_succ_self _)
     (by simp [fpB, ReactUpdateFunction.fpUF, pP_ne, Ne.symm pP_ne])
@@ -106,9 +106,11 @@ theorem counter_unit_spec @@BINDERS@@
       ⟨bdS1, by simp [Std.HashMap.getElem?_modify, hbdS1], hbdS1m, hbdS1i⟩⟩
   · refine ⟨C, ?_⟩
     have hmc : PropKey.str (JSStr.ofString "memoizedProps") ≠ PropKey.str (JSStr.ofString "children") := by decide
+    have hml : PropKey.str (JSStr.ofString "memoizedProps") ≠ PropKey.str (JSStr.ofString "lanes") := by decide
+    have hmf : PropKey.str (JSStr.ofString "memoizedProps") ≠ PropKey.str (JSStr.ofString "flags") := by decide
     have hXr1 : ∀ k, (w1.objEntry X).props.get? k = (w1.objEntry X).props.get? k := fun _ => rfl
     all_goals (repeat' apply And.intro)
-    all_goals first | exact Nat.le_trans gZ1 hCge1 | (js_norm [x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, xret, hch, hCch, hCk1', hCb1, dXC1, Ne.symm dXC1, Nat.lt_of_lt_of_le hC1 z1]; done) | skip
+    all_goals first | exact Nat.le_trans gZ1 hCge1 | (simp [js_simp, Nat.lt_of_lt_of_le hC1 z1, PropMap.get?_insert_ne _ _ _ _ hml, PropMap.get?_insert_ne _ _ _ _ hmf, hC1l1, hC1f1]; done) | (js_norm [x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, xret, hch, hCch, hCk1', hCb1, dXC1, Ne.symm dXC1, Nat.lt_of_lt_of_le hC1 z1]; done) | skip
     all_goals (by_cases hc : C1 = C ∧ C < w1.heap.size <;> simp only [hc, ite_true, ite_false] <;> simp [js_simp, PropMap.get?_insert_ne _ _ _ _ hmc, hCch, hCk1'])
 
 end

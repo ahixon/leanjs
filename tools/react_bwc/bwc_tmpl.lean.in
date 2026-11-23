@@ -166,12 +166,12 @@ theorem click_spec @@PREM@@ :
       (tRW := .undefined) (ue := false) (yc := false) (ye := false) (yw := false) (uw := uw) (uc := uc)
       @@ARGS@@) ?postU
   intro v2 w2 h2 ⟨C, hv2, hF2, hfu2, hh2, hr2, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, xret,
-    hch, hCch, hCk2, hCb2, hCge2, hB2⟩
+    hch, hCch, hC1l2, hC1f2, hCk2, hCb2, hCge2, hB2⟩
   subst v2 h2
   have FW := frame_extend' gFSt hF2 (fun q hq _ => hq) (fun q hq _ => hq) (fun _ => rfl)
   have hfw : s.fuel ≤ w2.fuel + 530 := by simp only [js_simp] at hfu1; omega
   exact ⟨C, rfl, frame_restore FW s, hfw, rfl, rfl, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15,
-    xret, hch, hCch, hCk2, hCb2, Nat.le_trans gSz hCge2, hB2⟩
+    xret, hch, hCch, hC1l2, hC1f2, hCk2, hCb2, Nat.le_trans gSz hCge2, hB2⟩
 
 end
 

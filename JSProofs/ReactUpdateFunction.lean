@@ -327,6 +327,8 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true cw cc) ∧
       (w.objEntry C).props.get? (.str "children") =
         some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
+      (w.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) ∧
+      (w.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitOr fl1 (F64.fin false 4503599627370496 (-52)))) true fe fc) ∧
       (w.objEntry C).kind.isPlain = true ∧ C < w.heap.size ∧ s.heap.size ≤ C ∧
       ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, none) ∧
         (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
@@ -537,6 +539,10 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     rw [hSt]; js_norm [Nat.lt_of_lt_of_le hC1w2 hw3z, hw3o C1 hC1w2]
     rw [props_frame hF2 (Nat.lt_of_lt_of_le hC1 hw1z) (by simp [fpRWH]), hw1o C1 hC1]; exact rhRFc
   have hSF : 179 ≤ St.fuel := by rw [hSt]; simp only [js_simp]; omega
+  have hSC1f : (St.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitOr fl1 (F64.fin false 4503599627370496 (-52)))) true fe fc) := by
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le hC1w2 hw3z, hC1f3]
+  have hSC1l : (St.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) := by
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le hC1w2 hw3z, hw3o C1 hC1w2, hC1l']
   have hdX' : ∀ Y ∈ [fCR, fPl, E, C, OP], Y ≠ X := by
     intro Y hY
     simp only [List.mem_cons, List.mem_nil_iff, or_false] at hY
@@ -678,9 +684,11 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     FDI.fdiCtx, Sem.inner]
   have hC1St : C1 < St.heap.size := Nat.lt_of_lt_of_le hC1 hSz
   refine ⟨Nat.lt_of_lt_of_le hC1St hF4.heap_le, by rw [kind_frame hF4 hC1St]; exact hSC1k, C, frame_restore FW s, ?_,
-    rfl, rfl, hCch4, ?_, Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hCb hSz2) hF4.heap_le, ?_, ?_⟩
+    rfl, rfl, hCch4, ?_, ?_, ?_, Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hCb hSz2) hF4.heap_le, ?_, ?_⟩
   · simp only [js_simp] at hfu1 hfu2 hfu3
     omega
+  · rw [props_frame hF4 hC1St (by simp [ReactReconcileChildren.fpC, ReactReconcileFibers.fpR, ReactReconcileImpl.fpI, ReactCreateWIP.fp, rhRFX, Ne.symm rhRFX])]; exact hSC1l
+  · rw [props_frame hF4 hC1St (by simp [ReactReconcileChildren.fpC, ReactReconcileFibers.fpR, ReactReconcileImpl.fpI, ReactCreateWIP.fp, rhRFX, Ne.symm rhRFX])]; exact hSC1f
   · show (w4.objEntry C).kind.isPlain = true
     rw [kind_frame hF4 (Nat.lt_of_lt_of_le hCb hSz2), hSo2 C hCb hCC1, hCk]; rfl
   · exact Nat.le_trans (by have := hF1.heap_le; simp only [js_simp] at this; exact this) hCge
