@@ -78,7 +78,7 @@ theorem cpr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       WP eng answer (n + 1) h1 (callImpl eng (.obj fCM) .undefined #[.obj FR, .obj A, lanes, sl, ul, srl, sst]) w
         fun v w' h' => w.fuel ≤ w'.fuel + K ∧ P w' h') :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj A, lanes, re, tr, di, sl, ul, srl, ds, es, sst])
-      s fun v w h' => v = .undefined ∧ s.fuel ≤ w.fuel + 2 * K + 200 ∧ ∃ w0, P w0 h' := by
+      s fun v w h' => v = .undefined ∧ s.fuel ≤ w.fuel + 2 * K + 200 ∧ ∃ w0, P w0 h' ∧ Frame {} w0 w := by
   apply wp_callGen CMPRGen.completeRoot_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple_cr d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root", JSStr.ofString "finishedWork",
@@ -153,7 +153,7 @@ theorem cpr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     simp [Std.HashMap.getElem?_modify, gRE, gREm]
   rintro v2 w2 h2 ⟨hfu2, hP⟩
   js_until [] []
-  exact ⟨by simp [State.withFuel, bodyState, entryState] at hfu1 hfu2 ⊢; omega, w2, hP⟩
+  exact ⟨by simp [State.withFuel, bodyState, entryState] at hfu1 hfu2 ⊢; omega, w2, hP, (by first | exact frame_refl _ _ | exact frame_restore (frame_refl _ _) _ | exact frame_withFuel (frame_refl _ _) _ | exact frame_restore (frame_withFuel (frame_refl _ _) _) _ | exact frame_withFuel (frame_restore (frame_refl _ _) _) _)⟩
 
 
 theorem simple_crw (d : FuncData) (hc : d.code = CRWRGen.completeRootWhenReady_func) : FDI.Simple d := by
@@ -188,7 +188,7 @@ theorem crw_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
         fun v w' h' => w.fuel ≤ w'.fuel + K ∧ P w' h') :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj A, x1, x2, x3,
       .num (F64.fin false 4503599627370496 (-51)), x4, x5, x6, x7, .num (F64.fin false 5629499534213120 (-50)),
-      c1, c2, c3]) s fun v w h' => v = .undefined ∧ s.fuel ≤ w.fuel + K + 100 ∧ ∃ w0, P w0 h' := by
+      c1, c2, c3]) s fun v w h' => v = .undefined ∧ s.fuel ≤ w.fuel + K + 100 ∧ ∃ w0, P w0 h' ∧ Frame {} w0 w := by
   apply wp_callGen CRWRGen.completeRootWhenReady_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple_crw d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root", JSStr.ofString "finishedWork",
@@ -216,7 +216,7 @@ theorem crw_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     frame_go' []
   rintro v1 w1 h1 ⟨hfu1, hP⟩
   js_until [] []
-  exact ⟨by simp [bodyState, entryState] at hfu1 ⊢; omega, w1, hP⟩
+  exact ⟨by simp [bodyState, entryState] at hfu1 ⊢; omega, w1, hP, (by first | exact frame_refl _ _ | exact frame_restore (frame_refl _ _) _ | exact frame_withFuel (frame_refl _ _) _ | exact frame_restore (frame_withFuel (frame_refl _ _) _) _ | exact frame_withFuel (frame_restore (frame_refl _ _) _) _)⟩
 
 end
 

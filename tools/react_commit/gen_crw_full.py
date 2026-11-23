@@ -35,8 +35,17 @@ cr.append(f"(CR_CM_SP_hfpE : {_rename(spf, cren)})")
 cr += ["(CR_hdenv : CR_d.env = d.env)"]
 binds = "\n    ".join(outer + cr + ["(hf : 59500 ≤ s.fuel)"])
 post_hdr = _theorem_header(CF, "cpr_full")
-m = re.search(r"∃ w0, (\(fun \(w : State\) \(h : σ\) => .*\)) w0 h'\s*$", post_hdr, re.S)
-P = f"(fun (w : State) (h : σ) => ∃ w0, {_rename(m.group(1), cren)} w0 h)"
+m = re.search(r"∃ w0, (\(fun \(w : State\) \(h : σ\) => .*\)) w0 h' ∧ Frame \{\} w0 w\s*$", post_hdr, re.S)
+PCPR = _rename(m.group(1), cren)
+_k = PCPR.rindex("∧ Frame (") + len("∧ Frame ")
+_d = 0
+for _j in range(_k, len(PCPR)):
+    _d += {"(": 1, ")": -1}.get(PCPR[_j], 0)
+    if _d == 0: break
+FFF = PCPR[_k:_j + 1]
+PCPR1 = re.sub(r"(?<![A-Za-z0-9_'.])s(?![A-Za-z0-9_'])", "s1", PCPR)
+P = (f"(fun (w : State) (h : σ) => (∃ s1 w0, Frame {FPT} s s1 ∧ {PCPR1} w0 h ∧ Frame {{}} w0 w) ∧ "
+     f"Frame (Footprint.union {FPT} ({FFF}.union {{}})) s w)")
 fargs = " ".join(f"({nm} := {nm})" for nm, k, t in cb if nm not in drop_outer and nm not in ("n", "h", "s"))
 fixed = " ".join(f"({nm} := {v})" for nm, v in outer_ren.items())
 cimp = " ".join(f"({nm} := {csubst.get(nm, 'CR_' + nm)})" for nm, k, t in mb
@@ -52,7 +61,7 @@ RB = ("first | rebase_quick hw | (rw [hbw _ (by simp)] <;> with_reducible assump
 stmt = f"""theorem crw_full {binds} :
     WP eng answer (n + 13) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, .null, x2, x3, {TWO}, {Z}, {Z}, {Z}, x7,
       .num (F64.fin false 5629499534213120 (-50)), c1, c2, c3]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + 59400 + 100 ∧ ∃ w0, {P} w0 h' := by
+      v = .undefined ∧ s.fuel ≤ w.fuel + 59400 + 100 ∧ ∃ w0, {P} w0 h' ∧ Frame {{}} w0 w := by
   refine crw_spec (n := n + 11) (K := 59400) (P := {P}) {fixed} {fargs} (hK := by omega)
     (hCRc := ⟨_, CR_hk⟩) (hCRf := ?hCRf)
   case hCRf =>
@@ -63,8 +72,8 @@ stmt = f"""theorem crw_full {binds} :
       (hGe := by rw [CR_hdenv]; exact hdw) {qg}
       (CM_SP_hfpE := fun p hp => ⟨Nat.lt_of_lt_of_le (CR_CM_SP_hfpE p hp).1 hw.envs_le, (CR_CM_SP_hfpE p hp).2⟩) ..) ?rpost
     case rpost =>
-      rintro v w' h' ⟨-, hfu, hP⟩
-      exact ⟨by omega, hP⟩
+      rintro v w' h' ⟨-, hfu, w0, hPc, hF0⟩
+      exact ⟨by omega, ⟨w, w0, hw, hPc, hF0⟩, frame_trans hw (frame_trans hPc.2 hF0)⟩
     all_goals {RB}
 """
 src = open(CF).read()

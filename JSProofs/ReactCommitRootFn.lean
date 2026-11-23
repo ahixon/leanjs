@@ -137,7 +137,7 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
         Frame ((((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE).union fpSP) s w' ∧ w.fuel ≤ w'.fuel + K ∧ Q3 w' h') :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, .num (F64.fin false 4503599627370496 (-51)),
       sl, ul, srl, sst]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + 5 * K + 400 ∧ (∃ w0, Q3 w0 h') ∧ Frame ((((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE).union fpSP) s w := by
+      v = .undefined ∧ s.fuel ≤ w.fuel + 5 * K + 400 ∧ (∃ w0, Q3 w0 h' ∧ Frame {} w0 w) ∧ Frame ((((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE).union fpSP) s w := by
   apply wp_callGen CMRGen.commitRoot_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root", JSStr.ofString "finishedWork",
@@ -381,7 +381,7 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   refine ⟨by js_norm [CallableC, hSP4, hSPk, hlt4 fSP hSPo], wp_mono (hSPf _ _ hFs4 hQ2 hPL4 hVE4 hTT4 (by omega)) ?_⟩
   rintro v5 w5 h5 ⟨hFs5, hfu5, hQ3⟩
   js_until [] []
-  refine ⟨by simp [bodyState, entryState] at hfu1 hfu2 hfu3 hfu4 hfu5 ⊢; omega, ⟨w5, hQ3⟩, frame_restore hFs5 s⟩
+  refine ⟨by simp [bodyState, entryState] at hfu1 hfu2 hfu3 hfu4 hfu5 ⊢; omega, ⟨w5, hQ3, frame_restore (frame_refl _ _) s⟩, frame_restore hFs5 s⟩
 
 end
 

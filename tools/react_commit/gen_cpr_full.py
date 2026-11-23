@@ -64,9 +64,11 @@ pn += ["(PN_hdenv : PN_d.env = d.env)"]
 extra = ["(hf : 59200 ≤ s.fuel)"]
 binds = "\n    ".join(outer + cm + pn + extra)
 post_hdr = _theorem_header(CF, "cmr_full")
-m = re.search(r"∧ \(∃ w0, (\(fun \(w : State\) \(h : σ\) => .*?\)) w0 h'\) ∧ Frame", post_hdr, re.S)
-PCX = _rename(m.group(1), {nm: csubst.get(nm, "CM_" + nm) for nm, k, t in mb if nm not in ("n", "h", "s")})
-P = f"(fun (w : State) (h : σ) => ∃ w0, {PCX} w0 h)"
+m = re.search(r"∧ \(∃ w0, (\(fun \(w : State\) \(h : σ\) => .*?\)) w0 h' ∧ Frame \{\} w0 w\) ∧ Frame (.*) s w\s*$", post_hdr, re.S)
+_cren = {nm: csubst.get(nm, "CM_" + nm) for nm, k, t in mb if nm not in ("n", "h", "s")}
+PCX = _rename(m.group(1), _cren)
+FPCM = _rename(m.group(2), _cren)
+P = f"(fun (w : State) (h : σ) => (∃ w0, {PCX} w0 h ∧ Frame {{}} w0 w) ∧ Frame ((FPE d.env FR).union {FPCM}) s w)"
 fargs = " ".join(f"({nm} := {ren_outer(nm) if nm in outer_ren else nm})" for nm, k, t in cb
                  if nm not in drop_outer and nm not in ("n", "h", "s"))
 fixed = " ".join(f"({nm} := {v})" for nm, v in outer_ren.items())
@@ -85,7 +87,7 @@ RB = (f"first | rebase_quick hw | (rw [hbw _ (by simp [{UNF}])] <;> with_reducib
 BI = "obtain ⟨_, _, {bd}, {hd}, {hb}, {hv}, {hm}⟩ := {src}\n    rw [hdw] at {hd}; cases {hd}"
 stmt = f"""theorem cpr_full {binds} :
     WP eng answer (n + 12) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, {TWO}, .null, tr, di, {Z}, {Z}, {Z}, ds, es, sst])
-      s fun v w h' => v = .undefined ∧ s.fuel ≤ w.fuel + 2 * 29400 + 200 ∧ ∃ w0, {P} w0 h' := by
+      s fun v w h' => v = .undefined ∧ s.fuel ≤ w.fuel + 2 * 29400 + 200 ∧ ∃ w0, {P} w0 h' ∧ Frame {{}} w0 w := by
   refine cpr_spec (n := n + 10) (K := 29400) (P := {P}) {fixed} {fargs} (hK := by omega)
     (hPEc := ⟨_, PN_hk⟩) (hCMc := ⟨_, CM_hk⟩) (hPEf := ?hPEf) (hCMf := ?hCMf)
   case hPEf =>
@@ -111,8 +113,8 @@ stmt = f"""theorem cpr_full {binds} :
       (hGe := by rw [CM_hdenv]; exact hdw) {cexp} {qg}
       (SP_hfpE := fun p hp => ⟨Nat.lt_of_lt_of_le (CM_SP_hfpE p hp).1 hw.envs_le, (CM_SP_hfpE p hp).2⟩) ..) ?cpost
     case cpost =>
-      rintro v w' h' ⟨-, hfu, hP, -⟩
-      exact ⟨by omega, hP⟩
+      rintro v w' h' ⟨-, hfu, hP, hFc⟩
+      exact ⟨by omega, hP, frame_trans hw hFc⟩
     all_goals {RB}
 """
 out = f'''import JSProofs.ReactCommitEntry
