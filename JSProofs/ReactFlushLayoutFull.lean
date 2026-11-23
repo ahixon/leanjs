@@ -152,14 +152,10 @@ theorem fle_full {n : Nat}
     {L_kbe : Bool}
     {L_kbc : Bool}
     {L_d : FuncData}
-    {L_xv : Value}
     {L_B : ObjId}
     {L_Bc : ObjId}
-    {L_X : ObjId}
     {L_bf : F64}
     {L_bs : F64}
-    {L_xf : F64}
-    {L_xs : F64}
     {L_bfw : Bool}
     {L_bfe : Bool}
     {L_bfc : Bool}
@@ -169,24 +165,6 @@ theorem fle_full {n : Nat}
     {L_bsw : Bool}
     {L_bse : Bool}
     {L_bsc : Bool}
-    {L_bcw : Bool}
-    {L_bce : Bool}
-    {L_bcc : Bool}
-    {L_fw : Bool}
-    {L_fe : Bool}
-    {L_fc : Bool}
-    {L_tw : Bool}
-    {L_te : Bool}
-    {L_tc : Bool}
-    {L_qw : Bool}
-    {L_qe : Bool}
-    {L_qc : Bool}
-    {L_aw : Bool}
-    {L_ae : Bool}
-    {L_ac : Bool}
-    {L_sw : Bool}
-    {L_se : Bool}
-    {L_sc : Bool}
     {L_fRT : ObjId}
     {L_dRT : FuncData}
     (L_hk : (s.objEntry fC).kind = .func L_d)
@@ -206,18 +184,7 @@ theorem fle_full {n : Nat}
       some (.data (.num (F64.fin false 5629499534213120 (-50))) L_btw L_bte L_btc))
     (L_h512 : numberBinOp .bitAnd L_bf (F64.fin false 4503599627370496 (-43)) = F64.fin false 0 (-1074))
     (L_hBs : (s.objEntry L_B).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num L_bs) L_bsw L_bse L_bsc))
-    (L_hbs : (!((numberBinOp .bitAnd L_bs (F64.fin false 4822457999425536 (-39))).isZero ||
-      numberBinOp .bitAnd L_bs (F64.fin false 4822457999425536 (-39)) == F64.nan)) = true)
-    (L_hBc : (s.objEntry L_B).props.get? (.str (JSStr.ofString "child")) = some (.data (.obj L_X) L_bcw L_bce L_bcc))
-    (L_hX : L_X < s.heap.size)
-    (L_hXk : (s.objEntry L_X).kind.isPlain = true)
-    (L_hXf : (s.objEntry L_X).props.get? (.str (JSStr.ofString "flags")) = some (.data (.num L_xf) L_fw L_fe L_fc))
-    (L_hXt : (s.objEntry L_X).props.get? (.str (JSStr.ofString "tag")) =
-      some (.data (.num (F64.fin false 6755399441055744 (-50))) L_tw L_te L_tc))
-    (L_hXs : (s.objEntry L_X).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num L_xs) L_qw L_qe L_qc))
-    (L_hxs : numberBinOp .bitAnd L_xs (F64.fin false 4822457999425536 (-39)) = F64.fin false 0 (-1074))
-    (L_hXa : (s.objEntry L_X).props.get? (.str (JSStr.ofString "alternate")) = some (.data L_xv L_aw L_ae L_ac))
-    (L_hXsib : (s.objEntry L_X).props.get? (.str (JSStr.ofString "sibling")) = some (.data .null L_sw L_se L_sc))
+    (L_hbs : numberBinOp .bitAnd L_bs (F64.fin false 4822457999425536 (-39)) = F64.fin false 0 (-1074))
     (L_hK : L_K < s.heap.size)
     (L_hKk : (s.objEntry L_K).kind.isPlain = true)
     (L_hKf : (s.objEntry L_K).props.get? (.str (JSStr.ofString "flags")) = some (.data (.num L_kf) L_kfw L_kfe L_kfc))
@@ -250,7 +217,6 @@ theorem fle_full {n : Nat}
     (d_RT : R ≠ RSI) (d_RD : R ≠ RDSI)
     (d_L_KT : L_K ≠ RSI) (d_L_KD : L_K ≠ RDSI)
     (d_L_BT : L_B ≠ RSI) (d_L_BD : L_B ≠ RDSI)
-    (d_L_XT : L_X ≠ RSI) (d_L_XD : L_X ≠ RDSI)
     (d_fCT : fC ≠ RSI) (d_fCD : fC ≠ RDSI)
     (d_L_fRTT : L_fRT ≠ RSI) (d_L_fRTD : L_fRT ≠ RDSI) :
     WP eng answer (n + 10) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
@@ -266,7 +232,7 @@ theorem fle_full {n : Nat}
       rw [hbw _ (by simp [FPL])]; exact L_hGC
     refine wp_mono (Q := fun v w' h' => v = .undefined ∧ w.fuel ≤ w'.fuel + 1740 ∧ Frame {} w w' ∧ h' = h1) ?_ ?_
     · apply ReactLayoutFull.lay_root (s := w) (n := n + 1) (fo := fC) (t := .undefined) (rv := .obj FR) (rcv := av)
-        (R := R) (bG := bw) (oG := oG) (bdRT := L_bdRT) (bdC := L_bdC) (Kc := L_Kc) (rf := L_rf) (rs := L_rs) (rfw := L_rfw) (rfe := L_rfe) (rfc := L_rfc) (rtw := L_rtw) (rte := L_rte) (rtc := L_rtc) (rsw := L_rsw) (rse := L_rse) (rsc := L_rsc) (rcw := L_rcw) (rce := L_rce) (rcc := L_rcc) (raw := L_raw) (rae := L_rae) (rac := L_rac) (rbw := L_rbw) (rbe := L_rbe) (rbc := L_rbc) (K := L_K) (kf := L_kf) (ks := L_ks) (kfw := L_kfw) (kfe := L_kfe) (kfc := L_kfc) (ktw := L_ktw) (kte := L_kte) (ktc := L_ktc) (ksw := L_ksw) (kse := L_kse) (ksc := L_ksc) (kcw := L_kcw) (kce := L_kce) (kcc := L_kcc) (kaw := L_kaw) (kae := L_kae) (kac := L_kac) (kbw := L_kbw) (kbe := L_kbe) (kbc := L_kbc) (d := L_d) (xv := L_xv) (B := L_B) (Bc := L_Bc) (X := L_X) (bf := L_bf) (bs := L_bs) (xf := L_xf) (xs := L_xs) (bfw := L_bfw) (bfe := L_bfe) (bfc := L_bfc) (btw := L_btw) (bte := L_bte) (btc := L_btc) (bsw := L_bsw) (bse := L_bse) (bsc := L_bsc) (bcw := L_bcw) (bce := L_bce) (bcc := L_bcc) (fw := L_fw) (fe := L_fe) (fc := L_fc) (tw := L_tw) (te := L_te) (tc := L_tc) (qw := L_qw) (qe := L_qe) (qc := L_qc) (aw := L_aw) (ae := L_ae) (ac := L_ac) (sw := L_sw) (se := L_se) (sc := L_sc) (fRT := L_fRT) (dRT := L_dRT)
+        (R := R) (bG := bw) (oG := oG) (bdRT := L_bdRT) (bdC := L_bdC) (Kc := L_Kc) (rf := L_rf) (rs := L_rs) (rfw := L_rfw) (rfe := L_rfe) (rfc := L_rfc) (rtw := L_rtw) (rte := L_rte) (rtc := L_rtc) (rsw := L_rsw) (rse := L_rse) (rsc := L_rsc) (rcw := L_rcw) (rce := L_rce) (rcc := L_rcc) (raw := L_raw) (rae := L_rae) (rac := L_rac) (rbw := L_rbw) (rbe := L_rbe) (rbc := L_rbc) (K := L_K) (kf := L_kf) (ks := L_ks) (kfw := L_kfw) (kfe := L_kfe) (kfc := L_kfc) (ktw := L_ktw) (kte := L_kte) (ktc := L_ktc) (ksw := L_ksw) (kse := L_kse) (ksc := L_ksc) (kcw := L_kcw) (kce := L_kce) (kcc := L_kcc) (kaw := L_kaw) (kae := L_kae) (kac := L_kac) (kbw := L_kbw) (kbe := L_kbe) (kbc := L_kbc) (d := L_d) (B := L_B) (Bc := L_Bc) (bf := L_bf) (bs := L_bs) (bfw := L_bfw) (bfe := L_bfe) (bfc := L_bfc) (btw := L_btw) (bte := L_bte) (btc := L_btc) (bsw := L_bsw) (bse := L_bse) (bsc := L_bsc) (fRT := L_fRT) (dRT := L_dRT)
         (hf := hfw) (hG := by rw [L_hdenv]; exact lt_envs_of_frame hw hG)
         (hGe := by rw [L_hdenv]; exact hdw) (hGRT := hRT') (hGRTv := L_hGRTv) (hGC := hC') (hGCv := L_hGCv)
         (hlt := lt_heap_of_frame hw hCo)

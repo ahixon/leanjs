@@ -1013,14 +1013,10 @@ theorem cmr_full {n : Nat}
     {LE_L_kbe : Bool}
     {LE_L_kbc : Bool}
     {LE_L_d : FuncData}
-    {LE_L_xv : Value}
     {LE_L_B : ObjId}
     {LE_L_Bc : ObjId}
-    {LE_L_X : ObjId}
     {LE_L_bf : F64}
     {LE_L_bs : F64}
-    {LE_L_xf : F64}
-    {LE_L_xs : F64}
     {LE_L_bfw : Bool}
     {LE_L_bfe : Bool}
     {LE_L_bfc : Bool}
@@ -1030,24 +1026,6 @@ theorem cmr_full {n : Nat}
     {LE_L_bsw : Bool}
     {LE_L_bse : Bool}
     {LE_L_bsc : Bool}
-    {LE_L_bcw : Bool}
-    {LE_L_bce : Bool}
-    {LE_L_bcc : Bool}
-    {LE_L_fw : Bool}
-    {LE_L_fe : Bool}
-    {LE_L_fc : Bool}
-    {LE_L_tw : Bool}
-    {LE_L_te : Bool}
-    {LE_L_tc : Bool}
-    {LE_L_qw : Bool}
-    {LE_L_qe : Bool}
-    {LE_L_qc : Bool}
-    {LE_L_aw : Bool}
-    {LE_L_ae : Bool}
-    {LE_L_ac : Bool}
-    {LE_L_sw : Bool}
-    {LE_L_se : Bool}
-    {LE_L_sc : Bool}
     {LE_L_fRT : ObjId}
     {LE_L_dRT : FuncData}
     (LE_L_hk : (s.objEntry LE_fC).kind = .func LE_L_d)
@@ -1067,18 +1045,7 @@ theorem cmr_full {n : Nat}
       some (.data (.num (F64.fin false 5629499534213120 (-50))) LE_L_btw LE_L_bte LE_L_btc))
     (LE_L_h512 : numberBinOp .bitAnd LE_L_bf (F64.fin false 4503599627370496 (-43)) = F64.fin false 0 (-1074))
     (LE_L_hBs : (s.objEntry LE_L_B).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num LE_L_bs) LE_L_bsw LE_L_bse LE_L_bsc))
-    (LE_L_hbs : (!((numberBinOp .bitAnd LE_L_bs (F64.fin false 4822457999425536 (-39))).isZero ||
-      numberBinOp .bitAnd LE_L_bs (F64.fin false 4822457999425536 (-39)) == F64.nan)) = true)
-    (LE_L_hBc : (s.objEntry LE_L_B).props.get? (.str (JSStr.ofString "child")) = some (.data (.obj LE_L_X) LE_L_bcw LE_L_bce LE_L_bcc))
-    (LE_L_hX : LE_L_X < s.heap.size)
-    (LE_L_hXk : (s.objEntry LE_L_X).kind.isPlain = true)
-    (LE_L_hXf : (s.objEntry LE_L_X).props.get? (.str (JSStr.ofString "flags")) = some (.data (.num LE_L_xf) LE_L_fw LE_L_fe LE_L_fc))
-    (LE_L_hXt : (s.objEntry LE_L_X).props.get? (.str (JSStr.ofString "tag")) =
-      some (.data (.num (F64.fin false 6755399441055744 (-50))) LE_L_tw LE_L_te LE_L_tc))
-    (LE_L_hXs : (s.objEntry LE_L_X).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num LE_L_xs) LE_L_qw LE_L_qe LE_L_qc))
-    (LE_L_hxs : numberBinOp .bitAnd LE_L_xs (F64.fin false 4822457999425536 (-39)) = F64.fin false 0 (-1074))
-    (LE_L_hXa : (s.objEntry LE_L_X).props.get? (.str (JSStr.ofString "alternate")) = some (.data LE_L_xv LE_L_aw LE_L_ae LE_L_ac))
-    (LE_L_hXsib : (s.objEntry LE_L_X).props.get? (.str (JSStr.ofString "sibling")) = some (.data .null LE_L_sw LE_L_se LE_L_sc))
+    (LE_L_hbs : numberBinOp .bitAnd LE_L_bs (F64.fin false 4822457999425536 (-39)) = F64.fin false 0 (-1074))
     (LE_L_hK : LE_L_K < s.heap.size)
     (LE_L_hKk : (s.objEntry LE_L_K).kind.isPlain = true)
     (LE_L_hKf : (s.objEntry LE_L_K).props.get? (.str (JSStr.ofString "flags")) = some (.data (.num LE_L_kf) LE_L_kfw LE_L_kfe LE_L_kfc))
@@ -1116,14 +1083,12 @@ theorem cmr_full {n : Nat}
     (LE_d_L_KD : LE_L_K ≠ RDSI)
     (LE_d_L_BT : LE_L_B ≠ RSI)
     (LE_d_L_BD : LE_L_B ≠ RDSI)
-    (LE_d_L_XT : LE_L_X ≠ RSI)
-    (LE_d_L_XD : LE_L_X ≠ RDSI)
     (LE_d_fCT : LE_fC ≠ RSI)
     (LE_d_fCD : LE_fC ≠ RDSI)
     (LE_d_L_fRTT : LE_L_fRT ≠ RSI)
     (LE_d_L_fRTD : LE_L_fRT ≠ RDSI)
     (LE_hdenv : LE_d.env = d.env)
-    (dDomR : ME_M_CT_dom ≠ R) (dDomK : ME_M_CT_dom ≠ LE_L_K) (dDomB : ME_M_CT_dom ≠ LE_L_B) (dDomXf : ME_M_CT_dom ≠ LE_L_X)
+    (dDomR : ME_M_CT_dom ≠ R) (dDomK : ME_M_CT_dom ≠ LE_L_K) (dDomB : ME_M_CT_dom ≠ LE_L_B)
     {SP_d : FuncData}
     {SP_bVT : Binding}
     {SP_bRP : Binding}
@@ -1426,7 +1391,7 @@ theorem cmr_full {n : Nat}
     obtain ⟨pe', pc', hp'⟩ := hp
     refine' wp_mono (ReactFlushLayout.fle_full (s := w) (n := n) (fo := fLE) (t := .undefined) (bG := bw) (oG := oG)
       (FR := FR) (R := R) (RSI := RSI) (RDSI := RDSI) (ec := ec) (tv := tv) (pv := pv) (bdS := bS') (bdE := bE')
-      (te := te') (tc := tc') (pe := pe') (pc := pc') (d := LE_d) (bdR := LE_bdR) (bdF := LE_bdF) (bdT := LE_bdT) (bdD := LE_bdD) (bdC := LE_bdC) (fC := LE_fC) (av := LE_av) (rf := LE_rf) (sf := LE_sf) (rfw := LE_rfw) (rfe := LE_rfe) (rfc := LE_rfc) (sfw := LE_sfw) (sfe := LE_sfe) (sfc := LE_sfc) (aw := LE_aw) (ae := LE_ae) (ac := LE_ac) (L_Kc := LE_L_Kc) (L_rf := LE_L_rf) (L_rs := LE_L_rs) (L_rfw := LE_L_rfw) (L_rfe := LE_L_rfe) (L_rfc := LE_L_rfc) (L_rtw := LE_L_rtw) (L_rte := LE_L_rte) (L_rtc := LE_L_rtc) (L_rsw := LE_L_rsw) (L_rse := LE_L_rse) (L_rsc := LE_L_rsc) (L_rcw := LE_L_rcw) (L_rce := LE_L_rce) (L_rcc := LE_L_rcc) (L_raw := LE_L_raw) (L_rae := LE_L_rae) (L_rac := LE_L_rac) (L_rbw := LE_L_rbw) (L_rbe := LE_L_rbe) (L_rbc := LE_L_rbc) (L_K := LE_L_K) (L_kf := LE_L_kf) (L_ks := LE_L_ks) (L_kfw := LE_L_kfw) (L_kfe := LE_L_kfe) (L_kfc := LE_L_kfc) (L_ktw := LE_L_ktw) (L_kte := LE_L_kte) (L_ktc := LE_L_ktc) (L_ksw := LE_L_ksw) (L_kse := LE_L_kse) (L_ksc := LE_L_ksc) (L_kcw := LE_L_kcw) (L_kce := LE_L_kce) (L_kcc := LE_L_kcc) (L_kaw := LE_L_kaw) (L_kae := LE_L_kae) (L_kac := LE_L_kac) (L_kbw := LE_L_kbw) (L_kbe := LE_L_kbe) (L_kbc := LE_L_kbc) (L_d := LE_L_d) (L_xv := LE_L_xv) (L_B := LE_L_B) (L_Bc := LE_L_Bc) (L_X := LE_L_X) (L_bf := LE_L_bf) (L_bs := LE_L_bs) (L_xf := LE_L_xf) (L_xs := LE_L_xs) (L_bfw := LE_L_bfw) (L_bfe := LE_L_bfe) (L_bfc := LE_L_bfc) (L_btw := LE_L_btw) (L_bte := LE_L_bte) (L_btc := LE_L_btc) (L_bsw := LE_L_bsw) (L_bse := LE_L_bse) (L_bsc := LE_L_bsc) (L_bcw := LE_L_bcw) (L_bce := LE_L_bce) (L_bcc := LE_L_bcc) (L_fw := LE_L_fw) (L_fe := LE_L_fe) (L_fc := LE_L_fc) (L_tw := LE_L_tw) (L_te := LE_L_te) (L_tc := LE_L_tc) (L_qw := LE_L_qw) (L_qe := LE_L_qe) (L_qc := LE_L_qc) (L_aw := LE_L_aw) (L_ae := LE_L_ae) (L_ac := LE_L_ac) (L_sw := LE_L_sw) (L_se := LE_L_se) (L_sc := LE_L_sc) (L_fRT := LE_L_fRT) (L_dRT := LE_L_dRT) (L_bdRT := LE_L_bdRT) (L_bdC := LE_L_bdC) (hf := by omega) (hlt := lt_heap_of_frame hw hLEo)
+      (te := te') (tc := tc') (pe := pe') (pc := pc') (d := LE_d) (bdR := LE_bdR) (bdF := LE_bdF) (bdT := LE_bdT) (bdD := LE_bdD) (bdC := LE_bdC) (fC := LE_fC) (av := LE_av) (rf := LE_rf) (sf := LE_sf) (rfw := LE_rfw) (rfe := LE_rfe) (rfc := LE_rfc) (sfw := LE_sfw) (sfe := LE_sfe) (sfc := LE_sfc) (aw := LE_aw) (ae := LE_ae) (ac := LE_ac) (L_Kc := LE_L_Kc) (L_rf := LE_L_rf) (L_rs := LE_L_rs) (L_rfw := LE_L_rfw) (L_rfe := LE_L_rfe) (L_rfc := LE_L_rfc) (L_rtw := LE_L_rtw) (L_rte := LE_L_rte) (L_rtc := LE_L_rtc) (L_rsw := LE_L_rsw) (L_rse := LE_L_rse) (L_rsc := LE_L_rsc) (L_rcw := LE_L_rcw) (L_rce := LE_L_rce) (L_rcc := LE_L_rcc) (L_raw := LE_L_raw) (L_rae := LE_L_rae) (L_rac := LE_L_rac) (L_rbw := LE_L_rbw) (L_rbe := LE_L_rbe) (L_rbc := LE_L_rbc) (L_K := LE_L_K) (L_kf := LE_L_kf) (L_ks := LE_L_ks) (L_kfw := LE_L_kfw) (L_kfe := LE_L_kfe) (L_kfc := LE_L_kfc) (L_ktw := LE_L_ktw) (L_kte := LE_L_kte) (L_ktc := LE_L_ktc) (L_ksw := LE_L_ksw) (L_kse := LE_L_kse) (L_ksc := LE_L_ksc) (L_kcw := LE_L_kcw) (L_kce := LE_L_kce) (L_kcc := LE_L_kcc) (L_kaw := LE_L_kaw) (L_kae := LE_L_kae) (L_kac := LE_L_kac) (L_kbw := LE_L_kbw) (L_kbe := LE_L_kbe) (L_kbc := LE_L_kbc) (L_d := LE_L_d) (L_B := LE_L_B) (L_Bc := LE_L_Bc) (L_bf := LE_L_bf) (L_bs := LE_L_bs) (L_bfw := LE_L_bfw) (L_bfe := LE_L_bfe) (L_bfc := LE_L_bfc) (L_btw := LE_L_btw) (L_bte := LE_L_bte) (L_btc := LE_L_btc) (L_bsw := LE_L_bsw) (L_bse := LE_L_bse) (L_bsc := LE_L_bsc) (L_fRT := LE_L_fRT) (L_dRT := LE_L_dRT) (L_bdRT := LE_L_bdRT) (L_bdC := LE_L_bdC) (hf := by omega) (hlt := lt_heap_of_frame hw hLEo)
       (hG := by rw [LE_hdenv]; exact lt_envs_of_frame hw hG) (hGe := by rw [LE_hdenv]; exact hdw)
       (hGS := hb1) (hGSv := hv1) (hGSm := hm1) (hGE := hb2) (hGEv := hv2) (hGEm := hm2) (hRSIt := hT')
       (hRDSIp := hp') ..) ?lpost
@@ -1434,7 +1399,7 @@ theorem cmr_full {n : Nat}
       rintro v w' h' ⟨-, hfu, hF, rfl, hst3⟩
       rw [LE_hdenv] at hst3
       exact ⟨hF, frame_trans hw hF, by omega, hPC, hst3⟩
-    all_goals first | rebase_quick hw | (rw [hbw _ (by simp [FPC, ReactMarkFinished.FPM, ReactBeforeMutation.FB, FPRE, ReactCommitRoot.F0, Footprint.union])] <;> with_reducible assumption) | (rw [props_frame hw (by with_reducible assumption) (by simp [FPC, ReactMarkFinished.FPM, ReactBeforeMutation.FB, FPRE, ReactCommitRoot.F0, Footprint.union, dDomR, dDomK, dDomB, dDomXf, Ne.symm dDomR, Ne.symm dDomK, Ne.symm dDomB, Ne.symm dDomXf])] <;> with_reducible assumption) | (rw [kind_frame hw (by with_reducible assumption)] <;> with_reducible assumption)
+    all_goals first | rebase_quick hw | (rw [hbw _ (by simp [FPC, ReactMarkFinished.FPM, ReactBeforeMutation.FB, FPRE, ReactCommitRoot.F0, Footprint.union])] <;> with_reducible assumption) | (rw [props_frame hw (by with_reducible assumption) (by simp [FPC, ReactMarkFinished.FPM, ReactBeforeMutation.FB, FPRE, ReactCommitRoot.F0, Footprint.union, dDomR, dDomK, dDomB, Ne.symm dDomR, Ne.symm dDomK, Ne.symm dDomB])] <;> with_reducible assumption) | (rw [kind_frame hw (by with_reducible assumption)] <;> with_reducible assumption)
   case hfpLE =>
     intro p hp
     simp only [ReactFlushLayout.FPL, List.mem_cons, List.not_mem_nil, or_false] at hp

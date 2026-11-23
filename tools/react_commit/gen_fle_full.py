@@ -12,7 +12,7 @@ outer = [f"{k}{nm} : {t}{'}' if k == '{' else ')'}" for nm, k, t in fb if nm not
 lr, _ = compose(LR, "lay_root", "L_",
     subst={"fo": "fC", "t": ".undefined", "rv": ".obj FR", "rcv": "av", "R": "R", "bG": "bG", "oG": "oG"},
     given={}, drop=("n", "h", "s", "hf", "hlt", "hG", "hGe", "hGC", "hGCv", "hGRT", "hGRTv", "bdC", "bdRT"))
-objs = ["R", "L_K", "L_B", "L_X", "fC", "L_fRT"]
+objs = ["R", "L_K", "L_B", "fC", "L_fRT"]
 dist = [f"(d_{o}T : {o} ≠ RSI) (d_{o}D : {o} ≠ RDSI)" for o in objs]
 extra = ["(hf : 2200 ≤ s.fuel)", "(L_hdenv : L_d.env = d.env)",
          "{L_bdRT L_bdC : Binding}",

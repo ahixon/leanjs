@@ -122,21 +122,58 @@ theorem lay_button {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
 
 set_option maxRecDepth 40000 in
 set_option maxHeartbeats 8000000 in
-/-- **The counter** `K` (tag 0, no layout hook) over the button. -/
+/-- **The button as a leaf** `B` (tag 5, current `Bc`, no ref, no layout flags below it: its string child is text
+content, not a fiber). -/
+theorem lay_button_leaf {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
+    {rv : Value} {B Bc : ObjId} {bf bs : F64}
+    {bfw bfe bfc btw bte btc bsw bse bsc : Bool}
+    {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdRT bdC : Binding} {fRT : ObjId} {dRT : FuncData}
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 340 ≤ s.fuel)
+    (hcode : d.code = CLEGen.commitLayoutEffectOnFiber_func) (hcls : d.isClassCtor = false)
+    (hmode : d.thisMode = .strict)
+    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
+    (hGRT : bG[JSStr.ofString "recursivelyTraverseLayoutEffects"]? = some bdRT) (hGRTv : bdRT.value = some (.obj fRT))
+    (hGC : bG[JSStr.ofString "commitLayoutEffectOnFiber"]? = some bdC) (hGCv : bdC.value = some (.obj fo))
+    (hRTo : fRT < s.heap.size) (hRTk : (s.objEntry fRT).kind = .func dRT)
+    (hRTcode : dRT.code = RTLGen.recursivelyTraverseLayoutEffects_func) (hRTcls : dRT.isClassCtor = false)
+    (hRTmode : dRT.thisMode = .strict) (hRTenv : dRT.env = d.env)
+    (hB : B < s.heap.size) (hBk : (s.objEntry B).kind.isPlain = true)
+    (hBf : (s.objEntry B).props.get? (.str (JSStr.ofString "flags")) = some (.data (.num bf) bfw bfe bfc))
+    (hBt : (s.objEntry B).props.get? (.str (JSStr.ofString "tag")) =
+      some (.data (.num (F64.fin false 5629499534213120 (-50))) btw bte btc))
+    (h512 : numberBinOp .bitAnd bf (F64.fin false 4503599627370496 (-43)) = F64.fin false 0 (-1074))
+    (hBs : (s.objEntry B).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num bs) bsw bse bsc))
+    (hbs : numberBinOp .bitAnd bs (F64.fin false 4822457999425536 (-39)) = F64.fin false 0 (-1074)) :
+    WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[rv, .obj Bc, .obj B]) s fun v w h' =>
+      v = .undefined ∧ s.fuel ≤ w.fuel + 240 ∧ Frame {} s w ∧ h' = h := by
+  refine ReactLayoutFiber.cle_button (KR := 40) (hlt := hlt) (hk := hk) (hf := by omega) (hcode := hcode)
+    (hcls := hcls) (hmode := hmode) (hB := hB) (hBk := hBk) (hBf := hBf) (hBt := hBt) (h512 := h512) (hG := hG)
+    (hGe := hGe) (hGRT := hGRT) (hGRTv := hGRTv) (hRTo := hRTo) (hRTc := ⟨_, hRTk⟩) (hRT := ?_)
+  intro w h1 hw hfw
+  have hB' : w.objEntry B = s.objEntry B := objEntry_frame0 hw hB
+  refine wp_mono (ReactLayoutTraverse.rtl_none (s := w) (hlt := lt_heap_of_frame hw hRTo)
+    (hk := by rw [objEntry_frame0 hw hRTo]; exact hRTk) (hf := hfw) (hcode := hRTcode) (hcls := hRTcls)
+    (hmode := hRTmode) (hP := lt_heap_of_frame hw hB) (hPk := by rw [hB']; exact hBk) (hPs := by rw [hB']; exact hBs)
+    (hsf := hbs)) ?_
+  rintro v w' h' ⟨-, hF, hfu, rfl⟩
+  exact ⟨hF, hfu, rfl⟩
+
+
+
+
+set_option maxRecDepth 40000 in
+set_option maxHeartbeats 8000000 in
+/-- **The counter** `K` (tag 0, no layout hook) over the button (a leaf). -/
 theorem lay_counter {n : Nat} {h : σ} {s : State}
     {K : ObjId} {kf ks : F64} {kfw kfe kfc ktw kte ktc ksw kse ksc kcw kce kcc kaw kae kac kbw kbe kbc : Bool} {kv : Value}
     {fo : ObjId}
     {d : FuncData}
     {t : Value}
     {rv : Value}
-    {xv : Value}
     {B : ObjId}
     {Bc : ObjId}
-    {X : ObjId}
     {bf : F64}
     {bs : F64}
-    {xf : F64}
-    {xs : F64}
     {bfw : Bool}
     {bfe : Bool}
     {bfc : Bool}
@@ -146,24 +183,6 @@ theorem lay_counter {n : Nat} {h : σ} {s : State}
     {bsw : Bool}
     {bse : Bool}
     {bsc : Bool}
-    {bcw : Bool}
-    {bce : Bool}
-    {bcc : Bool}
-    {fw : Bool}
-    {fe : Bool}
-    {fc : Bool}
-    {tw : Bool}
-    {te : Bool}
-    {tc : Bool}
-    {qw : Bool}
-    {qe : Bool}
-    {qc : Bool}
-    {aw : Bool}
-    {ae : Bool}
-    {ac : Bool}
-    {sw : Bool}
-    {se : Bool}
-    {sc : Bool}
     {bG : HashMap JSStr Binding}
     {oG : Option EnvId}
     {bdRT : Binding}
@@ -194,18 +213,7 @@ theorem lay_counter {n : Nat} {h : σ} {s : State}
       some (.data (.num (F64.fin false 5629499534213120 (-50))) btw bte btc))
     (h512 : numberBinOp .bitAnd bf (F64.fin false 4503599627370496 (-43)) = F64.fin false 0 (-1074))
     (hBs : (s.objEntry B).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num bs) bsw bse bsc))
-    (hbs : (!((numberBinOp .bitAnd bs (F64.fin false 4822457999425536 (-39))).isZero ||
-      numberBinOp .bitAnd bs (F64.fin false 4822457999425536 (-39)) == F64.nan)) = true)
-    (hBc : (s.objEntry B).props.get? (.str (JSStr.ofString "child")) = some (.data (.obj X) bcw bce bcc))
-    (hX : X < s.heap.size)
-    (hXk : (s.objEntry X).kind.isPlain = true)
-    (hXf : (s.objEntry X).props.get? (.str (JSStr.ofString "flags")) = some (.data (.num xf) fw fe fc))
-    (hXt : (s.objEntry X).props.get? (.str (JSStr.ofString "tag")) =
-      some (.data (.num (F64.fin false 6755399441055744 (-50))) tw te tc))
-    (hXs : (s.objEntry X).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num xs) qw qe qc))
-    (hxs : numberBinOp .bitAnd xs (F64.fin false 4822457999425536 (-39)) = F64.fin false 0 (-1074))
-    (hXa : (s.objEntry X).props.get? (.str (JSStr.ofString "alternate")) = some (.data xv aw ae ac))
-    (hXsib : (s.objEntry X).props.get? (.str (JSStr.ofString "sibling")) = some (.data .null sw se sc))
+    (hbs : numberBinOp .bitAnd bs (F64.fin false 4822457999425536 (-39)) = F64.fin false 0 (-1074))
     (hK : K < s.heap.size) (hKk : (s.objEntry K).kind.isPlain = true)
     (hKf : (s.objEntry K).props.get? (.str (JSStr.ofString "flags")) = some (.data (.num kf) kfw kfe kfc))
     (hKt : (s.objEntry K).props.get? (.str (JSStr.ofString "tag")) =
@@ -237,8 +245,8 @@ theorem lay_counter {n : Nat} {h : σ} {s : State}
     (hCxk := by rw [hC']; exact hBk) (hCa := by rw [hC']; exact hBa') (hC := ?_)) ?_
   · intro w2 h2 hw2 hfw2
     have hw0 := frame_empty_trans hw hw2
-    refine wp_mono (Q := fun v w h' => v = .undefined ∧ w2.fuel ≤ w.fuel + 740 ∧ Frame {} w2 w ∧ h' = h2) ?_ ?_
-    · apply lay_button (s := w2) (fo := fo) (d := d) (t := .undefined) (rv := rv) (xv := xv) (B := B) (Bc := Bc) (X := X) (bf := bf) (bs := bs) (xf := xf) (xs := xs) (bfw := bfw) (bfe := bfe) (bfc := bfc) (btw := btw) (bte := bte) (btc := btc) (bsw := bsw) (bse := bse) (bsc := bsc) (bcw := bcw) (bce := bce) (bcc := bcc) (fw := fw) (fe := fe) (fc := fc) (tw := tw) (te := te) (tc := tc) (qw := qw) (qe := qe) (qc := qc) (aw := aw) (ae := ae) (ac := ac) (sw := sw) (se := se) (sc := sc) (bG := bG) (oG := oG) (bdRT := bdRT) (bdC := bdC) (fRT := fRT) (dRT := dRT) (hf := hfw2)
+    refine wp_mono (Q := fun v w h' => v = .undefined ∧ w2.fuel ≤ w.fuel + 240 ∧ Frame {} w2 w ∧ h' = h2) ?_ ?_
+    · apply lay_button_leaf (s := w2) (fo := fo) (d := d) (t := .undefined) (rv := rv) (B := B) (Bc := Bc) (bf := bf) (bs := bs) (bfw := bfw) (bfe := bfe) (bfc := bfc) (btw := btw) (bte := bte) (btc := btc) (bsw := bsw) (bse := bse) (bsc := bsc) (bG := bG) (oG := oG) (bdRT := bdRT) (bdC := bdC) (fRT := fRT) (dRT := dRT) (hf := by omega)
       all_goals rebase_tac hw0
     · rintro v w' h' ⟨-, hfu, hF, rfl⟩
       have hw1 := frame_empty_trans hw0 hF
@@ -278,14 +286,10 @@ theorem lay_root {n : Nat} {h : σ} {s : State}
     {d : FuncData}
     {t : Value}
     {rv : Value}
-    {xv : Value}
     {B : ObjId}
     {Bc : ObjId}
-    {X : ObjId}
     {bf : F64}
     {bs : F64}
-    {xf : F64}
-    {xs : F64}
     {bfw : Bool}
     {bfe : Bool}
     {bfc : Bool}
@@ -295,24 +299,6 @@ theorem lay_root {n : Nat} {h : σ} {s : State}
     {bsw : Bool}
     {bse : Bool}
     {bsc : Bool}
-    {bcw : Bool}
-    {bce : Bool}
-    {bcc : Bool}
-    {fw : Bool}
-    {fe : Bool}
-    {fc : Bool}
-    {tw : Bool}
-    {te : Bool}
-    {tc : Bool}
-    {qw : Bool}
-    {qe : Bool}
-    {qc : Bool}
-    {aw : Bool}
-    {ae : Bool}
-    {ac : Bool}
-    {sw : Bool}
-    {se : Bool}
-    {sc : Bool}
     {bG : HashMap JSStr Binding}
     {oG : Option EnvId}
     {bdRT : Binding}
@@ -343,18 +329,7 @@ theorem lay_root {n : Nat} {h : σ} {s : State}
       some (.data (.num (F64.fin false 5629499534213120 (-50))) btw bte btc))
     (h512 : numberBinOp .bitAnd bf (F64.fin false 4503599627370496 (-43)) = F64.fin false 0 (-1074))
     (hBs : (s.objEntry B).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num bs) bsw bse bsc))
-    (hbs : (!((numberBinOp .bitAnd bs (F64.fin false 4822457999425536 (-39))).isZero ||
-      numberBinOp .bitAnd bs (F64.fin false 4822457999425536 (-39)) == F64.nan)) = true)
-    (hBc : (s.objEntry B).props.get? (.str (JSStr.ofString "child")) = some (.data (.obj X) bcw bce bcc))
-    (hX : X < s.heap.size)
-    (hXk : (s.objEntry X).kind.isPlain = true)
-    (hXf : (s.objEntry X).props.get? (.str (JSStr.ofString "flags")) = some (.data (.num xf) fw fe fc))
-    (hXt : (s.objEntry X).props.get? (.str (JSStr.ofString "tag")) =
-      some (.data (.num (F64.fin false 6755399441055744 (-50))) tw te tc))
-    (hXs : (s.objEntry X).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num xs) qw qe qc))
-    (hxs : numberBinOp .bitAnd xs (F64.fin false 4822457999425536 (-39)) = F64.fin false 0 (-1074))
-    (hXa : (s.objEntry X).props.get? (.str (JSStr.ofString "alternate")) = some (.data xv aw ae ac))
-    (hXsib : (s.objEntry X).props.get? (.str (JSStr.ofString "sibling")) = some (.data .null sw se sc))
+    (hbs : numberBinOp .bitAnd bs (F64.fin false 4822457999425536 (-39)) = F64.fin false 0 (-1074))
     (hK : K < s.heap.size)
     (hKk : (s.objEntry K).kind.isPlain = true)
     (hKf : (s.objEntry K).props.get? (.str (JSStr.ofString "flags")) = some (.data (.num kf) kfw kfe kfc))
@@ -399,7 +374,7 @@ theorem lay_root {n : Nat} {h : σ} {s : State}
   · intro w2 h2 hw2 hfw2
     have hw0 := frame_empty_trans hw hw2
     refine wp_mono (Q := fun v w h' => v = .undefined ∧ w2.fuel ≤ w.fuel + 1240 ∧ Frame {} w2 w ∧ h' = h2) ?_ ?_
-    · apply lay_counter (s := w2) (K := K) (kf := kf) (ks := ks) (kfw := kfw) (kfe := kfe) (kfc := kfc) (ktw := ktw) (kte := kte) (ktc := ktc) (ksw := ksw) (kse := kse) (ksc := ksc) (kcw := kcw) (kce := kce) (kcc := kcc) (kaw := kaw) (kae := kae) (kac := kac) (kbw := kbw) (kbe := kbe) (kbc := kbc) (kv := .obj Kc) (fo := fo) (d := d) (t := .undefined) (rv := rv) (xv := xv) (B := B) (Bc := Bc) (X := X) (bf := bf) (bs := bs) (xf := xf) (xs := xs) (bfw := bfw) (bfe := bfe) (bfc := bfc) (btw := btw) (bte := bte) (btc := btc) (bsw := bsw) (bse := bse) (bsc := bsc) (bcw := bcw) (bce := bce) (bcc := bcc) (fw := fw) (fe := fe) (fc := fc) (tw := tw) (te := te) (tc := tc) (qw := qw) (qe := qe) (qc := qc) (aw := aw) (ae := ae) (ac := ac) (sw := sw) (se := se) (sc := sc) (bG := bG) (oG := oG) (bdRT := bdRT) (bdC := bdC) (fRT := fRT) (dRT := dRT) (hf := hfw2)
+    · apply lay_counter (s := w2) (K := K) (kf := kf) (ks := ks) (kfw := kfw) (kfe := kfe) (kfc := kfc) (ktw := ktw) (kte := kte) (ktc := ktc) (ksw := ksw) (kse := kse) (ksc := ksc) (kcw := kcw) (kce := kce) (kcc := kcc) (kaw := kaw) (kae := kae) (kac := kac) (kbw := kbw) (kbe := kbe) (kbc := kbc) (kv := .obj Kc) (fo := fo) (d := d) (t := .undefined) (rv := rv) (B := B) (Bc := Bc) (bf := bf) (bs := bs) (bfw := bfw) (bfe := bfe) (bfc := bfc) (btw := btw) (bte := bte) (btc := btc) (bsw := bsw) (bse := bse) (bsc := bsc) (bG := bG) (oG := oG) (bdRT := bdRT) (bdC := bdC) (fRT := fRT) (dRT := dRT) (hf := by omega)
       all_goals rebase_tac hw0
     · rintro v w' h' ⟨-, hfu, hF, rfl⟩
       have hw1 := frame_empty_trans hw0 hF

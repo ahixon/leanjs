@@ -129,7 +129,7 @@ if "hLEf" in DO:
     lb, _ = compose(FLF, "fle_full", "LE_", subst=LE_SUBST, given={},
                     drop=tuple(["n", "h", "s", "hf", "hlt", "hG", "hGe"] + LE_SUPPLIED))
     added += lb + ["(LE_hdenv : LE_d.env = d.env)",
-                   "(dDomR : ME_M_CT_dom ≠ R) (dDomK : ME_M_CT_dom ≠ LE_L_K) (dDomB : ME_M_CT_dom ≠ LE_L_B) (dDomXf : ME_M_CT_dom ≠ LE_L_X)"]
+                   "(dDomR : ME_M_CT_dom ≠ R) (dDomK : ME_M_CT_dom ≠ LE_L_K) (dDomB : ME_M_CT_dom ≠ LE_L_B)"]
 FCUR = ren_outer("(((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE)")
 if "hSPf" in DO:
     sb, _ = compose(SPF, "fsp_full", "SP_", subst=SP_SUBST, given={},
@@ -262,7 +262,7 @@ if "hLEf" in DO:
                      if k == "{" and nm not in ["n", "h", "s"] + list(LE_SUBST) + LE_SUPPLIED)
     UNF4 = "FPC, ReactMarkFinished.FPM, ReactBeforeMutation.FB, FPRE, ReactCommitRoot.F0, Footprint.union"
     RB4 = (f"first | rebase_quick hw | (rw [hbw _ (by simp [{UNF4}])] <;> with_reducible assumption) | "
-           f"(rw [props_frame hw (by with_reducible assumption) (by simp [{UNF4}, dDomR, dDomK, dDomB, dDomXf, Ne.symm dDomR, Ne.symm dDomK, Ne.symm dDomB, Ne.symm dDomXf])] <;> with_reducible assumption) | "
+           f"(rw [props_frame hw (by with_reducible assumption) (by simp [{UNF4}, dDomR, dDomK, dDomB, Ne.symm dDomR, Ne.symm dDomK, Ne.symm dDomB])] <;> with_reducible assumption) | "
            f"(rw [kind_frame hw (by with_reducible assumption)] <;> with_reducible assumption)")
     BI = "obtain ⟨_, _, {bd}, {hd}, {hb}, {hv}, {hm}⟩ := {src}\n    rw [hdw] at {hd}; cases {hd}"
     cases.append(f"""  case hLEf =>
