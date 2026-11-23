@@ -284,6 +284,120 @@ theorem button_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value}
   simp only [js_simp] at hfu1 hfu2 hfu3 hfu4 hfu5
   exact ⟨frame_restore FW5 s, by omega, rfl, hs5, hl5⟩
 
+/-- What it writes for the counter fiber: its subtree flags and child lanes, the button fiber's `return`. -/
+def fpCC (C X : ObjId) : Footprint := ⟨[], [(C, .str "subtreeFlags"), (C, .str "childLanes"), (X, .str "return")], false⟩
+
+set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 8000000 in
+set_option maxRecDepth 100000 in
+/-- **`completeWork(current, workInProgress, lanes)`** for the counter fiber (tag 0): `popTreeContext` (nothing),
+`bubbleProperties` (its one child, the new button fiber, merged in: `bubble_one`); `null`. -/
+theorem counter_spec {n : Nat} {h : σ} {fW : ObjId} {dW : FuncData} {tW : Value} {s : State}
+    {bG : HashMap JSStr Binding} {g : EnvId} {C0 C A X Y : ObjId} {ln pp rv cl : Value}
+    {bdPT bdBP bdTF bdTC : Binding} {fPT fBP : ObjId} {dPT dBP : FuncData} {a b c e f : F64}
+    {ppw ppe ppc tgw tge tgc aw ae ac cw ce cc yw ye yc xlw xle xlc xcw xce xcc xsw xse xsc xfw xfe xfc rwe rwc sbw sbe sbc
+      se sc le lc : Bool}
+    (hW : fW < s.heap.size) (hWk : (s.objEntry fW).kind = .func dW) (hf : 80 ≤ s.fuel)
+    (hWcode : dW.code = CWGen.completeWork_func) (hWcls : dW.isClassCtor = false) (hWmode : dW.thisMode = .strict)
+    (hWenv : dW.env = g)
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, none))
+    (hGPT : bG[JSStr.ofString "popTreeContext"]? = some bdPT) (hGPTv : bdPT.value = some (.obj fPT))
+    (hGBP : bG[JSStr.ofString "bubbleProperties"]? = some bdBP) (hGBPv : bdBP.value = some (.obj fBP))
+    (hGTF : bG[JSStr.ofString "treeForkProvider"]? = some bdTF) (hGTFv : bdTF.value = some .null)
+    (hGTC : bG[JSStr.ofString "treeContextProvider"]? = some bdTC) (hGTCv : bdTC.value = some .null)
+    (hPT : fPT < s.heap.size) (hPTk : (s.objEntry fPT).kind = .func dPT)
+    (hPTcode : dPT.code = PTCGen.popTreeContext_func) (hPTcls : dPT.isClassCtor = false)
+    (hPTmode : dPT.thisMode = .strict) (hPTenv : dPT.env = g)
+    (hBP : fBP < s.heap.size) (hBPk : (s.objEntry fBP).kind = .func dBP)
+    (hBPcode : dBP.code = BPGen.bubbleProperties_func) (hBPcls : dBP.isClassCtor = false)
+    (hBPmode : dBP.thisMode = .strict)
+    -- (the counter's work in progress: a function component (tag 0); its alternate, whose child is the old button
+    -- fiber; its one child, the new button fiber)
+    (hC : C < s.heap.size) (hCk : (s.objEntry C).kind.isPlain = true)
+    (hCpp : (s.objEntry C).props.get? (.str "pendingProps") = some (.data pp ppw ppe ppc))
+    (hCtag : (s.objEntry C).props.get? (.str "tag") = some (.data (.num (F64.fin false 0 (-1074))) tgw tge tgc))
+    (hCa : (s.objEntry C).props.get? (.str "alternate") = some (.data (.obj A) aw ae ac))
+    (hCc : (s.objEntry C).props.get? (.str "child") = some (.data (.obj X) cw ce cc))
+    (hCs : (s.objEntry C).props.get? (.str "subtreeFlags") = some (.data (.num e) true se sc))
+    (hCl : (s.objEntry C).props.get? (.str "childLanes") = some (.data cl true le lc))
+    (hA : A < s.heap.size) (hAk : (s.objEntry A).kind.isPlain = true)
+    (hAc : (s.objEntry A).props.get? (.str "child") = some (.data (.obj Y) yw ye yc)) (hYX : Y ≠ X)
+    (hX : X < s.heap.size) (hXk : (s.objEntry X).kind.isPlain = true) (hCX : C ≠ X)
+    (hXl : (s.objEntry X).props.get? (.str "lanes") = some (.data (.num a) xlw xle xlc))
+    (hXcl : (s.objEntry X).props.get? (.str "childLanes") = some (.data (.num b) xcw xce xcc))
+    (hXs : (s.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num c) xsw xse xsc))
+    (hXf : (s.objEntry X).props.get? (.str "flags") = some (.data (.num f) xfw xfe xfc))
+    (hXr : (s.objEntry X).props.get? (.str "return") = some (.data rv true rwe rwc))
+    (hXsb : (s.objEntry X).props.get? (.str "sibling") = some (.data .null sbw sbe sbc)) :
+    WP eng answer (n + 1) h (callImpl eng (.obj fW) tW #[.obj C0, .obj C, ln]) s fun v w h' =>
+      v = .null ∧ Frame (fpCC C X) s w ∧ s.fuel ≤ w.fuel + 80 ∧ h' = h ∧ w.realm = s.realm ∧
+      (w.objEntry C).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr e
+        (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) c) f))) true se sc) ∧
+      (w.objEntry C).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074))
+        (numberBinOp .bitOr a b))) true le lc) ∧
+      (w.objEntry X).props.get? (.str "return") = some (.data (.obj C) true rwe rwc) := by
+  apply wp_callGen CWGen.completeWork_eq (by decide) hW hWk (by omega) hWcls hWmode
+    (by rw [hWcode]; rfl) (by rw [hWcode]; rfl) (simpleW dW hWcode) (by rw [hWcode]; rfl) (by rw [hWcode]; rfl)
+  have hpn : dW.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
+      JSStr.ofString "renderLanes"] := by rw [hWcode]; rfl
+  have hv : dW.code.info.fdi.varNames = #[JSStr.ofString "newProps", JSStr.ofString "type",
+    JSStr.ofString "nextResource", JSStr.ofString "ownerDocument"] := by rw [hWcode]; rfl
+  have hl : FDI.lexDecls dW = #[] := by simp [FDI.lexDecls, hWcode, CWGen.completeWork_func, Func.info]
+  have ha : dW.code.isAsync = false := by rw [hWcode]; rfl
+  have hne : s.envs.size ≠ g := Nat.ne_of_gt hG
+  have hG1 : g < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  clear hWcode
+  simp only [CWGen.completeWork]
+  js [hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hC, hCk, hCpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hpn, hv, hl, ha, hWenv, hG, hG1, hne, Ne.symm hne, hGe, hC, hCk, hCpp, hGPT, hGPTv, hPT, hPTk, FDI.fdiCtx, Sem.inner], ?_⟩
+  refine wp_mono (ReactCompleteHelpers.ptc_none (bG := bG) (X := C) (by js_norm [hPT]) (by js_norm [hPTk])
+    (by simp only [js_simp]; omega) hPTcode hPTcls hPTmode (by rw [hPTenv]; js_norm [hG1])
+    (by rw [hPTenv]; js_norm [hG, hG1, hne, Ne.symm hne, hGe]) hGTF hGTFv hGTC hGTCv) ?_
+  intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, hr1⟩
+  subst hv1 hh1
+  have hw1K := envEntry_frame0 hF1 (e := s.envs.size) (by js_norm)
+  have hw1G := envEntry_frame0 hF1 (e := g) (by js_norm [hG1])
+  simp only [js_simp, ↓reduceIte, hG, hG1, hne, Ne.symm hne] at hw1K hw1G
+  have hw1o : ∀ o, o < s.heap.size → w1.objEntry o = s.objEntry o := fun o ho =>
+    (objEntry_frame0 hF1 (o := o) (by js_norm [ho])).trans (by js_norm)
+  have hw1E : s.envs.size + 1 ≤ w1.envs.size := by have := hF1.envs_le; simp only [js_simp] at this; exact this
+  have hw1z : s.heap.size ≤ w1.heap.size := by have := hF1.heap_le; simp only [js_simp] at this; exact this
+  simp only [js_simp] at hfu1
+  have hw1f : 55 ≤ w1.fuel := by omega
+  have hK1 : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hw1E
+  have hG1' : g < w1.envs.size := Nat.lt_of_lt_of_le hG1 hw1E
+  have hnK1 : w1.envs.size ≠ s.envs.size := Nat.ne_of_gt hK1
+  have hnG1 : w1.envs.size ≠ g := Nat.ne_of_gt hG1'
+  have hK2 : s.envs.size < w1.envs.size + 1 := Nat.lt_succ_of_lt hK1
+  have hG2 : g < w1.envs.size + 1 := Nat.lt_succ_of_lt hG1'
+  iterate 1 (first | js_go | js_norm [hw1K, hw1G, hw1o, hC, hCk, hCtag, hK1, hG1', hnK1, hnG1, Ne.symm hnK1, Ne.symm hnG1, hK2, hG2, Nat.lt_of_lt_of_le hC hw1z, hpn, hv, hl, ha, hGe, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner] | js_split)
+  refine wp_switchC CWSwitch.lex ?_
+  js [hw1K, hw1G, hw1o, hC, hCk, hCtag, hK1, hG1', hnK1, hnG1, Ne.symm hnK1, Ne.symm hnG1, hK2, hG2, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hBP hw1z, hBP, hBPk, hGBP, hGBPv, hpn, hv, hl, ha, hGe, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX], ?_⟩
+  refine wp_mono (ReactCompleteHelpers.bubble_one (C := C) (A := A) (X := X) (Y := Y) (a := a) (b := b) (c := c)
+    (e := e) (f := f) (rv := rv) (cl := cl) (aw := aw) (ae := ae) (ac := ac) (cw := cw) (ce := ce) (cc := cc) (yw := yw)
+    (ye := ye) (yc := yc) (xlw := xlw) (xle := xle) (xlc := xlc) (xcw := xcw) (xce := xce) (xcc := xcc) (xsw := xsw)
+    (xse := xse) (xsc := xsc) (xfw := xfw) (xfe := xfe) (xfc := xfc) (rwe := rwe) (rwc := rwc) (sbw := sbw) (sbe := sbe)
+    (sbc := sbc) (se := se) (sc := sc) (le := le) (lc := lc)
+    (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX]) (by simp only [js_simp]; omega) hBPcode hBPcls hBPmode
+    (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hCk]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hCa]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hCc]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hCs])
+    (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hCl]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hAk]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hAc]) hYX (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX])
+    (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hXk]) hCX (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hXl]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hXcl]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hXs])
+    (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hXf]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hXr]) (by js_norm [hw1o, Nat.lt_of_lt_of_le hBP hw1z, Nat.lt_of_lt_of_le hC hw1z, Nat.lt_of_lt_of_le hA hw1z, Nat.lt_of_lt_of_le hX hw1z, hBP, hBPk, hC, hA, hX, hXsb])) ?_
+  intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hr2, hCs2, hCl2, hXr2⟩
+  subst hv2 hh2
+  have gB : Frame (fpCC C X) s (bodyState s fW dW tW #[.obj C0, .obj C, ln]) :=
+    frame_mono (frame_bodyState (frame_refl ({} : Footprint) s) fW dW tW _) (by simp) (by simp) (fun _ => rfl)
+  have FW1 := frame_extend' (frame_setEnv_new gB (Nat.le_refl _) _) hF1 (fun q hq _ => by simp at hq)
+    (fun q hq _ => by simp at hq) (fun _ => rfl)
+  have FW2 := frame_extend' (frame_pushEnv FW1 _) hF2 (fun q hq _ => by simp at hq)
+    (fun q hq _ => by simp at hq; rcases hq with hq | hq | hq <;> simp [fpCC, hq]) (fun _ => rfl)
+  simp only [js_simp] at hfu2
+  js [hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
+  all_goals (repeat' apply And.intro)
+  all_goals first | rfl | omega | exact frame_restore FW2 s | assumption
+
 end
 
 end ReactCompleteButton

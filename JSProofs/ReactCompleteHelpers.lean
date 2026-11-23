@@ -1,6 +1,7 @@
 import JSProofs.Rules7
 import JSProofs.Loops2
 import JSProofs.Loops5
+import JSProofs.Loops4
 import JSProofs.PTCGen
 import JSProofs.PopHCGen
 import JSProofs.MUGen
@@ -180,6 +181,52 @@ theorem preload_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
   clear hcode
   simp only [PISGen.preloadInstanceAndSuspendIfNeeded]
   repeat (first | (refine wp_forVar ?_) | (refine wp_forNone ?_) | js_go | js_norm [hpn, hv, hl, ha, hX, hXk, hXm, hm, hXf, hz, FDI.fdiCtx, Sem.inner] | js_split)
+  all_goals (repeat' apply And.intro)
+  all_goals first | rfl | omega | (simp only [js_simp]; omega) | frame_go' [*] | (js_norm [*]; done)
+
+set_option maxRecDepth 40000 in
+set_option maxHeartbeats 4000000 in
+/-- **`bubbleProperties(fiber)`** for a fiber with one child, a new fiber (not the alternate's child): no bailout
+(`false`); the child's lanes and flags merged into the fiber's, the child's `return` set. -/
+theorem bubble_one {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State} {C A X Y : ObjId}
+    {a b c e f : F64} {rv cl : Value}
+    {aw ae ac cw ce cc yw ye yc xlw xle xlc xcw xce xcc xsw xse xsc xfw xfe xfc rwe rwc sbw sbe sbc se sc le lc : Bool}
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 40 ≤ s.fuel)
+    (hcode : d.code = BPGen.bubbleProperties_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
+    (hC : C < s.heap.size) (hCk : (s.objEntry C).kind.isPlain = true)
+    (hCa : (s.objEntry C).props.get? (.str "alternate") = some (.data (.obj A) aw ae ac))
+    (hCc : (s.objEntry C).props.get? (.str "child") = some (.data (.obj X) cw ce cc))
+    (hCs : (s.objEntry C).props.get? (.str "subtreeFlags") = some (.data (.num e) true se sc))
+    (hCl : (s.objEntry C).props.get? (.str "childLanes") = some (.data cl true le lc))
+    (hA : A < s.heap.size) (hAk : (s.objEntry A).kind.isPlain = true)
+    (hAc : (s.objEntry A).props.get? (.str "child") = some (.data (.obj Y) yw ye yc)) (hYX : Y ≠ X)
+    (hX : X < s.heap.size) (hXk : (s.objEntry X).kind.isPlain = true) (hCX : C ≠ X)
+    (hXl : (s.objEntry X).props.get? (.str "lanes") = some (.data (.num a) xlw xle xlc))
+    (hXcl : (s.objEntry X).props.get? (.str "childLanes") = some (.data (.num b) xcw xce xcc))
+    (hXs : (s.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num c) xsw xse xsc))
+    (hXf : (s.objEntry X).props.get? (.str "flags") = some (.data (.num f) xfw xfe xfc))
+    (hXr : (s.objEntry X).props.get? (.str "return") = some (.data rv true rwe rwc))
+    (hXsb : (s.objEntry X).props.get? (.str "sibling") = some (.data .null sbw sbe sbc)) :
+    WP eng answer n h (callImpl eng (.obj fo) t #[.obj C]) s fun v w h' =>
+      v = .bool false ∧
+      Frame ⟨[], [(C, .str "subtreeFlags"), (C, .str "childLanes"), (X, .str "return")], false⟩ s w ∧
+      s.fuel ≤ w.fuel + 40 ∧ h' = h ∧ w.realm = s.realm ∧
+      (w.objEntry C).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr e
+        (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) c) f))) true se sc) ∧
+      (w.objEntry C).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074))
+        (numberBinOp .bitOr a b))) true le lc) ∧
+      (w.objEntry X).props.get? (.str "return") = some (.data (.obj C) true rwe rwc) := by
+  apply wp_callGen BPGen.bubbleProperties_eq (by decide) hlt hk (by omega) hcls hmode
+    (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleBP d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
+  have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "completedWork"] := by rw [hcode]; rfl
+  have hv : d.code.info.fdi.varNames = #[JSStr.ofString "didBailout", JSStr.ofString "newChildLanes",
+    JSStr.ofString "subtreeFlags", JSStr.ofString "child$113"] := by rw [hcode]; rfl
+  have hl : FDI.lexDecls d = #[] := by simp [FDI.lexDecls, hcode, BPGen.bubbleProperties_func, Func.info]
+  have ha : d.code.isAsync = false := by rw [hcode]; rfl
+  have hYX' : isStrictlyEqual (.obj Y) (.obj X) = false := by simp [isStrictlyEqual, sameValue, hYX]
+  clear hcode
+  simp only [BPGen.bubbleProperties]
+  repeat (first | (refine wp_forVar ?_) | (refine wp_forExpr ?_) | (refine for_iter (by simp only [js_simp]; omega) (by simp only [js_simp]; omega) ?_) | js_go | js_norm [hpn, hv, hl, ha, hC, hCk, hCa, hCc, hCs, hCl, hA, hAk, hAc, hYX', hX, hXk, hCX, Ne.symm hCX, hXl, hXcl, hXs, hXf, hXr, hXsb, FDI.fdiCtx, Sem.inner] | js_split)
   all_goals (repeat' apply And.intro)
   all_goals first | rfl | omega | (simp only [js_simp]; omega) | frame_go' [*] | (js_norm [*]; done)
 
