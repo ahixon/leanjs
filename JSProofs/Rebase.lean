@@ -25,6 +25,14 @@ theorem obj_eq_np {fp : Footprint} {s u : State} (hw : Frame fp s u) (hp : fp.pr
     (ho : o < s.heap.size) : u.objEntry o = s.objEntry o :=
   hw.obj_eq o ho (fun _ hh => by rw [hp] at hh; exact absurd hh (List.not_mem_nil))
 
+theorem setEnv_envEntry_self (u : State) (e : EnvId) (a : Env) (h : e < u.envs.size) :
+    (u.setEnv e a).envEntry e = a := by
+  rw [setEnv_envEntry, if_pos ⟨rfl, h⟩]
+
+theorem declLike_isSome_withBindings (ev : Env) (g : Std.HashMap JSStr Binding → Std.HashMap JSStr Binding) :
+    (Scope.declLike? (ev.withBindings g)).isSome = (Scope.declLike? ev).isSome := by
+  cases ev <;> rfl
+
 /-- A frame, then nothing changed. -/
 theorem frame_then_empty {fp : Footprint} {s u w : State} (h1 : Frame fp s u) (h2 : Frame {} u w) : Frame fp s w :=
   frame_mono (frame_trans h1 h2) (fun p hp => by simpa [Footprint.union] using hp)
