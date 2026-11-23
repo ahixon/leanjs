@@ -27,8 +27,11 @@ theorem counter_unit_spec @@BINDERS@@
     @@PREMISES@@ :
     WP eng answer (n + 9) h (callImpl eng (.obj fPU) tPU #[.obj C1]) s fun v w h' =>
       v = .undefined ∧ Frame (@@FP@@) s w ∧ s.fuel ≤ w.fuel + 560 ∧ h' = h ∧
-      (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
-        bd.value = some (.obj X)) ∧
+      (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
+        bd.value = some (.obj X) ∧ bd.mutable = true) ∧
+        (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
       ∃ C : ObjId,@@FACTS@@ := by
   apply wp_callGen PUWGen.performUnitOfWork_eq (by decide) hPUo hPUk (by omega) hPUcls hPUmode
     (by rw [hPUcode]; rfl) (by rw [hPUcode]; rfl) (ReactUnitButton.simpleP dPU hPUcode) (by rw [hPUcode]; rfl)
@@ -66,13 +69,15 @@ theorem counter_unit_spec @@BINDERS@@
     rw [hSt]; frame_go' [hG, pP_G1, pP_ne, Ne.symm pP_ne, hGe]
   refine wp_mono (ReactBeginCounter.click_spec @@ARGS1@@) ?_
   intro v1 w1 h1 ⟨C, hv1, hF1, hfu1, hh1, hr1, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15,
-    xret, hch, hCch⟩
+    xret, hch, hCch, ⟨bmB, hbmB, ⟨bdD, hbdD, hbdDm, hbdDi⟩, ⟨bdT1, hbdT1, hbdT1m, hbdT1i⟩, ⟨bdS1, hbdS1, hbdS1m, hbdS1i⟩⟩⟩
   subst hv1 hh1
   have hw1K := envEntry_frame hF1 (e := s.envs.size) (by rw [gE1']; exact Nat.lt_succ_self _)
     (by simp [fpB, ReactUpdateFunction.fpUF, pP_ne, Ne.symm pP_ne])
   rw [hSt] at hw1K
   try simp only [js_simp, ↓reduceIte, pP_ne, Ne.symm pP_ne] at hw1K
   obtain ⟨bw, hbw, hbwx⟩ := declLike_frame hF1 (e := d.env) (Nat.lt_of_lt_of_le hG gE1) gG1
+  have hbwe : bw = bmB := by rw [hbw] at hbmB; cases hbmB; rfl
+  subst hbwe
   have FW1 := frame_extend' gFS1 hF1 (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append]; exact Or.inl hq)
     (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append]; exact Or.inl hq) (fun _ => rfl)
   clear hSt
@@ -95,7 +100,10 @@ theorem counter_unit_spec @@BINDERS@@
     refine frame_setEnv_with_in (frame_setProp_in (frame_setEnv_new FW1 (Nat.le_refl _) _) hC1
       (k := PropKey.str (JSStr.ofString "memoizedProps")) (by simp [Logic.Footprint.union]) _) hG ?_ (by rw [hbw]; rfl) (by simp [Logic.Footprint.union]) _
     js_norm [hG, Nat.lt_of_lt_of_le pP_G1 E1, pP_ne, Ne.symm pP_ne, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E1, Nat.ne_of_gt (Nat.lt_of_lt_of_le pP_G1 E1), Ne.symm (Nat.ne_of_gt (Nat.lt_of_lt_of_le pP_G1 E1)), Nat.lt_of_lt_of_le hC1 z1]
-  · exact ⟨_, rfl, { bdWIP with value := some (.obj X) }, by simp [Std.HashMap.getElem?_modify, hbWIP], rfl⟩
+  · exact ⟨_, rfl, ⟨{ bdWIP with value := some (.obj X) }, by simp [Std.HashMap.getElem?_modify, hbWIP], rfl, hGWIPm⟩,
+      ⟨bdD, by simp [Std.HashMap.getElem?_modify, hbdD], hbdDm, hbdDi⟩,
+      ⟨bdT1, by simp [Std.HashMap.getElem?_modify, hbdT1], hbdT1m, hbdT1i⟩,
+      ⟨bdS1, by simp [Std.HashMap.getElem?_modify, hbdS1], hbdS1m, hbdS1i⟩⟩
   · refine ⟨C, ?_⟩
     have hXr1 : ∀ k, (w1.objEntry X).props.get? k = (w1.objEntry X).props.get? k := fun _ => rfl
     all_goals (repeat' apply And.intro)

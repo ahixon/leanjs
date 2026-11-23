@@ -311,10 +311,10 @@ for (o, key) in STACK:
     emit(f"have {hn} : (w4.objEntry {o}).props.get? (.str \"{key}\") = some (.data {v} {w} {e} {c}) := by rw [props_frame hF4 (by first | exact {heaps[o]} | (simp only [js_simp]; exact {heaps[o]})) (by simp [{allf()}])]; exact {nm}")
     carried.append(hn)
 emit("obtain ⟨bw4, hbw4, hbw4x⟩ := declLike_frame hF4 (e := d.env) (by first | assumption | exact hGk3) hR3")
-emit("have hidx4 : ∃ bw bd, Scope.declLike? (w4.envEntry d.env) = some (bw, oG) ∧ bw[JSStr.ofString \"index\"]? = some bd ∧ bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true :=\n  ⟨bw4, { bd with value := some (.num (F64.fin false 6755399441055744 (-51))) }, hbw4, by rw [hbw4x _ (by simp <;> decide)]; simp [Std.HashMap.getElem?_modify, hbd], rfl, hbdm⟩")
+emit("have hidx4 : ∃ bw, Scope.declLike? (w4.envEntry d.env) = some (bw, oG) ∧ (∃ bd, bw[JSStr.ofString \"index\"]? = some bd ∧ bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧ ∃ bd, bw[JSStr.ofString \"isHydrating\"]? = some bd ∧ bd.value = some (.bool false) :=\n  ⟨bw4, hbw4, ⟨{ bd with value := some (.num (F64.fin false 6755399441055744 (-51))) }, by rw [hbw4x _ (by simp <;> decide)]; simp [Std.HashMap.getElem?_modify, hbd], rfl, hbdm⟩, ⟨{ c_b3 with value := some (.bool false) }, by rw [hbw4x _ (by simp <;> decide)]; simp [Std.HashMap.getElem?_modify, bmx_isHydrating, c_g3], rfl⟩⟩")
 emit(f"js [{jsf()}, hF4]")
 emit("all_goals (repeat' apply And.intro)")
-emit("all_goals first | omega | (simp only [js_simp] at *; omega) | exact hidx4 | assumption | exact ⟨bw4, { bd with value := some (.num (F64.fin false 6755399441055744 (-51))) }, rfl, by rw [hbw4x _ (by simp <;> decide)]; simp [Std.HashMap.getElem?_modify, hbd], rfl, hbdm⟩ | skip")
+emit("all_goals first | omega | (simp only [js_simp] at *; omega) | exact hidx4 | assumption | exact ⟨bw4, rfl, ⟨{ bd with value := some (.num (F64.fin false 6755399441055744 (-51))) }, by rw [hbw4x _ (by simp <;> decide)]; simp [Std.HashMap.getElem?_modify, hbd], rfl, hbdm⟩, ⟨{ c_b3 with value := some (.bool false) }, by rw [hbw4x _ (by simp <;> decide)]; simp [Std.HashMap.getElem?_modify, bmx_isHydrating, c_g3], rfl⟩⟩ | skip")
 emit("simp only [fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, List.cons_append, List.nil_append]")
 emit("frame_go' [*, nts3, hne, Ne.symm hne, hG1, hG2, hGn2]")
 FP = ("⟨[(g, \"index\"), (g, \"hydrationParentFiber\"), (g, \"nextHydratableInstance\"), (g, \"isHydrating\"), "
@@ -357,8 +357,9 @@ theorem root_spec {" ".join(imps)}
     {chr(10).join("    " + h for h in hyps)} :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj H, .obj X, .num {TWO}]) s fun v w h' =>
       v = .obj e_C1 ∧ Frame (fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) s w ∧ s.fuel ≤ w.fuel + 500 ∧ h' = h ∧
-      (∃ bw bd, Scope.declLike? (w.envEntry d.env) = some (bw, oG) ∧ bw[JSStr.ofString "index"]? = some bd ∧
+      (∃ bw, Scope.declLike? (w.envEntry d.env) = some (bw, oG) ∧ (∃ bd, bw[JSStr.ofString "index"]? = some bd ∧
         bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧
+        ∃ bd, bw[JSStr.ofString "isHydrating"]? = some bd ∧ bd.value = some (.bool false)) ∧
       {(" ∧" + chr(10) + "      ").join(POSTX + BOFX)} := by
   apply wp_callGen AEBGen.attemptEarlyBailoutIfNoScheduledUpdate_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)

@@ -239,9 +239,13 @@ theorem click_spec @@PREM@@ :
     FDI.fdiCtx, Sem.inner]
   have hC1St : C1 < St.heap.size := Nat.lt_of_lt_of_le hC1 hSz
   refine ⟨Nat.lt_of_lt_of_le hC1St hF4.heap_le, by rw [kind_frame hF4 hC1St]; exact hSC1k, C, frame_restore FW s, ?_,
-    rfl, rfl, hCch4⟩
-  simp only [js_simp] at hfu1 hfu2 hfu3
-  omega
+    rfl, rfl, hCch4, ?_⟩
+  · simp only [js_simp] at hfu1 hfu2 hfu3
+    omega
+  · exact Exists.intro _ ⟨by first | rfl | (rw [restore_envEntry]; exact hmod4),
+      by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, hGDR, hGDRm, hGDRi],
+      by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, rhGT, rhGTm, rhGTi],
+      by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, rhGS, rhGSm, rhGSi]⟩
 
 end
 

@@ -143,7 +143,11 @@ post=f"""
       {xfacts} ∧
       (w.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true cw cc) ∧
       (w.objEntry C).props.get? (.str "children") =
-        some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true)"""
+        some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
+      ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, none) ∧
+        (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true"""
 tmpl=open(here+"ufc_tmpl.lean.in").read().replace("@@RWARGS@@",rwargs).replace("@@RCARGS@@",rcargs).replace("@@POST@@",post)
 allh=re.findall(r"\((h[A-Za-z0-9_']*|d[A-Za-z0-9]+|r[a-z][A-Za-z0-9_']*) :", prem)
 import collections

@@ -370,8 +370,10 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (x_Cx_a_fGC : Cx ≠ a_fGC) :
     WP eng answer (n + 3) h (callImpl eng (.obj fo) t #[.obj H, .obj X, .num (F64.fin false 4503599627370496 (-51))]) s fun v w h' =>
       v = .obj e_C1 ∧ Frame (fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) s w ∧ s.fuel ≤ w.fuel + 700 ∧ h' = h ∧
-      (∃ bw bd, Scope.declLike? (w.envEntry d.env) = some (bw, oG) ∧ bw[JSStr.ofString "index"]? = some bd ∧
+      (∃ bw, Scope.declLike? (w.envEntry d.env) = some (bw, oG) ∧ (∃ bd, bw[JSStr.ofString "index"]? = some bd ∧
         bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧
+        (∃ bd, bw[JSStr.ofString "isHydrating"]? = some bd ∧ bd.value = some (.bool false)) ∧
+        ∃ bd, bw[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false)) ∧
       (w.objEntry VS).props.get? (.str "0") = some (.data a_vr true a_e0 a_c0) ∧
       (w.objEntry VS).props.get? (.str "1") = some (.data a_vf true a_e1 a_c1) ∧
       (w.objEntry VS).props.get? (.str "2") = some (.data a_vc true a_e2 a_c2) ∧
@@ -454,10 +456,19 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
       intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hI2, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18⟩
       subst hv2 hh2
       rw [h_AEBenv] at hI2
+      obtain ⟨bw, hbw, hidx, hhy⟩ := hI2
+      obtain ⟨bw', hbw', hbwx'⟩ := declLike_frame hF2 (e := dAEB.env) (by rw [h_AEBenv]; js_norm [hE1, hGk1, hEw1, hGw1, hG]) (bs := (bG.modify (JSStr.ofString "didReceiveUpdate") (fun bd => { bd with value := some (.bool false) }))) (o := oG) (by rw [h_AEBenv]; js_norm [hE1, hGk1, hEw1, hGw1, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner])
+      rw [h_AEBenv] at hbw'
+      have hbwe : bw' = bw := by rw [hbw] at hbw'; cases hbw'; rfl
+      subst hbwe
+      have hdru : ∃ bd, bw'[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false) :=
+        ⟨{ bdDRU with value := some (.bool false) }, by rw [hbwx' _ (by simp [ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, Logic.Footprint.union] <;> decide)]; simp [Std.HashMap.getElem?_modify, g_DRU], g_DRUm, rfl⟩
+      have hI2 : ∃ bw, Scope.declLike? (w2.envEntry d.env) = some (bw, oG) ∧ (∃ bd, bw[JSStr.ofString "index"]? = some bd ∧ bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧ (∃ bd, bw[JSStr.ofString "isHydrating"]? = some bd ∧ bd.value = some (.bool false)) ∧ ∃ bd, bw[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false) :=
+        ⟨bw', hbw, hidx, hhy, hdru⟩
       try simp only [js_simp] at hfu2
       js [hE1, hGk1, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
       all_goals (repeat' apply And.intro)
-      all_goals first | omega | (simp only [js_simp] at *; omega) | assumption | skip
+      all_goals first | omega | (simp only [js_simp] at *; omega) | assumption | exact ⟨bw', rfl, hidx, hhy, hdru⟩ | skip
       simp only [fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, Logic.Footprint.union, List.cons_append, List.nil_append, List.append_assoc, Bool.false_or] at hF2 ⊢
       rw [h_AEBenv] at hF2
       frame_go' [*, hne, Ne.symm hne, hG1]

@@ -372,7 +372,11 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry X).props.get? (.str "return") = some (.data (.obj C1) true rew rec) ∧
       (w.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true cw cc) ∧
       (w.objEntry C).props.get? (.str "children") =
-        some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) := by
+        some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
+      ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, none) ∧
+        (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true := by
   apply wp_callGen BWGen.beginWork_eq (by decide) hBW hBWk (by omega) hBWcls hBWmode
     (by rw [hBWcode]; rfl) (by rw [hBWcode]; rfl) (simpleB dB hBWcode) (by rw [hBWcode]; rfl) (by rw [hBWcode]; rfl)
   have hpn : dB.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
@@ -631,12 +635,12 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (hC1f := (by rw [gSp C1 _ hC1 (fun h => by first | decide | exact absurd h (by assumption) | exact absurd h (Ne.symm (by assumption)) | exact absurd h ((hdW _ (by simp)).1))]; exact hC1f))
       (hdW := hdW) (hdUe := hdUe)) ?postU
   intro v2 w2 h2 ⟨C, hv2, hF2, hfu2, hh2, hr2, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, xret,
-    hch, hCch⟩
+    hch, hCch, hB2⟩
   subst v2 h2
   have FW := frame_extend' gFSt hF2 (fun q hq _ => hq) (fun q hq _ => hq) (fun _ => rfl)
   have hfw : s.fuel ≤ w2.fuel + 530 := by simp only [js_simp] at hfu1; omega
   exact ⟨C, rfl, frame_restore FW s, hfw, rfl, rfl, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15,
-    xret, hch, hCch⟩
+    xret, hch, hCch, hB2⟩
 
 end
 

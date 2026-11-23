@@ -11,6 +11,10 @@ ai, ah = sig(J("ReactEarlyBailout.lean"), "root_spec", "    WP eng answer")
 _aeb = open(J("ReactEarlyBailout.lean")).read()
 _i = _aeb.index("theorem root_spec"); _j = _aeb.index("h' = h ∧", _i); _k = _aeb.index(":= by", _j)
 AEB_POST = _aeb[_j + len("h' = h ∧"):_k].rstrip()
+_hy = 'bd.value = some (.bool false)) ∧'
+assert _hy in AEB_POST
+AEB_POST = AEB_POST.replace('∃ bd, bw[JSStr.ofString "isHydrating"]? = some bd ∧ ' + _hy,
+  '(∃ bd, bw[JSStr.ofString "isHydrating"]? = some bd ∧ bd.value = some (.bool false)) ∧\n        ∃ bd, bw[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false)) ∧', 1)
 ci, ch = sig(J("ReactRootBailout.lean"), "check_none", "    WP eng answer")
 AEB_SET = {"n": "n", "h": None, "fo": "fAEB", "d": "dAEB", "t": ".undefined", "s": None}
 imps = []; seen = set()
@@ -143,10 +147,19 @@ proof = f'''  simp only [BWGen.beginWork]
       intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hI2, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18⟩
       subst hv2 hh2
       rw [h_AEBenv] at hI2
+      obtain ⟨bw, hbw, hidx, hhy⟩ := hI2
+      obtain ⟨bw', hbw', hbwx'⟩ := declLike_frame hF2 (e := dAEB.env) (by rw [h_AEBenv]; js_norm [hE1, hGk1, hEw1, hGw1, hG]) (bs := {RREC}) (o := oG) (by rw [h_AEBenv]; js_norm [hE1, hGk1, hEw1, hGw1, {JSF}])
+      rw [h_AEBenv] at hbw'
+      have hbwe : bw' = bw := by rw [hbw] at hbw'; cases hbw'; rfl
+      subst hbwe
+      have hdru : ∃ bd, bw'[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false) :=
+        ⟨{{ bdDRU with value := some (.bool false) }}, by rw [hbwx' _ (by simp [ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, Logic.Footprint.union] <;> decide)]; simp [Std.HashMap.getElem?_modify, g_DRU], g_DRUm, rfl⟩
+      have hI2 : ∃ bw, Scope.declLike? (w2.envEntry d.env) = some (bw, oG) ∧ (∃ bd, bw[JSStr.ofString "index"]? = some bd ∧ bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧ (∃ bd, bw[JSStr.ofString "isHydrating"]? = some bd ∧ bd.value = some (.bool false)) ∧ ∃ bd, bw[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false) :=
+        ⟨bw', hbw, hidx, hhy, hdru⟩
       try simp only [js_simp] at hfu2
       js [hE1, hGk1, {JSF}]
       all_goals (repeat' apply And.intro)
-      all_goals first | omega | (simp only [js_simp] at *; omega) | assumption | skip
+      all_goals first | omega | (simp only [js_simp] at *; omega) | assumption | exact ⟨bw', rfl, hidx, hhy, hdru⟩ | skip
       simp only [fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, Logic.Footprint.union, List.cons_append, List.nil_append, List.append_assoc, Bool.false_or] at hF2 ⊢
       rw [h_AEBenv] at hF2
       frame_go' [*, hne, Ne.symm hne, hG1]'''

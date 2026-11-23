@@ -326,7 +326,11 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry X).props.get? (.str "return") = some (.data (.obj C1) true rew rec) ∧
       (w.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true cw cc) ∧
       (w.objEntry C).props.get? (.str "children") =
-        some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) := by
+        some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
+      ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, none) ∧
+        (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true := by
   apply wp_callGen UFCGen.updateFunctionComponent_eq (by decide) hUF hUFk (by omega) hUFcls hUFmode
     (by rw [hUFcode]; rfl) (by rw [hUFcode]; rfl) (simpleUF dUF hUFcode) (by rw [hUFcode]; rfl) (by rw [hUFcode]; rfl)
   have hpn : dUF.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
@@ -673,9 +677,13 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     FDI.fdiCtx, Sem.inner]
   have hC1St : C1 < St.heap.size := Nat.lt_of_lt_of_le hC1 hSz
   refine ⟨Nat.lt_of_lt_of_le hC1St hF4.heap_le, by rw [kind_frame hF4 hC1St]; exact hSC1k, C, frame_restore FW s, ?_,
-    rfl, rfl, hCch4⟩
-  simp only [js_simp] at hfu1 hfu2 hfu3
-  omega
+    rfl, rfl, hCch4, ?_⟩
+  · simp only [js_simp] at hfu1 hfu2 hfu3
+    omega
+  · exact Exists.intro _ ⟨by first | rfl | (rw [restore_envEntry]; exact hmod4),
+      by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, hGDR, hGDRm, hGDRi],
+      by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, rhGT, rhGTm, rhGTi],
+      by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, rhGS, rhGSm, rhGSi]⟩
 
 end
 

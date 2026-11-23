@@ -41,6 +41,7 @@ k = src.index(":= by", j)
 post = src[j:k]
 # the button fiber's facts: as stated by click_spec (after `w.realm = s.realm ∧`)
 facts = post[post.index("w.realm = s.realm ∧") + len("w.realm = s.realm ∧"):].rstrip()
+facts = facts[:facts.index(" ∧\n      ∃ bm, Scope.declLike?")]
 FP = ("Logic.Footprint.union (fpB d.env C1 H0 Q RSI X) ⟨[(d.env, \"workInProgress\")], [(C1, .str \"memoizedProps\")], false⟩")
 tmpl = open(os.path.join(ROOT, "tools", "react_puwc", "tmpl.lean.in")).read()
 out = (tmpl.replace("@@BINDERS@@", " ".join(binds)).replace("@@PREMISES@@", "\n    ".join(prem))
