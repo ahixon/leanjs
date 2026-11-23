@@ -387,8 +387,18 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (x_Cx_a_fGC : Cx ≠ a_fGC) :
     WP eng answer (n + 4) h (callImpl eng (.obj fo) t #[.obj X]) s fun v w h' =>
       v = .undefined ∧ Frame (Logic.Footprint.union (ReactBeginRoot.fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) ⟨[(d.env, "workInProgress")], [(X, .str "memoizedProps")], false⟩) s w ∧ s.fuel ≤ w.fuel + 800 ∧ h' = h ∧
-      ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
-        bd.value = some (.obj e_C1) := by
+      (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
+        bd.value = some (.obj e_C1)) ∧ ∃ bd, bm[JSStr.ofString "index"]? = some bd ∧
+        bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧
+      (w.objEntry VS).props.get? (.str "0") = some (.data a_vr true a_e0 a_c0) ∧
+      (w.objEntry VS).props.get? (.str "1") = some (.data a_vf true a_e1 a_c1) ∧
+      (w.objEntry VS).props.get? (.str "2") = some (.data a_vc true a_e2 a_c2) ∧
+      (w.objEntry VS).props.get? (.str "3") = some (.data b_cur true b_oe b_oc) ∧
+      (w.objEntry a_RI).props.get? (.str "current") = some (.data (.obj C) true a_re a_rc) ∧
+      (w.objEntry a_CF).props.get? (.str "current") = some (.data (.obj X) true a_fe a_fc) ∧
+      (w.objEntry a_CS).props.get? (.str "current") = some (.data (.num (F64.fin false 0 (-1074))) true a_ce a_cc) ∧
+      (w.objEntry b_Cu).props.get? (.str "current") = some (.data b_cv true b_ce b_cc) ∧
+      (w.objEntry Cx).props.get? (.str "_currentValue") = some (.data cache true b_xe b_xc) := by
   apply wp_callGen PUWGen.performUnitOfWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "unitOfWork"] := by rw [hcode]; rfl
@@ -420,8 +430,9 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     all_goals first | (simp [Logic.Footprint.union, ReactHostContainer.fp]; done) | (intro p hp; simp only [Logic.Footprint.union, List.mem_append, List.nil_append, List.append_nil, List.mem_cons, List.mem_nil_iff, or_false, h_BWenv] at hp ⊢; first | (rcases hp with hp | hp <;> simp_all) | simp_all)
   all_goals first | (simp only [js_simp]; omega) | (js_norm [hG, hGe, g_BW, g_BWv, h_BW, h_BWk, g_ERL, g_ERLv, g_WIP, g_WIPm, g_WIPv, hXa, hXmp, e_hX, e_hXk, e_hH, e_hHk, x_BW_X, x_BW_H, Ne.symm x_BW_X, Ne.symm x_BW_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, FDI.fdiCtx, Sem.inner]; done) | skip
   case p1 =>
-    intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1⟩
+    intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, ⟨bw, bdI, hbw, hbdI, hbdv, hbdm⟩, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx⟩
     subst hv1 hh1
+    rw [h_BWenv] at hbw
     try simp only [js_simp] at hfu1
     simp only [ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp,
       Logic.Footprint.union, List.cons_append, List.nil_append, List.append_assoc, Bool.false_or] at hF1
@@ -431,6 +442,8 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     have hEw1 := envEntry_frame hF1 (e := s.envs.size) (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega)) (by simp [Nat.ne_of_lt hG])
     obtain ⟨bW, hWd, hWx⟩ := declLike_frame hF1 (e := d.env) (bs := bG) (o := oG) (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega)) (by js_norm [hG, hGe, hne, Ne.symm hne, hG1])
     have hWIP1 := hWx (JSStr.ofString "workInProgress") (by simp)
+    have hbW : bw = bW := by rw [hWd] at hbw; cases hbw; rfl
+    subst hbW
     have hX1 : X < w1.heap.size := heap_frame hF1 (by simpa using e_hX)
     have hXk1 : (w1.objEntry X).kind.isPlain = true := by rw [kind_frame hF1 (by simpa using e_hX)]; simpa using e_hXk
     have hXpp1 : (w1.objEntry X).props.get? (.str "pendingProps") = some (.data .null ppw ppe ppc) := by
@@ -441,7 +454,7 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     all_goals (repeat' apply And.intro)
     all_goals first | omega | (simp only [js_simp] at *; omega) | skip
     case' _ => skip
-    all_goals first | (refine ⟨_, rfl, ?_⟩; simp [Std.HashMap.getElem?_modify, hWIP1, g_WIP]) | skip
+    all_goals first | (refine ⟨_, rfl, by simp [Std.HashMap.getElem?_modify, hWIP1, g_WIP], ⟨bdI, by simp [Std.HashMap.getElem?_modify, hbdI], hbdv, hbdm⟩⟩) | exact s0 | exact s1 | exact s2 | exact s3 | exact sRI | exact sCF | exact sCS | exact sCu | exact sCx | (js_norm [s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, x_VS_X, x_a_RI_X, x_a_CF_X, x_a_CS_X, x_b_Cu_X, x_Cx_X, Ne.symm x_VS_X, Ne.symm x_a_RI_X, Ne.symm x_a_CF_X, Ne.symm x_a_CS_X, Ne.symm x_b_Cu_X, Ne.symm x_Cx_X, hX1]; done) | skip
     simp only [ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp,
       Logic.Footprint.union, List.cons_append, List.nil_append, List.append_assoc, Bool.false_or]
     frame_go' [*, Logic.Footprint.union, hne, Ne.symm hne, hG1]

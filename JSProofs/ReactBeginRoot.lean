@@ -369,7 +369,18 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (x_Cx_a_fGO : Cx ≠ a_fGO)
     (x_Cx_a_fGC : Cx ≠ a_fGC) :
     WP eng answer (n + 3) h (callImpl eng (.obj fo) t #[.obj H, .obj X, .num (F64.fin false 4503599627370496 (-51))]) s fun v w h' =>
-      v = .obj e_C1 ∧ Frame (fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) s w ∧ s.fuel ≤ w.fuel + 700 ∧ h' = h := by
+      v = .obj e_C1 ∧ Frame (fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) s w ∧ s.fuel ≤ w.fuel + 700 ∧ h' = h ∧
+      (∃ bw bd, Scope.declLike? (w.envEntry d.env) = some (bw, oG) ∧ bw[JSStr.ofString "index"]? = some bd ∧
+        bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧
+      (w.objEntry VS).props.get? (.str "0") = some (.data a_vr true a_e0 a_c0) ∧
+      (w.objEntry VS).props.get? (.str "1") = some (.data a_vf true a_e1 a_c1) ∧
+      (w.objEntry VS).props.get? (.str "2") = some (.data a_vc true a_e2 a_c2) ∧
+      (w.objEntry VS).props.get? (.str "3") = some (.data b_cur true b_oe b_oc) ∧
+      (w.objEntry a_RI).props.get? (.str "current") = some (.data (.obj C) true a_re a_rc) ∧
+      (w.objEntry a_CF).props.get? (.str "current") = some (.data (.obj X) true a_fe a_fc) ∧
+      (w.objEntry a_CS).props.get? (.str "current") = some (.data (.num (F64.fin false 0 (-1074))) true a_ce a_cc) ∧
+      (w.objEntry b_Cu).props.get? (.str "current") = some (.data b_cv true b_ce b_cc) ∧
+      (w.objEntry Cx).props.get? (.str "_currentValue") = some (.data cache true b_xe b_xc) := by
   apply wp_callGen BWGen.beginWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
@@ -422,12 +433,13 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     case geA => rw [h_AEBenv]; js_norm [hE1, hGk1, hEw1, hGw1, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
     all_goals first | (simp only [js_simp]; omega) | (js_norm [hX1, hH1, hA1, hE1, hGk1, hEw1, hGw1, oo1 _ h_AEB, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]; done) | skip
     case p2 =>
-      intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2⟩
+      intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hI2, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx⟩
       subst hv2 hh2
+      rw [h_AEBenv] at hI2
       try simp only [js_simp] at hfu2
       js [hE1, hGk1, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
       all_goals (repeat' apply And.intro)
-      all_goals first | omega | (simp only [js_simp] at *; omega) | skip
+      all_goals first | omega | (simp only [js_simp] at *; omega) | assumption | skip
       simp only [fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, Logic.Footprint.union, List.cons_append, List.nil_append, List.append_assoc, Bool.false_or] at hF2 ⊢
       rw [h_AEBenv] at hF2
       frame_go' [*, hne, Ne.symm hne, hG1]

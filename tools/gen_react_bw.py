@@ -8,6 +8,9 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 J = lambda f: ROOT + "/JSProofs/" + f
 TWO = "(F64.fin false 4503599627370496 (-51))"
 ai, ah = sig(J("ReactEarlyBailout.lean"), "root_spec", "    WP eng answer")
+_aeb = open(J("ReactEarlyBailout.lean")).read()
+_i = _aeb.index("theorem root_spec"); _j = _aeb.index("h' = h ∧", _i); _k = _aeb.index(":= by", _j)
+AEB_POST = _aeb[_j + len("h' = h ∧"):_k].rstrip()
 ci, ch = sig(J("ReactRootBailout.lean"), "check_none", "    WP eng answer")
 AEB_SET = {"n": "n", "h": None, "fo": "fAEB", "d": "dAEB", "t": ".undefined", "s": None}
 imps = []; seen = set()
@@ -137,12 +140,13 @@ proof = f'''  simp only [BWGen.beginWork]
 {DRC}    case geA => rw [h_AEBenv]; js_norm [hE1, hGk1, hEw1, hGw1, {JSF}]
     all_goals first | (simp only [js_simp]; omega) | (js_norm [hX1, hH1, hA1, hE1, hGk1, hEw1, hGw1, oo1 _ h_AEB, {JSF}]; done) | skip
     case p2 =>
-      intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2⟩
+      intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hI2, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx⟩
       subst hv2 hh2
+      rw [h_AEBenv] at hI2
       try simp only [js_simp] at hfu2
       js [hE1, hGk1, {JSF}]
       all_goals (repeat' apply And.intro)
-      all_goals first | omega | (simp only [js_simp] at *; omega) | skip
+      all_goals first | omega | (simp only [js_simp] at *; omega) | assumption | skip
       simp only [fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, Logic.Footprint.union, List.cons_append, List.nil_append, List.append_assoc, Bool.false_or] at hF2 ⊢
       rw [h_AEBenv] at hF2
       frame_go' [*, hne, Ne.symm hne, hG1]'''
@@ -179,7 +183,7 @@ set_option maxHeartbeats 20000000 in
 theorem root_spec {{n : Nat}} {{h : σ}} {{fo : ObjId}} {{d : FuncData}} {{t : Value}} {{s : State}} {" ".join(i for i in imps if not i.startswith("{n :") and not i.startswith("{h :") and not i.startswith("{fo :") and not i.startswith("{t :") and not i.startswith("{s :") and not i.startswith("{d :"))}
     {chr(10).join("    " + h for h in hyps)} :
     WP eng answer (n + 3) h (callImpl eng (.obj fo) t #[.obj H, .obj X, .num {TWO}]) s fun v w h' =>
-      v = .obj e_C1 ∧ Frame (fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) s w ∧ s.fuel ≤ w.fuel + 700 ∧ h' = h := by
+      v = .obj e_C1 ∧ Frame (fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) s w ∧ s.fuel ≤ w.fuel + 700 ∧ h' = h ∧{AEB_POST} := by
   apply wp_callGen BWGen.beginWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",

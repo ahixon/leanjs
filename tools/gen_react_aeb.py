@@ -283,6 +283,11 @@ emit("intro v3 w3 h3 ⟨hv3, hF3, hfu3, hh3, hR3⟩\nsubst hv3 hh3\nrw [h_fRHSen
 after(3, {})
 extra.append("hR3")
 emit(f"js [{jsf()}]")
+POSTX = []
+for (o, key) in [("VS", "0"), ("VS", "1"), ("VS", "2"), ("VS", "3"), ("a_RI", "current"), ("a_CF", "current"),
+                 ("a_CS", "current"), ("b_Cu", "current"), ("Cx", "_currentValue")]:
+    _, v, w, e, c = props[(o, key)]
+    POSTX.append(f"(w.objEntry {o}).props.get? (.str \"{key}\") = some (.data {v} {w} {e} {c})")
 # 4. bailoutOnAlreadyFinishedWork
 imp, holes = callee_args(c_bof, {"hGe": "?ge4"}, 4)
 imp = imp.replace("(bG := bG)", "(bG := ((((bm.modify (JSStr.ofString \"index\") (fun bd => { bd with value := some (.num (F64.fin false 6755399441055744 (-51))) })).modify (JSStr.ofString \"hydrationParentFiber\") (fun bd => { bd with value := some .null })).modify (JSStr.ofString \"nextHydratableInstance\") (fun bd => { bd with value := some .null })).modify (JSStr.ofString \"isHydrating\") (fun bd => { bd with value := some (.bool false) })))")
@@ -293,9 +298,19 @@ emit(f"case ge4 => rw [h_fBOFenv]; js_norm [{jsf()}]")
 close()
 emit("case p4 =>"); ind += 2
 emit("intro v4 w4 h4 ⟨hv4, hF4, hfu4, hh4, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18⟩\nsubst hv4 hh4\nrw [h_fBOFenv] at hF4\ntry simp only [js_simp] at hfu4\nsimp only [ReactBailout.fp, ReactCreateWIP.fp, List.cons_append, List.nil_append] at hF4")
+STACK = [("VS", "0"), ("VS", "1"), ("VS", "2"), ("VS", "3"), ("a_RI", "current"), ("a_CF", "current"),
+         ("a_CS", "current"), ("b_Cu", "current"), ("Cx", "_currentValue")]
+carried = []
+for (o, key) in STACK:
+    nm, v, w, e, c = props[(o, key)]
+    hn = f"pp4_{o}_{re.sub(r'[^A-Za-z0-9]', '_', key)}"
+    emit(f"have {hn} : (w4.objEntry {o}).props.get? (.str \"{key}\") = some (.data {v} {w} {e} {c}) := by rw [props_frame hF4 (by first | exact {heaps[o]} | (simp only [js_simp]; exact {heaps[o]})) (by simp [{allf()}])]; exact {nm}")
+    carried.append(hn)
+emit("obtain ⟨bw4, hbw4, hbw4x⟩ := declLike_frame hF4 (e := d.env) (by first | assumption | exact hGk3) hR3")
+emit("have hidx4 : ∃ bw bd, Scope.declLike? (w4.envEntry d.env) = some (bw, oG) ∧ bw[JSStr.ofString \"index\"]? = some bd ∧ bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true :=\n  ⟨bw4, { bd with value := some (.num (F64.fin false 6755399441055744 (-51))) }, hbw4, by rw [hbw4x _ (by simp <;> decide)]; simp [Std.HashMap.getElem?_modify, hbd], rfl, hbdm⟩")
 emit(f"js [{jsf()}, hF4]")
 emit("all_goals (repeat' apply And.intro)")
-emit("all_goals first | omega | (simp only [js_simp] at *; omega) | skip")
+emit("all_goals first | omega | (simp only [js_simp] at *; omega) | exact hidx4 | assumption | exact ⟨bw4, { bd with value := some (.num (F64.fin false 6755399441055744 (-51))) }, rfl, by rw [hbw4x _ (by simp <;> decide)]; simp [Std.HashMap.getElem?_modify, hbd], rfl, hbdm⟩ | skip")
 emit("simp only [fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, List.cons_append, List.nil_append]")
 emit("frame_go' [*, nts3, hne, Ne.symm hne, hG1, hG2, hGn2]")
 FP = ("⟨[(g, \"index\"), (g, \"hydrationParentFiber\"), (g, \"nextHydratableInstance\"), (g, \"isHydrating\"), "
@@ -337,7 +352,10 @@ set_option maxHeartbeats 20000000 in
 theorem root_spec {" ".join(imps)}
     {chr(10).join("    " + h for h in hyps)} :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj H, .obj X, .num {TWO}]) s fun v w h' =>
-      v = .obj e_C1 ∧ Frame (fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) s w ∧ s.fuel ≤ w.fuel + 500 ∧ h' = h := by
+      v = .obj e_C1 ∧ Frame (fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) s w ∧ s.fuel ≤ w.fuel + 500 ∧ h' = h ∧
+      (∃ bw bd, Scope.declLike? (w.envEntry d.env) = some (bw, oG) ∧ bw[JSStr.ofString "index"]? = some bd ∧
+        bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧
+      {(" ∧" + chr(10) + "      ").join(POSTX)} := by
   apply wp_callGen AEBGen.attemptEarlyBailoutIfNoScheduledUpdate_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
