@@ -5,11 +5,12 @@ import re, sys
 sys.path.insert(0, "tools/react_commit")
 from compose import binders, compose, _rename, _theorem_header
 
-DO = {"hMf", "hBf", "hMEf"}
+DO = {"hMf", "hBf", "hMEf", "hLEf"}
 CR = "JSProofs/ReactCommitRootFn.lean"
 MF = "JSProofs/ReactMarkFinished.lean"
 BMF = "JSProofs/ReactBeforeMutationFull.lean"
 FMF = "JSProofs/ReactFlushMutationFull.lean"
+FLF = "JSProofs/ReactFlushLayoutFull.lean"
 cb = binders(CR, "cmr_spec")
 Z = ".num (F64.fin false 0 (-1074))"
 drop_outer = {"sl", "ul", "srl", "K", "hK"}
@@ -44,6 +45,15 @@ if "hMEf" in DO:
           f"(.num ({LANE})) ∧ BindIs w d.env (JSStr.ofString \"executionContext\") (.num ec) ∧ "
           f"PropIs w RSI (JSStr.ofString \"T\") tv ∧ PropIs w RDSI (JSStr.ofString \"p\") pv)")
     outer_ren["Q1"] = Q1
+LE_SUPPLIED = ["hGS", "hGSv", "hGSm", "bdS", "hGE", "hGEv", "hGEm", "bdE", "hRSIt", "te", "tc", "hRDSIp", "pe", "pc"]
+LE_SUBST = {"fo": "fLE", "t": ".undefined", "bG": "bG", "oG": "oG", "FR": "FR", "R": "R", "RSI": "RSI", "RDSI": "RDSI",
+  "ec": "ec", "tv": "tv", "pv": "pv"}
+if "hLEf" in DO:
+    drop_outer |= {"hLEf", "hLEc", "fpLE", "hfpLE", "hfpLEp", "Q2"}
+    outer_ren["fpLE"] = "(ReactFlushLayout.FPL LE_d.env RSI RDSI)"
+    Q2 = (f"(fun (w : State) (h : σ) => (∃ w0, {PCME} w0 h) ∧ BindIs w d.env (JSStr.ofString \"pendingEffectsStatus\") "
+          f"(.num (F64.fin false 6755399441055744 (-51))))")
+    outer_ren["Q2"] = Q2
 def _balanced(t, i):
     """index just after the parenthesised group starting at t[i] == '('"""
     d = 0
@@ -106,8 +116,13 @@ if "hMEf" in DO:
                    "(dDomL : ME_M_CT_dom ≠ fLE) (dDomS : ME_M_CT_dom ≠ fSP) (dDomA : ME_M_CT_dom ≠ MF_EA) (dDomX : ME_M_CT_dom ≠ MF_XA)"] + \
              [f"(d{o}{x} : {e} ≠ {y})" for o, e in (("LP", "ME_M_CT_BT_LP"), ("NP", "ME_M_CT_BT_NP"), ("OP", "ME_M_CT_BT_CH_U_OP"))
               for x, y in (("F", "FR"), ("A", "MF_EA"), ("X", "MF_XA"))]
+if "hLEf" in DO:
+    lb, _ = compose(FLF, "fle_full", "LE_", subst=LE_SUBST, given={},
+                    drop=tuple(["n", "h", "s", "hf", "hlt", "hG", "hGe"] + LE_SUPPLIED))
+    added += lb + ["(LE_hdenv : LE_d.env = d.env)",
+                   "(dDomR : ME_M_CT_dom ≠ R) (dDomK : ME_M_CT_dom ≠ LE_L_K) (dDomB : ME_M_CT_dom ≠ LE_L_B) (dDomXf : ME_M_CT_dom ≠ LE_L_X)"]
 extra = ["(hf : 29400 ≤ s.fuel)"]
-_islate = lambda b: "MF_" in b or "ReactBeforeMutation.FB" in b or "ME_" in b
+_islate = lambda b: "MF_" in b or "ReactBeforeMutation.FB" in b or "ME_" in b or "LE_" in b
 late = [b for b in outer if _islate(b)]
 outer = [b for b in outer if not _islate(b)]
 binds = "\n    ".join(outer + added + extra + late)
@@ -219,8 +234,43 @@ if "hMEf" in DO:
       or_false, List.nil_append, List.append_nil] at hp
     rcases hp with ((hp | hp) | hp) | hp <;> subst hp <;>
       simp_all [Ne.symm dLT, Ne.symm dLD, Ne.symm dLF, Ne.symm dST, Ne.symm dSD, Ne.symm dSF]""")
+if "hLEf" in DO:
+    leimp = " ".join(f"({nm} := LE_{nm})" for nm, k, t in binders(FLF, "fle_full")
+                     if k == "{" and nm not in ["n", "h", "s"] + list(LE_SUBST) + LE_SUPPLIED)
+    UNF4 = "FPC, ReactMarkFinished.FPM, ReactBeforeMutation.FB, FPRE, ReactCommitRoot.F0, Footprint.union"
+    RB4 = (f"first | rebase_quick hw | (rw [hbw _ (by simp [{UNF4}])] <;> with_reducible assumption) | "
+           f"(rw [props_frame hw (by with_reducible assumption) (by simp [{UNF4}, dDomR, dDomK, dDomB, dDomXf, Ne.symm dDomR, Ne.symm dDomK, Ne.symm dDomB, Ne.symm dDomXf])] <;> with_reducible assumption) | "
+           f"(rw [kind_frame hw (by with_reducible assumption)] <;> with_reducible assumption)")
+    BI = "obtain ⟨_, _, {bd}, {hd}, {hb}, {hv}, {hm}⟩ := {src}\n    rw [hdw] at {hd}; cases {hd}"
+    cases.append(f"""  case hLEf =>
+    intro w h1 hw ⟨hPC, hst, hec, hT, hp⟩ hfw
+    obtain ⟨bw, hdw, hbw⟩ := declLike_frame hw hG hGe
+    {BI.format(bd="bS'", hd="hd1", hb="hb1", hv="hv1", hm="hm1", src="hst")}
+    {BI.format(bd="bE'", hd="hd2", hb="hb2", hv="hv2", hm="hm2", src="hec")}
+    obtain ⟨te', tc', hT'⟩ := hT
+    obtain ⟨pe', pc', hp'⟩ := hp
+    refine' wp_mono (ReactFlushLayout.fle_full (s := w) (n := n) (fo := fLE) (t := .undefined) (bG := bw) (oG := oG)
+      (FR := FR) (R := R) (RSI := RSI) (RDSI := RDSI) (ec := ec) (tv := tv) (pv := pv) (bdS := bS') (bdE := bE')
+      (te := te') (tc := tc') (pe := pe') (pc := pc') {leimp} (hf := by omega) (hlt := lt_heap_of_frame hw hLEo)
+      (hG := by rw [LE_hdenv]; exact lt_envs_of_frame hw hG) (hGe := by rw [LE_hdenv]; exact hdw)
+      (hGS := hb1) (hGSv := hv1) (hGSm := hm1) (hGE := hb2) (hGEv := hv2) (hGEm := hm2) (hRSIt := hT')
+      (hRDSIp := hp') ..) ?lpost
+    case lpost =>
+      rintro v w' h' ⟨-, hfu, hF, rfl, hst3⟩
+      rw [LE_hdenv] at hst3
+      exact ⟨hF, frame_trans hw hF, by omega, hPC, hst3⟩
+    all_goals {RB4}
+  case hfpLE =>
+    intro p hp
+    simp only [ReactFlushLayout.FPL, List.mem_cons, List.not_mem_nil, or_false] at hp
+    rcases hp with rfl | rfl <;> simp [LE_hdenv, hG]
+  case hfpLEp =>
+    intro p hp
+    simp only [ReactFlushLayout.FPL, List.mem_cons, List.not_mem_nil, or_false] at hp
+    rcases hp with rfl | rfl <;> simp [Ne.symm dST, Ne.symm dSD, dTF, dDF]""")
 hcall = []
 if "hBf" in DO: hcall.append("(hBf := ?hBf) (hfpB := ?hfpB) (hfpBp := ?hfpBp) (hBc := ⟨_, B_hk⟩)")
+if "hLEf" in DO: hcall.append("(hLEf := ?hLEf) (hfpLE := ?hfpLE) (hfpLEp := ?hfpLEp) (hLEc := ⟨_, LE_hk⟩)")
 if "hMEf" in DO: hcall.append("(hMEf := ?hMEf) (hfpME := ?hfpME) (hfpMEp := ?hfpMEp) (hMEc := ⟨_, ME_hk⟩)")
 if "hMf" in DO: hcall.append("(hMf := ?hMf) (hfpM := ?hfpM) (hfpMp := ?hfpMp) (hMc := ⟨_, MF_hk⟩)")
 stmt = f"""theorem cmr_full {binds} :
@@ -233,6 +283,7 @@ out = f'''import JSProofs.ReactCommitRootFn
 import JSProofs.ReactMarkFinished
 import JSProofs.ReactBeforeMutationFull
 import JSProofs.ReactFlushMutationFull
+import JSProofs.ReactFlushLayoutFull
 
 /-!
 # commitRoot with the click's passes (zippy docs/react-proofs.md)
