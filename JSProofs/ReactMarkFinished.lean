@@ -77,7 +77,7 @@ theorem mrf_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       .num (F64.fin false 0 (-1074))]) s fun v w h' => v = .undefined ∧
       (w.objEntry FR).props.get? (.str (JSStr.ofString "pendingLanes")) =
         some (.data (.num (F64.fin false 0 (-1074))) true pe pc) ∧
-      Frame (FPM FR EA XA) s w ∧ s.fuel ≤ w.fuel + 300 := by
+      Frame (FPM FR EA XA) s w ∧ s.fuel ≤ w.fuel + 300 ∧ h' = h := by
   apply wp_callGen MRFGen.markRootFinished_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root", JSStr.ofString "finishedLanes",
@@ -98,7 +98,7 @@ theorem mrf_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until [] [e1, e1', e4, hG, hGe, hGZ, hGZv, hZo, hZk, hFR, hFRk, hpl, hsl, hgl, hwl, hxl, hel, hrl, hcl, hea, hxa, hha, dFE, Ne.symm dFE, dFX, Ne.symm dFX, dEX, Ne.symm dEX, dFH, Ne.symm dFH, dEH, Ne.symm dEH, dXH, Ne.symm dXH, dFZ, Ne.symm dFZ, dEZ, Ne.symm dEZ, dXZ, Ne.symm dXZ, dHZ, Ne.symm dHZ, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, e1, e1', e4, hG, hGe, hGZ, hGZv, hZo, hZk, hFR, hFRk, hpl, hsl, hgl, hwl, hxl, hel, hrl, hcl, hea, hxa, hha, dFE, Ne.symm dFE, dFX, Ne.symm dFX, dEX, Ne.symm dEX, dFH, Ne.symm dFH, dEH, Ne.symm dEH, dXH, Ne.symm dXH, dFZ, Ne.symm dFZ, dEZ, Ne.symm dEZ, dXZ, Ne.symm dXZ, dHZ, Ne.symm dHZ, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], wp_mono (mathFn1_spec (by js_norm [e1, e1', e4, hG, hGe, hGZ, hGZv, hZo, hZk, hFR, hFRk, hpl, hsl, hgl, hwl, hxl, hel, hrl, hcl, hea, hxa, hha, dFE, Ne.symm dFE, dFX, Ne.symm dFX, dEX, Ne.symm dEX, dFH, Ne.symm dFH, dEH, Ne.symm dEH, dXH, Ne.symm dXH, dFZ, Ne.symm dFZ, dEZ, Ne.symm dEZ, dXZ, Ne.symm dXZ, dHZ, Ne.symm dHZ, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) (by js_norm [e1, e1', e4, hG, hGe, hGZ, hGZv, hZo, hZk, hFR, hFRk, hpl, hsl, hgl, hwl, hxl, hel, hrl, hcl, hea, hxa, hha, dFE, Ne.symm dFE, dFX, Ne.symm dFX, dEX, Ne.symm dEX, dFH, Ne.symm dFH, dEH, Ne.symm dEH, dXH, Ne.symm dXH, dFZ, Ne.symm dFZ, dEZ, Ne.symm dEZ, dXZ, Ne.symm dXZ, dHZ, Ne.symm dHZ, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) hZfn
     (by show s.fuel - 1 - 1 ≠ 0; omega)) ?_⟩
-  rintro v1 w1 h1 ⟨rfl, hF1, hfu1⟩
+  rintro v1 w1 h1 ⟨rfl, hF1, hfu1, rfl⟩
   have n31 : numberBinOp .sub (F64.fin false 8725724278030336 (-48)) (F64.fin false 8444249301319680 (-48)) =
     F64.fin false 4503599627370496 (-52) := by decide +kernel
   have nstr : numberToJSStr (F64.fin false 4503599627370496 (-52)) = JSStr.ofString "1" := by decide +kernel

@@ -134,7 +134,7 @@ theorem cbm_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
         ∀ bm o, Scope.declLike? (w'.envEntry d.env) = some (bm, o) →
           ∃ bd, bm[JSStr.ofString "nextEffect"]? = some bd ∧ bd.value = some .null) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, .num lanes]) s fun v w h' =>
-      v = .undefined ∧ h' = h ∧ Frame (FB d.env) s w := by
+      v = .undefined ∧ h' = h ∧ Frame (FB d.env) s w ∧ s.fuel ≤ w.fuel + 1000 := by
   apply wp_callGen CBMGen.commitBeforeMutationEffects_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root", JSStr.ofString "firstChild",
@@ -225,9 +225,12 @@ theorem cbm_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   have hbAV := hbw3 (JSStr.ofString "appearingViewTransitions") (by simp)
   have hfw3 : 50 ≤ w3.fuel := by simp [State.withFuel, State.allocObj, State.withHeap, State.setProp] at hfu3; omega
   js_until [] [hE3, hS3, hGd3, hd3, hbN3, hbN3v, hbAV, hfw3, Std.HashMap.getElem?_modify, hRne, Ne.symm hRne, hCne, Ne.symm hCne, hRlt', hClt', hE2, hEd2, hS2, hGd2, hfw2, hob2 R hR, hob2 fCC hCCo, hlt2 R hR, hlt2 fCC hCCo, hE1, hEd1, hS1, hGd1, hfw1, hob1 R hR, hob1 fHS hHSo, hob1 fCC hCCo, hob1 FR hFR, hlt1 R hR, hlt1 fHS hHSo, hlt1 fCC hCCo, hGHS, hGHSv, hHSk, hGCC, hGCCv, hCCk, hGSI, hGSIm, hGSIi, hGNE, hGNEm, hGNEi, hGAV, hGAVm, hGAVi, hRk, hRa, hRt, hRc, hRs, hsf, hlanes, e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine frame_restore (frame_setEnv_with_in (frame_withFuel hFs3 _) hG ?k1 ?k2 (by simp [FB]) _) s
+  refine ⟨frame_restore (frame_setEnv_with_in (frame_withFuel hFs3 _) hG ?k1 ?k2 (by simp [FB]) _) s, ?fu⟩
   case k1 => rfl
   case k2 => rw [hd3]; rfl
+  case fu =>
+    simp [State.withFuel, State.allocObj, State.withHeap, State.setProp, bodyState, entryState] at hfu1 hfu2 hfu3 ⊢
+    omega
 
 
 end

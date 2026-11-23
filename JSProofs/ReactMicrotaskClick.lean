@@ -94,7 +94,7 @@ theorem schedTask_click {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Valu
   case clz =>
     intro w h1 hF hfu
     refine wp_mono (mathFn1_spec (heap_frame hF hCo) (by rw [obj hF hCo hAC hRC]; exact hCk) hCfn (by omega)) ?_
-    intro r w' h' ⟨hv, hF', hfu'⟩
+    rintro r w' h' ⟨hv, hF', hfu', -⟩
     exact ⟨by rw [hv, clz32_two], hF', by omega⟩
   case exp =>
     intro w h1 hF hfu
