@@ -208,7 +208,7 @@ pfn = {("p_" + x.split(".")[0], x.split(".")[1]): "pf_" + x.replace(".", "_") fo
 PFPAT = "⟨" + ", ".join(pfn[("p_" + x.split(".")[0], x.split(".")[1])] for x in PF) + "⟩"
 PBPAT = ("⟨bm1, hbm1, ⟨_, gW, gWv, gWm⟩, ⟨_, gE, gEv⟩, ⟨_, gS, gSv, gSm⟩, ⟨_, gX, gXv, gXm⟩, ⟨_, gR, gRv, gRm⟩, "
          "⟨_, gL, gLv, gLm⟩, ⟨_, g1, g1v⟩, ⟨_, g3, g3v⟩, ⟨_, g4, g4v⟩, ⟨_, g5, g5v⟩, ⟨_, g6, g6v⟩, ⟨_, g7, g7v⟩, "
-         "⟨_, gQ, gQm, gQv⟩, ⟨_, gU, gUm, gUv⟩⟩")
+         "⟨_, gQ, gQm, gQv⟩, ⟨_, gU, gUm, gUv⟩, ⟨_, gPE, gPEm, gPEv⟩⟩")
 BSRC = {"workInProgress": ("gW", {"value": "gWv", "mutable": "gWm"}),
         "entangledRenderLanes": ("gE", {"value": "gEv"}),
         "workInProgressRootSkippedLanes": ("gS", {"value": "gSv", "mutable": "gSm"}),
