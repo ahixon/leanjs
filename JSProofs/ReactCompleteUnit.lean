@@ -200,6 +200,21 @@ theorem unit_spec {n : Nat} {h : σ} {fU : ObjId} {dU : FuncData} {tU : Value} {
     (hdX : ∀ Y ∈ [fPT, fPH, fMU, fBP, fPI, CF, HT, fW], Y ≠ X) :
     WP eng answer (n + 3) h (callImpl eng (.obj fU) tU #[.obj X]) s fun v w h' =>
       v = .undefined ∧ Frame (fpU g VS Cu Cx CS CF RI R C X) s w ∧ s.fuel ≤ w.fuel + 600 ∧ h' = h ∧
+      ((w.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd
+        (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))) true fe fc) ∧
+      (w.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitAnd
+        (numberBinOp .bitOr sf (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) true se sc) ∧
+      (w.objEntry X).props.get? (.str "childLanes") = some (.data (.num (F64.fin false 0 (-1074))) true le lc) ∧
+      (w.objEntry C).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr e2
+        (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitAnd (numberBinOp .bitOr sf (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) (numberBinOp .bitAnd (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))))) true se2 sc2) ∧
+      (w.objEntry C).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074))
+        (numberBinOp .bitOr a (F64.fin false 0 (-1074))))) true le2 lc2) ∧
+      (w.objEntry X).props.get? (.str "return") = some (.data (.obj C) true rwe rwc) ∧
+      (w.objEntry R).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr e3
+        (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr e2 (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitAnd (numberBinOp .bitOr sf (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) (numberBinOp .bitAnd (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))))) f2))) true se3 sc3) ∧
+      (w.objEntry R).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074))
+        (numberBinOp .bitOr a2 (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr a (F64.fin false 0 (-1074))))))) true le3 lc3) ∧
+      (w.objEntry C).props.get? (.str "return") = some (.data (.obj R) true rwe2 rwc2)) ∧
       ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, none) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
         bd.value = some .null := by
   apply wp_callGen CUWGen.completeUnitOfWork_eq (by decide) hUo hUk (by omega) hUcls hUmode
@@ -357,7 +372,15 @@ theorem unit_spec {n : Nat} {h : σ} {fU : ObjId} {dU : FuncData} {tU : Value} {
     (fun q hq _ => by simp [ReactCompleteRoot.fpRC] at hq
                       rcases hq with hq | hq | hq | hq | hq | hq | hq | hq | hq | hq | hq | hq <;> simp [fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, hq])
     (fun _ => rfl)
-  refine ⟨?_, by omega, ⟨_, rfl, { bdWIP with value := some .null }, by simp [Std.HashMap.getElem?_modify, hbwW], rfl⟩⟩
+  refine ⟨?_, by omega, ?facts, ⟨_, rfl, { bdWIP with value := some .null }, by simp [Std.HashMap.getElem?_modify, hbwW], rfl⟩⟩
+  case facts =>
+    refine ⟨?f1, ?f2, ?f3, ?f4, ?f5, ?f6⟩
+    case f1 => rw [props_frame hF3 (Nat.lt_of_lt_of_le hX gZ3) (by simp [ReactCompleteRoot.fpRC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW3]; rw [props_frame hF2 (Nat.lt_of_lt_of_le hX gZ2) (by simp [ReactCompleteButton.fpCC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW2]; exact hXf1
+    case f2 => rw [props_frame hF3 (Nat.lt_of_lt_of_le hX gZ3) (by simp [ReactCompleteRoot.fpRC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW3]; rw [props_frame hF2 (Nat.lt_of_lt_of_le hX gZ2) (by simp [ReactCompleteButton.fpCC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW2]; exact hXs1
+    case f3 => rw [props_frame hF3 (Nat.lt_of_lt_of_le hX gZ3) (by simp [ReactCompleteRoot.fpRC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW3]; rw [props_frame hF2 (Nat.lt_of_lt_of_le hX gZ2) (by simp [ReactCompleteButton.fpCC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW2]; exact hXl1
+    case f4 => rw [props_frame hF3 (Nat.lt_of_lt_of_le hC gZ3) (by simp [ReactCompleteRoot.fpRC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW3]; exact hCs2
+    case f5 => rw [props_frame hF3 (Nat.lt_of_lt_of_le hC gZ3) (by simp [ReactCompleteRoot.fpRC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW3]; exact hCl2
+    case f6 => rw [props_frame hF3 (Nat.lt_of_lt_of_le hX gZ3) (by simp [ReactCompleteRoot.fpRC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW3]; exact hXr2
   clear hF3 gFS3 FW2 hF2 gFS2 hF1 gFS1 FW1
   simp only [fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append] at FW3 ⊢
   frame_go' [FW3, hbw, hG, Nat.lt_of_lt_of_le hG1 hw3E, hne, Ne.symm hne, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hw3E]

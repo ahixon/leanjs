@@ -196,7 +196,7 @@ set_option maxRecDepth 100000 in
   have gFS3 : Frame (@@FP@@) s St := by rw [hSt]; exact frame_withFuel FW2 _
   have hCnX : Cn ≠ X := Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le hXs (Nat.le_trans gZ2 hCge2)))
   refine wp_mono (ReactUnitButton.button_unit_spec @@ARGS3@@) ?_
-  intro vS3 wS3 hS3 ⟨hv3, hF3, hfu3, hh3, ⟨bm3, hbm3, bdW3, hbdW3, hbdW3v⟩⟩
+  intro vS3 wS3 hS3 ⟨hv3, hF3, hfu3, hh3, hFacts3, ⟨bm3, hbm3, bdW3, hbdW3, hbdW3v⟩⟩
   subst hv3 hh3
   have hw3K := envEntry_frame hF3 (e := s.envs.size) (by rw [hSt]; js_norm [Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E2])
     (by simp [@@FPDEFS@@, wP_ne, Ne.symm wP_ne])
@@ -217,7 +217,8 @@ set_option maxRecDepth 100000 in
     Nat.lt_of_lt_of_le wP_G1 E3, Nat.ne_of_gt (Nat.lt_of_lt_of_le wP_G1 E3), R_hG, wP_G1, wP_ne, Ne.symm wP_ne,
     wP_n, wP_v, wP_l, wP_a, FDI.fdiCtx, Sem.inner]
   all_goals (repeat' apply And.intro)
-  all_goals first | rfl | omega | exact frame_restore (frame_withFuel FW3 _) s | (rw [hKdEnv] at FW3; exact frame_restore (frame_withFuel FW3 _) s)
+  all_goals first | rfl | omega | exact frame_restore (frame_withFuel FW3 _) s | (rw [hKdEnv] at FW3; exact frame_restore (frame_withFuel FW3 _) s) |
+    (simp only [restore_objEntry, withFuel_objEntry, setEnv_objEntry]; first | @@PROJ@@)
 
 end
 

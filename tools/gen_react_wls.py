@@ -145,7 +145,7 @@ FPDEFS = ("Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, React
           "ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, "
           "List.cons_append, List.nil_append, List.mem_append, List.mem_cons")
 DD = ", ".join([f"dd_{o}_{w}" for o, w in DIST] + [f"Ne.symm dd_{o}_{w}" for o, w in DIST])
-stmt_full = stmt + f" :\n    WP eng answer (n + 10) h (callImpl eng (.obj fWL) tWL #[]) s fun v w h' =>\n      v = .undefined ∧ Frame ({FP}) s w ∧ s.fuel ≤ w.fuel + 2400 ∧ h' = h"
+stmt_full = stmt + f" :\n    WP eng answer (n + 10) h (callImpl eng (.obj fWL) tWL #[]) s fun v w h' =>\n      v = .undefined ∧ Frame ({FP}) s w ∧ s.fuel ≤ w.fuel + 2400 ∧ h' = h ∧\n      @@FACTS@@"
 tmpl = open(os.path.join(ROOT, "tools", "react_wls", "tmpl.lean.in")).read()
 out = tmpl.replace("@@FPK@@", FPK).replace("@@FPR@@", FPR).replace("@@FP@@", FP).replace("@@STMT@@", stmt_full).replace("@@FPDEFS@@", FPDEFS).replace("@@DD@@", DD)
 bounds_file = J("ReactWorkLoop.lean")
@@ -216,5 +216,11 @@ DS3 = FPDEFS + ", " + DD
 a3 = A.transfer(J("ReactUnitButton.lean"), "button_unit_spec", r3, ex3, {k: v for k, v in bn.items() if ident.match(v)},
                 bounds, 3, DS3, envbounds=envb, bside=f"(by simp [{FPDEFS}] <;> decide) (by simp [{FPDEFS}] <;> decide)",
                 envne=" (by assumption)", protos=True) + " (n := n + 4)"
-out = open(bounds_file).read().replace("@@ARGS3@@", a3)
+sys.path.insert(0, os.path.join(ROOT, "tools", "react_commit"))
+from export_facts import facts_group
+from compose import _rename
+FACTS = _rename(facts_group(J("ReactUnitButton.lean"), "button_unit_spec"), r3)
+NF = FACTS.count("props.get?")
+PROJ = " | ".join("exact hFacts3" + ".2" * i + (".1" if i < NF - 1 else "") for i in range(NF))
+out = open(bounds_file).read().replace("@@ARGS3@@", a3).replace("@@FACTS@@", FACTS).replace("@@PROJ@@", PROJ)
 open(bounds_file, "w").write(out)
