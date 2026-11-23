@@ -140,7 +140,7 @@ proof = f'''  simp only [BWGen.beginWork]
 {DRC}    case geA => rw [h_AEBenv]; js_norm [hE1, hGk1, hEw1, hGw1, {JSF}]
     all_goals first | (simp only [js_simp]; omega) | (js_norm [hX1, hH1, hA1, hE1, hGk1, hEw1, hGw1, oo1 _ h_AEB, {JSF}]; done) | skip
     case p2 =>
-      intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hI2, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx⟩
+      intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hI2, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18⟩
       subst hv2 hh2
       rw [h_AEBenv] at hI2
       try simp only [js_simp] at hfu2

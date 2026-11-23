@@ -398,7 +398,25 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
       (w.objEntry a_CF).props.get? (.str "current") = some (.data (.obj X) true a_fe a_fc) ∧
       (w.objEntry a_CS).props.get? (.str "current") = some (.data (.num (F64.fin false 0 (-1074))) true a_ce a_cc) ∧
       (w.objEntry b_Cu).props.get? (.str "current") = some (.data b_cv true b_ce b_cc) ∧
-      (w.objEntry Cx).props.get? (.str "_currentValue") = some (.data cache true b_xe b_xc) := by
+      (w.objEntry Cx).props.get? (.str "_currentValue") = some (.data cache true b_xe b_xc) ∧
+      (w.objEntry e_C1).props.get? (.str "pendingProps") = some (.data (e_pp) true e_e0 e_c0) ∧
+      (w.objEntry e_C1).props.get? (.str "type") = some (.data (e_vT) true e_e1 e_c1) ∧
+      (w.objEntry e_C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd e_fl (F64.fin false 5062151534280704 (-22)))) true e_e2 e_c2) ∧
+      (w.objEntry e_C1).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true e_e3 e_c3) ∧
+      (w.objEntry e_C1).props.get? (.str "deletions") = some (.data (.null) true e_e4 e_c4) ∧
+      (w.objEntry e_C1).props.get? (.str "childLanes") = some (.data (e_vCL) true e_e5 e_c5) ∧
+      (w.objEntry e_C1).props.get? (.str "lanes") = some (.data (e_vL) true e_e6 e_c6) ∧
+      (w.objEntry e_C1).props.get? (.str "child") = some (.data (e_vC) true e_e7 e_c7) ∧
+      (w.objEntry e_C1).props.get? (.str "memoizedProps") = some (.data (e_vMP) true e_e8 e_c8) ∧
+      (w.objEntry e_C1).props.get? (.str "memoizedState") = some (.data (e_vMS) true e_e9 e_c9) ∧
+      (w.objEntry e_C1).props.get? (.str "updateQueue") = some (.data (e_vUQ) true e_e10 e_c10) ∧
+      (w.objEntry e_C1).props.get? (.str "dependencies") = some (.data (.null) true e_e11 e_c11) ∧
+      (w.objEntry e_C1).props.get? (.str "sibling") = some (.data (.null) true e_e12 e_c12) ∧
+      (w.objEntry e_C1).props.get? (.str "index") = some (.data (e_vI) true e_e13 e_c13) ∧
+      (w.objEntry e_C1).props.get? (.str "ref") = some (.data (e_vR) true e_e14 e_c14) ∧
+      (w.objEntry e_C1).props.get? (.str "refCleanup") = some (.data (e_vRC) true e_e15 e_c15) ∧
+      (w.objEntry e_C1).props.get? (.str "return") = some (.data (.obj X) true e_re e_rc) ∧
+      (w.objEntry X).props.get? (.str "child") = some (.data (.obj e_C1) true e_xce e_xcc) := by
   apply wp_callGen PUWGen.performUnitOfWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "unitOfWork"] := by rw [hcode]; rfl
@@ -430,7 +448,7 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     all_goals first | (simp [Logic.Footprint.union, ReactHostContainer.fp]; done) | (intro p hp; simp only [Logic.Footprint.union, List.mem_append, List.nil_append, List.append_nil, List.mem_cons, List.mem_nil_iff, or_false, h_BWenv] at hp ⊢; first | (rcases hp with hp | hp <;> simp_all) | simp_all)
   all_goals first | (simp only [js_simp]; omega) | (js_norm [hG, hGe, g_BW, g_BWv, h_BW, h_BWk, g_ERL, g_ERLv, g_WIP, g_WIPm, g_WIPv, hXa, hXmp, e_hX, e_hXk, e_hH, e_hHk, x_BW_X, x_BW_H, Ne.symm x_BW_X, Ne.symm x_BW_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, FDI.fdiCtx, Sem.inner]; done) | skip
   case p1 =>
-    intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, ⟨bw, bdI, hbw, hbdI, hbdv, hbdm⟩, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx⟩
+    intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, ⟨bw, bdI, hbw, hbdI, hbdv, hbdm⟩, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18⟩
     subst hv1 hh1
     rw [h_BWenv] at hbw
     try simp only [js_simp] at hfu1
@@ -454,7 +472,7 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     all_goals (repeat' apply And.intro)
     all_goals first | omega | (simp only [js_simp] at *; omega) | skip
     case' _ => skip
-    all_goals first | (refine ⟨_, rfl, by simp [Std.HashMap.getElem?_modify, hWIP1, g_WIP], ⟨bdI, by simp [Std.HashMap.getElem?_modify, hbdI], hbdv, hbdm⟩⟩) | exact s0 | exact s1 | exact s2 | exact s3 | exact sRI | exact sCF | exact sCS | exact sCu | exact sCx | (js_norm [s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, x_VS_X, x_a_RI_X, x_a_CF_X, x_a_CS_X, x_b_Cu_X, x_Cx_X, Ne.symm x_VS_X, Ne.symm x_a_RI_X, Ne.symm x_a_CF_X, Ne.symm x_a_CS_X, Ne.symm x_b_Cu_X, Ne.symm x_Cx_X, hX1]; done) | skip
+    all_goals first | (refine ⟨_, rfl, by simp [Std.HashMap.getElem?_modify, hWIP1, g_WIP], ⟨bdI, by simp [Std.HashMap.getElem?_modify, hbdI], hbdv, hbdm⟩⟩) | exact s0 | exact s1 | exact s2 | exact s3 | exact sRI | exact sCF | exact sCS | exact sCu | exact sCx | (js_norm [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, e_n_X_C1, Ne.symm e_n_X_C1, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, x_VS_X, x_a_RI_X, x_a_CF_X, x_a_CS_X, x_b_Cu_X, x_Cx_X, Ne.symm x_VS_X, Ne.symm x_a_RI_X, Ne.symm x_a_CF_X, Ne.symm x_a_CS_X, Ne.symm x_b_Cu_X, Ne.symm x_Cx_X, hX1]; done) | skip
     simp only [ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp,
       Logic.Footprint.union, List.cons_append, List.nil_append, List.append_assoc, Bool.false_or]
     frame_go' [*, Logic.Footprint.union, hne, Ne.symm hne, hG1]

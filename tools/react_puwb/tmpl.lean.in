@@ -32,7 +32,9 @@ set_option maxRecDepth 100000 in
 theorem button_unit_spec @@BINDERS@@
     @@PREMISES@@ :
     WP eng answer (n + 5) h (callImpl eng (.obj fo) t #[.obj X]) s fun v w h' =>
-      v = .undefined ∧ Frame (@@FP@@) s w ∧ s.fuel ≤ w.fuel + 840 ∧ h' = h := by
+      v = .undefined ∧ Frame (@@FP@@) s w ∧ s.fuel ≤ w.fuel + 840 ∧ h' = h ∧
+      ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, none) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
+        bd.value = some .null := by
   apply wp_callGen PUWGen.performUnitOfWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleP d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "unitOfWork"] := by rw [hcode]; rfl
@@ -130,14 +132,14 @@ theorem button_unit_spec @@BINDERS@@
       (by simp [Logic.Footprint.union]) _
   clear hSt
   refine wp_mono (ReactCompleteUnit.unit_spec @@ARGS2@@) ?_
-  intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2⟩
+  intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hW2⟩
   subst hv2 hh2
   have FW2 := frame_extend' gFS2 hF2 (fun q hq _ => by simp [ReactCompleteUnit.fpU] at hq; rcases hq with hq | hq | hq <;> simp [Logic.Footprint.union, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, hq])
     (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append]; exact Or.inr (Or.inr hq)) (fun _ => rfl)
   try simp only [js_simp] at hfu2
   js [hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   all_goals (repeat' apply And.intro)
-  all_goals first | rfl | omega | exact frame_restore FW2 s
+  all_goals first | rfl | omega | exact frame_restore FW2 s | exact hW2 | (simpa using hW2)
 
 end
 

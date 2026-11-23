@@ -240,7 +240,25 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
       (w.objEntry a_CF).props.get? (.str "current") = some (.data (.obj X) true a_fe a_fc) ∧
       (w.objEntry a_CS).props.get? (.str "current") = some (.data (.num (F64.fin false 0 (-1074))) true a_ce a_cc) ∧
       (w.objEntry b_Cu).props.get? (.str "current") = some (.data b_cv true b_ce b_cc) ∧
-      (w.objEntry Cx).props.get? (.str "_currentValue") = some (.data cache true b_xe b_xc) := by
+      (w.objEntry Cx).props.get? (.str "_currentValue") = some (.data cache true b_xe b_xc) ∧
+      (w.objEntry e_C1).props.get? (.str "pendingProps") = some (.data (e_pp) true e_e0 e_c0) ∧
+      (w.objEntry e_C1).props.get? (.str "type") = some (.data (e_vT) true e_e1 e_c1) ∧
+      (w.objEntry e_C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd e_fl (F64.fin false 5062151534280704 (-22)))) true e_e2 e_c2) ∧
+      (w.objEntry e_C1).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true e_e3 e_c3) ∧
+      (w.objEntry e_C1).props.get? (.str "deletions") = some (.data (.null) true e_e4 e_c4) ∧
+      (w.objEntry e_C1).props.get? (.str "childLanes") = some (.data (e_vCL) true e_e5 e_c5) ∧
+      (w.objEntry e_C1).props.get? (.str "lanes") = some (.data (e_vL) true e_e6 e_c6) ∧
+      (w.objEntry e_C1).props.get? (.str "child") = some (.data (e_vC) true e_e7 e_c7) ∧
+      (w.objEntry e_C1).props.get? (.str "memoizedProps") = some (.data (e_vMP) true e_e8 e_c8) ∧
+      (w.objEntry e_C1).props.get? (.str "memoizedState") = some (.data (e_vMS) true e_e9 e_c9) ∧
+      (w.objEntry e_C1).props.get? (.str "updateQueue") = some (.data (e_vUQ) true e_e10 e_c10) ∧
+      (w.objEntry e_C1).props.get? (.str "dependencies") = some (.data (.null) true e_e11 e_c11) ∧
+      (w.objEntry e_C1).props.get? (.str "sibling") = some (.data (.null) true e_e12 e_c12) ∧
+      (w.objEntry e_C1).props.get? (.str "index") = some (.data (e_vI) true e_e13 e_c13) ∧
+      (w.objEntry e_C1).props.get? (.str "ref") = some (.data (e_vR) true e_e14 e_c14) ∧
+      (w.objEntry e_C1).props.get? (.str "refCleanup") = some (.data (e_vRC) true e_e15 e_c15) ∧
+      (w.objEntry e_C1).props.get? (.str "return") = some (.data (.obj X) true e_re e_rc) ∧
+      (w.objEntry X).props.get? (.str "child") = some (.data (.obj e_C1) true e_xce e_xcc) := by
   apply wp_callGen AEBGen.attemptEarlyBailoutIfNoScheduledUpdate_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",

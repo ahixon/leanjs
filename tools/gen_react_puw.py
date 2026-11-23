@@ -78,7 +78,7 @@ proof = f'''  simp only [PUWGen.performUnitOfWork]
   refine wp_mono (ReactBeginRoot.root_spec {" ".join(imp)} {args}) ?p1
 {DRC}  all_goals first | (simp only [js_simp]; omega) | (js_norm [{JSF}]; done) | skip
   case p1 =>
-    intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, ⟨bw, bdI, hbw, hbdI, hbdv, hbdm⟩, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx⟩
+    intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, ⟨bw, bdI, hbw, hbdI, hbdv, hbdm⟩, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18⟩
     subst hv1 hh1
     rw [h_BWenv] at hbw
     try simp only [js_simp] at hfu1
@@ -102,7 +102,7 @@ proof = f'''  simp only [PUWGen.performUnitOfWork]
     all_goals (repeat' apply And.intro)
     all_goals first | omega | (simp only [js_simp] at *; omega) | skip
     case' _ => skip
-    all_goals first | (refine ⟨_, rfl, by simp [Std.HashMap.getElem?_modify, hWIP1, g_WIP], ⟨bdI, by simp [Std.HashMap.getElem?_modify, hbdI], hbdv, hbdm⟩⟩) | exact s0 | exact s1 | exact s2 | exact s3 | exact sRI | exact sCF | exact sCS | exact sCu | exact sCx | (js_norm [s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, x_VS_X, x_a_RI_X, x_a_CF_X, x_a_CS_X, x_b_Cu_X, x_Cx_X, Ne.symm x_VS_X, Ne.symm x_a_RI_X, Ne.symm x_a_CF_X, Ne.symm x_a_CS_X, Ne.symm x_b_Cu_X, Ne.symm x_Cx_X, hX1]; done) | skip
+    all_goals first | (refine ⟨_, rfl, by simp [Std.HashMap.getElem?_modify, hWIP1, g_WIP], ⟨bdI, by simp [Std.HashMap.getElem?_modify, hbdI], hbdv, hbdm⟩⟩) | exact s0 | exact s1 | exact s2 | exact s3 | exact sRI | exact sCF | exact sCS | exact sCu | exact sCx | (js_norm [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, e_n_X_C1, Ne.symm e_n_X_C1, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, x_VS_X, x_a_RI_X, x_a_CF_X, x_a_CS_X, x_b_Cu_X, x_Cx_X, Ne.symm x_VS_X, Ne.symm x_a_RI_X, Ne.symm x_a_CF_X, Ne.symm x_a_CS_X, Ne.symm x_b_Cu_X, Ne.symm x_Cx_X, hX1]; done) | skip
     simp only [ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp,
       Logic.Footprint.union, List.cons_append, List.nil_append, List.append_assoc, Bool.false_or]
     frame_go' [*, Logic.Footprint.union, hne, Ne.symm hne, hG1]'''

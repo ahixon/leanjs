@@ -380,7 +380,25 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
       (w.objEntry a_CF).props.get? (.str "current") = some (.data (.obj X) true a_fe a_fc) ∧
       (w.objEntry a_CS).props.get? (.str "current") = some (.data (.num (F64.fin false 0 (-1074))) true a_ce a_cc) ∧
       (w.objEntry b_Cu).props.get? (.str "current") = some (.data b_cv true b_ce b_cc) ∧
-      (w.objEntry Cx).props.get? (.str "_currentValue") = some (.data cache true b_xe b_xc) := by
+      (w.objEntry Cx).props.get? (.str "_currentValue") = some (.data cache true b_xe b_xc) ∧
+      (w.objEntry e_C1).props.get? (.str "pendingProps") = some (.data (e_pp) true e_e0 e_c0) ∧
+      (w.objEntry e_C1).props.get? (.str "type") = some (.data (e_vT) true e_e1 e_c1) ∧
+      (w.objEntry e_C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd e_fl (F64.fin false 5062151534280704 (-22)))) true e_e2 e_c2) ∧
+      (w.objEntry e_C1).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true e_e3 e_c3) ∧
+      (w.objEntry e_C1).props.get? (.str "deletions") = some (.data (.null) true e_e4 e_c4) ∧
+      (w.objEntry e_C1).props.get? (.str "childLanes") = some (.data (e_vCL) true e_e5 e_c5) ∧
+      (w.objEntry e_C1).props.get? (.str "lanes") = some (.data (e_vL) true e_e6 e_c6) ∧
+      (w.objEntry e_C1).props.get? (.str "child") = some (.data (e_vC) true e_e7 e_c7) ∧
+      (w.objEntry e_C1).props.get? (.str "memoizedProps") = some (.data (e_vMP) true e_e8 e_c8) ∧
+      (w.objEntry e_C1).props.get? (.str "memoizedState") = some (.data (e_vMS) true e_e9 e_c9) ∧
+      (w.objEntry e_C1).props.get? (.str "updateQueue") = some (.data (e_vUQ) true e_e10 e_c10) ∧
+      (w.objEntry e_C1).props.get? (.str "dependencies") = some (.data (.null) true e_e11 e_c11) ∧
+      (w.objEntry e_C1).props.get? (.str "sibling") = some (.data (.null) true e_e12 e_c12) ∧
+      (w.objEntry e_C1).props.get? (.str "index") = some (.data (e_vI) true e_e13 e_c13) ∧
+      (w.objEntry e_C1).props.get? (.str "ref") = some (.data (e_vR) true e_e14 e_c14) ∧
+      (w.objEntry e_C1).props.get? (.str "refCleanup") = some (.data (e_vRC) true e_e15 e_c15) ∧
+      (w.objEntry e_C1).props.get? (.str "return") = some (.data (.obj X) true e_re e_rc) ∧
+      (w.objEntry X).props.get? (.str "child") = some (.data (.obj e_C1) true e_xce e_xcc) := by
   apply wp_callGen BWGen.beginWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
@@ -433,7 +451,7 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     case geA => rw [h_AEBenv]; js_norm [hE1, hGk1, hEw1, hGw1, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
     all_goals first | (simp only [js_simp]; omega) | (js_norm [hX1, hH1, hA1, hE1, hGk1, hEw1, hGw1, oo1 _ h_AEB, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]; done) | skip
     case p2 =>
-      intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hI2, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx⟩
+      intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hI2, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18⟩
       subst hv2 hh2
       rw [h_AEBenv] at hI2
       try simp only [js_simp] at hfu2

@@ -283,6 +283,10 @@ emit("intro v3 w3 h3 ⟨hv3, hF3, hfu3, hh3, hR3⟩\nsubst hv3 hh3\nrw [h_fRHSen
 after(3, {})
 extra.append("hR3")
 emit(f"js [{jsf()}]")
+_bof = open(J("ReactBailout.lean")).read()
+_i = _bof.index("theorem root_spec"); _j = _bof.index("h' = h ∧", _i) + len("h' = h ∧"); _k = _bof.index(":= by", _j)
+_sub = dict(c_bof["ren"]); _sub.update({k: v for k, v in c_bof["set"].items() if k not in ("s", "h", "n")})
+BOFX = [" ".join(x.split()) for x in subst(_bof[_j:_k], _sub).split(" ∧\n")]
 POSTX = []
 for (o, key) in [("VS", "0"), ("VS", "1"), ("VS", "2"), ("VS", "3"), ("a_RI", "current"), ("a_CF", "current"),
                  ("a_CS", "current"), ("b_Cu", "current"), ("Cx", "_currentValue")]:
@@ -355,7 +359,7 @@ theorem root_spec {" ".join(imps)}
       v = .obj e_C1 ∧ Frame (fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) s w ∧ s.fuel ≤ w.fuel + 500 ∧ h' = h ∧
       (∃ bw bd, Scope.declLike? (w.envEntry d.env) = some (bw, oG) ∧ bw[JSStr.ofString "index"]? = some bd ∧
         bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧
-      {(" ∧" + chr(10) + "      ").join(POSTX)} := by
+      {(" ∧" + chr(10) + "      ").join(POSTX + BOFX)} := by
   apply wp_callGen AEBGen.attemptEarlyBailoutIfNoScheduledUpdate_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",

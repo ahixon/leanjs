@@ -199,7 +199,9 @@ theorem unit_spec {n : Nat} {h : σ} {fU : ObjId} {dU : FuncData} {tU : Value} {
     (hdF : ∀ Y ∈ [FR, H, RH, R, C, A, X, fBP, fPHC, MS0, MS1], Y ∉ [VS, Cu, Cx, CS, CF, RI])
     (hdX : ∀ Y ∈ [fPT, fPH, fMU, fBP, fPI, CF, HT, fW], Y ≠ X) :
     WP eng answer (n + 3) h (callImpl eng (.obj fU) tU #[.obj X]) s fun v w h' =>
-      v = .undefined ∧ Frame (fpU g VS Cu Cx CS CF RI R C X) s w ∧ s.fuel ≤ w.fuel + 600 ∧ h' = h := by
+      v = .undefined ∧ Frame (fpU g VS Cu Cx CS CF RI R C X) s w ∧ s.fuel ≤ w.fuel + 600 ∧ h' = h ∧
+      ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, none) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
+        bd.value = some .null := by
   apply wp_callGen CUWGen.completeUnitOfWork_eq (by decide) hUo hUk (by omega) hUcls hUmode
     (by rw [hUcode]; rfl) (by rw [hUcode]; rfl) (simpleU dU hUcode) (by rw [hUcode]; rfl) (by rw [hUcode]; rfl)
   have hpn : dU.code.info.fdi.paramNames = #[JSStr.ofString "unitOfWork"] := by rw [hUcode]; rfl
@@ -355,7 +357,7 @@ theorem unit_spec {n : Nat} {h : σ} {fU : ObjId} {dU : FuncData} {tU : Value} {
     (fun q hq _ => by simp [ReactCompleteRoot.fpRC] at hq
                       rcases hq with hq | hq | hq | hq | hq | hq | hq | hq | hq | hq | hq | hq <;> simp [fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, hq])
     (fun _ => rfl)
-  refine ⟨?_, by omega⟩
+  refine ⟨?_, by omega, ⟨_, rfl, { bdWIP with value := some .null }, by simp [Std.HashMap.getElem?_modify, hbwW], rfl⟩⟩
   clear hF3 gFS3 FW2 hF2 gFS2 hF1 gFS1 FW1
   simp only [fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append] at FW3 ⊢
   frame_go' [FW3, hbw, hG, Nat.lt_of_lt_of_le hG1 hw3E, hne, Ne.symm hne, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hw3E]
