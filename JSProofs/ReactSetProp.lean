@@ -53,7 +53,7 @@ theorem onClick_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
   iterate 2 (first | js_go | js_norm [hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_switchC SPSwitch.lex ?_
   js_until ["onclick"] [e1, e2, e3, e4, hGe, hGN, hGNv, hG, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine wp_neNullObj (by simp; omega) ?_
+  refine wp_neNullObj' (by simp; omega) ?_
   iterate 1 (first | js_go | js_norm [e1, e2, e3, e4, hGe, hGN, hGNv, hG, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_assignMemberSet ?_
   js_until [] [e1, e2, e3, e4, hGe, hGN, hGNv, hG, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]

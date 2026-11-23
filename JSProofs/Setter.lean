@@ -105,7 +105,7 @@ theorem binaryOp_ne_null_str (k : JSStr) (s : State) (hf : s.fuel ≠ 0) :
   rfl
 
 /-- **`null != o`**, `o` an object: `true` (fuel left: the loose equality's loop). -/
-theorem wp_neNullObj {n : Nat} {h : σ} {o : ObjId} {s : State} {Q : Value → State → σ → Prop}
+theorem wp_neNullObj' {n : Nat} {h : σ} {o : ObjId} {s : State} {Q : Value → State → σ → Prop}
     (hf : s.fuel ≠ 0) (hq : Q (.bool true) s h) : WP eng answer n h (Sem.binaryOp .ne .null (.obj o)) s Q :=
   wp_of_eq (binaryOp_ne_null_obj o s hf) hq
 

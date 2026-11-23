@@ -90,7 +90,7 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   refine ⟨nm, rfl, SP, _, a0, b0, c0, h1, h2, h3, h4, h5, h6, fun W => ?_⟩
   js_until [] [envEntry_withHeap, envs_withHeap, fuel_withHeap, hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   have hTLe : ((bodyState s fo d t #[.obj E]).withHeap (·.push W)).objEntry fTL = s.objEntry fTL := by
-    rw [objEntry_push_old _ _ _ (by simpa [bodyState, entryState] using hTLo)]; simp
+    rw [objEntry_push_old' _ _ _ (by simpa [bodyState, entryState] using hTLo)]; simp
   have hTLlt : fTL < ((bodyState s fo d t #[.obj E]).withHeap (·.push W)).heap.size := by
     exact Nat.lt_of_lt_of_le hTLo (by rw [size_push]; simp [bodyState, entryState])
   refine ⟨by js_norm [CallableC, hTLe, hTLk, hTLlt], ?_⟩

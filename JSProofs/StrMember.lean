@@ -51,7 +51,7 @@ theorem strWrapper_props (SP : ObjId) (s : JSStr) (k : JSStr) (hk : k ≠ kLengt
 theorem objEntry_push_last (st : State) (W : Obj) : (st.withHeap (·.push W)).objEntry st.heap.size = W := by
   simp [State.objEntry, State.withHeap]
 
-theorem objEntry_push_old (st : State) (W : Obj) (o : ObjId) (h : o < st.heap.size) :
+theorem objEntry_push_old' (st : State) (W : Obj) (o : ObjId) (h : o < st.heap.size) :
     (st.withHeap (·.push W)).objEntry o = st.objEntry o := by
   simp [State.objEntry, State.withHeap, Array.getElem?_push, h, Nat.ne_of_lt h]
 
@@ -73,7 +73,7 @@ theorem getRefValue_str (s k : JSStr) (strict : Bool) (st : State) (SP : ObjId) 
   have hW : st.heap.size < (st.withHeap fun x => x.push (strWrapper SP s)).heap.size := by
     rw [size_push]; omega
   have hWe := objEntry_push_last st (strWrapper SP s)
-  have hSPe := objEntry_push_old st (strWrapper SP s) SP hlt
+  have hSPe := objEntry_push_old' st (strWrapper SP s) SP hlt
   have hSPlt : SP < (st.withHeap fun x => x.push (strWrapper SP s)).heap.size := Nat.lt_trans hlt hW
   show _ = Res.ok v (st.withHeap fun x => x.push (strWrapper SP s))
   generalize (st.withHeap fun x => x.push (strWrapper SP s)) = st2 at hW hWe hSPe hSPlt ⊢
@@ -101,9 +101,9 @@ theorem frame_push {fp : Footprint} (st : State) (W : Obj) : Frame fp st (st.wit
   envs_le := by simp [State.withHeap]
   heap_le := by simp [State.withHeap]
   env_agree e _ := by simp only [State.envEntry, State.withHeap]; exact envAgree_refl _ _
-  obj_agree o ho := by rw [objEntry_push_old _ _ _ ho]; exact objAgree_refl _ _
+  obj_agree o ho := by rw [objEntry_push_old' _ _ _ ho]; exact objAgree_refl _ _
   env_eq e _ _ := by simp [State.envEntry, State.withHeap]
-  obj_eq o ho _ := objEntry_push_old _ _ _ ho
+  obj_eq o ho _ := objEntry_push_old' _ _ _ ho
   realms_eq := by simp [State.withHeap]
   jobs_prefix := ⟨#[], by simp [State.withHeap]⟩
   jobs_eq _ := by simp [State.withHeap]

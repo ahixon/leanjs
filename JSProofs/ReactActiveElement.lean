@@ -116,7 +116,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   simp only [GAEDGen.getActiveElementDeep]
   have hw0 : Frame {} s (bodyState s fo d t #[.obj Cont]) := by frame_go' [*]
   js_until ["ownerDocument"] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine wp_neNullObj (by simp; omega) ?_
+  refine wp_neNullObj' (by simp; omega) ?_
   iterate 3 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
@@ -124,7 +124,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   · frame_go' [*]
   intro _ _ _ ⟨hv_, hw_, hh_⟩
   subst hv_ hw_ hh_
-  refine wp_neNullObj (by simp; omega) ?_
+  refine wp_neNullObj' (by simp; omega) ?_
   iterate 3 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   refine wp_getMemberAcc ?_
@@ -137,7 +137,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   · frame_go' [*]
   intro _ _ _ ⟨hv_, hw_, hh_⟩
   subst hv_ hw_ hh_
-  refine wp_neNullObj (by simp; omega) ?_
+  refine wp_neNullObj' (by simp; omega) ?_
   iterate 2 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   refine wp_getMemberAcc ?_

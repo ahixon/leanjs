@@ -49,7 +49,7 @@ theorem ice_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   obtain ⟨SP, v, we, ee, ce, hSP, hSPlt, hSPk, hv0, hkl, hki, rfl⟩ := hI _ hw0
   refine ⟨tag, rfl, SP, _, we, ee, ce, hSP, hSPlt, hSPk, hv0, hkl, hki, fun W => ?_⟩
   have hIe : ((bodyState s fo d t #[.str tag]).withHeap (·.push W)).objEntry fI = s.objEntry fI := by
-    rw [objEntry_push_old _ _ _ (by simp; omega)]; simp
+    rw [objEntry_push_old' _ _ _ (by simp; omega)]; simp
   js_until [] [hIe, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   have hIlt' : fI < ((bodyState s fo d t #[.str tag]).withHeap (·.push W)).heap.size := by
     exact Nat.lt_of_lt_of_le hIlt (by rw [size_push]; simp [bodyState, entryState])

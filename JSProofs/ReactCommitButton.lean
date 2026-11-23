@@ -140,7 +140,7 @@ theorem cme_button {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
   have hfw2 : 3300 ≤ w2.fuel := by simp [bodyState, entryState] at hfu2; omega
   have hfr2 : w1.fuel ≤ w2.fuel + 60 := by simp [bodyState, entryState] at hfu2; omega
   js_until [] [hEa2, hEb2, hEc2, hSa2, hSb2, hGd2, hB2, hBlt2, hBc2, hBclt2, hCH2, hCHlt2, hfw2, h512, h32, h4, h1024, hBs, hBm, hBc, hBck, hBcm, hGCH, hGCHv, hCHo, hCHk, hEa, hEb, hEc, hSa, hSb, hGd, hB1, hBlt1, hfw1, hGRE, hGREv, hREo, hREk, hRE1, hRElt1, e1, e2, e4, e5, Ne.symm e1, Ne.symm e2, hG, hGe, hGO, hGOv, hGOm, hGRT, hGRTv, hRTo, hRTk, hB, hBk, hBa, hBf, hBt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine wp_neNullObj (by omega) ?_
+  refine wp_neNullObj' (by omega) ?_
   js_until [] [hEa2, hEb2, hEc2, hSa2, hSb2, hGd2, hB2, hBlt2, hBc2, hBclt2, hCH2, hCHlt2, hfw2, h512, h32, h4, h1024, hBs, hBm, hBc, hBck, hBcm, hGCH, hGCHv, hCHo, hCHk, hEa, hEb, hEc, hSa, hSb, hGd, hB1, hBlt1, hfw1, hGRE, hGREv, hREo, hREk, hRE1, hRElt1, e1, e2, e4, e5, Ne.symm e1, Ne.symm e2, hG, hGe, hGO, hGOv, hGOm, hGRT, hGRTv, hRTo, hRTk, hB, hBk, hBa, hBf, hBt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hEa2, hEb2, hEc2, hSa2, hSb2, hGd2, hB2, hBlt2, hBc2, hBclt2, hCH2, hCHlt2, hfw2, h512, h32, h4, h1024, hBs, hBm, hBc, hBck, hBcm, hGCH, hGCHv, hCHo, hCHk, hEa, hEb, hEc, hSa, hSb, hGd, hB1, hBlt1, hfw1, hGRE, hGREv, hREo, hREk, hRE1, hRElt1, e1, e2, e4, e5, Ne.symm e1, Ne.symm e2, hG, hGe, hGO, hGOv, hGOm, hGRT, hGRTv, hRTo, hRTk, hB, hBk, hBa, hBf, hBt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
   refine wp_mono (hCH _ _ (frame_setEnv_new hFs2 (Nat.le_refl _) _) (by simp only [State.setEnv_fuel]; omega)) ?_
