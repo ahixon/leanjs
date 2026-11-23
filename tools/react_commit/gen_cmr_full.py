@@ -62,7 +62,7 @@ F4 = f"((({F2}.union (ReactCommitRoot.F0 ME_M_d.env)).union (ReactFlushLayout.FP
 if "hSPf" in DO:
     drop_outer |= {"hSPf", "hSPc", "fpSP", "Q3"}
     outer_ren["fpSP"] = "((ReactSpawned.FPA SP_d.env SP_gP FR).union (ReactEnsureCall.fpEn SP_d.env))"
-    outer_ren["Q3"] = f"(fun (w : State) (h : σ) => ∃ w0, {PCME} w0 h)"
+    outer_ren["Q3"] = f"(fun (w : State) (h : σ) => (∃ w0, {PCME} w0 h) ∧ ReactSpawned.Done w d.env oG FR)"
 def _balanced(t, i):
     """index just after the parenthesised group starting at t[i] == '('"""
     d = 0
@@ -315,8 +315,9 @@ if "hSPf" in DO:
       (E_hP := by rw [hw.realms_eq]; exact SP_E_hP)
       (hRP := SP_hRP w hw) ..) ?spost
     case spost =>
-      rintro v w' h' ⟨-, hfu, rfl, hF⟩
-      exact ⟨frame_trans hw hF, by omega, hPC⟩
+      rintro v w' h' ⟨-, hfu, rfl, hF, hD⟩
+      rw [SP_hdenv] at hD
+      exact ⟨frame_trans hw hF, by omega, hPC, hD⟩
     all_goals {RB5}""")
 hcall = []
 if "hBf" in DO: hcall.append("(hBf := ?hBf) (hfpB := ?hfpB) (hfpBp := ?hfpBp) (hBc := ⟨_, B_hk⟩)")

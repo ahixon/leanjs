@@ -37,7 +37,8 @@ e_imp = imps(EC, "en_call", "E_", ("n", "h", "s", "fo", "t", "bG", "oG", "R"))
 RB = "first | rebase_quick hw | (rw [hbw _ (by simp [FPA, FPS, Footprint.union])] <;> with_reducible assumption) | (rw [kind_frame hw (by with_reducible assumption)] <;> with_reducible assumption)"
 stmt = f"""theorem fsp_full {binds} :
     WP eng answer (n + 4) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + 6 * 60 + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union {FPEN}) s w := by
+      v = .undefined ∧ s.fuel ≤ w.fuel + 6 * 60 + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union {FPEN}) s w ∧
+        Done w d.env oG FR := by
   refine fsp_spec (n := n + 2) (K := 60) (fpE := {FPEN}) {fargs} (hK := by omega)
     (hRelc := ⟨_, L_hk⟩) (hLPc := ⟨_, T_hk⟩) (hPEc := ⟨_, P_hk⟩) (hFSc := ⟨_, W_hk⟩) (hEnc := ⟨_, E_hk⟩)
     (hRel := ?hRel) (hLP := ?hLP) (hPE := ?hPE) (hFSs := ?hFSs) (hEn := ?hEn) (hfpE := ?hfpE) (hfpEp := ?hfpEp)
@@ -66,9 +67,9 @@ stmt = f"""theorem fsp_full {binds} :
       (hQo := lt_heap_of_frame hw E_hQo) (hQk := by rw [kind_frame hw E_hQo]; exact E_hQk) (hfn := E_hfn) (hq := E_hq)
       (hP := by rw [hw.realms_eq]; exact E_hP)
       (hR := lt_heap_of_frame hw hFR) (hRk := by rw [kind_frame hw hFR]; exact hFRk)) ?_
-    rintro v w' h' ⟨-, hF, hfu, rfl, -⟩
-    rw [E_hdenv] at hF
-    exact ⟨hF, frame_trans hw hF, by omega, rfl⟩
+    rintro v w' h' ⟨-, hF, hfu, rfl, hSc⟩
+    rw [E_hdenv] at hF hSc
+    exact ⟨hF, frame_trans hw hF, by omega, rfl, hSc⟩
   case hRel =>
     intro w h1 hw hfw
     refine wp_mono (ReactSpawnedCallees.rrp_spec (s := w) (fo := fRel) (t := .undefined) (FR := FR) {l_imp}

@@ -276,7 +276,8 @@ theorem fsp_full {n : Nat}
     (W_hdenv : W_d.env = d.env)
     (E_hdenv : E_d.env = d.env) :
     WP eng answer (n + 4) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + 6 * 60 + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union (ReactEnsureCall.fpEn d.env)) s w := by
+      v = .undefined ∧ s.fuel ≤ w.fuel + 6 * 60 + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union (ReactEnsureCall.fpEn d.env)) s w ∧
+        Done w d.env oG FR := by
   refine fsp_spec (n := n + 2) (K := 60) (fpE := (ReactEnsureCall.fpEn d.env)) (fo := fo) (d := d) (t := t) (bG := bG) (oG := oG) (bS := bS) (bVT := bVT) (bRP := bRP) (bER := bER) (bFW := bFW) (bEL := bEL) (bRE := bRE) (bRel := bRel) (bLB := bLB) (bLP := bLP) (bIH := bIH) (bVE := bVE) (bTT := bTT) (bPE := bPE) (bEn := bEn) (bNC := bNC) (bRN := bRN) (bFS := bFS) (FR := FR) (R := R) (fRP := fRP) (fRel := fRel) (fLP := fLP) (fPE := fPE) (fEn := fEn) (fFS := fFS) (vt := vt) (tt := tt) (rs := rs) (rf := rf) (rsw := rsw) (rse := rse) (rsc := rsc) (rfw := rfw) (rfe := rfe) (rfc := rfc) (snw := snw) (sne := sne) (snc := snc) (plw := plw) (ple := ple) (plc := plc) (hlt := hlt) (hk := hk) (hcode := hcode) (hcls := hcls) (hmode := hmode) (hG := hG) (hGe := hGe) (gS := gS) (gSm := gSm) (gSv := gSv) (gVT := gVT) (gVTm := gVTm) (gVTv := gVTv) (gRP := gRP) (gRPv := gRPv) (gER := gER) (gERm := gERm) (gERv := gERv) (gFW := gFW) (gFWm := gFWm) (gFWv := gFWv) (gEL := gEL) (gELv := gELv) (gRE := gRE) (gREv := gREv) (gRel := gRel) (gRelv := gRelv) (gLB := gLB) (gLBm := gLBm) (gLBv := gLBv) (gLP := gLP) (gLPv := gLPv) (gIH := gIH) (gIHv := gIHv) (gVE := gVE) (gVEv := gVEv) (gTT := gTT) (gTTm := gTTm) (gTTv := gTTv) (gPE := gPE) (gPEv := gPEv) (gEn := gEn) (gEnv := gEnv) (gNC := gNC) (gNCm := gNCm) (gNCv := gNCv) (gRN := gRN) (gRNm := gRNm) (gRNv := gRNv) (gFS := gFS) (gFSv := gFSv) (hR := hR) (hRk := hRk) (hRs := hRs) (hRf := hRf) (hrs := hrs) (hrf := hrf) (hRn := hRn) (hFR := hFR) (hFRk := hFRk) (hFRl := hFRl) (hRPo := hRPo) (hRPc := hRPc) (hRelo := hRelo) (hLPo := hLPo) (hPEo := hPEo) (hEno := hEno) (hFSo := hFSo) (dRF := dRF) (dLF := dLF) (dPF := dPF) (dEF := dEF) (dSF := dSF) (gP := gP) (hgP := hgP) (hgPs := hgPs) (hRP := hRP) (hK := by omega)
     (hRelc := ⟨_, L_hk⟩) (hLPc := ⟨_, T_hk⟩) (hPEc := ⟨_, P_hk⟩) (hFSc := ⟨_, W_hk⟩) (hEnc := ⟨_, E_hk⟩)
     (hRel := ?hRel) (hLP := ?hLP) (hPE := ?hPE) (hFSs := ?hFSs) (hEn := ?hEn) (hfpE := ?hfpE) (hfpEp := ?hfpEp)
@@ -305,9 +306,9 @@ theorem fsp_full {n : Nat}
       (hQo := lt_heap_of_frame hw E_hQo) (hQk := by rw [kind_frame hw E_hQo]; exact E_hQk) (hfn := E_hfn) (hq := E_hq)
       (hP := by rw [hw.realms_eq]; exact E_hP)
       (hR := lt_heap_of_frame hw hFR) (hRk := by rw [kind_frame hw hFR]; exact hFRk)) ?_
-    rintro v w' h' ⟨-, hF, hfu, rfl, -⟩
-    rw [E_hdenv] at hF
-    exact ⟨hF, frame_trans hw hF, by omega, rfl⟩
+    rintro v w' h' ⟨-, hF, hfu, rfl, hSc⟩
+    rw [E_hdenv] at hF hSc
+    exact ⟨hF, frame_trans hw hF, by omega, rfl, hSc⟩
   case hRel =>
     intro w h1 hw hfw
     refine wp_mono (ReactSpawnedCallees.rrp_spec (s := w) (fo := fRel) (t := .undefined) (FR := FR) (d := L_d) (pl := L_pl) (lw := L_lw) (le := L_le) (lc := L_lc) (cw := L_cw) (ce := L_ce) (cc := L_cc)

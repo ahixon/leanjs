@@ -3,6 +3,7 @@ import JSProofs.Setter
 import JSProofs.ReactHostContainer
 import JSProofs.Rebase
 import JSProofs.ReactFacts
+import JSProofs.ReactEnsureRoot
 
 /-!
 # flushSpawnedWork for the click's commit (zippy docs/react-proofs.md)
@@ -34,6 +35,12 @@ def FP1 (g gP : EnvId) : Footprint :=
 `pooledCacheLanes`. -/
 def FPA (g gP : EnvId) (FR : ObjId) : Footprint :=
   (FPS g).union ⟨[(gP, JSStr.ofString "needsPaint")], [(FR, .str (JSStr.ofString "pooledCacheLanes"))], false⟩
+
+/-- What the click's commit leaves for the next `ensureRootIsScheduled`: the schedule after the call inside
+`flushSpawnedWork` and the root's lanes finished. -/
+def Done (w : State) (g : EnvId) (oG : Option EnvId) (FR : ObjId) : Prop :=
+  ReactEnsureRoot.Scheduled w g oG FR ∧
+    ∃ a b c, (w.objEntry FR).props.get? (.str (JSStr.ofString "pendingLanes")) = some (.data (.num (F64.fin false 0 (-1074))) a b c)
 
 section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
@@ -111,7 +118,8 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
         fun v w' h' => Frame {} w w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1)
     (hEn : ∀ w h1, Frame (FPA d.env gP FR) s w → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fEn) .undefined #[.obj FR]) w
-        fun v w' h' => Frame fpE w w' ∧ Frame ((FPA d.env gP FR).union fpE) s w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1)
+        fun v w' h' => Frame fpE w w' ∧ Frame ((FPA d.env gP FR).union fpE) s w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1 ∧
+          ReactEnsureRoot.Scheduled w' d.env oG FR)
     (hfpE : ∀ p, p ∈ fpE.binds → p.1 < s.envs.size ∧ (p.1 = d.env → p.2 ∉ [JSStr.ofString "nestedUpdateCount",
       JSStr.ofString "rootWithNestedUpdates", JSStr.ofString "flushSyncWorkAcrossRoots_impl"]))
     (hfpEp : ∀ p, p ∈ fpE.props → p.1 ≠ FR ∧ p.1 ≠ fFS)
@@ -119,7 +127,8 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       WP eng answer (n + 1) h1 (callImpl eng (.obj fFS) .undefined #[.num (F64.fin false 0 (-1074)), .bool false]) w
         fun v w' h' => Frame {} w w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + 6 * K + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union fpE) s w := by
+      v = .undefined ∧ s.fuel ≤ w.fuel + 6 * K + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union fpE) s w ∧
+        Done w d.env oG FR := by
   apply wp_callGen FSPGen.flushSpawnedWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (ReactNoEffects.simple_spawned d hcode) (by rw [hcode]; rfl)
     (by rw [hcode]; rfl)
@@ -279,7 +288,7 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   obtain ⟨dEn, hEnk⟩ := hEnc
   refine ⟨by js_norm [CallableC, hlt4 fEn hEno, hob4 fEn (hlt3 fEn hEno), hob3 fEn (hlt2 fEn hEno), hob2 fEn hEno dEF, hEnk], ?_⟩
   refine wp_mono (hEn _ _ hFs4 (by omega)) ?_
-  rintro v5 w5 h5 ⟨hF5, hFs5, hfu5, rfl⟩
+  rintro v5 w5 h5 ⟨hF5, hFs5, hfu5, rfl, hSch5⟩
   have hfw5 : K + 50 ≤ w5.fuel := by omega
   have hE5 := envEntry_frame hF5 (e := s.envs.size) hS4
     (List.all_eq_true.mpr fun p hp => by have := (hfpE p hp).1; simp; exact Nat.ne_of_lt this)
@@ -323,7 +332,19 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   have hE6 := envEntry_frame0 hF6 (e := s.envs.size) (by simp; omega)
   have hS6 : s.envs.size < w6.envs.size := Nat.lt_of_lt_of_le (by simp; omega) hF6.envs_le
   js_until [] [hE6, hS6, hfw5, hE5, hd5, hb1, hb2, hb3, hS5, hGd5, hFRk5, hFRl5, hFS5, hlt5 FR hFR, hlt5 fFS hFSo, Std.HashMap.getElem?_modify, gNC, gNCm, gNCv, gRN, gRNm, gRNv, gFS, gFSv, hfw4, hE4, hEd4, hS4, hGd4, hob4 FR (hlt3 FR hFR), hob4 fEn (hlt3 fEn hEno), hob3 fEn (hlt2 fEn hEno), hob2 fEn hEno dEF, hlt4 FR hFR, hlt4 fEn hEno, hob3 FR (hlt2 FR hFR), hFRk2, hFRl2, gEn, gEnv, hfw3, hE3, hEd3, hS3, hGd3, hob3 FR (hlt2 FR hFR), hob3 R (hlt2 R hR), hob3 fPE (hlt2 fPE hPEo), hlt3 R hR, hlt3 FR hFR, hlt3 fPE hPEo, hob2 R hR dRF, hob2 fPE hPEo dPF, hFRk2, hFRl2, hlt2 R hR, hlt2 FR hFR, hob1 R hR, gIH, gIHv, gVE, gVEv, gTT, gTTm, gTTv, gPE, gPEv, hfw2, hE2, hEd2, hS2, hGd2, hFRk2, hFRl2, hob2 R hR dRF, hob2 fLP hLPo dLF, hlt2 R hR, hlt2 FR hFR, hlt2 fLP hLPo, gLB, gLBm, gLBv, gLP, gLPv, hfw1, hE1, hEd1, hS1, hGd1, hob1 R hR, hob1 FR hFR, hob1 fRel hRelo, hlt1 R hR, hlt1 FR hFR, hlt1 fRel hRelo, gER, gERm, gERv, gFW, gFWm, gFWv, gEL, gELv, gRE, gREv, gRel, gRelv, hR, hRk, hRs, hRf, hrs, hrf, hFR, hFRk, hFRl, e1, e1', e4, hG, hGe, gS, gSm, gSv, gVT, gVTm, gVTv, gRP, gRPv, hRPo, hRPk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine ⟨by simp [bodyState, entryState] at hfu1 hfu2 hfu3 hfu4 hfu6 ⊢; omega, frame_restore (frame_then_empty ?_ hF6) s⟩
+  refine ⟨by simp [bodyState, entryState] at hfu1 hfu2 hfu3 hfu4 hfu6 ⊢; omega, frame_restore (frame_then_empty ?_ hF6) s, ?done⟩
+  case done =>
+    obtain ⟨bS, hS1, hS2⟩ := hSch5
+    have hd6 := envEntry_frame0 hF6 (e := d.env) (by simp; omega)
+    have ho6 := objEntry_frame0 hF6 (o := FR) (by simp; exact hlt5 FR hFR)
+    simp only [Done, ReactEnsureRoot.Scheduled, restore_envEntry, restore_objEntry, hd6, ho6]
+    simp only [js_simp, hGd5, if_true, hS1, Option.map]
+    obtain ⟨g1, g2, g3, g4⟩ := hS2
+    refine ⟨⟨_, rfl, ?_, ?_, ?_, ?_⟩, _, _, _, hFRl5⟩
+    · simp [Std.HashMap.getElem?_modify, g1]
+    · simp [Std.HashMap.getElem?_modify, g2]
+    · simp [Std.HashMap.getElem?_modify, g3]
+    · simp [Std.HashMap.getElem?_modify, g4]
   unfold FPA FPS
   have hd5' : (Scope.declLike? (w5.envEntry d.env)).isSome = true := by rw [hd5]; rfl
   refine frame_setEnv_split (frame_setEnv_with_in ?_ hG (setEnv_envEntry_self _ _ _ ?q1) ?q2 ?q3 _)
