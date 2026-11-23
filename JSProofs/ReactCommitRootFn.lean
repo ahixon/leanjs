@@ -16,7 +16,7 @@ the transition and priority cleared and `executionContext |= 4` around it, statu
 
 open ES ES.M HostRuns Logic
 open Std (HashMap)
-open ReactFacts (BindIs PropIs)
+open ReactFacts (BindIs PropIs SelInfo)
 
 namespace ReactCommitRootFn
 
@@ -40,7 +40,7 @@ set_option maxHeartbeats 8000000 in
 theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
     {bG : HashMap JSStr Binding} {oG : Option EnvId}
     {bRL bCU bM bVE bTT bSV bT bD bE bB bS bME bLE bSP : Binding}
-    {FR R RSI RDSI fM fB fME fLE fSP : ObjId} {sl ul srl sst tv pv : Value} {rs rf ec : F64}
+    {FR R RSI RDSI fM fB fME fLE fSP E : ObjId} {sl ul srl sst tv pv ev0 : Value} {rs rf ec : F64}
     {rlw rle rlc rcw rce rcc rsw rse rsc rfw rfe rfc cnw cne cnc cpw cpe cpc te tc pe pc : Bool}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d)
     (hcode : d.code = CMRGen.commitRoot_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
@@ -104,7 +104,8 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hBf : ∀ w h1, Frame ((FPC d.env FR RSI RDSI).union fpM) s w → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fB) .undefined #[.obj FR, .obj R,
         .num (F64.fin false 4503599627370496 (-51))]) w fun v w' h' =>
-        Frame fpB w w' ∧ Frame (((FPC d.env FR RSI RDSI).union fpM).union fpB) s w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1)
+        Frame fpB w w' ∧ Frame (((FPC d.env FR RSI RDSI).union fpM).union fpB) s w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1 ∧
+        SelInfo w' d.env E ev0 s.heap.size)
     (hfpB : ∀ p, p ∈ fpB.binds → p.1 < s.envs.size ∧ (p.1 = d.env → p.2 ∉ [JSStr.ofString "executionContext",
       JSStr.ofString "pendingEffectsStatus", JSStr.ofString "shouldStartViewTransition",
       JSStr.ofString "flushMutationEffects", JSStr.ofString "flushLayoutEffects", JSStr.ofString "flushSpawnedWork",
@@ -113,7 +114,8 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hMEf : ∀ w h1, Frame (((FPC d.env FR RSI RDSI).union fpM).union fpB) s w →
       BindIs w d.env (JSStr.ofString "pendingEffectsStatus") (.num (F64.fin false 4503599627370496 (-52))) →
       BindIs w d.env (JSStr.ofString "executionContext") (.num ec) →
-      PropIs w RSI (JSStr.ofString "T") tv → PropIs w RDSI (JSStr.ofString "p") pv → K ≤ w.fuel →
+      PropIs w RSI (JSStr.ofString "T") tv → PropIs w RDSI (JSStr.ofString "p") pv →
+      SelInfo w d.env E ev0 s.heap.size → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fME) .undefined #[]) w fun v w' h' =>
         Frame fpME w w' ∧ Frame ((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME) s w' ∧ w.fuel ≤ w'.fuel + K ∧ Q1 w' h')
     (hfpME : ∀ p, p ∈ fpME.binds → p.1 < s.envs.size ∧ (p.1 = d.env → p.2 ∉ [JSStr.ofString "flushLayoutEffects",
@@ -213,7 +215,7 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       rw [hEd1, setEnv_envEntry_ne _ _ _ _ e1']
       exact setEnv_envEntry_self _ _ _ (by first | exact hGd1 | (simp; omega))
     exact hFs1
-  rintro v2 w2 h2 ⟨hF2, hFs2, hfu2, rfl⟩
+  rintro v2 w2 h2 ⟨hF2, hFs2, hfu2, rfl, hSel2⟩
   have hfw2 : 3 * K + 200 ≤ w2.fuel := by simp at hfu2; omega
   have hE2 := envEntry_frame hF2 (e := s.envs.size) (by simp; omega)
     (List.all_eq_true.mpr fun p hp => by have := (hfpB p hp).1; simp; exact Nat.ne_of_lt this)
@@ -254,7 +256,11 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until [] [hfw2, hE2, hd2, b1, b2, b3, b4, b5, b6, hS2, hGd2, hT2.1, hT2.2, hD2.1, hD2.2, hME2, hlt2 RSI hRSI, hlt2 RDSI hRDSI, hlt2 fME hMEo, Std.HashMap.getElem?_modify, gS, gSm, gSv, gME, gMEv, hfw1, hE1, hEd1, hS1, hGd1, hR1, hT1, hD1, hB1, hFRk1, hFRn1, hFRp1, hlt1 R hR, hlt1 FR hFR, hlt1 RSI hRSI, hlt1 RDSI hRDSI, hlt1 fB hBo, gVE, gVEm, gVEv, gTT, gTTm, gTTv, gSV, gSVm, gSVv, gT, gTv, gD, gDv, gE, gEv, gEm, gB, gBv, hRs, hRf, hrs, hrf, hrs2, hFRk, hRSIk, hRSIt, hRDSIk, hRDSIp, dRF, Ne.symm dRF, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTR, Ne.symm dTR, dDR, Ne.symm dDR, hBk, e1, e1', e4, hG, hGe, gRL, gRLm, gRLv, gCU, gCUv, gM, gMv, hMo, hMk, hR, hRk, hRl, hRc, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   obtain ⟨dME, hMEk⟩ := hMEc
   refine ⟨by js_norm [CallableC, hlt2 fME hMEo, hME2, hMEk, dMF, dMT, dMD, Ne.symm dMF, Ne.symm dMT, Ne.symm dMD], ?_⟩
-  refine wp_mono (hMEf _ _ ?fr3 ?bs ?be ?pt ?pp (by simp; omega)) ?_
+  refine wp_mono (hMEf _ _ ?fr3 ?bs ?be ?pt ?pp ?sel (by simp; omega)) ?_
+  case sel =>
+    exact SelInfo.setEnv_modify (SelInfo.setProp (SelInfo.setProp (SelInfo.setEnv_modify hSel2 hGd2 rfl (by simp))
+      hRDSI _ _) hRSI _ _) (by simpa using hGd2)
+      (by simp only [setProp_envEntry]; exact setEnv_envEntry_self _ _ _ hGd2) (by simp)
   case fr3 =>
     unfold FPC
     have hd2' : (Scope.declLike? (w2.envEntry d.env)).isSome = true := by rw [hd2]; rfl
