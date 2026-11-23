@@ -39,6 +39,10 @@ def fp (e : EnvId) : Footprint :=
   ⟨[(e, "firstScheduledRoot"), (e, "lastScheduledRoot"), (e, "mightHavePendingSyncWork"),
     (e, "didScheduleMicrotask")], [], false⟩
 
+/-- What it writes when the root is already scheduled: the flags only. -/
+def fpS (e : EnvId) : Footprint :=
+  ⟨[(e, "mightHavePendingSyncWork"), (e, "didScheduleMicrotask")], [], false⟩
+
 /-- The schedule after the call: the root first and last, sync work pending, a microtask marked scheduled. -/
 def Scheduled (w : State) (e : EnvId) (oG : Option EnvId) (R : ObjId) : Prop :=
   ∃ bW, Scope.declLike? (w.envEntry e) = some (bW, oG) ∧
@@ -118,7 +122,7 @@ theorem call_scheduled {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value
     (hGS : bG[JSStr.ofString "scheduleImmediateRootScheduleTask"]? = some bdS) (hGSv : bdS.value = some (.obj fS))
     (hSo : fS < s.heap.size) (hSk : (s.objEntry fS).kind = .func dS)
     (hR : R < s.heap.size) (hRk : (s.objEntry R).kind.isPlain = true)
-    (hSpec : ∀ w h1, Frame (fp d.env) s w → Scheduled w d.env oG R → s.fuel ≤ w.fuel + 2 →
+    (hSpec : ∀ w h1, Frame (fpS d.env) s w → Scheduled w d.env oG R → s.fuel ≤ w.fuel + 2 →
       WP eng answer n h1 (callImpl eng (.obj fS) .undefined #[]) w fun _ w' h' => Q (w'.restore s) h') :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj R]) s fun v w h' => v = .undefined ∧ Q w h' := by
   apply wp_callGen ERSGen.ensureRootIsScheduled_eq (by decide) hlt hk (by omega) hcls hmode
@@ -137,7 +141,7 @@ theorem call_scheduled {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value
   refine ⟨by js_norm [CallableC, hSo, hSk], ?_⟩
   refine wp_mono (hSpec _ _ ?fr ?sch ?fu) ?post
   case fr =>
-    simp only [fp]
+    simp only [fpS]
     refine frame_setEnv_split (frame_setEnv_with_in ?_ hG (setEnv_envEntry_self _ _ _ (by simp; omega))
       (by simp only [declLike_isSome_withBindings]; rw [hGe]; rfl) (by simp) _)
     refine frame_setEnv_with_in ?_ hG (bodyState_envEntry_lt (s := s) (fo := fo) (d := d) (t := t)
@@ -167,7 +171,7 @@ theorem call_flagged {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
     (hGD : bG[JSStr.ofString "didScheduleMicrotask"]? = some bdD) (hGDv : bdD.value = some (.bool true))
     (hR : R < s.heap.size) (hRk : (s.objEntry R).kind.isPlain = true) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj R]) s fun v w h' =>
-      v = .undefined ∧ Frame (fp d.env) s w ∧ s.fuel ≤ w.fuel + 20 ∧ h' = h ∧ Scheduled w d.env oG R := by
+      v = .undefined ∧ Frame (fpS d.env) s w ∧ s.fuel ≤ w.fuel + 20 ∧ h' = h ∧ Scheduled w d.env oG R := by
   apply wp_callGen ERSGen.ensureRootIsScheduled_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root"] := by rw [hcode]; rfl
@@ -190,7 +194,7 @@ theorem call_flagged {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
       simp only [declLike_withBindings', bodyState_envEntry_lt (s := s) (fo := fo) (d := d) (t := t) (args := #[.obj R]) _ hG, hGe, Option.map]
     · simp [Std.HashMap.getElem?_modify, hGF, hGFv, hGL, hGLv, hGM, hGD, hGDv]
   case fr =>
-    simp only [fp]
+    simp only [fpS]
     refine frame_restore ?_ s
     refine frame_setEnv_with_in ?_ hG (bodyState_envEntry_lt (s := s) (fo := fo) (d := d) (t := t)
       (args := #[.obj R]) _ hG) (by rw [hGe]; rfl) (by simp) _
