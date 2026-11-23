@@ -54,7 +54,7 @@ P1 = (f"(fun w' (_ : σ) => Frame (((((ReactMicrotaskClick.fpPerf d.env R A).uni
       f"p_fl p_hc p_fl' p_al p_x0e p_x0c p_x1e p_x1c p_x2e p_x2c p_x3e p_x3c p_x4e p_x4c p_x5e p_x5c p_x6e p_x6c p_x7e p_x7c p_x8e p_x8c p_x9e p_x9c p_x10e p_x10c p_x11e p_x11c p_x12e p_x12c p_x13e p_x13c p_x14e p_x14c p_x15e p_x15c p_hcle p_hclc p_fle p_flc p_fale p_falc p_qpe p_qpc p_une p_unc ∧ (∃ v a b, (w'.objEntry I).props.get? (.str \"H\") = some (.data v true a b)) ∧ "
       f"∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString \"executionContext\"]? = some bd ∧ "
       f"bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString \"workInProgressTransitions\"]? = some bd ∧ "
-      f"bd.value = some .null))")
+      f"bd.value = some .null) ∧ ReactMicrotaskClick.MicroFacts w' d.env oG R A)")
 INST = {"P1": P1, "fpPF": PFP, "kP": "400", "j": "(j + 2)"}
 rp_i = subst(rp, INST)
 lemma = f"""set_option maxHeartbeats 8000000 in
@@ -68,11 +68,11 @@ theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : Ob
     (hPFcode : dPF.code = PFSGen.prepareFreshStack_func) (hPFcls : dPF.isClassCtor = false)
     (hPFmode : dPF.thisMode = .strict) (hPFenv : dPF.env = d.env)
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG)) (hfu : 1000 ≤ s.fuel)
-    (p_dA : p_A ≠ A) (hI : I < s.heap.size)
+    (p_dA : p_A ≠ A) (hI : I < s.heap.size) (hAo : A < s.heap.size) (hRo : R < s.heap.size)
     (pI : p_X ≠ I ∧ p_A ≠ I ∧ p_Qo ≠ I ∧ p_U ≠ I ∧ p_F ≠ I ∧ p_Fa ≠ I ∧ p_H ≠ I)
     {chr(10).join("    " + x for x in hyps)} :
     {rp_i} := by
-  intro sP hP fuP sW hW fuW sR hR fuR w h1 hpre fuw ⟨iv, ia, ib, hIHw⟩ ⟨bme, hbme, ⟨bdx, hbdx, hbdxm, hbdxv⟩, ⟨bdt, hbdt, hbdtv⟩⟩
+  intro sP hP hMF fuP sW hW fuW sR hR fuR w h1 hpre fuw ⟨iv, ia, ib, hIHw⟩ ⟨bme, hbme, ⟨bdx, hbdx, hbdxm, hbdxv⟩, ⟨bdt, hbdt, hbdtv⟩⟩
   have hT := frame_trans (frame_trans (frame_trans hP hW) hR) hpre
   obtain ⟨bW, hWd, hWx⟩ := declLike_frame hT hG hGe
   refine wp_mono (ReactPrepareFresh.call_spec (n := j) (d := {{ dPF with env := d.env }}) (bG := bW)
@@ -83,7 +83,18 @@ theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : Ob
   obtain ⟨bw', hdw', hbw'⟩ := declLike_frame hF' (envs_frame hT hG) hbme
   refine ⟨hF', by omega, hAP, frame_trans hT hF', hPB, hPF, ⟨iv, ia, ib, ?_⟩, bw', hdw',
     ⟨bdx, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdx, hbdxm, hbdxv⟩,
-    ⟨bdt, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdt, hbdtv⟩⟩
+    ⟨bdt, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdt, hbdtv⟩, ?mf⟩
+  case mf =>
+    have hT' := frame_trans (frame_trans (frame_trans hW hR) hpre) hF'
+    obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨av, ae, ac, hA1⟩, ⟨pv, pe, pc, hCP⟩, ⟨nv, ne, nc, hCN⟩⟩ := hMF
+    obtain ⟨bwF, hdF, hxF⟩ := declLike_frame hT' (envs_frame hP hG) hbmF
+    have hAo' : A < sP.heap.size := heap_frame hP hAo
+    have hRo' : R < sP.heap.size := heap_frame hP hRo
+    refine ⟨⟨bwF, hdF, bdF, by rw [hxF _ (by simp [Footprint.union, ReactRenderSync.fpPre, ReactPrepareFresh.fp])]; exact hbdF, hbdFv⟩,
+      ⟨av, ae, ac, ?_⟩, ⟨pv, pe, pc, ?_⟩, ⟨nv, ne, nc, ?_⟩⟩
+    · rw [props_frame hT' hAo' (by simp [Footprint.union, ReactRenderSync.fpPre, ReactPrepareFresh.fp, ReactCreateWIP.fp, Ne.symm p_dA])]; exact hA1
+    · rw [props_frame hT' hRo' (by simp [Footprint.union, ReactRenderSync.fpPre, ReactPrepareFresh.fp, ReactCreateWIP.fp])]; exact hCP
+    · rw [props_frame hT' hRo' (by simp [Footprint.union, ReactRenderSync.fpPre, ReactPrepareFresh.fp, ReactCreateWIP.fp])]; exact hCN
   rw [props_frame hF' (heap_frame hT hI) (by simp [ReactPrepareFresh.fp, ReactCreateWIP.fp, pI.1, pI.2.1, pI.2.2.1,
     pI.2.2.2.1, pI.2.2.2.2.1, pI.2.2.2.2.2.1, pI.2.2.2.2.2.2])]; exact hIHw
 """
@@ -123,7 +134,7 @@ top = (f"set_option maxHeartbeats 8000000 in\nset_option maxRecDepth 40000 in\n"
        f"theorem microtask_render_prep " + " ".join(imps2) + " " + " ".join(imps) + "\n    " + "\n    ".join(hyps2) +
        " :\n    " + c + " :=\n  microtask_render_fin " + " ".join(passes2) + "\n    " + " ".join(args2) +
        f"\n    (r_Prep := prep_hyp (j := j) (s := s) (d := d) (dPF := dPF) (R := R) (A := A) (I := I) (fPF := fPF) "
-       f"(bG := bG) (oG := oG) r_PFo r_PFk hPFcode hPFcls hPFmode hPFenv hG hGe (by omega) p_dA r_I ⟨o_p_X_I, o_p_A_I, o_p_Qo_I, o_p_U_I, o_p_F_I, o_p_Fa_I, o_p_H_I⟩ {pargs})\n")
+       f"(bG := bG) (oG := oG) r_PFo r_PFk hPFcode hPFcls hPFmode hPFenv hG hGe (by omega) p_dA r_I hA hR ⟨o_p_X_I, o_p_A_I, o_p_Qo_I, o_p_U_I, o_p_F_I, o_p_Fa_I, o_p_H_I⟩ {pargs})\n")
 hdr = '''import JSProofs.ReactMicrotaskFinish
 import JSProofs.ReactPrepareFresh
 

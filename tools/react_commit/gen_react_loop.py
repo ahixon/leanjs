@@ -112,7 +112,7 @@ hf += ['(∃ fa fb, (x.objEntry l_X).props.get? (.str "memoizedProps") = some (.
        f"ReactNewProps.NewProps x Cn F {NPS.group(1)} {NPS.group(2)}",
        "ReactRenderSync.EndBinds x d.env oG v_ec", "ReactFinishQueueing.QueuesDone x d.env",
        '(∃ bm, Scope.declLike? (x.envEntry d.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "pendingEffectsLanes"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)',
-       "s.heap.size ≤ Cn"]
+       "s.heap.size ≤ Cn", "ReactMicrotaskClick.MicroFacts x d.env oG R A"]
 FAE0 = re.search(r"Frame \((\(\(\(\(ReactMicrotaskClick\.fpPerf.*?ReactPrepareFresh\.fp d\.env p_X p_A p_Qo p_U p_F p_Fa p_H\))\) s w'", concl).group(1)
 FALL = (f"((((({FAE0}).union (ReactRenderSync.fpOwn eR)).union ({S(FPW)})).union (ReactRenderSync.fpEnd eE d.env I)).union "
         f"(ReactFinishQueueing.fp d.env))")
@@ -152,7 +152,7 @@ extra = ["(hoG : oG = none)", "(hG : d.env < s.envs.size)",
          "(hRcur : (s.objEntry R).props.get? (.str \"current\") = some (.data (.obj p_H) p_ruw p_rue p_ruc))",
          "(hH : p_H < s.heap.size) (hHk : (s.objEntry p_H).kind.isPlain = true)",
          "(hHa : (s.objEntry p_H).props.get? (.str \"alternate\") = some (.data (.obj p_X) p_haw p_hae p_hac))",
-         "(hFQo : fFQ < s.heap.size) (hFQk : (s.objEntry fFQ).kind = .func dFQ)",
+         "(hFQo : fFQ < s.heap.size) (hFQk : (s.objEntry fFQ).kind = .func dFQ)", "(hAo : A < s.heap.size) (dA_VS : A ≠ l_VS)",
          "(dr_RI : R ≠ l_RI) (dr_CF : R ≠ l_CF) (dr_CS : R ≠ l_CS) (dr_Cu : R ≠ l_Cu)", "(hPUenv : l_dPU.env = d.env)", "(hfu : 4000 ≤ s.fuel)"]
 allw = " ".join(ebinds) + " " + " ".join(ibinds) + " " + concl + " " + " ".join(extra)
 need = set(ID.findall(allw))
@@ -295,7 +295,7 @@ def W2(o):  # o's bound at the loop's end
     return f"(Nat.lt_of_lt_of_le {allp[o]} (frame_trans hT hFw).heap_le)"
 ENDF = ("rw [props_frame hFQ (Nat.lt_of_lt_of_le {B} hEnd.heap_le) (by simp [ReactFinishQueueing.fp]), "
         "props_frame hEnd {B} (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn])]")
-hop = ["case HO =>", "  refine ⟨sR.envs.size, e, frame_restore TOT c, Cn, F, " + ", ".join(["?h" + str(i) for i in range(len(HKEYS) + 6)]) + "⟩"]
+hop = ["case HO =>", "  refine ⟨sR.envs.size, e, frame_restore TOT c, Cn, F, " + ", ".join(["?h" + str(i) for i in range(len(HKEYS) + 7)]) + "⟩"]
 for i, (o, k) in enumerate(HKEYS):
     B = W2(o)
     tr = ENDF.format(B=B)
@@ -315,6 +315,14 @@ hop.append(f"  case h{n+2} => obtain ⟨be, hbe, ⟨bx, gx, gxv, gxm⟩, ⟨bwr,
 hop.append(f"  case h{n+3} => exact hQD")
 hop.append(f"""  case h{n+4} => exact ⟨b3, hb3, _, by rw [B3 _ (by simp (config := {{ decide := true }}) [ReactFinishQueueing.fp]), B2 _ (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn]), NB _ (by simp (config := {{ decide := true }}) [{FPD}])]; exact gPE, gPEm, gPEv⟩""")
 hop.append(f"  case h{n+5} => exact Nat.le_trans hT.heap_le hCn")
+hop.append(f"""  case h{n+6} =>
+      obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨av, ae, ac, hA1⟩, ⟨pv, pe, pc, hCP⟩, ⟨nv, ne, nc, hCN⟩⟩ := hMF1
+      have hbF : bmF = bm1 := by rw [hbm1] at hbmF; cases hbmF; rfl
+      rw [hbF] at hbdF
+      refine ⟨⟨b3, hb3, bdF, by rw [B3 _ (by simp (config := {{ decide := true }}) [ReactFinishQueueing.fp]), B2 _ (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn]), NB _ (by simp (config := {{ decide := true }}) [{FPD}])]; exact hbdF, hbdFv⟩, ⟨av, ae, ac, ?_⟩, ⟨pv, pe, pc, ?_⟩, ⟨nv, ne, nc, ?_⟩⟩
+      · show (w3.objEntry A).props.get? _ = _; {ENDF.format(B="(Nat.lt_of_lt_of_le hAo (frame_trans hT hFw).heap_le)")}; rw [props_frame hFw (Nat.lt_of_lt_of_le hAo hT.heap_le) (by simp (config := {{ decide := true }}) [{FPD}, dA_VS]), hO _ (lt_heap_of_frame hFA1 hAo)]; exact hA1
+      · show (w3.objEntry R).props.get? _ = _; {ENDF.format(B="(Nat.lt_of_lt_of_le hRo (frame_trans hT hFw).heap_le)")}; rw [props_frame hFw (Nat.lt_of_lt_of_le hRo hT.heap_le) (by simp (config := {{ decide := true }}) [{FPD}]), hO _ (lt_heap_of_frame hFA1 hRo)]; exact hCP
+      · show (w3.objEntry R).props.get? _ = _; {ENDF.format(B="(Nat.lt_of_lt_of_le hRo (frame_trans hT hFw).heap_le)")}; rw [props_frame hFw (Nat.lt_of_lt_of_le hRo hT.heap_le) (by simp (config := {{ decide := true }}) [{FPD}]), hO _ (lt_heap_of_frame hFA1 hRo)]; exact hCN""")
 HOPROOF = "\n    ".join(hop)
 POST = """  case post =>
   rintro v w' h' ⟨hv, hFw, hfuw, hh, Cn, F, ⟨q1, q2, q3, q4, q5, q6, q7, q8, q9, q10⟩, x1, x2, x3, x4, x5, x6, hNP, hCn, bmL, hbmL, ⟨_, gWn, gWnv⟩, ⟨_, gXs, gXsv, gXsm⟩,
@@ -324,7 +332,7 @@ POST = """  case post =>
   obtain ⟨bw, hbw, NB⟩ := declLike_frame hFw hGw hbmw
   have hbL : bmL = bw := by rw [hbw] at hbmL; cases hbmL; rfl
   subst hbL
-  obtain ⟨bmR, hbmR, ⟨_, gEC, gECm, gECi⟩, ⟨_, gTr, gTrv⟩⟩ := hRec
+  obtain ⟨bmR, hbmR, ⟨_, gEC, gECm, gECi⟩, ⟨_, gTr, gTrv⟩, hMF1⟩ := hRec
   have hbR : bmR = bm1 := by rw [hbm1] at hbmR; cases hbmR; rfl
   rw [hbR] at gEC gTr
   have hbmL' : Scope.declLike? (w'.envEntry d.env) = some (bmL, none) := by rw [← hPUenv]; exact hbmL

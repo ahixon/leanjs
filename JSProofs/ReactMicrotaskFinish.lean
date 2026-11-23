@@ -331,7 +331,7 @@ theorem microtask_render_fin {j : Nat} {eng : Engine} {σ : Type} {answer : Host
     (r_FQo : fFQ < s.heap.size)
     (r_FQk : (s.objEntry fFQ).kind = .func dFQ)
     (r_IFQ : I ≠ fFQ)
-    (r_Prep : ∀ sP, Frame (ReactMicrotaskClick.fpPerf d.env R A) s sP → s.fuel ≤ sP.fuel + 402 →
+    (r_Prep : ∀ sP, Frame (ReactMicrotaskClick.fpPerf d.env R A) s sP → ReactMicrotaskClick.MicroFacts sP d.env oG R A → s.fuel ≤ sP.fuel + 402 →
       ∀ sW, Frame {} sP sW → sP.fuel ≤ sW.fuel + 70 →
       ∀ sR, Frame {} sW sR → sW.fuel ≤ sR.fuel + 40 →
       ∀ w h1, Frame (ReactRenderSync.fpPre d.env I) sR w → sR.fuel ≤ w.fuel + 60 → (∃ v a b, (w.objEntry I).props.get? (.str "H") = some (.data v true a b)) → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) →
