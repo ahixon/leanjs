@@ -15,7 +15,7 @@ to `completeRoot`.
 
 open ES ES.M HostRuns Logic
 open Std (HashMap)
-open ReactCommitRootFn (BindIs PropIs)
+open ReactFacts (BindIs PropIs)
 
 namespace ReactCommitEntry
 

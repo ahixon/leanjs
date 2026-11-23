@@ -2,6 +2,7 @@ import JSProofs.ReactNoEffects
 import JSProofs.Setter
 import JSProofs.ReactHostContainer
 import JSProofs.Rebase
+import JSProofs.ReactFacts
 
 /-!
 # flushLayoutEffects for the click's commit (zippy docs/react-proofs.md)
@@ -13,6 +14,7 @@ contract: it writes nothing), restored in the `finally`, then status 3.
 
 open ES ES.M HostRuns Logic
 open Std (HashMap)
+open ReactFacts (BindIs)
 
 namespace ReactFlushLayout
 
@@ -58,7 +60,8 @@ theorem fle_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       WP eng answer (n + 1) h1 (callImpl eng (.obj fC) .undefined #[.obj FR, av, .obj R]) w fun v w' h' =>
         Frame {} w w' ∧ w.fuel ≤ w'.fuel + KC ∧ h' = h1) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + KC + 300 ∧ Frame (FPL d.env RSI RDSI) s w ∧ h' = h := by
+      v = .undefined ∧ s.fuel ≤ w.fuel + KC + 300 ∧ Frame (FPL d.env RSI RDSI) s w ∧ h' = h ∧
+      BindIs w d.env (JSStr.ofString "pendingEffectsStatus") (.num (F64.fin false 6755399441055744 (-51))) := by
   apply wp_callGen FLEGen.flushLayoutEffects_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (ReactNoEffects.simple_layout d hcode) (by rw [hcode]; rfl)
     (by rw [hcode]; rfl)
@@ -110,7 +113,12 @@ theorem fle_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   have hTl1 : RSI < w1.heap.size := Nat.lt_of_lt_of_le (by simpa using hRSI) hF1.heap_le
   have hDl1 : RDSI < w1.heap.size := Nat.lt_of_lt_of_le (by simpa using hRDSI) hF1.heap_le
   js_until [] [hfw1, hE1, hEd1, hS1, hGd1, hT1, hD1, hTl1, hDl1, e1, e1', e2, e2', e4, e5, hG, hGe, hGS, hGSv, hGSm, hGR, hGRv, hGF, hGFv, hGT, hGTv, hGD, hGDv, hGE, hGEv, hGEm, hGC, hGCv, hR, hRk, hRf, hRs, hRa, hsf, hRSI, hRSIk, hRSIt, hRDSI, hRDSIk, hRDSIp, hCo, dTD, Ne.symm dTD, dTR, Ne.symm dTR, dDR, Ne.symm dDR, dTC, Ne.symm dTC, dDC, Ne.symm dDC, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine ⟨by omega, ?_⟩
+  refine ⟨by omega, ?_, ?st⟩
+  case st =>
+    unfold BindIs
+    rw [restore_envEntry, setEnv_envEntry_self _ _ _ (by simp; omega)]
+    simp only [declLike_withBindings', hGe, Option.map]
+    simp [Std.HashMap.getElem?_modify, hGS, hGSm]
   unfold FPL
   have hdS : (Scope.declLike? (s.envEntry d.env)).isSome = true := by rw [hGe]; rfl
   refine frame_restore ?_ s

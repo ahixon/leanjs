@@ -2,6 +2,7 @@ import JSProofs.CMRGen
 import JSProofs.Setter
 import JSProofs.ReactHostContainer
 import JSProofs.Rebase
+import JSProofs.ReactFacts
 
 /-!
 # commitRoot for the click (zippy docs/react-proofs.md)
@@ -15,6 +16,7 @@ the transition and priority cleared and `executionContext |= 4` around it, statu
 
 open ES ES.M HostRuns Logic
 open Std (HashMap)
+open ReactFacts (BindIs PropIs)
 
 namespace ReactCommitRootFn
 
@@ -25,14 +27,6 @@ def FPC (g : EnvId) (FR RSI RDSI : ObjId) : Footprint :=
     (g, JSStr.ofString "executionContext"), (g, JSStr.ofString "pendingEffectsStatus")],
    [(FR, .str (JSStr.ofString "callbackNode")), (FR, .str (JSStr.ofString "callbackPriority")),
     (RSI, .str (JSStr.ofString "T")), (RDSI, .str (JSStr.ofString "p"))], false⟩
-
-/-- A mutable binding of the scope `g` holding `v`. -/
-def BindIs (w : State) (g : EnvId) (x : JSStr) (v : Value) : Prop :=
-  ∃ bm o bd, Scope.declLike? (w.envEntry g) = some (bm, o) ∧ bm[x]? = some bd ∧ bd.value = some v ∧ bd.mutable = true
-
-/-- A writable data property of `o` holding `v`. -/
-def PropIs (w : State) (o : ObjId) (k : JSStr) (v : Value) : Prop :=
-  ∃ e c, (w.objEntry o).props.get? (.str k) = some (.data v true e c)
 
 section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}

@@ -2,6 +2,7 @@ import JSProofs.FMEGen
 import JSProofs.Setter
 import JSProofs.ReactHostContainer
 import JSProofs.Rebase
+import JSProofs.ReactFacts
 
 /-!
 # flushMutationEffects for the click's commit (zippy docs/react-proofs.md)
@@ -14,6 +15,7 @@ the `finally`, `root.current = finishedWork`, status 2. The two calls' contracts
 
 open ES ES.M HostRuns Logic
 open Std (HashMap)
+open ReactFacts (BindIs PropIs)
 
 namespace ReactFlushMutation
 
@@ -92,7 +94,10 @@ theorem fme_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       v = .undefined ∧ s.fuel ≤ w.fuel + KC + 700 ∧ (∃ w0, PC w0 h') ∧
       Frame (((FPRE d.env RSI RDSI).union fpC).union ⟨[(d.env, JSStr.ofString "selectionInformation"),
         (d.env, JSStr.ofString "eventsEnabled"), (d.env, JSStr.ofString "_enabled")],
-        [(FR, .str (JSStr.ofString "current"))], false⟩) s w := by
+        [(FR, .str (JSStr.ofString "current"))], false⟩) s w ∧
+      BindIs w d.env (JSStr.ofString "pendingEffectsStatus") (.num (F64.fin false 4503599627370496 (-51))) ∧
+      BindIs w d.env (JSStr.ofString "executionContext") (.num ec) ∧
+      PropIs w RSI (JSStr.ofString "T") tv ∧ PropIs w RDSI (JSStr.ofString "p") pv := by
   apply wp_callGen FMEGen.flushMutationEffects_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -159,7 +164,25 @@ theorem fme_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     frame_then_empty (frame_setEnv_new hFs1 (by simp) _) hF2
   have hEE : isStrictlyEqual (.obj E) (.obj E) = true := by simp [isStrictlyEqual, sameValue]
   js_until [] [hEE, hE2, hE2d, hS2, hGd2, hob2 SI (hlt1 SI hSI), hob2 RSI (hlt1 RSI hRSI), hob2 RDSI (hlt1 RDSI hRDSI), hob2 FR (hlt1 FR hFR), hlt2 SI (hlt1 SI hSI), hlt2 RSI (hlt1 RSI hRSI), hlt2 RDSI (hlt1 RDSI hRDSI), hlt2 FR (hlt1 FR hFR), hfw2, hlt1 FR hFR, hlt1 SI hSI, hlt1 RSI hRSI, hlt1 RDSI hRDSI, hlt1 fGD hGDo, hEa, hSb, hGd, hd1, hb0, hb1, hb2, hb3, hb4, hb5, hb6, hb7, hobj SI (by simp), hobj RSI (by simp), hobj RDSI (by simp), hobj FR (by simp), hobj fGD (by simp), hfw1, hGSI, hGSIv, hGGD, hGGDv, hSI, hSIk, hSIf, hSIr, hFRc, hFR, hFRk, hGDo, hGDk, e1, e1', e2, e2', e4, e5, hG, hGe, hGS, hGSv, hGSm, hGR, hGRv, hGF, hGFv, hGL, hGLv, hGT, hGTv, hGD, hGDv, hGE, hGEv, hGEm, hGU, hGUm, hGUi, hGA, hGAm, hGAi, hGC, hGCv, hR, hRk, hRf, hRs, hsf, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTS, Ne.symm dTS, dDS, Ne.symm dDS, dFS, Ne.symm dFS, dTR, Ne.symm dTR, dDR, Ne.symm dDR, dTC, Ne.symm dTC, dDC, Ne.symm dDC, dTG, Ne.symm dTG, dDG, Ne.symm dDG, hRSI, hRSIk, hRSIt, hRDSI, hRDSIk, hRDSIp, hCo, hCk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine ⟨by omega, ⟨w1, hP1⟩, ?_⟩
+  refine ⟨by omega, ⟨w1, hP1⟩, ?_, ?st2, ?ec2, ?pt2, ?pp2⟩
+  case st2 =>
+    unfold BindIs
+    rw [restore_envEntry, setEnv_envEntry_self _ _ _ (by simp; omega)]
+    simp only [declLike_withBindings', hd1, Option.map]
+    simp [Std.HashMap.getElem?_modify, hb7, hGS, hGSm]
+  case ec2 =>
+    unfold BindIs
+    rw [restore_envEntry, setEnv_envEntry_self _ _ _ (by simp; omega)]
+    simp only [declLike_withBindings', hd1, Option.map]
+    simp [Std.HashMap.getElem?_modify, hb4, hGE, hGEm]
+  case pt2 =>
+    refine ⟨te, tc, ?_⟩
+    simp only [restore_objEntry, setEnv_objEntry, setProp_objEntry]
+    simp [dTF, Ne.symm dTF, dTD, Ne.symm dTD, hlt2 RSI (hlt1 RSI hRSI)]
+  case pp2 =>
+    refine ⟨pe, pc, ?_⟩
+    simp only [restore_objEntry, setEnv_objEntry, setProp_objEntry]
+    simp [dDF, Ne.symm dDF, dTD, Ne.symm dTD, hlt2 RDSI (hlt1 RDSI hRDSI)]
   have hdS : (Scope.declLike? (w2.envEntry d.env)).isSome = true := by
     rw [hE2d]; simp [setEnv_envEntry_ne _ _ _ _ e1']; rw [hd1]; rfl
   refine frame_restore ?_ s
