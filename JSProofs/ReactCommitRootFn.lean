@@ -41,7 +41,7 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     {bG : HashMap JSStr Binding} {oG : Option EnvId}
     {bRL bCU bM bVE bTT bSV bT bD bE bB bS bME bLE bSP : Binding}
     {FR R RSI RDSI fM fB fME fLE fSP E : ObjId} {sl ul srl sst tv pv ev0 : Value} {rs rf ec : F64}
-    {rlw rle rlc rcw rce rcc rsw rse rsc rfw rfe rfc cnw cne cnc cpw cpe cpc te tc pe pc : Bool}
+    {rlw rle rlc rcw rce rcc rsw rse rsc rfw rfe rfc cne cnc cpe cpc te tc pe pc : Bool} {cnw cpw : Value}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d)
     (hcode : d.code = CMRGen.commitRoot_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
