@@ -155,10 +155,10 @@ theorem chu_full {n : Nat}
     (hDk : (s.objEntry dom).kind.isPlain = true)
     {v0 : Value} {e0 c0 : Bool} (hDp : (s.objEntry dom).props.get? (.str kP) = some (.data v0 true e0 c0)) :
     WP eng answer (n + 4) h (callImpl eng (.obj fo) t #[.obj X, .obj NP, .obj LP]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + 2100 ∧ ∃ wm e1 c1, (fun w' h' => (∃ w0 h0, U_R1 w0 h0) ∧ (∃ w0, U_R2 w0 h') ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true)) ∧ ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]?) wm h' ∧
+      v = .undefined ∧ s.fuel ≤ w.fuel + 2100 ∧ ∃ wm e1 c1, (fun w' h' => (∃ w0 h0, U_R1 w0 h0) ∧ (∃ w0, U_R2 w0 h') ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true) ∧ bd.mutable = true) ∧ ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]?) wm h' ∧
         Frame ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [], false⟩ s wm ∧
         w = (wm.setProp dom (.str kP) (.data (.obj NP) true e1 c1)).restore s := by
-  refine ReactCommitHost.chu_spec (n := n + 2) (P := fun w' h' => (∃ w0 h0, U_R1 w0 h0) ∧ (∃ w0, U_R2 w0 h') ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true)) ∧ ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]?)
+  refine ReactCommitHost.chu_spec (n := n + 2) (P := fun w' h' => (∃ w0 h0, U_R1 w0 h0) ∧ (∃ w0, U_R2 w0 h') ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true) ∧ bd.mutable = true) ∧ ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]?)
     (fpU := ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [], false⟩) hlt hk hf hcode hcls hmode hG hGe
     hGU hGUv hGK hGKv hUo ⟨U_d, U_hk⟩ hX hXk hXs hXt hD ?_ (fun p hp => by simp at hp; subst hp; exact ⟨rfl, by show JSStr.ofString "viewTransitionMutationContext" ≠ JSStr.ofString "internalPropsKey"; decide⟩)
   intro w h1 hw hfw

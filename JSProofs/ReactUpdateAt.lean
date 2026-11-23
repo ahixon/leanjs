@@ -71,7 +71,7 @@ theorem up_at {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : St
       fun v w h' => v = .undefined ∧ (∃ w0 h0, R1 w0 h0) ∧ (∃ w0, R2 w0 h') ∧ u.fuel ≤ w.fuel + 2000 ∧
         Frame ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [], false⟩ u w ∧
         ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
-          (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true)) ∧
+          (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true) ∧ bd.mutable = true) ∧
           ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]? :=
   by
   apply up_spec (s := u) (hf := hfw) (hI := fun w' hw' => hI w' (frame_empty_trans hw hw'))

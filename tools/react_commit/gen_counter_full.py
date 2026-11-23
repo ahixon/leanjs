@@ -19,7 +19,8 @@ def callargs(path, thm, prefix, subst, special, skip=("n", "h", "s")):
 FO = '⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩'
 FH = '⟨[(BT_CH_d.env, JSStr.ofString "viewTransitionMutationContext")], [(dom, .str BT_CH_kP)], false⟩'
 FC = f"(Footprint.union {FO} {FH})"
-PC = "(fun w h => (∃ w0 h0, BT_CH_U_R1 w0 h0) ∧ (∃ w0, BT_CH_U_R2 w0 h))"
+PC = '(fun w h => (∃ w0 h0, BT_CH_U_R1 w0 h0) ∧ (∃ w0, BT_CH_U_R2 w0 h) ∧ (∀ bm o, Scope.declLike? (w.envEntry d.env) = some (bm, o) → ∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true))'
+
 MONO = "(frame_mono (frame_trans hw0 hw') (fun p hp => by simpa [Footprint.union] using hp) (fun p hp => by simpa [Footprint.union] using hp) (fun hj => by simpa [Footprint.union] using hj))"
 
 cc = binders("JSProofs/ReactCommitCounter.lean", "cme_counter")
@@ -44,7 +45,7 @@ binds = "\n    ".join(outer + ["{B dom : ObjId}"] + rt + re_ + bt + extra[1:])
 rt_call = callargs("JSProofs/ReactCommitTraverse.lean", "rtm_one", "T_",
     {"fo": "fRT", "t": ".undefined", "rv": "rv", "lv": "lv", "P": "K", "C": "B", "bG": "bG", "oG": "oG", "fC": "fo",
      "fpC": FC, "KC": "3500", "PC": PC},
-    {"hf": "by omega", "hC": "?hC", "hfpC": "?hfpCT", "hPCst": "fun _ _ _ hp _ _ => hp", "hCo": "lt_heap_of_frame hw hlt",
+    {"hf": "by omega", "hC": "?hC", "hfpC": "?hfpCT", "hPCst": "fun w0 w' h hp _ hE => ⟨hp.1, hp.2.1, fun bm o hd => hp.2.2 bm o (by rw [← hE _ (lt_envs_of_frame hw hG)]; exact hd)⟩", "hCo": "lt_heap_of_frame hw hlt",
      "hCc": "⟨_, by rw [objEntry_frame0 hw hlt]; exact hk⟩"})
 re_call = callargs("JSProofs/ReactCommitRec.lean", "cre_spec", "RE_",
     {"fo": "fRE", "t": ".undefined", "F": "K", "fl": "fl", "fw": "fw", "fe": "fe", "fc": "fc"}, {"hf": "by omega"})
@@ -62,7 +63,7 @@ stmt = f"""theorem cme_counter_full {binds} :
       v = .undefined ∧ s.fuel ≤ w.fuel + 3700 ∧ {PC} w h' ∧ Frame {FC} s w := by
   refine cme_counter (n := n + 5) (KR := 3500) (PC := {PC}) (fpC := {FC}) {cc_args.replace("(hf := hf)", "(hf := by omega)")}
     (hRTc := ⟨_, T_hk⟩) (hREc := ⟨_, RE_hk⟩) (hRT := ?hRT) (hRE := ?hRE) (hfpC := ?hfpC) (hfpCp := ?hfpCp)
-    (hPCst := fun _ _ _ hp _ _ => hp)
+    (hPCst := fun w w' h hp _ hE => ⟨hp.1, hp.2.1, fun bm o hd => hp.2.2 bm o (by rw [← hE _ hG]; exact hd)⟩)
   case hfpC =>
     intro p hp
     simp [Footprint.union] at hp

@@ -94,7 +94,7 @@ theorem children_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value}
       fun v w h' => v = .undefined ∧ (∃ w0, R w0 h') ∧ s.fuel ≤ w.fuel + 40 ∧
         Frame ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [], false⟩ s w ∧
         ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
-          (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true)) ∧
+          (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true) ∧ bd.mutable = true) ∧
           ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]? := by
   apply wp_callGen SetPropGen.setProp_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
@@ -143,7 +143,7 @@ theorem children_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value}
   have hFs : Frame {} s w0 := frame_empty_trans hw0 hF0
   have hFv : Frame ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [], false⟩ s w0 :=
     frame_mono hFs (fun p hp => by simp at hp) (fun p hp => by simp at hp) (fun _ => rfl)
-  refine ⟨⟨w0, hR⟩, by simp [bodyState, State.pushEnv, entryState] at hfu0 ⊢; omega, ?_, _, rfl, ⟨_, Std.HashMap.getElem?_modify_self.trans (by rw [hGV]; rfl), rfl⟩,
+  refine ⟨⟨w0, hR⟩, by simp [bodyState, State.pushEnv, entryState] at hfu0 ⊢; omega, ?_, _, rfl, ⟨{ value := some (.bool true), mutable := bdV.mutable, strict := bdV.strict, deletable := bdV.deletable }, Std.HashMap.getElem?_modify_self.trans (by rw [hGV]; rfl), rfl, hGVm⟩,
     fun x hx => by simp [Std.HashMap.getElem?_modify, Ne.symm hx]⟩
   refine frame_restore (frame_setEnv_with_in (frame_restore hFv _) hG rfl (by show (Scope.declLike? (w0.envEntry d.env)).isSome = true; rw [hd0]; rfl) (by simp) _) s
 
