@@ -33,8 +33,10 @@ def binders(path, thm):
 
 def args(path, thm, ren, explicit, implicit_skip=()):
     """ren: callee name -> caller term (implicits and premises); explicit: callee premise name -> term overriding."""
-    parts = []
+    parts = []; done = set()
     for imp, nm, ty in binders(path, thm):
+        if nm in done: continue
+        done.add(nm)
         if imp:
             if nm in ("n", "h", "s", "eng", "σ", "answer") or nm in implicit_skip: continue
             parts.append(f"({nm} := {ren.get(nm, nm)})")
@@ -50,7 +52,7 @@ def caller_bounds(path, thm):
         if not imp and r: m[r.group(1)] = nm
     return m
 
-def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=(), bside="(by decide)", envbounds=None):
+def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=(), bside="(by decide)", envbounds=None, objall=False):
     """Premise terms at stage k: gZk (heap), gKk (kinds), gPk (props unless written), gEk (envs), gFk (fuel),
     gBk (bindings other than the loop's)."""
     ex = dict(explicit)
@@ -67,11 +69,13 @@ def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=(), bside=
         m = re.match(r"\(s\.objEntry (\w+)\)\.kind", ty)
         if m:
             o = objren.get(m.group(1), m.group(1)); ex[nm] = f"(by rw [gK{k} {o} {bounds[o]}]; exact {src})"; continue
-        m = re.match(r"\(s\.objEntry (\w+)\)\.props\.get\? \(\.str \"([^\"]*)\"\)", ty)
+        m = re.match(r"\(s\.objEntry (\w+)\)\.props\.get\? \(([^()]*)\) = ", ty)
         if m:
             o = objren.get(m.group(1), m.group(1)); key = m.group(2)
-            ex[nm] = (f"(by rw [gP{k} {o} (.str \"{key}\") (by simp [{ds}] <;> decide) {bounds[o]}]; exact {src})")
+            ex[nm] = (f"(by rw [gP{k} {o} ({key}) (by simp [{ds}] <;> decide) {bounds[o]}]; exact {src})")
             continue
+        if "s.realms" in ty and "s.objEntry" not in ty and "s.envEntry" not in ty:
+            ex[nm] = f"(by rw [gR{k}]; exact {src})"; continue
         m = re.match(r"Scope\.declLike\? \(s\.envEntry ([\w.]+)\) = ", ty)
         if m and envbounds:
             hd, _, tl = m.group(1).partition(".")
@@ -80,6 +84,8 @@ def transfer(path, thm, ren, explicit, objren, bounds, k, ds, written=(), bside=
                 ex[nm] = f"(by rw [gV{k} _ {envbounds[key]}]; exact {src})"; continue
         m = re.match(r"bG\[JSStr\.ofString \"([^\"]*)\"\]\? = ", ty)
         if m: ex[nm] = f"(by rw [gB{k} _ {bside}]; exact {src})"; continue
+        if objall and "s.objEntry" in ty:
+            ex[nm] = f"(by simp only [gO{k}]; exact {src})"; continue
     return args(path, thm, ren, ex)
 
 def caller_envbounds(path, thm):
