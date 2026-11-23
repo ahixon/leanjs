@@ -1,3 +1,4 @@
+import JSProofs.ReactBSR
 import JSProofs.JsTactic
 import JSProofs.Builtins
 import JSProofs.ArrayLit
@@ -158,6 +159,122 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
     case b3 => intro _; rfl
     case dl => rw [envEntry_frame0 hFr (by js_norm [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUv, hUn, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner])]; js_norm [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUv, hUn, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
     all_goals (rw [objEntry_frame0 hFr (by js_norm [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUv, hUn, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner])]; js_norm [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUv, hUn, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner])
+
+
+set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 1000000 in
+set_option maxRecDepth 20000 in
+/-- **`updateReducerImpl(hook, current, reducer)`** for the click's update when it carries no eager state
+(from the second click on: the alternate's lanes are not cleared, so `dispatchSetState` skips computing it): the
+reducer, `basicStateReducer`, gives the new state, the update's action (a primitive). -/
+theorem click_spec_lazy {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
+    {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdRL bdCE bdSD bdDR bdIs : Binding} {bdIsb : BuiltinData}
+    {fIs H H0 Q U fR : ObjId} {dR : FuncData} {r ms bs a dv : Value}
+    {hq hb hm hs h0b qp qr ql qd ul ur ua ue uv un : Bool × Bool × Bool}
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 60 ≤ s.fuel)
+    (hcode : d.code = URIGen.updateReducerImpl_func) (hcls : d.isClassCtor = false)
+    (hmode : d.thisMode = .strict)
+    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
+    (hGRL : bG[JSStr.ofString "renderLanes"]? = some bdRL) (hGRLv : bdRL.value = some two)
+    (hGCE : bG[JSStr.ofString "currentEntangledLane"]? = some bdCE) (hGCEv : bdCE.value = some zero)
+    (hGSD : bG[JSStr.ofString "shouldDoubleInvokeUserFnsInHooksDEV"]? = some bdSD)
+    (hGSDv : bdSD.value = some (.bool false))
+    (hGDR : bG[JSStr.ofString "didReceiveUpdate"]? = some bdDR) (hGDRm : bdDR.mutable = true)
+    (hGDRi : bdDR.value.isSome = true)
+    (hGIs : bG[JSStr.ofString "objectIs"]? = some bdIs) (hGIsv : bdIs.value = some (.obj fIs))
+    (hIs : fIs < s.heap.size) (hIsk : (s.objEntry fIs).kind = .builtin bdIsb)
+    (hIstab : eng.builtins[bdIsb.id]? = some objectIs)
+    (hH : H < s.heap.size) (hHk : (s.objEntry H).kind.isPlain = true)
+    (hHq : (s.objEntry H).props.get? (.str "queue") = some (.data (.obj Q) hq.1 hq.2.1 hq.2.2))
+    (hHb : (s.objEntry H).props.get? (.str "baseQueue") = some (.data .null true hb.2.1 hb.2.2))
+    (hHm : (s.objEntry H).props.get? (.str "memoizedState") = some (.data ms true hm.2.1 hm.2.2))
+    (hHs : (s.objEntry H).props.get? (.str "baseState") = some (.data bs true hs.2.1 hs.2.2))
+    (hH0 : H0 < s.heap.size) (hH0k : (s.objEntry H0).kind.isPlain = true)
+    (hH0b : (s.objEntry H0).props.get? (.str "baseQueue") = some (.data .null true h0b.2.1 h0b.2.2))
+    (hQ : Q < s.heap.size) (hQk : (s.objEntry Q).kind.isPlain = true)
+    (hQp : (s.objEntry Q).props.get? (.str "pending") = some (.data (.obj U) true qp.2.1 qp.2.2))
+    (hQr : (s.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2))
+    (hQl : (s.objEntry Q).props.get? (.str "lastRenderedState") = some (.data ms true ql.2.1 ql.2.2))
+    (hQd : (s.objEntry Q).props.get? (.str "dispatch") = some (.data dv qd.1 qd.2.1 qd.2.2))
+    (hU : U < s.heap.size) (hUk : (s.objEntry U).kind.isPlain = true)
+    (hUl : (s.objEntry U).props.get? (.str "lane") = some (.data two ul.1 ul.2.1 ul.2.2))
+    (hUr : (s.objEntry U).props.get? (.str "revertLane") = some (.data zero ur.1 ur.2.1 ur.2.2))
+    (hUa : (s.objEntry U).props.get? (.str "action") = some (.data a ua.1 ua.2.1 ua.2.2))
+    (hUe : (s.objEntry U).props.get? (.str "hasEagerState") = some (.data (.bool false) ue.1 ue.2.1 ue.2.2))
+    (hr : r = .obj fR) (hRo : fR < s.heap.size) (hRk : (s.objEntry fR).kind = .func dR)
+    (hRcode : dR.code = BSRGen.basicStateReducer_func) (hRcls : dR.isClassCtor = false) (hRmode : dR.thisMode = .strict)
+    (hap : ∀ o, a ≠ .obj o) (d11 : fR ≠ H) (d12 : fR ≠ H0) (d13 : fR ≠ Q) (d14 : fR ≠ U)
+    (hUn : (s.objEntry U).props.get? (.str "next") = some (.data (.obj U) un.1 un.2.1 un.2.2))
+    (hdiff : sameValue a ms = false)
+    (d1 : H ≠ H0) (d2 : H ≠ Q) (d3 : H ≠ U) (d4 : H0 ≠ Q) (d5 : H0 ≠ U) (d6 : Q ≠ U)
+    (d7 : fIs ≠ H) (d8 : fIs ≠ H0) (d9 : fIs ≠ Q) (d10 : fIs ≠ U) :
+    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj H, .obj H0, r]) s fun v w h' =>
+      v = .obj s.heap.size ∧ Frame (fpR d.env H H0 Q) s w ∧ s.fuel ≤ w.fuel + 60 ∧ h' = h ∧
+      ArrayObj s.heap.size 2 (fun j => if j = 1 then dv else if j = 0 then a else .undefined) w ∧
+      (w.objEntry s.heap.size).proto = .obj s.realms[d.realm]!.arrayProto ∧
+      (w.objEntry s.heap.size).props.get? (.sym WK.iterator) = none ∧
+      Scope.declLike? (w.envEntry d.env) = some (bG.modify (JSStr.ofString "didReceiveUpdate")
+        (fun bd => { bd with value := some (.bool true) }), oG) ∧
+      (w.objEntry H).props.get? (.str "memoizedState") = some (.data a true hm.2.1 hm.2.2) ∧
+      (w.objEntry H).props.get? (.str "baseState") = some (.data a true hs.2.1 hs.2.2) ∧
+      (w.objEntry H).props.get? (.str "baseQueue") = some (.data .null true hb.2.1 hb.2.2) ∧
+      (w.objEntry H0).props.get? (.str "baseQueue") = some (.data (.obj U) true h0b.2.1 h0b.2.2) ∧
+      (w.objEntry Q).props.get? (.str "pending") = some (.data .null true qp.2.1 qp.2.2) ∧
+      (w.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2) ∧
+      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data a true ql.2.1 ql.2.2) := by
+  subst hr
+  apply wp_callGen URIGen.updateReducerImpl_eq (by decide) hlt hk (by omega) hcls hmode
+    (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleR d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
+  have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "hook", JSStr.ofString "current", JSStr.ofString "reducer"] := by
+    rw [hcode]; rfl
+  have hv : d.code.info.fdi.varNames = #[JSStr.ofString "queue", JSStr.ofString "baseQueue",
+      JSStr.ofString "pendingQueue", JSStr.ofString "baseFirst", JSStr.ofString "newBaseQueueFirst",
+      JSStr.ofString "newBaseQueueLast", JSStr.ofString "update", JSStr.ofString "didReadFromEntangledAsyncAction$64",
+      JSStr.ofString "updateLane", JSStr.ofString "revertLane"] := by
+    rw [hcode]; rfl
+  have hl : FDI.lexDecls d = #[] := by simp [FDI.lexDecls, hcode, URIGen.updateReducerImpl_func, Func.info]
+  have ha : d.code.isAsync = false := by rw [hcode]; rfl
+  have hne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
+  have hG1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  have hG2 : d.env < s.envs.size + 1 + 1 := Nat.lt_succ_of_lt hG1
+  have hne2 : s.envs.size + 1 ≠ d.env := Nat.ne_of_gt hG1
+  clear hcode
+  simp only [URIGen.updateReducerImpl]
+  js [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner], ?_⟩
+  refine wp_mono (ReactBSR.call_prim (d := dR) (a := a) ?_ ?_ ?_ ?_ ?_ ?_ hap) ?postR
+  all_goals first | (js_norm [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner]; done) | js_side | exact hRcode | exact hRcls | exact hRmode | skip
+  case postR =>
+  intro b w3 h3 ⟨hb, hw3, hh3⟩
+  subst b w3 h3
+  js [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner], ?_⟩
+  refine wp_mono (objectIs_exact ?_ ?_ hIstab ?_) ?post
+  all_goals first | (js_norm [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner]; done) | js_side | skip
+  case post =>
+  intro b w4 h4 ⟨hb, hw4, hh4⟩
+  subst b w4 h4
+  js [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
+
+  refine wp_array2 (v1 := a) (v2 := dv) ?e1 ?e2 ?fin
+  case e1 =>
+    js [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner, Nat.ne_of_lt hH, Nat.ne_of_gt hH, Nat.lt_succ_of_lt hH, Nat.ne_of_lt hQ, Nat.ne_of_gt hQ, Nat.lt_succ_of_lt hQ, emptyArrayState, arr1State]
+  case e2 =>
+    js [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner, Nat.ne_of_lt hH, Nat.ne_of_gt hH, Nat.lt_succ_of_lt hH, Nat.ne_of_lt hQ, Nat.ne_of_gt hQ, Nat.lt_succ_of_lt hQ, emptyArrayState, arr1State]
+  case fin =>
+    intro t' hA he hfu hz hFr hsym ho hr hp
+    simp (config := { maxDischargeDepth := 6 }) only [js_simp, ↓reduceIte, ↓reduceDIte, hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner, State.curRealm, realm_setProp, realm_setEnv, realm_withFuel, realm_bodyState, realms_setProp, realms_setEnv, realms_withFuel, realms_bodyState] at hA hz hp hfu hsym
+    clear ho he hr
+    refine ⟨?v, frame_restore (frame_mono (frame_trans (fp1 := fpR d.env H H0 Q) ?F1 hFr) ?b1 ?b2 ?b3) s, by rw [hfu]; omega, rfl, hA, hp, hsym,
+      ?dl, ?m1, ?m2, ?m3, ?m4, ?m5, ?m6, ?m7⟩
+    case v => js_norm [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
+    case F1 => simp only [fpR]; frame_go' [*, hne, Ne.symm hne, hG1, hG2, hne2, Ne.symm hne2]
+    case b1 => intro p hp; simpa [Footprint.union] using hp
+    case b2 => intro p hp; simpa [Footprint.union] using hp
+    case b3 => intro _; rfl
+    case dl => rw [envEntry_frame0 hFr (by js_norm [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner])]; js_norm [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
+    all_goals (rw [objEntry_frame0 hFr (by js_norm [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner])]; js_norm [hpn, hv, hl, ha, hG, hG1, hG2, hne, Ne.symm hne, hne2, Ne.symm hne2, hGe, hGRL, hGRLv, hGCE, hGCEv, hGSD, hGSDv, hGDR, hGDRm, hGDRi, hGIs, hGIsv, hIs, hIsk, hH, hHk, hHq, hHb, hHm, hHs, hH0, hH0k, hH0b, hQ, hQk, hQp, hQr, hQl, hQd, hU, hUk, hUl, hUr, hUa, hUe, hUn, hRo, hRk, d11, d12, d13, d14, Ne.symm d11, Ne.symm d12, Ne.symm d13, Ne.symm d14, hdiff, d1, d2, d3, d4, d5, d6, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, d7, d8, d9, d10, Ne.symm d7, Ne.symm d8, Ne.symm d9, Ne.symm d10, beq_self_eq_true, FDI.fdiCtx, Sem.inner])
 
 end
 

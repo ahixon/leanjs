@@ -64,8 +64,8 @@ theorem call_prim {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t st a : Value
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 4 ≤ s.fuel)
     (hcode : d.code = BSRGen.basicStateReducer_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (ha : ∀ o, a ≠ .obj o) :
-    WP eng answer n h (callImpl eng (.obj fo) t #[st, a]) s fun v w _ =>
-      v = a ∧ w = (bodyState s fo d t #[st, a]).restore s := by
+    WP eng answer n h (callImpl eng (.obj fo) t #[st, a]) s fun v w h' =>
+      v = a ∧ w = (bodyState s fo d t #[st, a]).restore s ∧ h' = h := by
   apply wp_call_simple hlt hk (by omega) hcls hmode (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode)
     (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   change WP eng answer n h (evalStmts (999970 + 29) _ BSRGen.basicStateReducer_stmts) _ _
@@ -94,7 +94,7 @@ theorem call_prim {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t st a : Value
     refine wp_typeOf_prim ha rfl (wp_seq ?_)
     split
     · next hc => exact absurd hc (by decide)
-    · exact wp_ident 1 hlook (by simp [hfuel]; omega) ⟨rfl, rfl⟩
+    · exact wp_ident 1 hlook (by simp [hfuel]; omega) ⟨rfl, rfl, rfl⟩
 
 end
 

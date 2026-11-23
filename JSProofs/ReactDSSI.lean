@@ -40,7 +40,7 @@ theorem bsr_frame {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t st a : Value
     (ha : ∀ o, a ≠ .obj o) :
     WP eng answer n h (callImpl eng (.obj fo) t #[st, a]) s fun v w _ =>
       v = a ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 1 := by
-  refine wp_mono (ReactBSR.call_prim hlt hk hf hcode hcls hmode ha) fun v w _ ⟨hv, hw⟩ => ⟨hv, ?_, ?_⟩
+  refine wp_mono (ReactBSR.call_prim hlt hk hf hcode hcls hmode ha) fun v w _ ⟨hv, hw, _⟩ => ⟨hv, ?_, ?_⟩
   · rw [hw]; exact frame_restore (frame_bodyState (frame_refl {} s) _ _ _ _) _
   · rw [hw]; simp [State.restore]; omega
 
