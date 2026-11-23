@@ -5,12 +5,13 @@ import re, sys
 sys.path.insert(0, "tools/react_commit")
 from compose import binders, compose, _rename, _theorem_header
 
-DO = {"hMf", "hBf", "hMEf", "hLEf"}
+DO = {"hMf", "hBf", "hMEf", "hLEf", "hSPf"}
 CR = "JSProofs/ReactCommitRootFn.lean"
 MF = "JSProofs/ReactMarkFinished.lean"
 BMF = "JSProofs/ReactBeforeMutationFull.lean"
 FMF = "JSProofs/ReactFlushMutationFull.lean"
 FLF = "JSProofs/ReactFlushLayoutFull.lean"
+SPF = "JSProofs/ReactSpawnedFull.lean"
 cb = binders(CR, "cmr_spec")
 Z = ".num (F64.fin false 0 (-1074))"
 drop_outer = {"sl", "ul", "srl", "K", "hK"}
@@ -54,6 +55,14 @@ if "hLEf" in DO:
     Q2 = (f"(fun (w : State) (h : σ) => (∃ w0, {PCME} w0 h) ∧ BindIs w d.env (JSStr.ofString \"pendingEffectsStatus\") "
           f"(.num (F64.fin false 6755399441055744 (-51))))")
     outer_ren["Q2"] = Q2
+SP_SUPPLIED = ["gS", "gSm", "gSv", "bS", "gVE", "gVEv", "bVE", "gTT", "gTTm", "gTTv", "bTT", "tt", "hFRl", "plw", "ple",
+  "plc"]
+SP_SUBST = {"fo": "fSP", "t": ".undefined", "bG": "bG", "oG": "oG", "FR": "FR", "R": "R"}
+F4 = f"((({F2}.union (ReactCommitRoot.F0 ME_M_d.env)).union (ReactFlushLayout.FPL LE_d.env RSI RDSI)))"
+if "hSPf" in DO:
+    drop_outer |= {"hSPf", "hSPc", "fpSP", "Q3"}
+    outer_ren["fpSP"] = "((ReactSpawned.FPA SP_d.env SP_gP FR).union SP_fpE)"
+    outer_ren["Q3"] = f"(fun (w : State) (h : σ) => ∃ w0, {PCME} w0 h)"
 def _balanced(t, i):
     """index just after the parenthesised group starting at t[i] == '('"""
     d = 0
@@ -121,8 +130,20 @@ if "hLEf" in DO:
                     drop=tuple(["n", "h", "s", "hf", "hlt", "hG", "hGe"] + LE_SUPPLIED))
     added += lb + ["(LE_hdenv : LE_d.env = d.env)",
                    "(dDomR : ME_M_CT_dom ≠ R) (dDomK : ME_M_CT_dom ≠ LE_L_K) (dDomB : ME_M_CT_dom ≠ LE_L_B) (dDomXf : ME_M_CT_dom ≠ LE_L_X)"]
+FCUR = ren_outer("(((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE)")
+if "hSPf" in DO:
+    sb, _ = compose(SPF, "fsp_full", "SP_", subst=SP_SUBST, given={},
+                    drop=tuple(["n", "h", "s", "hf", "hlt", "hG", "hGe"] + SP_SUPPLIED))
+    sb = [re.sub(r"(?<![A-Za-z0-9_'.])n(?![A-Za-z0-9_'])", "(n + 8)", b) for b in sb]
+    for i, b in enumerate(sb):
+        nm = b[1:b.index(" : ")]
+        if nm in ("SP_hRP", "SP_hEn"):
+            body = b[b.index(" : ") + 3:-1]
+            body = re.sub(r"(?<![A-Za-z0-9_'.])s(?![A-Za-z0-9_'])", "s0", body)
+            sb[i] = f"({nm} : ∀ s0, Frame {FCUR} s s0 → {body})"
+    added += sb + ["(SP_hdenv : SP_d.env = d.env)"]
 extra = ["(hf : 29400 ≤ s.fuel)"]
-_islate = lambda b: "MF_" in b or "ReactBeforeMutation.FB" in b or "ME_" in b or "LE_" in b
+_islate = lambda b: "MF_" in b or "ReactBeforeMutation.FB" in b or "ME_" in b or "LE_" in b or "SP_" in b
 late = [b for b in outer if _islate(b)]
 outer = [b for b in outer if not _islate(b)]
 binds = "\n    ".join(outer + added + extra + late)
@@ -163,7 +184,8 @@ if "hMf" in DO:
     intro p hp
     simp only [ReactMarkFinished.FPM, List.mem_cons, List.not_mem_nil, or_false] at hp
     rcases hp with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
-      simp_all [Ne.symm dRF, Ne.symm dTF, Ne.symm dDF, Ne.symm dBF, Ne.symm dMF, Ne.symm dLF, Ne.symm dSF]""")
+      simp [Ne.symm dRF, Ne.symm dTF, Ne.symm dDF, Ne.symm dBF, Ne.symm dMF, Ne.symm dLF, Ne.symm dSF,
+        dAR, dARSI, dARDSI, dAfB, dAfME, dAfLE, dAfSP, dXR, dXRSI, dXRDSI, dXfB, dXfME, dXfLE, dXfSP]""")
 if "hBf" in DO:
     bimp = " ".join(f"({nm} := B_{nm})" for nm, k, t in binders(BMF, "cbm_full")
                     if k == "{" and nm not in ("n", "h", "s", "fo", "t", "FR", "R", "bG", "oG", "E", "ev0", "lanes"))
@@ -233,7 +255,8 @@ if "hMEf" in DO:
     simp only [Footprint.union, FPRE, ReactCommitRoot.F0, List.mem_append, List.mem_cons, List.not_mem_nil,
       or_false, List.nil_append, List.append_nil] at hp
     rcases hp with ((hp | hp) | hp) | hp <;> subst hp <;>
-      simp_all [Ne.symm dLT, Ne.symm dLD, Ne.symm dLF, Ne.symm dST, Ne.symm dSD, Ne.symm dSF]""")
+      simp [Ne.symm dLT, Ne.symm dLD, Ne.symm dLF, Ne.symm dST, Ne.symm dSD, Ne.symm dSF, dDomL, dDomS, ME_dMF,
+        dTF, dDF]""")
 if "hLEf" in DO:
     leimp = " ".join(f"({nm} := LE_{nm})" for nm, k, t in binders(FLF, "fle_full")
                      if k == "{" and nm not in ["n", "h", "s"] + list(LE_SUBST) + LE_SUPPLIED)
@@ -268,8 +291,36 @@ if "hLEf" in DO:
     intro p hp
     simp only [ReactFlushLayout.FPL, List.mem_cons, List.not_mem_nil, or_false] at hp
     rcases hp with rfl | rfl <;> simp [Ne.symm dST, Ne.symm dSD, dTF, dDF]""")
+if "hSPf" in DO:
+    spimp = " ".join(f"({nm} := SP_{nm})" for nm, k, t in binders(SPF, "fsp_full")
+                     if k == "{" and nm not in ["n", "h", "s"] + list(SP_SUBST) + SP_SUPPLIED)
+    UNF5 = "FPC, ReactMarkFinished.FPM, ReactBeforeMutation.FB, FPRE, ReactCommitRoot.F0, ReactFlushLayout.FPL, Footprint.union"
+    RB5 = (f"first | rebase_quick hw | (rw [hbw _ (by simp [{UNF5}])] <;> with_reducible assumption) | "
+           f"(rw [props_frame hw (by with_reducible assumption) (by simp [{UNF5}, dDomR, Ne.symm dDomR, ME_dMF, Ne.symm ME_dMF])] <;> with_reducible assumption) | "
+           f"(rw [kind_frame hw (by with_reducible assumption)] <;> with_reducible assumption)")
+    BI = "obtain ⟨_, _, {bd}, {hd}, {hb}, {hv}, {hm}⟩ := {src}\n    rw [hdw] at {hd}; cases {hd}"
+    cases.append(f"""  case hSPf =>
+    intro w h1 hw ⟨hPC, hst⟩ hpl hve htt hfw
+    obtain ⟨bw, hdw, hbw⟩ := declLike_frame hw hG hGe
+    {BI.format(bd="bS'", hd="hd1", hb="hb1", hv="hv1", hm="hm1", src="hst")}
+    {BI.format(bd="bVE'", hd="hd2", hb="hb2", hv="hv2", hm="hm2", src="hve")}
+    {BI.format(bd="bTT'", hd="hd3", hb="hb3", hv="hv3", hm="hm3", src="htt")}
+    obtain ⟨plw', ple', plc', hpl'⟩ := hpl
+    refine' wp_mono (ReactSpawned.fsp_full (s := w) (n := n + 8) (fo := fSP) (t := .undefined) (bG := bw) (oG := oG)
+      (FR := FR) (R := R) (bS := bS') (bVE := bVE') (bTT := bTT') (tt := .null) (plw := plw') (ple := ple') (plc := plc')
+      {spimp} (hf := by omega) (hlt := lt_heap_of_frame hw hSPo)
+      (hG := by rw [SP_hdenv]; exact lt_envs_of_frame hw hG) (hGe := by rw [SP_hdenv]; exact hdw)
+      (gS := hb1) (gSm := hm1) (gSv := hv1) (gVE := hb2) (gVEv := hv2) (gTT := hb3) (gTTm := hm3)
+      (gTTv := hv3) (hFRl := hpl') (hgPs := Nat.lt_of_lt_of_le SP_hgPs hw.envs_le)
+      (hfpE := fun p hp => ⟨Nat.lt_of_lt_of_le (SP_hfpE p hp).1 hw.envs_le, (SP_hfpE p hp).2⟩)
+      (hRP := SP_hRP w hw) (hEn := SP_hEn w hw) ..) ?spost
+    case spost =>
+      rintro v w' h' ⟨-, hfu, rfl, hF⟩
+      exact ⟨frame_trans hw hF, by omega, hPC⟩
+    all_goals {RB5}""")
 hcall = []
 if "hBf" in DO: hcall.append("(hBf := ?hBf) (hfpB := ?hfpB) (hfpBp := ?hfpBp) (hBc := ⟨_, B_hk⟩)")
+if "hSPf" in DO: hcall.append("(hSPf := ?hSPf) (hSPc := ⟨_, SP_hk⟩)")
 if "hLEf" in DO: hcall.append("(hLEf := ?hLEf) (hfpLE := ?hfpLE) (hfpLEp := ?hfpLEp) (hLEc := ⟨_, LE_hk⟩)")
 if "hMEf" in DO: hcall.append("(hMEf := ?hMEf) (hfpME := ?hfpME) (hfpMEp := ?hfpMEp) (hMEc := ⟨_, ME_hk⟩)")
 if "hMf" in DO: hcall.append("(hMf := ?hMf) (hfpM := ?hfpM) (hfpMp := ?hfpMp) (hMc := ⟨_, MF_hk⟩)")
@@ -284,6 +335,7 @@ import JSProofs.ReactMarkFinished
 import JSProofs.ReactBeforeMutationFull
 import JSProofs.ReactFlushMutationFull
 import JSProofs.ReactFlushLayoutFull
+import JSProofs.ReactSpawnedFull
 
 /-!
 # commitRoot with the click's passes (zippy docs/react-proofs.md)
@@ -296,6 +348,7 @@ open ES ES.M HostRuns Logic
 open Std (HashMap)
 open ReactFacts (BindIs PropIs SelInfo PropHas)
 open ReactFlushMutation (FPRE)
+open ReactSpawned (FPS FPA FP1)
 
 namespace ReactCommitRootFn
 
