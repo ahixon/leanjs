@@ -287,7 +287,7 @@ POST = """  case post =>
       ⟨bmL, none, _, _, hbmL', by rw [NB (JSStr.ofString "concurrentQueuesIndex") (by simp (config := { decide := true }) [@@FPD@@])]; exact gQ, gQm, gQv,
         by rw [NB (JSStr.ofString "concurrentlyUpdatedLanes") (by simp (config := { decide := true }) [@@FPD@@])]; exact gU, gUm, gUv⟩⟩
   case RD =>
-    intro e w2 w3 hEnd hFQ c
+    intro e w2 w3 hEnd hEB hFQ hQD c
     have hG2 : d.env < w'.envs.size := Nat.lt_of_lt_of_le hGs (Nat.le_trans hT.envs_le hFw.envs_le)
     obtain ⟨b2, hb2, B2⟩ := declLike_frame hEnd hG2 hbmL'
     obtain ⟨b3, hb3, B3⟩ := declLike_frame hFQ (Nat.lt_of_lt_of_le hG2 hEnd.envs_le) hb2

@@ -360,7 +360,7 @@ theorem microtask_render {j : Nat} {eng : Engine} {σ : Type} {answer : HostAnsw
     (r_Finish : ∀ sP, Frame (ReactMicrotaskClick.fpPerf d.env R A) s sP → s.fuel ≤ sP.fuel + 402 →
       ∀ sW, Frame {} sP sW → sP.fuel ≤ sW.fuel + 70 →
       ∀ sR, Frame {} sW sR → sW.fuel ≤ sR.fuel + 40 →
-      ∀ w2 w h1, P2 w2 h1 → Frame (ReactRenderSync.fpEnd sR.envs.size d.env I) w2 w → sR.fuel ≤ w.fuel + kP + kW + 200 →
+      ∀ w2 w h1, P2 w2 h1 → Frame (ReactRenderSync.fpEnd sR.envs.size d.env I) w2 w → ReactRenderSync.EndBinds w d.env oG v_ec → sR.fuel ≤ w.fuel + kP + kW + 200 →
       WP eng answer j h1 (callImpl eng (.obj fFQ) .undefined #[]) w fun _ w' h' =>
         Frame fpFQ w w' ∧ w.fuel ≤ w'.fuel + kF ∧ (fun x h => (∃ C' alt bm x1 x2 x3 x4 x5 x6 x7, ReactPerformWork.RenderDone x d.env oG R C' alt bm x1 x2 x3 x4 x5 x6 x7) ∧ PRu x h) (w'.restore sR) h')
     (r_fpFB : fpFQ.binds.all (fun q => decide (q.1 < s.envs.size)) = true)

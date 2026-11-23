@@ -26,7 +26,13 @@ theorem simple (d : FuncData) (hc : d.code = FQCGen.finishQueueingConcurrentUpda
 def fp (g : EnvId) : Footprint :=
   ⟨[(g, "concurrentlyUpdatedLanes"), (g, "concurrentQueuesIndex")], [], false⟩
 
+/-- After it: no lanes updated concurrently. -/
+def QueuesDone (w : State) (g : EnvId) : Prop :=
+  ∃ bm oG, Scope.declLike? (w.envEntry g) = some (bm, oG) ∧
+    ∃ bd, bm[JSStr.ofString "concurrentlyUpdatedLanes"]? = some bd ∧ bd.value = some (.num (F64.fin false 0 (-1074)))
+
 set_option maxRecDepth 10000 in
+set_option maxHeartbeats 2000000 in
 /-- **`finishQueueingConcurrentUpdates()`, queues empty**: writes 0 to both bindings, returns. -/
 theorem empty_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
     {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdI bdL : Binding}
@@ -39,7 +45,7 @@ theorem empty_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
     (hGL : bG[JSStr.ofString "concurrentlyUpdatedLanes"]? = some bdL) (hGLm : bdL.mutable = true)
     (hGLv : bdL.value.isSome = true) :
     WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
-      v = .undefined ∧ Frame (fp d.env) s w ∧ s.fuel ≤ w.fuel + 20 ∧ h' = h := by
+      v = .undefined ∧ Frame (fp d.env) s w ∧ s.fuel ≤ w.fuel + 20 ∧ h' = h ∧ QueuesDone w d.env := by
   apply wp_callGen FQCGen.finishQueueingConcurrentUpdates_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -56,7 +62,9 @@ theorem empty_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
-  all_goals first | rfl | omega | (simp only [fp]; frame_go' [*, hne, Ne.symm hne, hG1])
+  all_goals first | rfl | omega | (unfold QueuesDone; exact ⟨_, _, by js_norm [hG, hG1, hne, Ne.symm hne, hGe]; rfl, _,
+      by simp [Std.HashMap.getElem?_modify, hGL]; rfl, rfl⟩) |
+    (simp only [fp]; frame_go' [*, hne, Ne.symm hne, hG1])
 
 /-- Ready to finish with nothing queued: the function object, and the module record's two bindings. -/
 structure Ready (w : State) (g : EnvId) (f : ObjId) (df : FuncData) : Prop where
@@ -70,13 +78,14 @@ structure Ready (w : State) (g : EnvId) (f : ObjId) (df : FuncData) : Prop where
 
 /-- **`renderRootSync`'s last call, from `Ready` at the work loop's end**: the shape of its hypothesis (`hFinish`)
 with this function's footprint. -/
-theorem finish_of_ready {n : Nat} {Post : State → σ → Prop} {g e : EnvId} {I f : ObjId} {df : FuncData}
+theorem finish_of_ready {n : Nat} {Post : State → σ → Prop} {EP : State → Prop} {g e : EnvId} {I f : ObjId} {df : FuncData}
     {w2 w : State} {h1 : σ} {c : State}
     (hcode : df.code = FQCGen.finishQueueingConcurrentUpdates_func) (hcls : df.isClassCtor = false)
     (hmode : df.thisMode = .strict) (hdenv : df.env = g)
     (hR : Ready w2 g f df)
-    (hP : ∀ e w w', Frame (ReactRenderSync.fpEnd e g I) w2 w → Frame (fp g) w w' → ∀ c, Post (w'.restore c) h1)
-    (hFe : Frame (ReactRenderSync.fpEnd e g I) w2 w) (hfu : 20 ≤ w.fuel) :
+    (hP : ∀ e w w', Frame (ReactRenderSync.fpEnd e g I) w2 w → EP w → Frame (fp g) w w' → QueuesDone w' g → ∀ c,
+      Post (w'.restore c) h1)
+    (hFe : Frame (ReactRenderSync.fpEnd e g I) w2 w) (hEP : EP w) (hfu : 20 ≤ w.fuel) :
     WP eng answer n h1 (callImpl eng (.obj f) .undefined #[]) w fun _ w' h' =>
       Frame (fp g) w w' ∧ w.fuel ≤ w'.fuel + 20 ∧ Post (w'.restore c) h' := by
   obtain ⟨hg, hf, hk, bG, oG, bdI, bdL, hd, hI, hIm, hIv, hL, hLm, hLv⟩ := hR
@@ -88,9 +97,10 @@ theorem finish_of_ready {n : Nat} {Post : State → σ → Prop} {g e : EnvId} {
   refine wp_mono (empty_spec (d := df) (bG := bW) (oG := oG) (bdI := bdI) (bdL := bdL) (heap_frame hFe hf)
     (by rw [kind_frame hFe hf]; exact hk) hfu hcode hcls hmode (by rw [hdenv]; exact envs_frame hFe hg)
     (by rw [hdenv]; exact hdW) (by rw [hx _ hnI]; exact hI) hIm hIv (by rw [hx _ hnL]; exact hL) hLm hLv) ?_
-  intro v w' h' ⟨_, hFr, hfu', hh⟩
+  intro v w' h' ⟨_, hFr, hfu', hh, hQD⟩
   subst hh
-  exact ⟨by rw [hdenv] at hFr; exact hFr, hfu', hP e w w' hFe (by rw [hdenv] at hFr; exact hFr) c⟩
+  exact ⟨by rw [hdenv] at hFr; exact hFr, hfu', hP e w w' hFe hEP (by rw [hdenv] at hFr; exact hFr)
+    (by rw [hdenv] at hQD; exact hQD) c⟩
 
 /-- What it writes with one update queued: the bindings, the array's four elements, the queue's `pending`, the
 update's `next`, and the lanes `markUpdateLaneFromFiberToRoot` marks. -/

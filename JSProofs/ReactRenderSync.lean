@@ -38,6 +38,12 @@ def AfterLoop (w : State) (g : EnvId) (oG : Option EnvId) : Prop :=
     Writable bm "lastContextDependency" ∧ Writable bm "currentlyRenderingFiber$1" ∧ Writable bm "executionContext" ∧
     Writable bm "workInProgressRoot" ∧ Writable bm "workInProgressRootRenderLanes"
 
+/-- After its last writes: the execution context restored (`ec`, writable), no root in progress. -/
+def EndBinds (w : State) (g : EnvId) (oG : Option EnvId) (ec : F64) : Prop :=
+  ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, oG) ∧
+    (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.value = some (.num ec) ∧ bd.mutable = true) ∧
+    (∃ bd, bm[JSStr.ofString "workInProgressRoot"]? = some bd ∧ bd.value = some .null)
+
 /-- The function's own locals (record `e`). -/
 def fpOwn (e : EnvId) : Footprint :=
   ⟨[(e, "root"), (e, "lanes"), (e, "shouldYieldForPrerendering"), (e, "prevExecutionContext"), (e, "prevDispatcher"),
@@ -120,7 +126,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hfpWI : (d.env, JSStr.ofString "ReactSharedInternals") ∉ fpWL.binds)
     (hfpWO : fpWL.props.all (fun q => q.1 != I && q.1 != fFQ) = true)
     -- (`finishQueueingConcurrentUpdates()`)
-    (hFinish : ∀ w2 w h1, P2 w2 h1 → Frame (fpEnd s.envs.size d.env I) w2 w → s.fuel ≤ w.fuel + kP + kW + 200 →
+    (hFinish : ∀ w2 w h1, P2 w2 h1 → Frame (fpEnd s.envs.size d.env I) w2 w → EndBinds w d.env oG ec → s.fuel ≤ w.fuel + kP + kW + 200 →
       WP eng answer n h1 (callImpl eng (.obj fFQ) .undefined #[]) w fun _ w' h' =>
         Frame fpFQ w w' ∧ w.fuel ≤ w'.fuel + kF ∧ Q (w'.restore s) h')
     (hfpFB : fpFQ.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
@@ -289,9 +295,15 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hWFQ4, hWFQ, hGFQ, hGFQv, hWRI4, hWRI, hGI, hGIv, hFQ4, hFQk4, hI4, hIk4, hIH4, hIA4, FDI.fdiCtx, Sem.inner]
   -- (`finishQueueingConcurrentUpdates()`)
   refine ⟨by js_norm [CallableC, *], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hFinish) w4 _ h4 hP2 ?fr5 ?fu5) ?post5
+  refine wp_mono ((ReactDSSI.Hold.get hFinish) w4 _ h4 hP2 ?fr5 ?eb5 ?fu5) ?post5
   case fr5 => simp only [fpEnd, fpOwn]; frame_go' [*, hne, Ne.symm hne]
   case fu5 => simp only [js_simp]; simp at hfu1 hfu2; omega
+  case eb5 =>
+    refine ⟨?ebm, ?e1, ⟨?eb1, ?e2, ?e3, ?e4⟩, ⟨?eb2, ?e5, ?e6⟩⟩
+    case e1 => js_norm [*, hne, Ne.symm hne]; rfl
+    case e2 => simp [Std.HashMap.getElem?_modify, hb3]; rfl
+    case e5 => simp [Std.HashMap.getElem?_modify, hb4]; rfl
+    all_goals first | rfl | simp [hm3] | skip
   case post5 =>
   intro r w5 h5 ⟨hF5, hfu5, hQ⟩
   try simp only [js_simp] at hfu5
