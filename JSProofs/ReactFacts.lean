@@ -21,6 +21,10 @@ def BindIs (w : State) (g : EnvId) (x : JSStr) (v : Value) : Prop :=
 def PropIs (w : State) (o : ObjId) (k : JSStr) (v : Value) : Prop :=
   ∃ e c, (w.objEntry o).props.get? (.str k) = some (.data v true e c)
 
+/-- A data property of `o` holding `v` (any attributes). -/
+def PropHas (w : State) (o : ObjId) (k : JSStr) (v : Value) : Prop :=
+  ∃ a e c, (w.objEntry o).props.get? (.str k) = some (.data v a e c)
+
 /-- What the before-mutation pass leaves for `flushMutationEffects`: `selectionInformation` an object `SI` beyond `hs`
 (the heap at the commit's start) with `focusedElem` `E` and a `selectionRange`, `eventsEnabled` holding `ev`,
 `_enabled` false. -/
@@ -74,6 +78,34 @@ theorem SelInfo.setEnv_modify {w : State} {g : EnvId} {E : ObjId} {ev : Value} {
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hne
   exact ⟨⟨SI, h1, by simpa using h2, by simpa using h3, by simpa using h4, by simpa using h5,
     h6.setEnv_modify hg hent hne.1⟩, h7.setEnv_modify hg hent hne.2.1, h8.setEnv_modify hg hent hne.2.2⟩
+
+theorem BindIs.frame {fp : Footprint} {s w : State} {g : EnvId} {x : JSStr} {v : Value} (h : BindIs s g x v)
+    (hF : Frame fp s w) (hg : g < s.envs.size) (hx : (g, x) ∉ fp.binds) : BindIs w g x v := by
+  obtain ⟨bm, o, bd, hd, hb, hv, hm⟩ := h
+  obtain ⟨bw, hdw, hbw⟩ := declLike_frame hF hg hd
+  exact ⟨bw, o, bd, hdw, by rw [hbw x hx]; exact hb, hv, hm⟩
+
+theorem PropHas.setProp_ne {w : State} {o : ObjId} {k : JSStr} {v : Value} (h : PropHas w o k v) {o' : ObjId}
+    {k' : PropKey} (hne : o' ≠ o ∨ k' ≠ .str k) (p : Property) : PropHas (w.setProp o' k' p) o k v := by
+  obtain ⟨a, e, c, hp⟩ := h
+  refine ⟨a, e, c, ?_⟩
+  rw [setProp_objEntry]
+  split
+  · next hh =>
+    obtain ⟨rfl, -⟩ := hh
+    rcases hne with hne | hne
+    · exact absurd rfl hne
+    · simp only [Obj.withProps_props]; rw [PropMap.get?_insert_ne _ _ _ _ hne]; exact hp
+  · exact hp
+
+theorem PropHas.setEnv {w : State} {o : ObjId} {k : JSStr} {v : Value} (h : PropHas w o k v) (e : EnvId) (en : Env) :
+    PropHas (w.setEnv e en) o k v := by
+  simpa only [PropHas, setEnv_objEntry] using h
+
+theorem PropHas.frame {fp : Footprint} {s w : State} {o : ObjId} {k : JSStr} {v : Value} (h : PropHas s o k v)
+    (hF : Frame fp s w) (ho : o < s.heap.size) (hk : (o, PropKey.str k) ∉ fp.props) : PropHas w o k v := by
+  obtain ⟨a, e, c, hp⟩ := h
+  exact ⟨a, e, c, by rw [props_frame hF ho (by simpa using hk)]; exact hp⟩
 
 end
 

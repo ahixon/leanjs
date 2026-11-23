@@ -16,7 +16,7 @@ the transition and priority cleared and `executionContext |= 4` around it, statu
 
 open ES ES.M HostRuns Logic
 open Std (HashMap)
-open ReactFacts (BindIs PropIs SelInfo)
+open ReactFacts (BindIs PropIs SelInfo PropHas)
 
 namespace ReactCommitRootFn
 
@@ -96,7 +96,8 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hMf : ∀ w h1, Frame (FPC d.env FR RSI RDSI) s w → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fM) .undefined #[.obj FR, .num (F64.fin false 4503599627370496 (-51)),
         .num (F64.fin false 0 (-1074)), sl, ul, srl]) w fun v w' h' =>
-        Frame fpM w w' ∧ Frame ((FPC d.env FR RSI RDSI).union fpM) s w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1)
+        Frame fpM w w' ∧ Frame ((FPC d.env FR RSI RDSI).union fpM) s w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1 ∧
+        PropHas w' FR (JSStr.ofString "pendingLanes") (.num (F64.fin false 0 (-1074))))
     (hfpM : ∀ p, p ∈ fpM.binds → p.1 ≠ d.env ∧ p.1 < s.envs.size)
     (hfpMp : ∀ p, p ∈ fpM.props → p.1 ≠ R ∧ p.1 ≠ RSI ∧ p.1 ≠ RDSI ∧ p.1 ≠ fB ∧ p.1 ≠ fME ∧ p.1 ≠ fLE ∧ p.1 ≠ fSP ∧
       (p.1 = FR → p.2 ≠ .str (JSStr.ofString "callbackNode") ∧ p.2 ≠ .str (JSStr.ofString "callbackPriority")))
@@ -109,8 +110,9 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hfpB : ∀ p, p ∈ fpB.binds → p.1 < s.envs.size ∧ (p.1 = d.env → p.2 ∉ [JSStr.ofString "executionContext",
       JSStr.ofString "pendingEffectsStatus", JSStr.ofString "shouldStartViewTransition",
       JSStr.ofString "flushMutationEffects", JSStr.ofString "flushLayoutEffects", JSStr.ofString "flushSpawnedWork",
-      JSStr.ofString "ReactSharedInternals", JSStr.ofString "ReactDOMSharedInternals"]))
-    (hfpBp : ∀ p, p ∈ fpB.props → p.1 ≠ RSI ∧ p.1 ≠ RDSI ∧ p.1 ≠ fME ∧ p.1 ≠ fLE ∧ p.1 ≠ fSP)
+      JSStr.ofString "ReactSharedInternals", JSStr.ofString "ReactDOMSharedInternals", JSStr.ofString "pendingViewTransitionEvents", JSStr.ofString "pendingTransitionTypes"]))
+    (hfpBp : ∀ p, p ∈ fpB.props → p.1 ≠ RSI ∧ p.1 ≠ RDSI ∧ p.1 ≠ fME ∧ p.1 ≠ fLE ∧ p.1 ≠ fSP ∧
+      p ≠ (FR, .str (JSStr.ofString "pendingLanes")))
     (hMEf : ∀ w h1, Frame (((FPC d.env FR RSI RDSI).union fpM).union fpB) s w →
       BindIs w d.env (JSStr.ofString "pendingEffectsStatus") (.num (F64.fin false 4503599627370496 (-52))) →
       BindIs w d.env (JSStr.ofString "executionContext") (.num ec) →
@@ -119,14 +121,18 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       WP eng answer (n + 1) h1 (callImpl eng (.obj fME) .undefined #[]) w fun v w' h' =>
         Frame fpME w w' ∧ Frame ((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME) s w' ∧ w.fuel ≤ w'.fuel + K ∧ Q1 w' h')
     (hfpME : ∀ p, p ∈ fpME.binds → p.1 < s.envs.size ∧ (p.1 = d.env → p.2 ∉ [JSStr.ofString "flushLayoutEffects",
-      JSStr.ofString "flushSpawnedWork"]))
-    (hfpMEp : ∀ p, p ∈ fpME.props → p.1 ≠ fLE ∧ p.1 ≠ fSP)
+      JSStr.ofString "flushSpawnedWork", JSStr.ofString "pendingViewTransitionEvents", JSStr.ofString "pendingTransitionTypes"]))
+    (hfpMEp : ∀ p, p ∈ fpME.props → p.1 ≠ fLE ∧ p.1 ≠ fSP ∧ p ≠ (FR, .str (JSStr.ofString "pendingLanes")))
     (hLEf : ∀ w h1, Frame ((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME) s w → Q1 w h1 → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fLE) .undefined #[]) w fun v w' h' =>
         Frame fpLE w w' ∧ Frame (((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE) s w' ∧ w.fuel ≤ w'.fuel + K ∧ Q2 w' h')
-    (hfpLE : ∀ p, p ∈ fpLE.binds → p.1 < s.envs.size ∧ (p.1 = d.env → p.2 ≠ JSStr.ofString "flushSpawnedWork"))
-    (hfpLEp : ∀ p, p ∈ fpLE.props → p.1 ≠ fSP)
-    (hSPf : ∀ w h1, Frame (((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE) s w → Q2 w h1 → K ≤ w.fuel →
+    (hfpLE : ∀ p, p ∈ fpLE.binds → p.1 < s.envs.size ∧ (p.1 = d.env → p.2 ∉ [JSStr.ofString "flushSpawnedWork",
+      JSStr.ofString "pendingViewTransitionEvents", JSStr.ofString "pendingTransitionTypes"]))
+    (hfpLEp : ∀ p, p ∈ fpLE.props → p.1 ≠ fSP ∧ p ≠ (FR, .str (JSStr.ofString "pendingLanes")))
+    (hSPf : ∀ w h1, Frame (((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE) s w → Q2 w h1 →
+      PropHas w FR (JSStr.ofString "pendingLanes") (.num (F64.fin false 0 (-1074))) →
+      BindIs w d.env (JSStr.ofString "pendingViewTransitionEvents") .null →
+      BindIs w d.env (JSStr.ofString "pendingTransitionTypes") .null → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fSP) .undefined #[]) w fun v w' h' =>
         Frame ((((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE).union fpSP) s w' ∧ w.fuel ≤ w'.fuel + K ∧ Q3 w' h') :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, .num (F64.fin false 4503599627370496 (-51)),
@@ -160,7 +166,7 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
         (args := #[.obj FR, .obj R, .num (F64.fin false 4503599627370496 (-51)), sl, ul, srl, sst]) _ hG
     refine frame_setEnv_new ?_ (Nat.le_refl _) _
     frame_go' []
-  rintro v1 w1 h1 ⟨hF1, hFs1, hfu1, rfl⟩
+  rintro v1 w1 h1 ⟨hF1, hFs1, hfu1, rfl, hPL1⟩
   have hfw1 : 4 * K + 300 ≤ w1.fuel := by simp at hfu1; omega
   have hE1 := envEntry_frame hF1 (e := s.envs.size) (by simp)
     (List.all_eq_true.mpr fun p hp => by have := (hfpM p hp).2; simp; exact Nat.ne_of_lt this)
@@ -226,7 +232,28 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   have hnB : ∀ x, x ∈ [JSStr.ofString "executionContext", JSStr.ofString "pendingEffectsStatus",
       JSStr.ofString "shouldStartViewTransition", JSStr.ofString "flushMutationEffects",
       JSStr.ofString "flushLayoutEffects", JSStr.ofString "flushSpawnedWork", JSStr.ofString "ReactSharedInternals",
-      JSStr.ofString "ReactDOMSharedInternals"] → (d.env, x) ∉ fpB.binds := fun x hx hm => (hfpB _ hm).2 rfl hx
+      JSStr.ofString "ReactDOMSharedInternals", JSStr.ofString "pendingViewTransitionEvents",
+      JSStr.ofString "pendingTransitionTypes"] → (d.env, x) ∉ fpB.binds := fun x hx hm => (hfpB _ hm).2 rfl hx
+  have bVE := hbw2 _ (hnB (JSStr.ofString "pendingViewTransitionEvents") (by simp))
+  have bTT := hbw2 _ (hnB (JSStr.ofString "pendingTransitionTypes") (by simp))
+  have hVE2 : BindIs w2 d.env (JSStr.ofString "pendingViewTransitionEvents") .null := by
+    unfold BindIs; rw [hd2]; simp [bVE, Std.HashMap.getElem?_modify, gVE, gVEm]
+  have hTT2 : BindIs w2 d.env (JSStr.ofString "pendingTransitionTypes") .null := by
+    unfold BindIs; rw [hd2]; simp [bTT, Std.HashMap.getElem?_modify, gTT, gTTm]
+  have hPL2 : PropHas w2 FR (JSStr.ofString "pendingLanes") (.num (F64.fin false 0 (-1074))) := by
+    refine PropHas.frame ?_ hF2 (by simpa using hlt1 FR hFR) (fun hm => (hfpBp _ hm).2.2.2.2.2 rfl)
+    refine PropHas.setEnv ?_ _ _
+    refine PropHas.setEnv ?_ _ _
+    refine PropHas.setProp_ne ?_ (Or.inl dDF) _
+    refine PropHas.setEnv ?_ _ _
+    refine PropHas.setProp_ne ?_ (Or.inl dTF) _
+    refine PropHas.setEnv ?_ _ _
+    refine PropHas.setEnv ?_ _ _
+    refine PropHas.setProp_ne ?_ (Or.inr (by decide)) _
+    refine PropHas.setProp_ne ?_ (Or.inr (by decide)) _
+    refine PropHas.setEnv ?_ _ _
+    refine PropHas.setEnv ?_ _ _
+    exact hPL1
   have b1 := hbw2 _ (hnB (JSStr.ofString "executionContext") (by simp))
   have b2 := hbw2 _ (hnB (JSStr.ofString "pendingEffectsStatus") (by simp))
   have b3 := hbw2 _ (hnB (JSStr.ofString "shouldStartViewTransition") (by simp))
@@ -320,21 +347,38 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until [] [hGd3, hE3, hd3, c1, c2, b7, b8, hS3, hLE3, hlt3 fLE hLEo, hLEk, Std.HashMap.getElem?_modify, gLE, gLEv, gSP, gSPv, hfw2, hE2, hd2, b1, b2, b3, b4, b5, b6, hS2, hGd2, hT2.1, hT2.2, hD2.1, hD2.2, hME2, hlt2 RSI hRSI, hlt2 RDSI hRDSI, hlt2 fME hMEo, Std.HashMap.getElem?_modify, gS, gSm, gSv, gME, gMEv, hfw1, hE1, hEd1, hS1, hGd1, hR1, hT1, hD1, hB1, hFRk1, hFRn1, hFRp1, hlt1 R hR, hlt1 FR hFR, hlt1 RSI hRSI, hlt1 RDSI hRDSI, hlt1 fB hBo, gVE, gVEm, gVEv, gTT, gTTm, gTTv, gSV, gSVm, gSVv, gT, gTv, gD, gDv, gE, gEv, gEm, gB, gBv, hRs, hRf, hrs, hrf, hrs2, hFRk, hRSIk, hRSIt, hRDSIk, hRDSIp, dRF, Ne.symm dRF, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTR, Ne.symm dTR, dDR, Ne.symm dDR, hBk, e1, e1', e4, hG, hGe, gRL, gRLm, gRLv, gCU, gCUv, gM, gMv, hMo, hMk, hR, hRk, hRl, hRc, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hLE3, hLEk, hlt3 fLE hLEo], wp_mono (hLEf _ _ hFs3 hQ1 (by omega)) ?_⟩
   rintro v4 w4 h4 ⟨hF4, hFs4, hfu4, hQ2⟩
+  have hPL3 : PropHas w3 FR (JSStr.ofString "pendingLanes") (.num (F64.fin false 0 (-1074))) := by
+    refine PropHas.frame ?_ hF3 (by simpa using hlt2 FR hFR) (fun hm => (hfpMEp _ hm).2.2 rfl)
+    refine PropHas.setEnv ?_ _ _
+    refine PropHas.setProp_ne ?_ (Or.inl dTF) _
+    refine PropHas.setProp_ne ?_ (Or.inl dDF) _
+    refine PropHas.setEnv ?_ _ _
+    exact hPL2
+  have hPL4 := PropHas.frame hPL3 hF4 (hlt3 FR hFR) (fun hm => (hfpLEp _ hm).2 rfl)
+  have hVT3 : ∀ x, x = JSStr.ofString "pendingViewTransitionEvents" ∨ x = JSStr.ofString "pendingTransitionTypes" →
+      BindIs w2 d.env x .null → BindIs w3 d.env x .null := by
+    intro x hx hb
+    refine BindIs.frame ?_ hF3 (by simpa using hGd2) (fun hm => (hfpME _ hm).2 rfl (by rcases hx with rfl | rfl <;> simp))
+    exact BindIs.setEnv_modify (BindIs.setProp (BindIs.setProp (BindIs.setEnv_modify hb hGd2 rfl
+      (by rcases hx with rfl | rfl <;> decide)) _ _ _) _ _ _) (by simpa using hGd2)
+      (by simp only [setProp_envEntry]; exact setEnv_envEntry_self _ _ _ hGd2) (by rcases hx with rfl | rfl <;> decide)
+  have hVE4 := BindIs.frame (hVT3 _ (Or.inl rfl) hVE2) hF4 hGd3 (fun hm => (hfpLE _ hm).2 rfl (by simp))
+  have hTT4 := BindIs.frame (hVT3 _ (Or.inr rfl) hTT2) hF4 hGd3 (fun hm => (hfpLE _ hm).2 rfl (by simp))
   have hE4 := envEntry_frame hF4 (e := s.envs.size) hS3
     (List.all_eq_true.mpr fun p hp => by have := (hfpLE p hp).1; simp; exact Nat.ne_of_lt this)
   obtain ⟨bw4, hd4, hbw4⟩ := declLike_frame hF4 (e := d.env) hGd3 hd3
-  have c3 := hbw4 (JSStr.ofString "flushSpawnedWork") (fun hm => (hfpLE _ hm).2 rfl rfl)
+  have c3 := hbw4 (JSStr.ofString "flushSpawnedWork") (fun hm => (hfpLE _ hm).2 rfl (by simp))
   have hS4 : s.envs.size < w4.envs.size := Nat.lt_of_lt_of_le hS3 hF4.envs_le
   have hGd4 : d.env < w4.envs.size := Nat.lt_trans hG hS4
   have hSP4 : w4.objEntry fSP = s.objEntry fSP := by
-    rw [hF4.obj_eq fSP (hlt3 fSP hSPo) (fun k hk => hfpLEp _ hk rfl)]
-    exact hobj3 fSP hSPo dST dSD dSF (fun p hp => (hfpMp p hp).2.2.2.2.2.2.1) (fun p hp => (hfpBp p hp).2.2.2.2)
-      (fun p hp => (hfpMEp p hp).2)
+    rw [hF4.obj_eq fSP (hlt3 fSP hSPo) (fun k hk => (hfpLEp _ hk).1 rfl)]
+    exact hobj3 fSP hSPo dST dSD dSF (fun p hp => (hfpMp p hp).2.2.2.2.2.2.1) (fun p hp => (hfpBp p hp).2.2.2.2.1)
+      (fun p hp => (hfpMEp p hp).2.1)
   have hlt4 : ∀ o, o < s.heap.size → o < w4.heap.size := fun o ho => Nat.lt_of_lt_of_le (hlt3 o ho) hF4.heap_le
   obtain ⟨dSP, hSPk⟩ := hSPc
   have hfw4 : K + 50 ≤ w4.fuel := by omega
   js_until [] [hfw4, hGd4, hE4, hd4, c2, c3, b8, hS4, hSP4, hlt4 fSP hSPo, hSPk, hGd3, hE3, hd3, c1, c2, b7, b8, hS3, hLE3, hlt3 fLE hLEo, hLEk, Std.HashMap.getElem?_modify, gLE, gLEv, gSP, gSPv, hfw2, hE2, hd2, b1, b2, b3, b4, b5, b6, hS2, hGd2, hT2.1, hT2.2, hD2.1, hD2.2, hME2, hlt2 RSI hRSI, hlt2 RDSI hRDSI, hlt2 fME hMEo, Std.HashMap.getElem?_modify, gS, gSm, gSv, gME, gMEv, hfw1, hE1, hEd1, hS1, hGd1, hR1, hT1, hD1, hB1, hFRk1, hFRn1, hFRp1, hlt1 R hR, hlt1 FR hFR, hlt1 RSI hRSI, hlt1 RDSI hRDSI, hlt1 fB hBo, gVE, gVEm, gVEv, gTT, gTTm, gTTv, gSV, gSVm, gSVv, gT, gTv, gD, gDv, gE, gEv, gEm, gB, gBv, hRs, hRf, hrs, hrf, hrs2, hFRk, hRSIk, hRSIt, hRDSIk, hRDSIp, dRF, Ne.symm dRF, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTR, Ne.symm dTR, dDR, Ne.symm dDR, hBk, e1, e1', e4, hG, hGe, gRL, gRLm, gRLv, gCU, gCUv, gM, gMv, hMo, hMk, hR, hRk, hRl, hRc, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine ⟨by js_norm [CallableC, hSP4, hSPk, hlt4 fSP hSPo], wp_mono (hSPf _ _ hFs4 hQ2 (by omega)) ?_⟩
+  refine ⟨by js_norm [CallableC, hSP4, hSPk, hlt4 fSP hSPo], wp_mono (hSPf _ _ hFs4 hQ2 hPL4 hVE4 hTT4 (by omega)) ?_⟩
   rintro v5 w5 h5 ⟨hFs5, hfu5, hQ3⟩
   js_until [] []
   refine ⟨by simp [bodyState, entryState] at hfu1 hfu2 hfu3 hfu4 hfu5 ⊢; omega, ⟨w5, hQ3⟩, frame_restore hFs5 s⟩
