@@ -28,4 +28,10 @@ macro "rebase_tac" hw:term : tactic => `(tactic| first
   | exact lt_heap_of_frame $hw (by with_reducible assumption)
   | exact lt_envs_of_frame $hw (by with_reducible assumption)
   | (rw [objEntry_frame0 $hw (by with_reducible assumption)]; with_reducible assumption)
-  | (rw [envEntry_frame0 $hw (by with_reducible assumption)]; with_reducible assumption))
+  | (rw [envEntry_frame0 $hw (by with_reducible assumption)]; with_reducible assumption)
+  | (rw [($hw).obj_eq _ (by with_reducible assumption) (fun _ hh => by simp at hh)]; with_reducible assumption))
+
+/-- As `rebase_tac`, and module bindings through `hbw` (`declLike_frame`'s: the bindings outside the footprint). -/
+macro "rebase_tac'" hw:term "," hbw:term : tactic => `(tactic| first
+  | rebase_tac $hw
+  | (rw [$hbw _ (by simp)]; with_reducible assumption))

@@ -31,7 +31,7 @@ theorem cme_button {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
     {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdO bdRT bdRE bdCH : Binding} {vO : Value}
     {fRT fRE fCH : ObjId} {dom NP LP : ObjId} {fpH : Footprint} {PH : State → σ → Prop}
     {sw se sc mw me mc cw ce cc : Bool}
-    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 3000 ≤ s.fuel)
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 3500 ≤ s.fuel)
     (hcode : d.code = CMEGen.commitMutationEffectsOnFiber_func) (hcls : d.isClassCtor = false)
     (hmode : d.thisMode = .strict)
     (hB : B < s.heap.size) (hBk : (s.objEntry B).kind.isPlain = true)
@@ -63,7 +63,7 @@ theorem cme_button {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
     (hBc : Bc < s.heap.size) (hBck : (s.objEntry Bc).kind.isPlain = true)
     (hBcm : (s.objEntry Bc).props.get? (.str (JSStr.ofString "memoizedProps")) = some (.data (.obj LP) cw ce cc))
     (hCHo : fCH < s.heap.size) (hCHc : ∃ dd, (s.objEntry fCH).kind = .func dd)
-    (hCH : ∀ w h1, Frame ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ s w → 2500 ≤ w.fuel →
+    (hCH : ∀ w h1, Frame ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ s w → 3000 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fCH) .undefined #[.obj B, .obj NP, .obj LP]) w fun v w' h' =>
         v = .undefined ∧ w.fuel ≤ w'.fuel + 2100 ∧ PH w' h' ∧ Frame fpH w w')
     (hfpH : ∀ p, p ∈ fpH.binds → p.1 = d.env)
@@ -108,7 +108,7 @@ theorem cme_button {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
   have hGd : d.env < w1.envs.size := Nat.lt_trans hG hSb
   have hB1 : w1.objEntry B = s.objEntry B := by rw [objEntry_frame0 hF1 (by js_norm [e1, e2, e4, e5, Ne.symm e1, Ne.symm e2, hG, hGe, hGO, hGOv, hGOm, hGRT, hGRTv, hRTo, hRTk, hB, hBk, hBa, hBf, hBt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])]; js_norm [e1, e2, e4, e5, Ne.symm e1, Ne.symm e2, hG, hGe, hGO, hGOv, hGOm, hGRT, hGRTv, hRTo, hRTk, hB, hBk, hBa, hBf, hBt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   have hBlt1 : B < w1.heap.size := Nat.lt_of_lt_of_le (by js_norm [hREo, hB, e1]) hF1.heap_le
-  have hfw1 : 2900 ≤ w1.fuel := by simp [bodyState, entryState] at hfu1; omega
+  have hfw1 : 3400 ≤ w1.fuel := by simp [bodyState, entryState] at hfu1; omega
   have hfr1 : s.fuel ≤ w1.fuel + 60 := by simp [bodyState, entryState] at hfu1; omega
   have hRE1 : w1.objEntry fRE = s.objEntry fRE := by rw [objEntry_frame0 hF1 (by js_norm [hREo, e1, e2, e4, e5, Ne.symm e1, Ne.symm e2, hG, hGe, hGO, hGOv, hGOm, hGRT, hGRTv, hRTo, hRTk, hB, hBk, hBa, hBf, hBt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])]; js_norm [e1, e2, e4, e5, Ne.symm e1, Ne.symm e2, hG, hGe, hGO, hGOv, hGOm, hGRT, hGRTv, hRTo, hRTk, hB, hBk, hBa, hBf, hBt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   have hRElt1 : fRE < w1.heap.size := Nat.lt_of_lt_of_le (by js_norm [hREo, hB, e1]) hF1.heap_le
@@ -137,7 +137,7 @@ theorem cme_button {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
   have hBclt2 : Bc < w2.heap.size := Nat.lt_of_lt_of_le hBc hFs2.heap_le
   have hCH2 : w2.objEntry fCH = s.objEntry fCH := hFs2.obj_eq fCH hCHo (fun _ hh => by simp at hh)
   have hCHlt2 : fCH < w2.heap.size := Nat.lt_of_lt_of_le hCHo hFs2.heap_le
-  have hfw2 : 2800 ≤ w2.fuel := by simp [bodyState, entryState] at hfu2; omega
+  have hfw2 : 3300 ≤ w2.fuel := by simp [bodyState, entryState] at hfu2; omega
   have hfr2 : w1.fuel ≤ w2.fuel + 60 := by simp [bodyState, entryState] at hfu2; omega
   js_until [] [hEa2, hEb2, hEc2, hSa2, hSb2, hGd2, hB2, hBlt2, hBc2, hBclt2, hCH2, hCHlt2, hfw2, h512, h32, h4, h1024, hBs, hBm, hBc, hBck, hBcm, hGCH, hGCHv, hCHo, hCHk, hEa, hEb, hEc, hSa, hSb, hGd, hB1, hBlt1, hfw1, hGRE, hGREv, hREo, hREk, hRE1, hRElt1, e1, e2, e4, e5, Ne.symm e1, Ne.symm e2, hG, hGe, hGO, hGOv, hGOm, hGRT, hGRTv, hRTo, hRTk, hB, hBk, hBa, hBf, hBt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_neNullObj (by omega) ?_
