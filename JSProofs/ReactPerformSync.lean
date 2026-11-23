@@ -84,7 +84,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t root lanes :
     (by simpa using hXo) (by simpa using hXk) hXcode hXcls hXmode (by rw [hXenv, hFenv]) (by simpa using hPo)
     (by simpa using hPk) hPcode hPcls hPmode (by rw [hPenv, hFenv])) ?p1
   case p1 =>
-  intro r w1 h1 ⟨hr, hF1, hfu1⟩
+  rintro r w1 h1 ⟨hr, hF1, hfu1, -⟩
   subst hr
   try simp only [js_simp] at hfu1
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGW, hGWv, hWo, hWk, envEntry_frame0 hF1, objEntry_frame0 hF1,

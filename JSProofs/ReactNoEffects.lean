@@ -34,8 +34,8 @@ theorem passive_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGS : bG[JSStr.ofString "pendingEffectsStatus"]? = some bdS)
     (hGSv : bdS.value = some (.num (F64.fin false 0 (-1074)))) :
-    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
-      v = (Value.bool false) ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 := by
+    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
+      v = (Value.bool false) ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 ∧ h' = h := by
   apply wp_callGen FPAGen.flushPassiveEffects_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple_passive d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -47,6 +47,8 @@ theorem passive_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
   clear hcode
   simp only [FPAGen.flushPassiveEffects]
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGS, hGSv, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals first | rfl | omega | frame_go' [*, hne, Ne.symm hne, hG1]
@@ -64,8 +66,8 @@ theorem layout_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGS : bG[JSStr.ofString "pendingEffectsStatus"]? = some bdS)
     (hGSv : bdS.value = some (.num (F64.fin false 0 (-1074)))) :
-    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
-      v = Value.undefined ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 := by
+    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
+      v = Value.undefined ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 ∧ h' = h := by
   apply wp_callGen FLEGen.flushLayoutEffects_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple_layout d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -77,6 +79,8 @@ theorem layout_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {
   clear hcode
   simp only [FLEGen.flushLayoutEffects]
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGS, hGSv, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals first | rfl | omega | frame_go' [*, hne, Ne.symm hne, hG1]
@@ -94,8 +98,8 @@ theorem mutation_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value}
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGS : bG[JSStr.ofString "pendingEffectsStatus"]? = some bdS)
     (hGSv : bdS.value = some (.num (F64.fin false 0 (-1074)))) :
-    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
-      v = Value.undefined ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 := by
+    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
+      v = Value.undefined ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 ∧ h' = h := by
   apply wp_callGen FMEGen.flushMutationEffects_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple_mutation d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -107,6 +111,8 @@ theorem mutation_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value}
   clear hcode
   simp only [FMEGen.flushMutationEffects]
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGS, hGSv, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals first | rfl | omega | frame_go' [*, hne, Ne.symm hne, hG1]
@@ -124,8 +130,8 @@ theorem spawned_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGS : bG[JSStr.ofString "pendingEffectsStatus"]? = some bdS)
     (hGSv : bdS.value = some (.num (F64.fin false 0 (-1074)))) :
-    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
-      v = Value.undefined ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 := by
+    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
+      v = Value.undefined ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 ∧ h' = h := by
   apply wp_callGen FSPGen.flushSpawnedWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple_spawned d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -137,6 +143,8 @@ theorem spawned_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
   clear hcode
   simp only [FSPGen.flushSpawnedWork]
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGS, hGSv, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals first | rfl | omega | frame_go' [*, hne, Ne.symm hne, hG1]
@@ -168,8 +176,8 @@ theorem pending_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
     (hWcls : dW.isClassCtor = false) (hWmode : dW.thisMode = .strict) (hWenv : dW.env = d.env)
     (hPo : fP < s.heap.size) (hPk : (s.objEntry fP).kind = .func dP) (hPcode : dP.code = FPAGen.flushPassiveEffects_func)
     (hPcls : dP.isClassCtor = false) (hPmode : dP.thisMode = .strict) (hPenv : dP.env = d.env) :
-    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
-      v = .bool false ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 60 := by
+    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
+      v = .bool false ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 60 ∧ h' = h := by
   apply wp_callGen FPEGen.flushPendingEffects_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple_pending d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -186,7 +194,7 @@ theorem pending_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
   refine wp_mono (mutation_none (by simpa using hMo) (by simpa using hMk) (by simp; omega) hMcode hMcls hMmode
     (by rw [hMenv]; simp; omega) (by rw [hMenv]; js_norm [*, Ne.symm hne]; rfl) hGS hGSv) ?p1
   case p1 =>
-  intro r w1 h1 ⟨_, hF1, hfu1⟩
+  intro r w1 h1 ⟨_, hF1, hfu1, rfl⟩
   try simp only [js_simp] at hfu1
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGL, hGLv, hLo, hLk, envEntry_frame0 hF1, objEntry_frame0 hF1,
     heap_frame hF1, envs_frame hF1, FDI.fdiCtx, Sem.inner]
@@ -194,14 +202,14 @@ theorem pending_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
   refine wp_mono (layout_none (by js_norm [*, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1]) (by js_norm [*, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1]) (by simp at hfu1 ⊢; omega) hLcode hLcls hLmode
     (by rw [hLenv]; js_norm [*, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1]) (by rw [hLenv]; js_norm [*, Ne.symm hne, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1]; rfl) hGS hGSv) ?p2
   case p2 =>
-  intro r w2 h2 ⟨_, hF2, hfu2⟩
+  intro r w2 h2 ⟨_, hF2, hfu2, rfl⟩
   try simp only [js_simp] at hfu2
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGW, hGWv, hWo, hWk, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, *, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2], ?_⟩
   refine wp_mono (spawned_none (by js_norm [*, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2]) (by js_norm [*, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2]) (by simp at hfu1 hfu2 ⊢; omega) hWcode hWcls hWmode
     (by rw [hWenv]; js_norm [*, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2]) (by rw [hWenv]; js_norm [*, Ne.symm hne, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2]; rfl) hGS hGSv) ?p3
   case p3 =>
-  intro r w3 h3 ⟨_, hF3, hfu3⟩
+  intro r w3 h3 ⟨_, hF3, hfu3, rfl⟩
   try simp only [js_simp] at hfu3
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGP, hGPv, hPo, hPk, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2, envEntry_frame0 hF3, objEntry_frame0 hF3, heap_frame hF3, envs_frame hF3, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, *, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2, envEntry_frame0 hF3, objEntry_frame0 hF3, heap_frame hF3, envs_frame hF3], ?_⟩
@@ -212,6 +220,7 @@ theorem pending_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
   subst hr
   try simp only [js_simp] at hfu4
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2, envEntry_frame0 hF3, objEntry_frame0 hF3, heap_frame hF3, envs_frame hF3, envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4, envs_frame hF4, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals first | rfl | (simp at hfu1 hfu2 hfu3 hfu4 ⊢; omega) | frame_go' [*, hne, Ne.symm hne, hG1]
