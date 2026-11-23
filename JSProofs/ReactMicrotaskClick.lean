@@ -165,7 +165,7 @@ theorem flush_click {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {
     (hRs : (s.objEntry R).props.get? (.str "suspendedLanes") = some (.data (.num (F64.fin false 0 (-1074))) sw se sc))
     (hRi : (s.objEntry R).props.get? (.str "pingedLanes") = some (.data (.num (F64.fin false 0 (-1074))) pw pe pc))
     (hRw : (s.objEntry R).props.get? (.str "warmLanes") = some (.data wv ww we wc))
-    (hPerf : ∀ w h1, Frame (ReactFlushSync.fpA d.env) s w → s.fuel ≤ w.fuel + 60 →
+    (hPerf : ∀ w h1, Frame (ReactFlushSync.fpA d.env) s w → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "isFlushingWork"]? = some bd ∧ bd.value = some (.bool true)) → s.fuel ≤ w.fuel + 60 →
       WP eng answer (n + 1) h1
         (callImpl eng (.obj fS) .undefined #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) w
         fun _ w' h' => Frame fpP w w' ∧ w.fuel ≤ w'.fuel + kP ∧ ReactFlushSync.After w' d.env oG R bdF ∧
@@ -199,8 +199,8 @@ theorem flush_click {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {
       (heap_frame hF hR) (by rw [hGw hF hR]; exact hRk) (by rw [hGw hF hR]; exact hRp) (by rw [hGw hF hR]; exact hRs)
       (by rw [hGw hF hR]; exact hRi)
   case perf =>
-    intro w h1 hF hfu
-    refine wp_mono (hPerf w h1 hF hfu) fun _ w' h' ⟨hF', hfu', hA, ⟨a, b, c, hp0⟩, hPu⟩ => ⟨hF', hfu', hA, ?_, hPu⟩
+    intro w h1 hF hIF hfu
+    refine wp_mono (hPerf w h1 hF hIF hfu) fun _ w' h' ⟨hF', hfu', hA, ⟨a, b, c, hp0⟩, hPu⟩ => ⟨hF', hfu', hA, ?_, hPu⟩
     have hGo' : fG < w.heap.size := heap_frame hF hGo
     have hRo' : R < w.heap.size := heap_frame hF hR
     refine ⟨heap_frame hF' hGo', ?_, heap_frame hF' hRo', ?_, a, b, c, hp0⟩
@@ -225,6 +225,17 @@ def fpPre (g : EnvId) (R A : ObjId) : Footprint :=
 def fpPerf (g : EnvId) (R A : ObjId) : Footprint :=
   ⟨[(g, "mightHavePendingSyncWork"), (g, "didScheduleMicrotask"), (g, "isFlushingWork")],
     (ReactSchedTaskRoot.fp R A).props, false⟩
+
+/-- What the task scheduling leaves on the root: its expiration time, callback priority and node, writable. -/
+def SchedOut (w : State) (R A : ObjId) : Prop :=
+  (∃ v e c, (w.objEntry A).props.get? (.str "1") = some (.data v true e c)) ∧
+  (∃ v e c, (w.objEntry R).props.get? (.str "callbackPriority") = some (.data v true e c)) ∧
+  (∃ v e c, (w.objEntry R).props.get? (.str "callbackNode") = some (.data v true e c))
+
+/-- Where the microtask starts the work: the flag set, the task scheduling's fields. -/
+def MicroFacts (w : State) (g : EnvId) (oG : Option EnvId) (R A : ObjId) : Prop :=
+  (∃ bm, Scope.declLike? (w.envEntry g) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "isFlushingWork"]? = some bd ∧
+    bd.value = some (.bool true)) ∧ SchedOut w R A
 
 /-- **Step 3**: `processRootScheduleInMicrotask` after a click, every callee by its theorem: `now` (the scheduler's
 `unstable_now`; the host's `performance.now()` a hypothesis), `scheduleTaskForRootDuringMicrotask` (step 1),
@@ -318,7 +329,7 @@ theorem processRoot_click {m : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Va
     (hAE : A ≠ fE) (hAG : A ≠ fG) (hAP : A ≠ fP) (hAC : A ≠ fC) (hAH : A ≠ fH) (hAS : A ≠ fS) (hAF : A ≠ fL)
     (hRG : R ≠ fG) (hRP : R ≠ fP) (hRE : R ≠ fE) (hRC : R ≠ fC) (hRH : R ≠ fH) (hRS : R ≠ fS) (hRF : R ≠ fL)
     -- (the work: `performSyncWorkOnRoot(root, 2)`, from any state framed from the start by what came before)
-    (hPerf : ∀ w h1, Frame (fpPerf d.env R A) s w → s.fuel ≤ w.fuel + 400 →
+    (hPerf : ∀ w h1, Frame (fpPerf d.env R A) s w → MicroFacts w d.env oG R A → s.fuel ≤ w.fuel + 400 →
       WP eng answer (m + 1) h1
         (callImpl eng (.obj fS) .undefined #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) w
         fun _ w' h' => Frame fpP w w' ∧ w.fuel ≤ w'.fuel + kP ∧ ReactFlushSync.After w' d.env oG R bdF ∧
@@ -337,7 +348,7 @@ theorem processRoot_click {m : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Va
       w.objEntry o = s.objEntry o := fun hF _ ho => objEntry_frame hF ho (by simp [ReactProcessRoot.fpA])
   refine wp_mono (ReactProcessRoot.call_spec (n := m + 2) (L := F64.fin false 4503599627370496 (-51))
     (fpT := ReactSchedTaskRoot.fp R A) (fpF := ⟨(d.env, JSStr.ofString "isFlushingWork") :: fpP.binds, fpP.props, fpP.jobs⟩)
-    (kF := kP + 200) (P := fun w _ => Frame (fpPre d.env R A) s w)
+    (kF := kP + 200) (P := fun w _ => Frame (fpPre d.env R A) s w ∧ SchedOut w R A)
     (Q := fun x _ => ∃ w2 h2 e, Pu w2 h2 ∧ Frame (ReactFlushSync.fpW e d.env) w2 x)
     hlt hk (by omega) hcode hcls hmode hG hGe hGM hGMm hGMv hGD hGDm hGDv hGC hGCv hGF hGFv hGN hGNv hGT hGTv hGP0
     hGP0v hGL hGLv hNo hNk hTo hTk hLo hLk hR hRk hRn (by decide) (by decide) ?now ?task
@@ -385,12 +396,15 @@ theorem processRoot_click {m : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Va
       (hA := heap_frame hF hA) (hAk := by rw [objA hF hA]; exact hAk) (hAE := hAE) (hAG := hAG) (hAP := hAP)
       (hRG := hRG) (hRP := hRP) (hRE := hRE) (hAC := hAC) (hRC := hRC) (hAH := hAH) (hRH := hRH)
       (hA1 := by rw [objA hF hA]; exact hA1) (hAL := by rw [objA hF hA]; exact hAL) (hL := hL))
-      fun v w' h' ⟨hv, hF', hfu', _⟩ => ⟨hv, hF', hfu', by
+      fun v w' h' ⟨hv, hF', hfu', hA1', hCP', hCN'⟩ => ⟨hv, hF', hfu', by
         have := frame_trans hF hF'
-        simpa [Footprint.union, ReactProcessRoot.fpA, ReactSchedTaskRoot.fp, fpPre] using this⟩
+        simpa [Footprint.union, ReactProcessRoot.fpA, ReactSchedTaskRoot.fp, fpPre] using this,
+        ⟨_, _, _, hA1'⟩, ⟨_, _, _, hCP'⟩, ⟨_, _, _, hCN'⟩⟩
   case flush =>
-    intro w2 w h1 hP2 hF2 ⟨bm, hbm, hmt⟩ hfu
+    intro w2 w h1 ⟨hP2, ⟨⟨av, ae', ac', hA1s⟩, ⟨pv, pe', pc', hCPs⟩, ⟨nv, ne', nc', hCNs⟩⟩⟩ hF2 ⟨bm, hbm, hmt⟩ hfu
     have hFs := frame_trans hP2 hF2
+    have hA2 : A < w2.heap.size := heap_frame hP2 hA
+    have hR2 : R < w2.heap.size := heap_frame hP2 hR
     obtain ⟨bW, hW, hWx⟩ := declLike_frame hFs hG hGe
     have hbmW : bm = bW := by rw [hW] at hbm; simp only [Option.some.injEq, Prod.mk.injEq] at hbm; exact hbm.1.symm
     subst hbmW
@@ -439,9 +453,14 @@ theorem processRoot_click {m : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Va
       (hPerf := ?perf) (hfpE := binds_avoid hfpB hle) (hfpG := by rw [hLenv]; exact hfpG)
       (hfpI := by rw [hLenv]; exact hfpI) (hfpO := hfpO)) ?post
     case perf =>
-      intro w' h1' hF' hfu'
-      rw [hLenv] at hF' ⊢
-      refine hPerf w' h1' ?_ (by omega)
+      intro w' h1' hF' hIF hfu'
+      rw [hLenv] at hF' hIF ⊢
+      have hAw : (w'.objEntry A) = w2.objEntry A := by
+        rw [hF'.obj_eq _ (heap_frame hF2 hA2) (fun _ hk => by simp [ReactFlushSync.fpA] at hk), hF2.obj_eq _ hA2 (fun _ hk => by simp at hk)]
+      have hRw : (w'.objEntry R) = w2.objEntry R := by
+        rw [hF'.obj_eq _ (heap_frame hF2 hR2) (fun _ hk => by simp [ReactFlushSync.fpA] at hk), hF2.obj_eq _ hR2 (fun _ hk => by simp at hk)]
+      refine hPerf w' h1' ?_ ⟨hIF, ⟨_, _, _, by rw [hAw]; exact hA1s⟩, ⟨_, _, _, by rw [hRw]; exact hCPs⟩,
+        ⟨_, _, _, by rw [hRw]; exact hCNs⟩⟩ (by omega)
       refine frame_drop (frame_trans hFs hF') (fun q hq hq' => ?_) (fun q hq _ => by
         simpa [Footprint.union, fpPre, fpPerf, ReactFlushSync.fpA] using hq) (fun _ => rfl)
       simp only [Footprint.union, fpPre, ReactFlushSync.fpA, List.cons_append, List.nil_append, List.mem_cons,
@@ -597,7 +616,7 @@ theorem microtask_click {eng : Engine} {σ : Type} {answer : HostAnswer σ} {m :
     (hRH : R ≠ fH)
     (hRS : R ≠ fS)
     (hRF : R ≠ fL)
-    (hPerf : ∀ w h1, Frame (fpPerf d.env R A) s w → s.fuel ≤ w.fuel + 402 →
+    (hPerf : ∀ w h1, Frame (fpPerf d.env R A) s w → MicroFacts w d.env oG R A → s.fuel ≤ w.fuel + 402 →
       WP eng answer (m + 1) h1
         (callImpl eng (.obj fS) .undefined #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) w
         fun _ w' h' => Frame fpP w w' ∧ w.fuel ≤ w'.fuel + kP ∧ ReactFlushSync.After w' d.env oG R bdF ∧
@@ -617,7 +636,7 @@ theorem microtask_click {eng : Engine} {σ : Type} {answer : HostAnswer σ} {m :
   intro w h1 hF hfu
   refine wp_mono (processRoot_click (m := m) (hlt := by transfer hF, hlt) (hk := by transfer hF, hk) (hf := by omega) (hcode := by transfer hF, hcode) (hcls := by transfer hF, hcls) (hmode := by transfer hF, hmode) (hG := by transfer hF, hG) (hGe := by transfer hF, hGe) (hGM := by transfer hF, hGM) (hGMm := by transfer hF, hGMm) (hGMv := by transfer hF, hGMv) (hGD := by transfer hF, hGD) (hGDm := by transfer hF, hGDm) (hGDv := by transfer hF, hGDv) (hGC := by transfer hF, hGC) (hGCv := by transfer hF, hGCv) (hGF := by transfer hF, hGF) (hGFv := by transfer hF, hGFv) (hGN := by transfer hF, hGN) (hGNv := by transfer hF, hGNv) (hGT := by transfer hF, hGT) (hGTv := by transfer hF, hGTv) (hGP0 := by transfer hF, hGP0) (hGP0v := by transfer hF, hGP0v) (hGL := by transfer hF, hGL) (hGLv := by transfer hF, hGLv) (hGI := by transfer hF, hGI) (hGIv := by transfer hF, hGIv) (hGIm := by transfer hF, hGIm) (hGW := by transfer hF, hGW) (hGWv := by transfer hF, hGWv) (hGRL := by transfer hF, hGRL) (hGRLv := by transfer hF, hGRLv) (hGCz := by transfer hF, hGCz) (hGCzv := by transfer hF, hGCzv) (hGE := by transfer hF, hGE) (hGEv := by transfer hF, hGEv) (hGG := by transfer hF, hGG) (hGGv := by transfer hF, hGGv) (hGPr := by transfer hF, hGPr) (hGPrv := by transfer hF, hGPrv) (hGH := by transfer hF, hGH) (hGHv := by transfer hF, hGHv) (hGS := by transfer hF, hGS) (hGSv := by transfer hF, hGSv) (hNo := by transfer hF, hNo) (hNk := by transfer hF, hNk) (hNcode := by transfer hF, hNcode) (hNcls := by transfer hF, hNcls) (hNmode := by transfer hF, hNmode) (hNenv := by transfer hF, hNenv) (hTo := by transfer hF, hTo) (hTk := by transfer hF, hTk) (hTcode := by transfer hF, hTcode) (hTcls := by transfer hF, hTcls) (hTmode := by transfer hF, hTmode) (hTenv := by transfer hF, hTenv) (hLo := by transfer hF, hLo) (hLk := by transfer hF, hLk) (hLcode := by transfer hF, hLcode) (hLcls := by transfer hF, hLcls) (hLmode := by transfer hF, hLmode) (hLenv := by transfer hF, hLenv) (hCo := by transfer hF, hCo) (hCk := by transfer hF, hCk) (hCfn := by transfer hF, hCfn) (hEo := by transfer hF, hEo) (hEk := by transfer hF, hEk) (hEcode := by transfer hF, hEcode) (hEcls := by transfer hF, hEcls) (hEmode := by transfer hF, hEmode) (hGo := by transfer hF, hGo) (hGk := by transfer hF, hGk) (hGcode := by transfer hF, hGcode) (hGcls := by transfer hF, hGcls) (hGmode := by transfer hF, hGmode) (hGenv := by transfer hF, hGenv) (hHo := by transfer hF, hHo) (hHk := by transfer hF, hHk) (hHcode := by transfer hF, hHcode) (hHcls := by transfer hF, hHcls) (hHmode := by transfer hF, hHmode) (hPo := by transfer hF, hPo) (hPk := by transfer hF, hPk) (hPcode := by transfer hF, hPcode) (hPcls := by transfer hF, hPcls) (hPmode := by transfer hF, hPmode) (hSo := by transfer hF, hSo) (hSk := by transfer hF, hSk) (hgS := by transfer hF, hgS) (hgSg := by transfer hF, hgSg) (hSe := by transfer hF, hSe) (hSLP := by transfer hF, hSLP) (hSLPv := by transfer hF, hSLPv) (hPf := by transfer hF, hPf) (hPfk := by transfer hF, hPfk) (hPfn := by transfer hF, hPfn) (hPNo := by transfer hF, hPNo) (hPNk := by transfer hF, hPNk) (hR := by transfer hF, hR) (hRk := by transfer hF, hRk) (hRA := by transfer hF, hRA) (hRn := by transfer hF, hRn) (hRs := by transfer hF, hRs) (hRi := by transfer hF, hRi) (hRx := by transfer hF, hRx) (hRp := by transfer hF, hRp) (hRw := by transfer hF, hRw) (hRc := by transfer hF, hRc) (hRt := by transfer hF, hRt) (hRnode := by transfer hF, hRnode) (hRq := by transfer hF, hRq) (hA := by transfer hF, hA) (hAk := by transfer hF, hAk) (hA1 := by transfer hF, hA1) (hAL := by transfer hF, hAL) (hL := by transfer hF, hL) (hAE := by transfer hF, hAE) (hAG := by transfer hF, hAG) (hAP := by transfer hF, hAP) (hAC := by transfer hF, hAC) (hAH := by transfer hF, hAH) (hAS := by transfer hF, hAS) (hAF := by transfer hF, hAF) (hRG := by transfer hF, hRG) (hRP := by transfer hF, hRP) (hRE := by transfer hF, hRE) (hRC := by transfer hF, hRC) (hRH := by transfer hF, hRH) (hRS := by transfer hF, hRS) (hRF := by transfer hF, hRF) (hfpB := binds_lt_mono hfpB hF.envs_le) (hfpG := by transfer hF, hfpG) (hfpI := by transfer hF, hfpI) (hfpC := by transfer hF, hfpC) (hfpO := by transfer hF, hfpO)
     (hClock := fun w' hF' => hClock w' (by simpa [Footprint.union] using frame_trans hF hF'))
-    (hPerf := fun w' h2 hF' hfu' => hPerf w' h2 (by simpa [Footprint.union] using frame_trans hF hF') (by omega)))
+    (hPerf := fun w' h2 hF' hMF hfu' => hPerf w' h2 (by simpa [Footprint.union] using frame_trans hF hF') hMF (by omega)))
     fun v w' h' ⟨_, w2, h2, e2, hPu, hF2⟩ => ⟨w2, h2, e2, hPu, frame_restore hF2 s⟩
 
 end

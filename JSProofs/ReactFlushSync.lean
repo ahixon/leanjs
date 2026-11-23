@@ -89,7 +89,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
       (.num (F64.fin false 4503599627370496 (-51))) s (fpA d.env) 20)
     (hPre : ReactSchedTaskRoot.Reads eng answer n fP #[.obj R, .num (F64.fin false 4503599627370496 (-51))]
       (.bool false) s (fpA d.env) 10)
-    (hPerf : ∀ w h1, Frame (fpA d.env) s w → s.fuel ≤ w.fuel + 60 →
+    (hPerf : ∀ w h1, Frame (fpA d.env) s w → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "isFlushingWork"]? = some bd ∧ bd.value = some (.bool true)) → s.fuel ≤ w.fuel + 60 →
       WP eng answer n h1 (callImpl eng (.obj fS) .undefined #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) w
         fun _ w' h' => Frame fpP w w' ∧ w.fuel ≤ w'.fuel + kP ∧ After w' d.env oG R bdF ∧ P w' h')
     (hfpE : fpP.binds.all (fun q => q.1 != s.envs.size) = true)
@@ -165,7 +165,12 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2, FDI.fdiCtx, Sem.inner]
   -- (`performSyncWorkOnRoot(root, 2)`: the render and commit)
   refine ⟨by js_norm [CallableC, *, objEntry_frame0 hF1, heap_frame hF1, objEntry_frame0 hF2, heap_frame hF2], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hPerf) _ h2 ?fr3 ?fu3) ?post3
+  refine wp_mono ((ReactDSSI.Hold.get hPerf) _ h2 ?fr3 ?if3 ?fu3) ?post3
+  case if3 =>
+    refine ⟨?ibm, ?i1, ?ibd, ?i2, ?i3⟩
+    case i1 => js_norm [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIv, hGIm, envEntry_frame0 hF1, envs_frame hF1, envEntry_frame0 hF2, envs_frame hF2, hE1s, hG1s]; rfl
+    case i2 => simp [Std.HashMap.getElem?_modify, hGI]; rfl
+    case i3 => rfl
   case fr3 => simp only [fpA]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu3 => js_side
   case post3 =>

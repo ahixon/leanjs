@@ -259,7 +259,7 @@ theorem microtask_render_fin {j : Nat} {eng : Engine} {σ : Type} {answer : Host
     (hCRk : (s.objEntry fCR).kind = .func dCR)
     (y_hEo : v_fE < s.heap.size)
     (y_hEk : (s.objEntry v_fE).kind = .func v_dE)
-    (hComplete : ∀ sP, Frame (ReactMicrotaskClick.fpPerf d.env R A) s sP → s.fuel ≤ sP.fuel + 402 →
+    (hComplete : ∀ sP, Frame (ReactMicrotaskClick.fpPerf d.env R A) s sP → ReactMicrotaskClick.MicroFacts sP d.env oG R A → s.fuel ≤ sP.fuel + 402 →
       ∀ sW, Frame {} sP sW → sP.fuel ≤ sW.fuel + 70 →
       ∀ w2 w h1 C alt bm x1 x2 x3 x4 x5 x6 x7, ReactPerformWork.RenderDone w2 d.env oG R C alt bm x1 x2 x3 x4 x5 x6 x7 →
       PRu w2 h1 → Frame (ReactPerformWork.fpOwn sW.envs.size) w2 w → sW.fuel ≤ w.fuel + (kP + kW + 20 + 300) + 80 →
