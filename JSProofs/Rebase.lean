@@ -1,4 +1,4 @@
-import JSProofs.Setter
+import JSProofs.Frame
 
 /-!
 # Rebasing a spec's premises along a frame (zippy docs/react-proofs.md)

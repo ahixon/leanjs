@@ -3,6 +3,7 @@ import JSProofs.ReactCommitButton
 import JSProofs.ReactCommitTraverse
 import JSProofs.ReactCommitRec
 import JSProofs.Rebase
+import JSProofs.Setter
 
 /-!
 # The button's commit, composed (zippy docs/react-proofs.md)

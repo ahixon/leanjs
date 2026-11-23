@@ -1,6 +1,7 @@
 import JSProofs.ReactDSSI
 import JSProofs.ERSGen
 import JSProofs.Rebase
+import JSProofs.Setter
 
 /-!
 # React's `ensureRootIsScheduled` after a click's update (zippy docs/react-proofs.md)

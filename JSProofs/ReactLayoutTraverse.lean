@@ -2,6 +2,7 @@ import JSProofs.RTLGen
 import JSProofs.Loops4
 import JSProofs.ReactHostContainer
 import JSProofs.Rebase
+import JSProofs.Setter
 
 /-!
 # recursivelyTraverseLayoutEffects (zippy docs/react-proofs.md)

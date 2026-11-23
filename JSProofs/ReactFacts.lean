@@ -1,5 +1,6 @@
 import JSProofs.Frame
 import JSProofs.Rebase
+import JSProofs.Setter
 
 /-!
 # Facts the commit's passes hand each other (zippy docs/react-proofs.md)

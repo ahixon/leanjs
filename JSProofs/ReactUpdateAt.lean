@@ -1,5 +1,6 @@
 import JSProofs.ReactUpdateProps
 import JSProofs.Rebase
+import JSProofs.Setter
 
 /-!
 # updateProperties' spec at a framed state (zippy docs/react-proofs.md)
