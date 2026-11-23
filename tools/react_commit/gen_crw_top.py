@@ -11,7 +11,7 @@ cb = binders(CF, "crw_full")
 FIB = {"R", "CR_CM_ME_M_K", "CR_CM_LE_L_K", "CR_CM_ME_M_CT_B", "CR_CM_LE_L_B"}
 FRESH = ["CR_CM_ME_M_CT_BT_NP"]
 WB = {"concurrentlyUpdatedLanes", "executionContext", "isFlushingWork", "workInProgressRoot", "pendingEffectsLanes",
-      "mightHavePendingSyncWork", "didScheduleMicrotask"}
+      "mightHavePendingSyncWork", "didScheduleMicrotask", "workInProgressRootRenderLanes"}
 S = re.compile(r"(?<![A-Za-z0-9_'.])s(?![A-Za-z0-9_'])")
 bdw = {}
 for n, k, t in cb:

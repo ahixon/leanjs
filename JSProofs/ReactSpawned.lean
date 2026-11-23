@@ -38,9 +38,19 @@ def FPA (g gP : EnvId) (FR : ObjId) : Footprint :=
 
 /-- What the click's commit leaves for the next `ensureRootIsScheduled`: the schedule after the call inside
 `flushSpawnedWork` and the root's lanes finished. -/
-def Done (w : State) (g : EnvId) (oG : Option EnvId) (FR : ObjId) : Prop :=
+def Done (w : State) (g : EnvId) (oG : Option EnvId) (FR : ObjId) (bdF : Binding) : Prop :=
   ReactEnsureRoot.Scheduled w g oG FR ∧
-    ∃ a b c, (w.objEntry FR).props.get? (.str (JSStr.ofString "pendingLanes")) = some (.data (.num (F64.fin false 0 (-1074))) a b c)
+    (∃ a b c, (w.objEntry FR).props.get? (.str (JSStr.ofString "pendingLanes")) =
+      some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧
+    -- (`ReactFlushSync.After`'s fields: what the flush's loop reads again)
+    (∃ bW bdW bdL lv, Scope.declLike? (w.envEntry g) = some (bW, oG) ∧
+      bW[JSStr.ofString "workInProgressRoot"]? = some bdW ∧ bdW.value = some .null ∧
+      bW[JSStr.ofString "workInProgressRootRenderLanes"]? = some bdL ∧ bdL.value = some lv ∧
+      bW[JSStr.ofString "firstScheduledRoot"]? = some bdF) ∧
+    (∃ a b c, (w.objEntry FR).props.get? (.str "next") = some (.data .null a b c)) ∧
+    (∃ a b c, (w.objEntry FR).props.get? (.str "cancelPendingCommit") = some (.data .null a b c)) ∧
+    (∃ a b c, (w.objEntry FR).props.get? (.str "timeoutHandle") =
+      some (.data (.num (F64.fin false 4503599627370496 (-52)).neg) a b c))
 
 section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
@@ -82,6 +92,14 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (gRN : bG[JSStr.ofString "rootWithNestedUpdates"]? = some bRN) (gRNm : bRN.mutable = true)
     (gRNv : bRN.value.isSome = true)
     (gFS : bG[JSStr.ofString "flushSyncWorkAcrossRoots_impl"]? = some bFS) (gFSv : bFS.value = some (.obj fFS))
+    {bWR bRL bFSR : Binding} {lv : Value} {nxw nxe nxc cpw cpe cpc thw the thc : Bool}
+    (gWR : bG[JSStr.ofString "workInProgressRoot"]? = some bWR) (gWRv : bWR.value = some .null)
+    (gRL : bG[JSStr.ofString "workInProgressRootRenderLanes"]? = some bRL) (gRLv : bRL.value = some lv)
+    (gFSR : bG[JSStr.ofString "firstScheduledRoot"]? = some bFSR)
+    (hFRn : (s.objEntry FR).props.get? (.str "next") = some (.data .null nxw nxe nxc))
+    (hFRc : (s.objEntry FR).props.get? (.str "cancelPendingCommit") = some (.data .null cpw cpe cpc))
+    (hFRt : (s.objEntry FR).props.get? (.str "timeoutHandle") =
+      some (.data (.num (F64.fin false 4503599627370496 (-52)).neg) thw the thc))
     (hR : R < s.heap.size) (hRk : (s.objEntry R).kind.isPlain = true)
     (hRs : (s.objEntry R).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num rs) rsw rse rsc))
     (hRf : (s.objEntry R).props.get? (.str (JSStr.ofString "flags")) = some (.data (.num rf) rfw rfe rfc))
@@ -121,14 +139,16 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
         fun v w' h' => Frame fpE w w' ∧ Frame ((FPA d.env gP FR).union fpE) s w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1 ∧
           ReactEnsureRoot.Scheduled w' d.env oG FR)
     (hfpE : ∀ p, p ∈ fpE.binds → p.1 < s.envs.size ∧ (p.1 = d.env → p.2 ∉ [JSStr.ofString "nestedUpdateCount",
-      JSStr.ofString "rootWithNestedUpdates", JSStr.ofString "flushSyncWorkAcrossRoots_impl"]))
+      JSStr.ofString "rootWithNestedUpdates", JSStr.ofString "flushSyncWorkAcrossRoots_impl",
+      JSStr.ofString "workInProgressRoot", JSStr.ofString "workInProgressRootRenderLanes",
+      JSStr.ofString "firstScheduledRoot"]))
     (hfpEp : ∀ p, p ∈ fpE.props → p.1 ≠ FR ∧ p.1 ≠ fFS)
     (hFSs : ∀ w h1, Frame ((FPA d.env gP FR).union fpE) s w → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fFS) .undefined #[.num (F64.fin false 0 (-1074)), .bool false]) w
         fun v w' h' => Frame {} w w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + 6 * K + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union fpE) s w ∧
-        Done w d.env oG FR := by
+        Done w d.env oG FR bFSR := by
   apply wp_callGen FSPGen.flushSpawnedWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (ReactNoEffects.simple_spawned d hcode) (by rw [hcode]; rfl)
     (by rw [hcode]; rfl)
@@ -298,7 +318,7 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     rfl)
   have hnf : ∀ x, x ∈ [JSStr.ofString "nestedUpdateCount", JSStr.ofString "rootWithNestedUpdates",
       JSStr.ofString "flushSyncWorkAcrossRoots_impl"] → (d.env, x) ∉ fpE.binds := fun x hx hm =>
-    (hfpE _ hm).2 rfl hx
+    (hfpE _ hm).2 rfl (List.mem_append_left _ hx)
   have hb1 := hbw5 _ (hnf (JSStr.ofString "nestedUpdateCount") (by simp))
   have hb2 := hbw5 _ (hnf (JSStr.ofString "rootWithNestedUpdates") (by simp))
   have hb3 := hbw5 _ (hnf (JSStr.ofString "flushSyncWorkAcrossRoots_impl") (by simp))
@@ -339,12 +359,43 @@ theorem fsp_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     have ho6 := objEntry_frame0 hF6 (o := FR) (by simp; exact hlt5 FR hFR)
     simp only [Done, ReactEnsureRoot.Scheduled, restore_envEntry, restore_objEntry, hd6, ho6]
     simp only [js_simp, hGd5, if_true, hS1, Option.map]
-    obtain ⟨g1, g2, g3, g4⟩ := hS2
-    refine ⟨⟨_, rfl, ?_, ?_, ?_, ?_⟩, _, _, _, hFRl5⟩
+    obtain ⟨g1, g2, g3, g4, bdm, g5, g5m⟩ := hS2
+    obtain ⟨bS', hdS', hxS'⟩ := declLike_frame hFs5 hG hGe
+    have ebS : bS' = bS := by rw [hS1] at hdS'; simp only [Option.some.injEq, Prod.mk.injEq] at hdS'; exact hdS'.1.symm
+    subst ebS
+    have hx : ∀ x, x ∈ [JSStr.ofString "workInProgressRoot", JSStr.ofString "workInProgressRootRenderLanes",
+        JSStr.ofString "firstScheduledRoot"] → bS'[x]? = bG[x]? := fun x hx =>
+      hxS' x fun hm => by
+        simp only [Footprint.union, List.mem_append] at hm
+        rcases hm with hm | hm
+        · simp only [List.mem_cons, List.mem_nil_iff, or_false] at hx
+          simp only [FPA, FPS, Footprint.union, List.cons_append, List.nil_append, List.mem_cons, List.mem_nil_iff,
+            Prod.mk.injEq, or_false] at hm
+          rcases hx with rfl | rfl | rfl <;> simp (config := { decide := true }) at hm
+        · exact (hfpE _ hm).2 rfl (List.mem_append_right [JSStr.ofString "nestedUpdateCount", JSStr.ofString "rootWithNestedUpdates", JSStr.ofString "flushSyncWorkAcrossRoots_impl"] hx)
+    have hpr : ∀ k, k ∈ [PropKey.str "next", .str "cancelPendingCommit", .str "timeoutHandle"] →
+        (w5.objEntry FR).props.get? k = (s.objEntry FR).props.get? k := fun k hk =>
+      props_frame hFs5 hFR <| Bool.eq_false_iff.mpr fun hc => by
+        have hm := List.contains_iff_mem.mp hc
+        simp only [Footprint.union, List.mem_append] at hm
+        rcases hm with hm | hm
+        · simp only [List.mem_cons, List.mem_nil_iff, or_false] at hk
+          simp only [FPA, FPS, Footprint.union, List.cons_append, List.nil_append, List.mem_cons, List.mem_nil_iff,
+            Prod.mk.injEq, or_false, List.not_mem_nil, false_or] at hm
+          rcases hk with rfl | rfl | rfl <;> simp (config := { decide := true }) at hm
+        · exact (hfpEp _ hm).1 rfl
+    refine ⟨⟨_, rfl, ?_, ?_, ?_, ?_, bdm, by simp [Std.HashMap.getElem?_modify, g5], g5m⟩, ⟨_, _, _, hFRl5⟩,
+      ⟨_, bWR, bRL, lv, rfl, ?_, gWRv, ?_, gRLv, ?_⟩, ⟨nxw, nxe, nxc, ?_⟩, ⟨cpw, cpe, cpc, ?_⟩, ⟨thw, the, thc, ?_⟩⟩
     · simp [Std.HashMap.getElem?_modify, g1]
     · simp [Std.HashMap.getElem?_modify, g2]
     · simp [Std.HashMap.getElem?_modify, g3]
     · simp [Std.HashMap.getElem?_modify, g4]
+    · simp [Std.HashMap.getElem?_modify, hx (JSStr.ofString "workInProgressRoot") (by simp), gWR]
+    · simp [Std.HashMap.getElem?_modify, hx (JSStr.ofString "workInProgressRootRenderLanes") (by simp), gRL]
+    · simp [Std.HashMap.getElem?_modify, hx (JSStr.ofString "firstScheduledRoot") (by simp), gFSR]
+    · rw [hpr (.str "next") (by simp)]; exact hFRn
+    · rw [hpr (.str "cancelPendingCommit") (by simp)]; exact hFRc
+    · rw [hpr (.str "timeoutHandle") (by simp)]; exact hFRt
   unfold FPA FPS
   have hd5' : (Scope.declLike? (w5.envEntry d.env)).isSome = true := by rw [hd5]; rfl
   refine frame_setEnv_split (frame_setEnv_with_in ?_ hG (setEnv_envEntry_self _ _ _ ?q1) ?q2 ?q3 _)

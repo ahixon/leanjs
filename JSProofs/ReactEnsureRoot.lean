@@ -49,7 +49,8 @@ def Scheduled (w : State) (e : EnvId) (oG : Option EnvId) (R : ObjId) : Prop :=
     (bW[JSStr.ofString "firstScheduledRoot"]?.bind (·.value)) = some (.obj R) ∧
     (bW[JSStr.ofString "lastScheduledRoot"]?.bind (·.value)) = some (.obj R) ∧
     (bW[JSStr.ofString "mightHavePendingSyncWork"]?.bind (·.value)) = some (.bool true) ∧
-    (bW[JSStr.ofString "didScheduleMicrotask"]?.bind (·.value)) = some (.bool true)
+    (bW[JSStr.ofString "didScheduleMicrotask"]?.bind (·.value)) = some (.bool true) ∧
+    ∃ bd, bW[JSStr.ofString "mightHavePendingSyncWork"]? = some bd ∧ bd.mutable = true
 
 theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
     {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdF bdL bdM bdD bdS : Binding} {R fS : ObjId} {dS : FuncData}
@@ -94,7 +95,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     js_norm [*]
     refine ⟨_, rfl, ?_⟩
     simp only [Std.HashMap.getElem?_modify, js_simp, hGF, hGL, hGM, hGD, Option.map_some]
-    refine ⟨?_, ?_, ?_, ?_⟩ <;> rfl
+    refine ⟨rfl, rfl, rfl, rfl, ?_⟩
+    simp [hGMm]
   case fu => js_side
   case post =>
     intro b w1 h1 hQ
@@ -149,7 +151,7 @@ theorem call_scheduled {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value
     frame_go' []
   case sch =>
     refine ⟨_, by rw [setEnv_envEntry_self _ _ _ (by simp; omega)]; simp only [declLike_withBindings', hGe, Option.map]; rfl, ?_⟩
-    simp [Std.HashMap.getElem?_modify, hGF, hGFv, hGL, hGLv, hGM, hGD]
+    simp [Std.HashMap.getElem?_modify, hGF, hGFv, hGL, hGLv, hGM, hGD, hGMm]
   case fu => simp; omega
   case post =>
     intro b w1 h1 hQ
@@ -192,7 +194,7 @@ theorem call_flagged {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
     · simp only [restore_envEntry]
       rw [setEnv_envEntry_self _ _ _ (by simp; omega)]
       simp only [declLike_withBindings', bodyState_envEntry_lt (s := s) (fo := fo) (d := d) (t := t) (args := #[.obj R]) _ hG, hGe, Option.map]
-    · simp [Std.HashMap.getElem?_modify, hGF, hGFv, hGL, hGLv, hGM, hGD, hGDv]
+    · simp [Std.HashMap.getElem?_modify, hGF, hGFv, hGL, hGLv, hGM, hGD, hGDv, hGMm]
   case fr =>
     simp only [fpS]
     refine frame_restore ?_ s

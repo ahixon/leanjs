@@ -17,9 +17,11 @@ def ren_outer(t):
 outer = ["{R : ObjId}"] + [f"{k}{nm} : {ren_outer(t)}{'}' if k == '{' else ')'}" for nm, k, t in cb if nm not in drop_outer]
 mb = binders(CF, "cpr_full")
 csubst = {"fo": "fCR", "t": ".undefined", "FR": "FR", "R": "R", "bG": "bG", "oG": "oG", "tr": "x2", "di": "x3",
-          "ds": "x7", "es": ".num (F64.fin false 5629499534213120 (-50))", "sst": ".null"}
+          "ds": "x7", "es": ".num (F64.fin false 5629499534213120 (-50))", "sst": ".null",
+          # timeoutHandle: completeRootWhenReady writes -1 before completeRoot (hCRf's PropHas)
+          "CM_SP_thw": "thw'", "CM_SP_the": "the'", "CM_SP_thc": "thc'"}
 QUANT = [nm for nm, k, t in mb if k == "(" and t.strip().startswith("∀ s1")]
-cr, _ = compose(CF, "cpr_full", "CR_", subst=csubst, given={}, drop=("n", "h", "s", "hf", "hlt", "hG", "hGe", "CM_SP_hfpE"))
+cr, _ = compose(CF, "cpr_full", "CR_", subst=csubst, given={}, drop=("n", "h", "s", "hf", "hlt", "hG", "hGe", "CM_SP_hfpE", "CM_SP_hFRt"))
 FPT = '⟨[], [(FR, .str (JSStr.ofString "timeoutHandle"))], false⟩'
 qgiven = {}
 for i, b in enumerate(cr):
@@ -63,12 +65,13 @@ stmt = f"""theorem crw_full {binds} :
   refine crw_spec (n := n + 11) (K := 59400) (P := {P}) {fixed} {fargs} (hK := by omega)
     (hCRc := ⟨_, CR_hk⟩) (hCRf := ?hCRf)
   case hCRf =>
-    intro w h1 hw hfw
+    intro w h1 hw hTH hfw
+    obtain ⟨thw', the', thc', hTH'⟩ := hTH
     obtain ⟨bw, hdw, hbw⟩ := declLike_frame hw hG hGe
     refine' wp_mono (cpr_full (s := w) (n := n) (bG := bw) {cimp} (hf := by omega)
       (hlt := lt_heap_of_frame hw hCRo) (hG := by rw [CR_hdenv]; exact lt_envs_of_frame hw hG)
       (hGe := by rw [CR_hdenv]; exact hdw) {qg}
-      (CM_SP_E_hP := by rw [hw.realms_eq]; exact CR_CM_SP_E_hP) ..) ?rpost
+      (CM_SP_E_hP := by rw [hw.realms_eq]; exact CR_CM_SP_E_hP) (CM_SP_hFRt := hTH') ..) ?rpost
     case rpost =>
       rintro v w' h' ⟨-, hfu, w0, hPc, hF0⟩
       exact ⟨by omega, ⟨w, w0, hw, hPc, hF0⟩, frame_trans hw (frame_trans hPc.2 hF0)⟩

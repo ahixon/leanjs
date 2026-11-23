@@ -123,6 +123,28 @@ theorem fsp_full {n : Nat}
     (gRNv : bRN.value.isSome = true)
     (gFS : bG[JSStr.ofString "flushSyncWorkAcrossRoots_impl"]? = some bFS)
     (gFSv : bFS.value = some (.obj fFS))
+    {bWR : Binding}
+    {bRL : Binding}
+    {bFSR : Binding}
+    {lv : Value}
+    {nxw : Bool}
+    {nxe : Bool}
+    {nxc : Bool}
+    {cpw : Bool}
+    {cpe : Bool}
+    {cpc : Bool}
+    {thw : Bool}
+    {the : Bool}
+    {thc : Bool}
+    (gWR : bG[JSStr.ofString "workInProgressRoot"]? = some bWR)
+    (gWRv : bWR.value = some .null)
+    (gRL : bG[JSStr.ofString "workInProgressRootRenderLanes"]? = some bRL)
+    (gRLv : bRL.value = some lv)
+    (gFSR : bG[JSStr.ofString "firstScheduledRoot"]? = some bFSR)
+    (hFRn : (s.objEntry FR).props.get? (.str "next") = some (.data .null nxw nxe nxc))
+    (hFRc : (s.objEntry FR).props.get? (.str "cancelPendingCommit") = some (.data .null cpw cpe cpc))
+    (hFRt : (s.objEntry FR).props.get? (.str "timeoutHandle") =
+      some (.data (.num (F64.fin false 4503599627370496 (-52)).neg) thw the thc))
     (hR : R < s.heap.size)
     (hRk : (s.objEntry R).kind.isPlain = true)
     (hRs : (s.objEntry R).props.get? (.str (JSStr.ofString "subtreeFlags")) = some (.data (.num rs) rsw rse rsc))
@@ -277,8 +299,8 @@ theorem fsp_full {n : Nat}
     (E_hdenv : E_d.env = d.env) :
     WP eng answer (n + 4) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + 6 * 60 + 400 ∧ h' = h ∧ Frame ((FPA d.env gP FR).union (ReactEnsureCall.fpEn d.env)) s w ∧
-        Done w d.env oG FR := by
-  refine fsp_spec (n := n + 2) (K := 60) (fpE := (ReactEnsureCall.fpEn d.env)) (fo := fo) (d := d) (t := t) (bG := bG) (oG := oG) (bS := bS) (bVT := bVT) (bRP := bRP) (bER := bER) (bFW := bFW) (bEL := bEL) (bRE := bRE) (bRel := bRel) (bLB := bLB) (bLP := bLP) (bIH := bIH) (bVE := bVE) (bTT := bTT) (bPE := bPE) (bEn := bEn) (bNC := bNC) (bRN := bRN) (bFS := bFS) (FR := FR) (R := R) (fRP := fRP) (fRel := fRel) (fLP := fLP) (fPE := fPE) (fEn := fEn) (fFS := fFS) (vt := vt) (tt := tt) (rs := rs) (rf := rf) (rsw := rsw) (rse := rse) (rsc := rsc) (rfw := rfw) (rfe := rfe) (rfc := rfc) (snw := snw) (sne := sne) (snc := snc) (plw := plw) (ple := ple) (plc := plc) (hlt := hlt) (hk := hk) (hcode := hcode) (hcls := hcls) (hmode := hmode) (hG := hG) (hGe := hGe) (gS := gS) (gSm := gSm) (gSv := gSv) (gVT := gVT) (gVTm := gVTm) (gVTv := gVTv) (gRP := gRP) (gRPv := gRPv) (gER := gER) (gERm := gERm) (gERv := gERv) (gFW := gFW) (gFWm := gFWm) (gFWv := gFWv) (gEL := gEL) (gELv := gELv) (gRE := gRE) (gREv := gREv) (gRel := gRel) (gRelv := gRelv) (gLB := gLB) (gLBm := gLBm) (gLBv := gLBv) (gLP := gLP) (gLPv := gLPv) (gIH := gIH) (gIHv := gIHv) (gVE := gVE) (gVEv := gVEv) (gTT := gTT) (gTTm := gTTm) (gTTv := gTTv) (gPE := gPE) (gPEv := gPEv) (gEn := gEn) (gEnv := gEnv) (gNC := gNC) (gNCm := gNCm) (gNCv := gNCv) (gRN := gRN) (gRNm := gRNm) (gRNv := gRNv) (gFS := gFS) (gFSv := gFSv) (hR := hR) (hRk := hRk) (hRs := hRs) (hRf := hRf) (hrs := hrs) (hrf := hrf) (hRn := hRn) (hFR := hFR) (hFRk := hFRk) (hFRl := hFRl) (hRPo := hRPo) (hRPc := hRPc) (hRelo := hRelo) (hLPo := hLPo) (hPEo := hPEo) (hEno := hEno) (hFSo := hFSo) (dRF := dRF) (dLF := dLF) (dPF := dPF) (dEF := dEF) (dSF := dSF) (gP := gP) (hgP := hgP) (hgPs := hgPs) (hRP := hRP) (hK := by omega)
+        Done w d.env oG FR bFSR := by
+  refine fsp_spec (n := n + 2) (K := 60) (fpE := (ReactEnsureCall.fpEn d.env)) (fo := fo) (d := d) (t := t) (bG := bG) (oG := oG) (bS := bS) (bVT := bVT) (bRP := bRP) (bER := bER) (bFW := bFW) (bEL := bEL) (bRE := bRE) (bRel := bRel) (bLB := bLB) (bLP := bLP) (bIH := bIH) (bVE := bVE) (bTT := bTT) (bPE := bPE) (bEn := bEn) (bNC := bNC) (bRN := bRN) (bFS := bFS) (FR := FR) (R := R) (fRP := fRP) (fRel := fRel) (fLP := fLP) (fPE := fPE) (fEn := fEn) (fFS := fFS) (vt := vt) (tt := tt) (rs := rs) (rf := rf) (rsw := rsw) (rse := rse) (rsc := rsc) (rfw := rfw) (rfe := rfe) (rfc := rfc) (snw := snw) (sne := sne) (snc := snc) (plw := plw) (ple := ple) (plc := plc) (hlt := hlt) (hk := hk) (hcode := hcode) (hcls := hcls) (hmode := hmode) (hG := hG) (hGe := hGe) (gS := gS) (gSm := gSm) (gSv := gSv) (gVT := gVT) (gVTm := gVTm) (gVTv := gVTv) (gRP := gRP) (gRPv := gRPv) (gER := gER) (gERm := gERm) (gERv := gERv) (gFW := gFW) (gFWm := gFWm) (gFWv := gFWv) (gEL := gEL) (gELv := gELv) (gRE := gRE) (gREv := gREv) (gRel := gRel) (gRelv := gRelv) (gLB := gLB) (gLBm := gLBm) (gLBv := gLBv) (gLP := gLP) (gLPv := gLPv) (gIH := gIH) (gIHv := gIHv) (gVE := gVE) (gVEv := gVEv) (gTT := gTT) (gTTm := gTTm) (gTTv := gTTv) (gPE := gPE) (gPEv := gPEv) (gEn := gEn) (gEnv := gEnv) (gNC := gNC) (gNCm := gNCm) (gNCv := gNCv) (gRN := gRN) (gRNm := gRNm) (gRNv := gRNv) (gFS := gFS) (gFSv := gFSv) (bWR := bWR) (bRL := bRL) (bFSR := bFSR) (lv := lv) (nxw := nxw) (nxe := nxe) (nxc := nxc) (cpw := cpw) (cpe := cpe) (cpc := cpc) (thw := thw) (the := the) (thc := thc) (gWR := gWR) (gWRv := gWRv) (gRL := gRL) (gRLv := gRLv) (gFSR := gFSR) (hFRn := hFRn) (hFRc := hFRc) (hFRt := hFRt) (hR := hR) (hRk := hRk) (hRs := hRs) (hRf := hRf) (hrs := hrs) (hrf := hrf) (hRn := hRn) (hFR := hFR) (hFRk := hFRk) (hFRl := hFRl) (hRPo := hRPo) (hRPc := hRPc) (hRelo := hRelo) (hLPo := hLPo) (hPEo := hPEo) (hEno := hEno) (hFSo := hFSo) (dRF := dRF) (dLF := dLF) (dPF := dPF) (dEF := dEF) (dSF := dSF) (gP := gP) (hgP := hgP) (hgPs := hgPs) (hRP := hRP) (hK := by omega)
     (hRelc := ⟨_, L_hk⟩) (hLPc := ⟨_, T_hk⟩) (hPEc := ⟨_, P_hk⟩) (hFSc := ⟨_, W_hk⟩) (hEnc := ⟨_, E_hk⟩)
     (hRel := ?hRel) (hLP := ?hLP) (hPE := ?hPE) (hFSs := ?hFSs) (hEn := ?hEn) (hfpE := ?hfpE) (hfpEp := ?hfpEp)
   case hfpE =>

@@ -71,7 +71,7 @@ for m in re.finditer(r'\(∃ fa fb, \(x\.objEntry (\w+)\)\.props\.get\? \(\.str 
     while d0: d0 += {"(": 1, ")": -1}.get(HANDOFF[j], 0); j += 1
     HS[(m.group(1), m.group(2))] = "some (.data " + HANDOFF[m.end():j - 1] + ")"
 BSRC = {"executionContext", "workInProgressRoot", "pendingEffectsLanes", "concurrentlyUpdatedLanes", "isFlushingWork",
-        "mightHavePendingSyncWork", "didScheduleMicrotask"}
+        "mightHavePendingSyncWork", "didScheduleMicrotask", "workInProgressRootRenderLanes"}
 MFK = {("R", "callbackNode"), ("R", "callbackPriority"), ("A", "1")}
 cimp = {n for n, k, t in cb if k == "{"}
 lfree = {n for n, k, t in lb if k == "{"}
@@ -216,7 +216,7 @@ pre, args = [], []
 for (o, k), i in [(k, v) for k, v in PIDX.items() if isinstance(k, tuple)]:
     pre.append(f"obtain ⟨_, _, P{i}⟩ := H{i}")
 pre.append(f"obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨⟨_, _, _, hA1⟩, ⟨_, _, _, hCP⟩, ⟨_, _, _, hCN⟩⟩, ⟨bmG, hbmG, ⟨_, gMS, gMSm, gMSv⟩, ⟨_, gDS, gDSm, gDSv⟩⟩⟩ := H{PIDX['MF']}")
-pre.append(f"obtain ⟨bmE, hbmE, ⟨_, gEC, gECv, gECm⟩, ⟨_, gWR, gWRv⟩⟩ := H{PIDX['EB']}")
+pre.append(f"obtain ⟨bmE, hbmE, ⟨_, gEC, gECv, gECm⟩, ⟨_, gWR, gWRv⟩, ⟨_, gRL, gRLv⟩⟩ := H{PIDX['EB']}")
 pre.append(f"obtain ⟨bmQ, oQ, hbmQ, _, gCU, gCUv⟩ := H{PIDX['QD']}")
 pre.append(f"obtain ⟨bmP, hbmP, _, gPE, gPEm, gPEv⟩ := H{PIDX['PE']}")
 pre.append(f"obtain ⟨bmV, hbmV, ⟨_, r1, r1v⟩, ⟨_, r4, r4v⟩, ⟨_, r5, r5v⟩, ⟨_, r6, r6v⟩⟩ := H{PIDX['RV']}")
@@ -238,6 +238,7 @@ pre.append(f"have hNPw := ReactNewProps.NewProps.frame hOwn H{PIDX['NP']} (fun k
 PRE = "\n  ".join(pre)
 # supplied premises' proofs
 BIND = {"executionContext": {"get": "gEC", "value": "gECv", "mutable": "gECm"}, "workInProgressRoot": {"get": "gWR", "value": "gWRv"},
+        "workInProgressRootRenderLanes": {"get": "gRL", "value": "gRLv"},
         "pendingEffectsLanes": {"get": "gPE", "mutable": "gPEm", "value": "gPEv"},
         "concurrentlyUpdatedLanes": {"get": "gCU", "value": "gCUv"}, "isFlushingWork": {"get": "hbdF", "value": "hbdFv"},
         "mightHavePendingSyncWork": {"get": "gMS", "mutable": "gMSm", "value": "gMSv"},
@@ -337,11 +338,11 @@ EXTRA2 = ["(hG : d.env < s.envs.size)", "(hRo : R < s.heap.size)", "(hH : p_H < 
           "(hRcur : (s.objEntry R).props.get? (.str \"current\") = some (.data (.obj p_H) p_ruw p_rue p_ruc))",
           "(hHa : (s.objEntry p_H).props.get? (.str \"alternate\") = some (.data (.obj p_X) p_haw p_hae p_hac))",
           "(hf0o : c_CR_CM_ME_M_CT_BT_CH_U_f0 < s.heap.size)",
-          "(dr_RI : R ≠ l_RI) (dr_CF : R ≠ l_CF) (dr_CS : R ≠ l_CS) (dr_Cu : R ≠ l_Cu)", "(hfu : 64000 ≤ s.fuel)"]
+          "(dr_RI : R ≠ l_RI) (dr_CF : R ≠ l_CF) (dr_CS : R ≠ l_CS) (dr_Cu : R ≠ l_Cu) (dr_U : R ≠ p_U)", "(hfu : 64000 ≤ s.fuel)"]
 # objects whose same-key entries in the microtask's and render's footprints need telling apart: generated on demand
 DLP = [l for l in open("tools/react_commit/complete_dl.txt").read().split("\n") if l.strip()] if __import__("os").path.exists("tools/react_commit/complete_dl.txt") else []
 _dn = [re.match(r".(\w+) :", l).group(1) for l in DLP]
-DLNv = ", ".join(f"{x}, Ne.symm {x}" for x in _dn + ["dr_RI", "dr_CF", "dr_CS", "dr_Cu"])
+DLNv = ", ".join(f"{x}, Ne.symm {x}" for x in _dn + ["dr_RI", "dr_CF", "dr_CS", "dr_Cu", "dr_U"])
 proof = proof.replace("@@DLN@@", DLNv).replace("{PRE}", PRE)
 proof = proof.replace("@@ALLDEFS@@", ALLDEFS)
 text_all2 = text_all + " " + " ".join(EXTRA2 + DLP)

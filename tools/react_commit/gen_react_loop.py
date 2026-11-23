@@ -313,7 +313,7 @@ for i, (o, k) in enumerate(HKEYS):
 n = len(HKEYS)
 hop.append(f"  case h{n} => exact ⟨_, _, by show (w3.objEntry l_X).props.get? _ = _; {ENDF.format(B=W2('l_X'))}; exact q10⟩")
 hop.append(f"  case h{n+1} => exact ReactNewProps.NewProps.frame (frame_restore (frame_trans hEnd hFQ) c) hNP (fun k hk => by have hCI : Cn ≠ I := Nat.ne_of_gt (Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le l_hI hT.heap_le) hCn); simp [Logic.Footprint.union, ReactRenderSync.fpEnd, ReactRenderSync.fpOwn, ReactFinishQueueing.fp, hCI] at hk)")
-hop.append(f"  case h{n+2} => obtain ⟨be, hbe, ⟨bx, gx, gxv, gxm⟩, ⟨bwr, gwr, gwrv⟩⟩ := hEB; have hbe2 : be = b2 := (by rw [hb2] at hbe; cases hbe; rfl); subst hbe2; exact ⟨b3, hb3, ⟨bx, by rw [B3 _ (by simp [ReactFinishQueueing.fp])]; exact gx, gxv, gxm⟩, ⟨bwr, by rw [B3 _ (by simp [ReactFinishQueueing.fp])]; exact gwr, gwrv⟩⟩")
+hop.append(f"  case h{n+2} => obtain ⟨be, hbe, ⟨bx, gx, gxv, gxm⟩, ⟨bwr, gwr, gwrv⟩, ⟨brl, grl, grlv⟩⟩ := hEB; have hbe2 : be = b2 := (by rw [hb2] at hbe; cases hbe; rfl); subst hbe2; exact ⟨b3, hb3, ⟨bx, by rw [B3 _ (by simp [ReactFinishQueueing.fp])]; exact gx, gxv, gxm⟩, ⟨bwr, by rw [B3 _ (by simp [ReactFinishQueueing.fp])]; exact gwr, gwrv⟩, ⟨brl, by rw [B3 _ (by simp [ReactFinishQueueing.fp])]; exact grl, grlv⟩⟩")
 hop.append(f"  case h{n+3} => exact hQD")
 hop.append(f"""  case h{n+4} => exact ⟨b3, hb3, _, by rw [B3 _ (by simp (config := {{ decide := true }}) [ReactFinishQueueing.fp]), B2 _ (by simp (config := {{ decide := true }}) [ReactRenderSync.fpEnd, ReactRenderSync.fpOwn]), NB _ (by simp (config := {{ decide := true }}) [{FPD}])]; exact gPE, gPEm, gPEv⟩""")
 hop.append(f"  case h{n+5} => exact Nat.le_trans hT.heap_le hCn")

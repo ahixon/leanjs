@@ -37,6 +37,9 @@ for nm, k, t in mb:
         if tt.startswith(bd + ".value = some"): supplied[nm] = f"hv{key}"
         elif tt == bd + ".mutable = true": supplied[nm] = f"hm{key}"
         elif tt == bd + ".value.isSome = true": supplied[nm] = f"(by rw [hv{key}]; rfl)"
+# cancelPendingCommit: completeRoot writes it null before commitRoot (hCMf's PropHas)
+CPX = {"SP_cpw": "cpw'", "SP_cpe": "cpe'", "SP_cpc": "cpc'"}
+supplied.update(CPX); supplied["SP_hFRc"] = "hCP'"
 csubst = {"fo": "fCM", "t": ".undefined", "FR": "FR", "R": "R", "bG": "bG", "oG": "oG", "sst": "sst", "ME_lv": TWO}
 QUANT = []
 for nm, k, t in mb:
@@ -70,7 +73,7 @@ fargs = " ".join(f"({nm} := {ren_outer(nm) if nm in outer_ren else nm})" for nm,
 fixed = " ".join(f"({nm} := {v})" for nm, v in outer_ren.items())
 cimp = " ".join(f"({nm} := {supplied.get(nm, csubst.get(nm, 'CM_' + nm))})" for nm, k, t in mb
                 if k == "{" and nm not in ("n", "h", "s", "bG"))
-cexp = " ".join(f"({nm} := {v})" for nm, v in supplied.items() if nm not in [bd for bd in bdmap])
+cexp = " ".join(f"({nm} := {v})" for nm, v in supplied.items() if nm not in [bd for bd in bdmap] and nm not in CPX)
 qg = " ".join(f"({nm} := {v})" for nm, v in qgiven.items())
 pimp = " ".join(f"({nm} := PN_{nm})" for nm, k, t in binders(NE, "pending_none")
                 if k == "{" and nm not in ("n", "h", "s", "fo", "t", "bG", "oG", "bdS"))
@@ -98,7 +101,8 @@ stmt = f"""theorem cpr_full {binds} :
       exact ⟨hF, by omega, rfl⟩
     all_goals {RB}
   case hCMf =>
-    intro w h1 hw hFW hER hEL hRE hfw
+    intro w h1 hw hFW hER hEL hRE hCP hfw
+    obtain ⟨cpw', cpe', cpc', hCP'⟩ := hCP
     obtain ⟨bw, hdw, hbw⟩ := declLike_frame hw hG hGe
     {BI.format(bd="bdFW'", hd="hd1", hb="hbFW", hv="hvFW", hm="hmFW", src="hFW")}
     {BI.format(bd="bdER'", hd="hd2", hb="hbER", hv="hvER", hm="hmER", src="hER")}

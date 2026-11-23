@@ -42,7 +42,9 @@ def AfterLoop (w : State) (g : EnvId) (oG : Option EnvId) : Prop :=
 def EndBinds (w : State) (g : EnvId) (oG : Option EnvId) (ec : F64) : Prop :=
   ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, oG) ∧
     (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.value = some (.num ec) ∧ bd.mutable = true) ∧
-    (∃ bd, bm[JSStr.ofString "workInProgressRoot"]? = some bd ∧ bd.value = some .null)
+    (∃ bd, bm[JSStr.ofString "workInProgressRoot"]? = some bd ∧ bd.value = some .null) ∧
+    (∃ bd, bm[JSStr.ofString "workInProgressRootRenderLanes"]? = some bd ∧
+      bd.value = some (.num (F64.fin false 0 (-1074))))
 
 /-- The function's own locals (record `e`). -/
 def fpOwn (e : EnvId) : Footprint :=
@@ -299,10 +301,11 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   case fr5 => simp only [fpEnd, fpOwn]; frame_go' [*, hne, Ne.symm hne]
   case fu5 => simp only [js_simp]; simp at hfu1 hfu2; omega
   case eb5 =>
-    refine ⟨?ebm, ?e1, ⟨?eb1, ?e2, ?e3, ?e4⟩, ⟨?eb2, ?e5, ?e6⟩⟩
+    refine ⟨?ebm, ?e1, ⟨?eb1, ?e2, ?e3, ?e4⟩, ⟨?eb2, ?e5, ?e6⟩, ⟨?eb3, ?e7, ?e8⟩⟩
     case e1 => js_norm [*, hne, Ne.symm hne]; rfl
     case e2 => simp [Std.HashMap.getElem?_modify, hb3]; rfl
     case e5 => simp [Std.HashMap.getElem?_modify, hb4]; rfl
+    case e7 => simp [Std.HashMap.getElem?_modify, hb5]; rfl
     all_goals first | rfl | simp [hm3] | skip
   case post5 =>
   intro r w5 h5 ⟨hF5, hfu5, hQ⟩
