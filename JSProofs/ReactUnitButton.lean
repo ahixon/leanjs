@@ -390,7 +390,8 @@ theorem button_unit_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Val
       (w.objEntry C).props.get? (.str "return") = some (.data (.obj R) true rwe2 rwc2) ∧
         (w.objEntry X).props.get? (.str "memoizedProps") = some (.data (.obj P1) true mpe' mpc')) ∧
       ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, none) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
-        bd.value = some .null := by
+        bd.value = some .null ∧
+        ∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true := by
   apply wp_callGen PUWGen.performUnitOfWork_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleP d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "unitOfWork"] := by rw [hcode]; rfl

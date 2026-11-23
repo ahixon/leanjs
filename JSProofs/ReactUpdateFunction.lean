@@ -334,7 +334,9 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, none) ∧
         (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
-        ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true := by
+        ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true ∧
+        (∃ bd, bm[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true) ∧
+        (∃ bd, bm[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true) := by
   apply wp_callGen UFCGen.updateFunctionComponent_eq (by decide) hUF hUFk (by omega) hUFcls hUFmode
     (by rw [hUFcode]; rfl) (by rw [hUFcode]; rfl) (simpleUF dUF hUFcode) (by rw [hUFcode]; rfl) (by rw [hUFcode]; rfl)
   have hpn : dUF.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
@@ -703,7 +705,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
   · exact Exists.intro _ ⟨by first | rfl | (rw [restore_envEntry]; exact hmod4),
       by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, hGDR, hGDRm, hGDRi],
       by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, rhGT, rhGTm, rhGTi],
-      by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, rhGS, rhGSm, rhGSi]⟩
+      by simp [Std.HashMap.getElem?_modify, ReactFinishHooks.resetMap, rhGS, rhGSm, rhGSi, hGL1, hGL1m, hGF1, hGF1m]⟩
 
 end
 

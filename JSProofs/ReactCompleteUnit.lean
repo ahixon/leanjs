@@ -216,7 +216,8 @@ theorem unit_spec {n : Nat} {h : σ} {fU : ObjId} {dU : FuncData} {tU : Value} {
         (numberBinOp .bitOr a2 (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr a (F64.fin false 0 (-1074))))))) true le3 lc3) ∧
       (w.objEntry C).props.get? (.str "return") = some (.data (.obj R) true rwe2 rwc2)) ∧
       ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, none) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
-        bd.value = some .null := by
+        bd.value = some .null ∧
+        ∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true := by
   apply wp_callGen CUWGen.completeUnitOfWork_eq (by decide) hUo hUk (by omega) hUcls hUmode
     (by rw [hUcode]; rfl) (by rw [hUcode]; rfl) (simpleU dU hUcode) (by rw [hUcode]; rfl) (by rw [hUcode]; rfl)
   have hpn : dU.code.info.fdi.paramNames = #[JSStr.ofString "unitOfWork"] := by rw [hUcode]; rfl
@@ -372,7 +373,9 @@ theorem unit_spec {n : Nat} {h : σ} {fU : ObjId} {dU : FuncData} {tU : Value} {
     (fun q hq _ => by simp [ReactCompleteRoot.fpRC] at hq
                       rcases hq with hq | hq | hq | hq | hq | hq | hq | hq | hq | hq | hq | hq <;> simp [fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, hq])
     (fun _ => rfl)
-  refine ⟨?_, by omega, ?facts, ⟨_, rfl, { bdWIP with value := some .null }, by simp [Std.HashMap.getElem?_modify, hbwW], rfl⟩⟩
+  refine ⟨?_, by omega, ?facts, ⟨_, rfl, { bdWIP with value := some .null }, by simp [Std.HashMap.getElem?_modify, hbwW], rfl,
+    { bdES with value := some (.num (F64.fin false 5629499534213120 (-50))) }, by simp [Std.HashMap.getElem?_modify, hbwE, hGES], rfl,
+    by simpa using hGESm⟩⟩
   case facts =>
     refine ⟨?f1, ?f2, ?f3, ?f4, ?f5, ?f6⟩
     case f1 => rw [props_frame hF3 (Nat.lt_of_lt_of_le hX gZ3) (by simp [ReactCompleteRoot.fpRC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW3]; rw [props_frame hF2 (Nat.lt_of_lt_of_le hX gZ2) (by simp [ReactCompleteButton.fpCC, hCX, Ne.symm hCX, hRX, Ne.symm hRX, hRC, Ne.symm hRC]), gW2]; exact hXf1
