@@ -17,9 +17,15 @@ for n, k, t in cb:
     if m and m.group(1) in WB: bdw[m.group(2)] = m.group(1)
 sup, kept, quant = [], [], []
 kept_names, kept_props, whole = set(), set(), set()
+def norm0(x):
+    x = re.sub(r"\s+", " ", x)
+    while True:
+        y = re.sub(r"\((\w+)\)", r"\1", x)
+        if y == x: return x
+        x = y
 for n, k, t in cb:
     if k != "(" or n in ("hG", "hGe", "hf", "hlt"): continue
-    tt = t.strip()
+    tt = norm0(t.strip())
     if tt.startswith("∀ s2"): quant.append(n); continue
     m = re.match(r'bG\[JSStr\.ofString "([\w$]+)"\]', tt)
     if m and m.group(1) in WB: sup.append(n); continue
