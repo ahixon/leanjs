@@ -49,7 +49,9 @@ ti, th = sig(TOP, "microtask_render_fin", "    WP eng answer (j + 6)")
 rp = hyp_type([b for b in th if hname(b) == "r_Prep"][0])
 PFP = "(ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H)"
 P1 = (f"(fun w' (_ : σ) => Frame (((((ReactMicrotaskClick.fpPerf d.env R A).union {{}}).union {{}}).union "
-      f"(ReactRenderSync.fpPre d.env I)).union {PFP}) s w')")
+      f"(ReactRenderSync.fpPre d.env I)).union {PFP}) s w' ∧ ReactPrepareFresh.PrepBinds w' d.env oG p_X ∧ "
+      f"ReactPrepareFresh.PrepFields w' p_X p_H p_F p_Fa p_Qo p_U p_vT p_vL p_vC p_vMP p_vMS p_vUQ p_vS p_vI p_vR p_vRC "
+      f"p_fl p_hc p_fl' p_al)")
 INST = {"P1": P1, "fpPF": PFP, "kP": "400", "j": "(j + 2)"}
 rp_i = subst(rp, INST)
 lemma = f"""set_option maxHeartbeats 8000000 in
@@ -72,9 +74,9 @@ theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : Ob
   refine wp_mono (ReactPrepareFresh.call_spec (n := j) (d := {{ dPF with env := d.env }}) (bG := bW)
     {" ".join(passes)}
     {" ".join(args)}) ?_
-  intro v w' h' ⟨_, hF', hfu', hh, hAP⟩
+  intro v w' h' ⟨_, hF', hfu', hh, hAP, hPB, hPF⟩
   subst hh
-  exact ⟨hF', by omega, hAP, frame_trans hT hF'⟩
+  exact ⟨hF', by omega, hAP, frame_trans hT hF', hPB, hPF⟩
 """
 # the top theorem with r_Prep discharged
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
