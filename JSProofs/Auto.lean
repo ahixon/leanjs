@@ -45,13 +45,30 @@ theorem wp_identC {n : Nat} {h : σ} {x : JSStr} {ctx : Ctx} {s : State} {Q : Va
   | none => rw [hl] at hq; exact hq.elim
   | some v => rw [hl] at hq; exact wp_ident depth hl hk hq
 
-/-- `o.k` of a plain object whose own property `k` is a data property. -/
-def GetsC (s : State) (base : Value) (k : JSStr) (P : Value → Prop) : Prop :=
+/-- `base.k` of an own data property only (the rules that then write it, or read it destructively). -/
+def GetsOC (s : State) (base : Value) (k : JSStr) (P : Value → Prop) : Prop :=
   match base with
   | .obj o => o < s.heap.size ∧ (s.objEntry o).kind.isPlain = true ∧
     match (s.objEntry o).props.get? (.str k) with
     | some (.data v _ _ _) => P v
     | _ => False
+  | _ => False
+
+/-- `o.k` of a plain object: its own data property `k`, or (none own) its plain prototype's. -/
+def GetsC (s : State) (base : Value) (k : JSStr) (P : Value → Prop) : Prop :=
+  match base with
+  | .obj o => o < s.heap.size ∧ (s.objEntry o).kind.isPlain = true ∧
+    match (s.objEntry o).props.get? (.str k) with
+    | some (.data v _ _ _) => P v
+    | some (.accessor ..) => False
+    | none =>
+      -- (inherited from a plain prototype, e.g. `performance.now` from `Performance.prototype`)
+      match (s.objEntry o).proto with
+      | .obj p => p < s.heap.size ∧ (s.objEntry p).kind.isPlain = true ∧
+        match (s.objEntry p).props.get? (.str k) with
+        | some (.data v _ _ _) => P v
+        | _ => False
+      | _ => False
   | _ => False
 
 theorem getsC_getsTo {s : State} {base : Value} {k : JSStr} {P : Value → Prop} (h : GetsC s base k P) :
@@ -60,7 +77,23 @@ theorem getsC_getsTo {s : State} {base : Value} {k : JSStr} {P : Value → Prop}
   | obj o =>
     obtain ⟨hlt, hk, hp⟩ := h
     cases hg : (s.objEntry o).props.get? (.str k) with
-    | none => rw [hg] at hp; exact hp.elim
+    | none =>
+      rw [hg] at hp
+      cases hpr : (s.objEntry o).proto with
+      | obj q =>
+        rw [hpr] at hp
+        obtain ⟨hq, hqk, hqp⟩ := hp
+        cases hg2 : (s.objEntry q).props.get? (.str k) with
+        | none => rw [hg2] at hqp; exact hqp.elim
+        | some p2 =>
+          rw [hg2] at hqp
+          cases p2 with
+          | accessor => exact hqp.elim
+          | data v w e c =>
+            have hl : ordLookup s 2 o (.str k) = some (.data v w e c) := by simp [ordLookup, hg, hpr, hg2]
+            refine ⟨o, 2, rfl, ⟨hlt, hk, fun _ => by rw [hpr]; exact plainChain_own s q _ hq hqk hg2⟩, by omega,
+              by rw [hl]; rfl, by rw [hl]; exact hqp⟩
+      | _ => rw [hpr] at hp; exact hp.elim
     | some p =>
       rw [hg] at hp
       cases p with
@@ -266,7 +299,7 @@ theorem setEnv_envEntry (s : State) (e : EnvId) (ev : Env) (i : EnvId) :
 
 /-! ## The simp set -/
 
-attribute [js_simp] DeclsWP List.toList_toArray Scope.lookup_succ Scope.resolve Scope.lookup GetsC SetsC PutsC setEnv_envEntry Env.withBindings_func Env.withBindings_decl bodyState_envEntry FDI.fdiMap FDI.createParam FDI.bindParam FDI.createVar FDI.createLex List.range_succ List.range_zero List.nil_append List.cons_append List.foldl_cons List.foldl_nil List.foldl_append List.size_toArray List.length_cons List.length_nil Std.HashMap.getElem?_modify Std.HashMap.getElem?_insert Std.HashMap.getElem?_empty Std.HashMap.contains_eq_isSome_getElem? Option.isSome_some Option.isSome_none State.setEnv_envs_size State.setEnv_fuel setEnv_heap setEnv_objEntry bodyState_envs_size bodyState_fuel bodyState_objEntry bodyState_heap State.setProp_envs State.setProp_fuel State.setProp_size Option.map_some Option.map_none Bool.false_eq_true toBoolean litValue retVal Compl.updateEmpty Option.orElse HOrElse.hOrElse OrElse.orElse Bool.not_false Bool.not_true Bool.true_and Bool.false_and Bool.and_true Bool.or_false Bool.false_or Bool.true_or Bool.or_true Bool.and_false Nat.lt_add_one and_true true_and lit_getElem?_zero lit_getElem?_succ lit_getElem!_zero lit_getElem!_succ Option.getD_some List.contains_toArray List.contains_cons List.contains_nil
+attribute [js_simp] DeclsWP List.toList_toArray Scope.lookup_succ Scope.resolve Scope.lookup GetsC GetsOC SetsC PutsC setEnv_envEntry Env.withBindings_func Env.withBindings_decl bodyState_envEntry FDI.fdiMap FDI.createParam FDI.bindParam FDI.createVar FDI.createLex List.range_succ List.range_zero List.nil_append List.cons_append List.foldl_cons List.foldl_nil List.foldl_append List.size_toArray List.length_cons List.length_nil Std.HashMap.getElem?_modify Std.HashMap.getElem?_insert Std.HashMap.getElem?_empty Std.HashMap.contains_eq_isSome_getElem? Option.isSome_some Option.isSome_none State.setEnv_envs_size State.setEnv_fuel setEnv_heap setEnv_objEntry bodyState_envs_size bodyState_fuel bodyState_objEntry bodyState_heap State.setProp_envs State.setProp_fuel State.setProp_size Option.map_some Option.map_none Bool.false_eq_true toBoolean litValue retVal Compl.updateEmpty Option.orElse HOrElse.hOrElse OrElse.orElse Bool.not_false Bool.not_true Bool.true_and Bool.false_and Bool.and_true Bool.or_false Bool.false_or Bool.true_or Bool.or_true Bool.and_false Nat.lt_add_one and_true true_and lit_getElem?_zero lit_getElem?_succ lit_getElem!_zero lit_getElem!_succ Option.getD_some List.contains_toArray List.contains_cons List.contains_nil
 attribute [js_simp] jsstrBeq jsstrEq numEval strictEqEval PropKey.str.injEq
 
 /-- `declLike?` by constructor, and through an `if` (so that a hypothesis about `declLike? (s.envEntry e)` applies,

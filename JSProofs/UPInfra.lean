@@ -80,7 +80,7 @@ theorem wp_bindForPat {N n : Nat} {h : σ} {x : JSStr} {ctx : Ctx} {v : Value} {
 /-- **`obj[key]`**, the key a string naming an own data property of a plain object. -/
 theorem wp_getStrKey {n : Nat} {h : σ} {obj ke : Sem.CExpr} {ctx : Ctx} {s : State} {Q : Value → State → σ → Prop}
     (hw : WP eng answer n h (obj ctx) s fun bv w1 h1 => WP eng answer n h1 (ke ctx) w1 fun kv w2 h2 =>
-      ∃ ks, kv = .str ks ∧ GetsC w2 bv ks fun v => Q v w2 h2) :
+      ∃ ks, kv = .str ks ∧ GetsOC w2 bv ks fun v => Q v w2 h2) :
     WP eng answer n h (Sem.getValue (Sem.memberRef obj (.computed ke) false) ctx) s Q := by
   rw [wp_iff_wpr]
   simp only [Sem.getValue, Sem.memberRef, M.bind_eq, M.bind_apply]

@@ -126,7 +126,7 @@ theorem wp_assignIdxC {n : Nat} {h : σ} {obj ke rhs : Sem.CExpr} {ctx : Ctx} {s
 /-- **`obj.k op= rhs`** of a plain object's own writable data property holding a Number, a numeric operator. -/
 theorem wp_assignOpMemberC {n : Nat} {h : σ} {op : BinOp} {obj rhs : Sem.CExpr} {k : JSStr} {ctx : Ctx} {s : State}
     {Q : Value → State → σ → Prop} (hop : isNumOp op = true)
-    (hw : WP eng answer n h (obj ctx) s fun bv w1 h1 => GetsC w1 bv k fun cur => match cur with
+    (hw : WP eng answer n h (obj ctx) s fun bv w1 h1 => GetsOC w1 bv k fun cur => match cur with
       | .num a => WP eng answer n h1 (rhs ctx) w1 fun rv w2 h2 => match rv with
         | .num b => PutsC w2 bv k (.num (numberBinOp op a b)) fun w3 => Q (.num (numberBinOp op a b)) w3 h2
         | _ => False
