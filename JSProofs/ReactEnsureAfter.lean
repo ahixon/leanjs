@@ -40,7 +40,7 @@ theorem ensure_call {n : Nat} {h : σ} {fo : ObjId} {x w sW sP : State} {g : Env
       ReactFlushSync.After ((w'.restore sW).restore sP) g oG R bdF ∧
       (∃ a b c, (((w'.restore sW).restore sP).objEntry R).props.get? (.str "pendingLanes") =
         some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧
-      Pu ((w'.restore sW).restore sP) h' := by
+      Pu ((w'.restore sW).restore sP) h' ∧ h' = h := by
   obtain ⟨⟨bW, hdW, g1, g2, g3, g4, bdm, g5, g5m⟩, ⟨pa, pb, pc, hPL⟩,
     ⟨bW2, bdW, bdL, lv, hd2, hWR, hWRv, hRL, hRLv, hFS, -⟩, ⟨na, nb, nc, hNx⟩, ⟨ca, cb, cc, hCa⟩, ⟨ta, tb, tc, hTo⟩,
     hg, hR, hRk, hfo, dE, hk0, hcode, hcls, hmode, hdenv⟩ := hD
@@ -66,7 +66,7 @@ theorem ensure_call {n : Nat} {h : σ} {fo : ObjId} {x w sW sP : State} {g : Env
   have hO' : w'.objEntry R = x.objEntry R := by
     rw [hS.obj_eq R hRw (fun k hk => by simp [ReactEnsureRoot.fpS] at hk), hOw]
   obtain ⟨bW', hdW', hxW'⟩ := declLike_frame hS hgw (by rw [hEw]; exact hdW)
-  refine ⟨hS, hfu, ⟨⟨bW', bdW, bdL, lv, ?_, ?_, hWRv, ?_, hRLv, ?_⟩, ?_, ?_, ?_⟩, ?_, hPu w' hS⟩
+  refine ⟨hS, hfu, ⟨⟨bW', bdW, bdL, lv, ?_, ?_, hWRv, ?_, hRLv, ?_⟩, ?_, ?_, ?_⟩, ?_, hPu w' hS, rfl⟩
   · simp only [restore_envEntry]; exact hdW'
   · rw [hxW' _ (by simp [ReactEnsureRoot.fpS])]; exact hWR
   · rw [hxW' _ (by simp [ReactEnsureRoot.fpS])]; exact hRL

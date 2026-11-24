@@ -43,7 +43,7 @@ def add(name, k, t):
         return
     seen[name] = t2
     binds.append(f"{k}{name} : {t2}{'}' if k == '{' else ')'}")
-ENSURE = """fun sP hP1 hP2 sW hW1 hW2 w3 w h1 hPC hO hfw => by
+ENSURE = """fun sP hP1 hP2 sW hW1 hW2 w3 w h1 hPC hHI1 hO hfw => by
       have hPC' := hPC
       obtain ⟨ws, w0a, ⟨⟨s1, w0b, -, ⟨⟨w0c, ⟨-, hD⟩, hFc⟩, -⟩, hFb⟩, -⟩, hFa⟩ := hPC
       have eg : c_CR_CM_d.env = d.env := by rw [c_CR_CM_hdenv, c_CR_hdenv, hcdenv]
@@ -61,9 +61,9 @@ ENSURE = """fun sP hP1 hP2 sW hW1 hW2 w3 w h1 hPC hO hfw => by
         (frame_trans (frame_trans (frame_trans hFc hFb) hFa) hO)
         (ReactEnsureAfter.binds_ne_of (e := sW.envs.size) (by simp [Logic.Footprint.union, ReactPerformWork.fpOwn])
           (Nat.ne_of_gt hlt))
-        (by simp [Logic.Footprint.union, ReactPerformWork.fpOwn]) hfw (hPu sP hP1 hP2 sW hW1 hW2 w3 w h1 hPC' hO)) ?_
-      rintro v w' h' ⟨hS, hfu, hA, hPL, hPu'⟩
-      exact ⟨hS, hfu, hA, hPL, hPu'⟩"""
+        (by simp [Logic.Footprint.union, ReactPerformWork.fpOwn]) hfw (hPu sP hP1 hP2 sW hW1 hW2 w3 w h1 hPC' hHI1 hO)) ?_
+      rintro v w' h' ⟨hS, hfu, hA, hPL, hPu', hh⟩
+      exact ⟨hS, hfu, ⟨hA, hPL, hPu'⟩, by rw [hh]; exact hHI1⟩"""
 for n, k, t in T:
     if n == "hEnsure":
         t2 = ws(usubst(sigma(t), INST))
