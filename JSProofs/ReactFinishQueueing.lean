@@ -207,6 +207,92 @@ theorem one_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       all_goals (refine frame_restore ?_ s; refine frame_withFuel ?_ _; simp only [ReactMarkLane.fp] at hFr; simp only [fpOne, ReactMarkLane.fp, List.cons_append, List.nil_append]; frame_go' [*, ReactMarkLane.fp, hne, Ne.symm hne, hG1, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dAQ, Ne.symm dAU, Ne.symm dAF, Ne.symm dAFa, Ne.symm dAP, Ne.symm dAPa, Ne.symm dQU, Ne.symm dQF, Ne.symm dQFa, Ne.symm dQP, Ne.symm dQPa, Ne.symm dUF, Ne.symm dUFa, Ne.symm dUP, Ne.symm dUPa, Ne.symm dMA, Ne.symm dMQ, Ne.symm dMU])
     all_goals first | omega | (simp only [js_simp]; omega) | (js_norm [*, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dAQ, Ne.symm dAU, Ne.symm dAF, Ne.symm dAFa, Ne.symm dAP, Ne.symm dAPa, Ne.symm dQU, Ne.symm dQF, Ne.symm dQFa, Ne.symm dQP, Ne.symm dQPa, Ne.symm dUF, Ne.symm dUFa, Ne.symm dUP, Ne.symm dUPa, Ne.symm dMA, Ne.symm dMQ, Ne.symm dMU]; done) | skip
 
+
+set_option linter.unusedVariables false in
+/-- **`finishQueueingConcurrentUpdates()`** with one update queued on the fiber `F` or on its alternate `Fa`
+(React binds `setState` to the fiber of the first render; after each commit the current tree flips, so on every
+other click the update is queued on the alternate). `markUpdateLaneFromFiberToRoot` marks a fiber and its alternate,
+a parent and its alternate: the result is the same either way (`one_spec`, or it with the two trees' roles swapped). -/
+theorem one_spec_either {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
+    {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdI bdL bdA bdM : Binding}
+    {A Qo U F Fa P Pa Rt fM Fq : ObjId} {dM : FuncData} {lane fl al pc ac L : F64} {v4 v5 : Value} {lw le lc : Bool}
+    {e0 c0 e1 c1 e2 c2 e3 c3 qe qc ue uc fe fc ae ac' pe pc' xe xc r1 r2 r3 r4 r5 r6 r7 r8 r9 r10 r11 r12 r13 r14 r15 r16 r17 r18 q1 q2 q3 q4 q5 q6 q7 q8 q9 q10 q11 q12 q13 q14 q15 q16 q17 q18 : Bool}
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 100 ≤ s.fuel)
+    (hcode : d.code = FQCGen.finishQueueingConcurrentUpdates_func) (hcls : d.isClassCtor = false)
+    (hmode : d.thisMode = .strict)
+    (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
+    (hGI : bG[JSStr.ofString "concurrentQueuesIndex"]? = some bdI) (hGIm : bdI.mutable = true)
+    (hGIv : bdI.value = some (.num (F64.fin false 4503599627370496 (-50))))
+    (hGL : bG[JSStr.ofString "concurrentlyUpdatedLanes"]? = some bdL) (hGLm : bdL.mutable = true)
+    (hGLv : bdL.value.isSome = true)
+    (hGA : bG[JSStr.ofString "concurrentQueues"]? = some bdA) (hGAv : bdA.value = some (.obj A))
+    (hGM : bG[JSStr.ofString "markUpdateLaneFromFiberToRoot"]? = some bdM) (hGMv : bdM.value = some (.obj fM))
+    (hMo : fM < s.heap.size) (hMk : (s.objEntry fM).kind = .func dM)
+    (hMcode : dM.code = MULGen.markUpdateLaneFromFiberToRoot_func) (hMcls : dM.isClassCtor = false)
+    (hMmode : dM.thisMode = .strict) (dMA : fM ≠ A) (dMQ : fM ≠ Qo) (dMU : fM ≠ U)
+    (hA : A < s.heap.size) (hAk : (s.objEntry A).kind = .array)
+    (hA0 : (s.objEntry A).props.get? (.str "0") = some (.data (.obj Fq) true e0 c0)) (hQF : Fq = F ∨ Fq = Fa)
+    (hA1 : (s.objEntry A).props.get? (.str "1") = some (.data (.obj Qo) true e1 c1))
+    (hA2 : (s.objEntry A).props.get? (.str "2") = some (.data (.obj U) true e2 c2))
+    (hA3 : (s.objEntry A).props.get? (.str "3") = some (.data (.num lane) true e3 c3))
+    (hAL : (s.objEntry A).props.get? (.str "length") = some (.data (.num L) lw le lc))
+    (hL4 : 4 ≤ (Conv.toNat? L).getD 0)
+    (hlane : isStrictlyEqual (.num (F64.fin false 0 (-1074))) (.num lane) = false)
+    (hQ : Qo < s.heap.size) (hQk : (s.objEntry Qo).kind.isPlain = true)
+    (hQp : (s.objEntry Qo).props.get? (.str "pending") = some (.data .null true qe qc))
+    (hU : U < s.heap.size) (hUk : (s.objEntry U).kind.isPlain = true)
+    (hUn : (s.objEntry U).props.get? (.str "next") = some (.data v4 true ue uc))
+    (hF : F < s.heap.size) (hFk : (s.objEntry F).kind.isPlain = true)
+    (hFa : Fa < s.heap.size) (hFak : (s.objEntry Fa).kind.isPlain = true)
+    (hP : P < s.heap.size) (hPk : (s.objEntry P).kind.isPlain = true)
+    (hPa : Pa < s.heap.size) (hPak : (s.objEntry Pa).kind.isPlain = true)
+    (dAQ : A ≠ Qo) (dAU : A ≠ U) (dAF : A ≠ F) (dAFa : A ≠ Fa) (dAP : A ≠ P) (dAPa : A ≠ Pa)
+    (dQU : Qo ≠ U) (dQF : Qo ≠ F) (dQFa : Qo ≠ Fa) (dQP : Qo ≠ P) (dQPa : Qo ≠ Pa)
+    (dUF : U ≠ F) (dUFa : U ≠ Fa) (dUP : U ≠ P) (dUPa : U ≠ Pa)
+    (d1 : F ≠ Fa) (d2 : F ≠ P) (d3 : F ≠ Pa) (d4 : Fa ≠ P) (d5 : Fa ≠ Pa) (d6 : P ≠ Pa)
+    (hFl : (s.objEntry F).props.get? (.str "lanes") = some (.data (.num fl) true fe fc))
+    (hFal : (s.objEntry F).props.get? (.str "alternate") = some (.data (.obj Fa) r1 r2 r3))
+    (hFr : (s.objEntry F).props.get? (.str "return") = some (.data (.obj P) r4 r5 r6))
+    (hFal' : (s.objEntry Fa).props.get? (.str "lanes") = some (.data (.num al) true ae ac'))
+    (hPc : (s.objEntry P).props.get? (.str "childLanes") = some (.data (.num pc) true pe pc'))
+    (hPal : (s.objEntry P).props.get? (.str "alternate") = some (.data (.obj Pa) r7 r8 r9))
+    (hPt : (s.objEntry P).props.get? (.str "tag") = some (.data (.num (F64.fin false 6755399441055744 (-51))) r10 r11 r12))
+    (hPr : (s.objEntry P).props.get? (.str "return") = some (.data .null r13 r14 r15))
+    (hPs : (s.objEntry P).props.get? (.str "stateNode") = some (.data (.obj Rt) r16 r17 r18))
+    (hPac : (s.objEntry Pa).props.get? (.str "childLanes") = some (.data (.num ac) true xe xc))
+    -- (the alternate's way to the root, for an update queued on it)
+    (hFaa : (s.objEntry Fa).props.get? (.str "alternate") = some (.data (.obj F) q1 q2 q3))
+    (hFar : (s.objEntry Fa).props.get? (.str "return") = some (.data (.obj Pa) q4 q5 q6))
+    (hPaa : (s.objEntry Pa).props.get? (.str "alternate") = some (.data (.obj P) q7 q8 q9))
+    (hPat : (s.objEntry Pa).props.get? (.str "tag") = some (.data (.num (F64.fin false 6755399441055744 (-51))) q10 q11 q12))
+    (hPar : (s.objEntry Pa).props.get? (.str "return") = some (.data .null q13 q14 q15))
+    (hPas : (s.objEntry Pa).props.get? (.str "stateNode") = some (.data (.obj Rt) q16 q17 q18)) :
+    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
+      v = .undefined ∧ Frame (fpOne d.env A Qo U F Fa P Pa) s w ∧ s.fuel ≤ w.fuel + 100 ∧ h' = h ∧
+      (w.objEntry Qo).props.get? (.str "pending") = some (.data (.obj U) true qe qc) ∧
+      (w.objEntry U).props.get? (.str "next") = some (.data (.obj U) true ue uc) ∧
+      (w.objEntry F).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr fl lane)) true fe fc) ∧
+      (w.objEntry Fa).props.get? (.str "lanes") = some (.data (.num (numberBinOp .bitOr al lane)) true ae ac') ∧
+      (w.objEntry P).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr pc lane)) true pe pc') ∧
+      (w.objEntry Pa).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr ac lane)) true xe xc) ∧
+      ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
+        (∃ bd, bm[JSStr.ofString "concurrentQueuesIndex"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.num (F64.fin false 0 (-1074)))) ∧
+        (∃ bd, bm[JSStr.ofString "concurrentlyUpdatedLanes"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) := by
+  rcases hQF with rfl | rfl
+  · exact one_spec (v5 := v5) hlt hk hf hcode hcls hmode hG hGe hGI hGIm hGIv hGL hGLm hGLv hGA hGAv hGM hGMv hMo hMk hMcode
+      hMcls hMmode dMA dMQ dMU hA hAk hA0 hA1 hA2 hA3 hAL hL4 hlane hQ hQk hQp hU hUk hUn hF hFk hFa hFak hP hPk hPa
+      hPak dAQ dAU dAF dAFa dAP dAPa dQU dQF dQFa dQP dQPa dUF dUFa dUP dUPa d1 d2 d3 d4 d5 d6 hFl hFal hFr hFal' hPc
+      hPal hPt hPr hPs hPac
+  · refine wp_mono (one_spec (v5 := v5) hlt hk hf hcode hcls hmode hG hGe hGI hGIm hGIv hGL hGLm hGLv hGA hGAv hGM hGMv hMo hMk
+      hMcode hMcls hMmode dMA dMQ dMU hA hAk hA0 hA1 hA2 hA3 hAL hL4 hlane hQ hQk hQp hU hUk hUn hFa hFak hF hFk hPa
+      hPak hP hPk dAQ dAU dAFa dAF dAPa dAP dQU dQFa dQF dQPa dQP dUFa dUF dUPa dUP (Ne.symm d1) d5 d4 d3 d2
+      (Ne.symm d6) hFal' hFaa hFar hFl hPac hPaa hPat hPar hPas hPc) ?_
+    intro v w h' ⟨hv, hFr', hfu, hh, hq, hu, hF', hFa', hP', hPa', hrest⟩
+    refine ⟨hv, frame_mono hFr' (fun p hp => hp) (fun p hp => ?_) (fun h => h), hfu, hh, hq, hu, hFa', hF', hPa', hP',
+      hrest⟩
+    simp only [fpOne, ReactMarkLane.fp, List.mem_append, List.mem_cons, List.not_mem_nil] at hp ⊢
+    rcases hp with (h | h | h | h | h | h | h) | h | h | h | h | h <;> simp [h]
+
 end
 
 end ReactFinishQueueing

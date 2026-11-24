@@ -40,6 +40,11 @@ class P:
     def expr(s):
         if s.peek()[1] == "∀": raise Unknown("forall")
         if s.peek()[0] == "id" and s.peek()[1] == "∃": pass
+        e = s.conj()
+        while s.peek()[1] == "∨":
+            s.eat(); e = ("or", e, s.conj())
+        return e
+    def conj(s):
         e = s.rel()
         while s.peek()[1] in ("∧",):
             s.eat(); e = ("and", e, s.rel())
@@ -298,6 +303,10 @@ class Ev:
                 a, b = s.ev(args[0]), s.ev(args[1])
                 if a[0] == "num" and b[0] == "num": return f64eq(a[1], b[1]) and a[1][0] == "fin"
                 return eq(a, b)
+            if n == "sameValue":  # SameValue: NaN is itself, +0 and -0 differ (f64eq on numbers)
+                a, b = s.ev(args[0]), s.ev(args[1])
+                if a[0] == "num" and b[0] == "num": return f64eq(a[1], b[1])
+                return eq(a, b)
         if f[0] == "proj" and f[2] in ("objEntry", "envEntry") and s.ev(f[1]) == ("state",):
             return ("objref" if f[2] == "objEntry" else "envref", s.ev(args[0]))
         if f[0] == "proj" and f[2] == "get?":
@@ -359,6 +368,17 @@ class Ev:
         if t == "and":
             return s.check(e[1]) and s.check(e[2])
         if t == "not": return not s.check(e[1])
+        if t == "or":  # a disjunct binds nothing: each is checked from the same bindings
+            saved, unbound = s.env, None
+            try:
+                for d in (e[1], e[2]):
+                    s.env = dict(saved)
+                    try:
+                        if s.check(d): return True
+                    except Unbound as u: unbound = u
+            finally: s.env = saved
+            if unbound: raise unbound
+            return False
         if t == "=":
             for a, b in ((e[1], e[2]), (e[2], e[1])):
                 try: v = s.ev(a)
