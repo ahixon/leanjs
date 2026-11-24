@@ -147,7 +147,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
       WP eng answer n h1 (callImpl eng (.obj fGA) .undefined #[.obj Doc]) w fun v w' h' =>
         v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 60 ∧ h' = h1)
     (hIF : ∀ w, Frame {} s w → GetsTo w (.obj Win) (JSStr.ofString "HTMLIFrameElement") fun v => v = .obj IFC)
-    (hInst : ∀ w h1, Frame {} s w → WP eng answer (n + 1) h1 (instanceofOperator (.obj E) (.obj IFC)) w fun b w' h' =>
+    (hInst : ∀ w h1, Frame {} s w → 20 ≤ w.fuel → WP eng answer (n + 1) h1 (instanceofOperator (.obj E) (.obj IFC)) w fun b w' h' =>
       b = false ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 20 ∧ h' = h1) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj Cont]) s fun v w h' =>
       v = .obj E ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 200 ∧ h' = h := by
@@ -234,7 +234,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   refine wp_getMember ?_
   js_until [] [hE1, hS1, hfw1, e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsTo_eq' (hIF _ (by frame_go' [*])) ?_
-  refine wp_instanceof (wp_mono (hInst _ _ (by frame_go' [*])) ?_)
+  refine wp_instanceof (wp_mono (hInst _ _ (by frame_go' [*]) (by (try simp only [js_simp, State.pushEnv_fuel]); omega)) ?_)
   rintro b2 w2 h2 ⟨rfl, hF2, hfu2, rfl⟩
   have hE2 := envEntry_frame0 hF2 (e := s.envs.size) (by js_norm [hE1, hS1, e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
   have hS2 : s.envs.size < w2.envs.size := Nat.lt_of_lt_of_le (by js_norm [hE1, hS1, e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) hF2.envs_le
