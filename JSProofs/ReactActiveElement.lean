@@ -23,8 +23,9 @@ macro "dom_read" H:term : tactic => `(tactic| (
   js_until [] [FDI.fdiCtx, Sem.inner]
   refine getsAcc_mono ($H _ _ ?_) ?_
   · frame_go' [*]
-  intro _ _ _ ⟨hv_, hw_, hh_⟩
-  subst hv_ hw_ hh_))
+  intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
+  subst hv_ hw_ hh_
+  try simp only [js_simp, State.pushEnv_fuel] at hf_))
 
 section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
@@ -65,8 +66,9 @@ theorem gae_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   refine wp_getMemberAcc ?_
   js_until [] [hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsAcc_mono (hAE _ _ (by frame_go' [*])) ?_
-  intro v2 w2 h2 ⟨hv2, hw2, hh2⟩
+  intro v2 w2 h2 ⟨hv2, hh2, f_w2, hw2, hf_w2⟩
   subst hv2 hw2 hh2
+  try simp only [js_simp, State.pushEnv_fuel] at hf_w2
   js [hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   exact ⟨by frame_go' [*], by omega⟩
 
@@ -116,47 +118,53 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   simp only [GAEDGen.getActiveElementDeep]
   have hw0 : Frame {} s (bodyState s fo d t #[.obj Cont]) := by frame_go' [*]
   js_until ["ownerDocument"] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine wp_neNullObj' (by simp; omega) ?_
+  refine wp_neNullObj' (by simp [js_simp]; omega) ?_
   iterate 3 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsAcc_mono (hOD _ _ ?_) ?_
   · frame_go' [*]
-  intro _ _ _ ⟨hv_, hw_, hh_⟩
+  intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
-  refine wp_neNullObj' (by simp; omega) ?_
+  try simp only [js_simp, State.pushEnv_fuel] at hf_
+  refine wp_neNullObj' (by simp [js_simp]; omega) ?_
   iterate 3 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsAcc_mono (hOD _ _ ?_) ?_
   · frame_go' [*]
-  intro _ _ _ ⟨hv_, hw_, hh_⟩
+  intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
+  try simp only [js_simp, State.pushEnv_fuel] at hf_
   refine getsAcc_mono (hDV _ _ ?_) ?_
   · frame_go' [*]
-  intro _ _ _ ⟨hv_, hw_, hh_⟩
+  intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
-  refine wp_neNullObj' (by simp; omega) ?_
+  try simp only [js_simp, State.pushEnv_fuel] at hf_
+  refine wp_neNullObj' (by simp [js_simp]; omega) ?_
   iterate 2 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsAcc_mono (hOD _ _ ?_) ?_
   · frame_go' [*]
-  intro _ _ _ ⟨hv_, hw_, hh_⟩
+  intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
+  try simp only [js_simp, State.pushEnv_fuel] at hf_
   refine getsAcc_mono (hDV _ _ ?_) ?_
   · frame_go' [*]
-  intro _ _ _ ⟨hv_, hw_, hh_⟩
+  intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
+  try simp only [js_simp, State.pushEnv_fuel] at hf_
   iterate 9 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsAcc_mono (hWD _ _ ?_) ?_
   · frame_go' [*]
-  intro _ _ _ ⟨hv_, hw_, hh_⟩
+  intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
+  try simp only [js_simp, State.pushEnv_fuel] at hf_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
   refine wp_mono (hGA _ _ ?_ ?_) ?_
@@ -165,8 +173,8 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   rintro v1 w1 h1 ⟨rfl, hF1, hfu1, rfl⟩
   have hE1 := envEntry_frame0 hF1 (e := s.envs.size) (by js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
   have hS1 : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (by js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) hF1.envs_le
-  have hfw1 : 100 ≤ w1.fuel := by simp [bodyState, entryState] at hfu1; omega
-  have hfr1 : s.fuel ≤ w1.fuel + 100 := by simp [bodyState, entryState] at hfu1; omega
+  have hfw1 : 100 ≤ w1.fuel := by (try simp only [js_simp] at hfu1); (try simp [bodyState, entryState] at hfu1); omega
+  have hfr1 : s.fuel ≤ w1.fuel + 100 := by (try simp only [js_simp] at hfu1); (try simp [bodyState, entryState] at hfu1); omega
   have hFs1 : Frame {} s w1 := frame_empty_trans (by frame_go' [*]) hF1
   iterate 5 (first | js_go | js_norm [hE1, hS1, hfw1, e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMember ?_

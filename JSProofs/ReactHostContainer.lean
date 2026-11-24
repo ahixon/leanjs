@@ -31,10 +31,12 @@ def fp (g : EnvId) (VS RI CF CS : ObjId) : Footprint :=
   ⟨[(g, "index")], [(VS, .str "0"), (VS, .str "1"), (VS, .str "2"), (RI, .str "current"), (CF, .str "current"),
     (CS, .str "current")], false⟩
 
-/-- A DOM read from the container: the getter found and returning `v`, nothing changed. -/
+/-- A DOM read: the getter found and returning `v`; nothing changed but the fuel, one step of it spent (the getter
+is a built-in: its call takes a step). -/
 def DomRead (eng : Engine) (answer : HostAnswer σ) (n : Nat) (s : State) (fp : Footprint) (C : ObjId) (k : JSStr)
     (v : Value) : Prop :=
-  ∀ w h1, Frame fp s w → GetsAcc eng answer n h1 w (.obj C) k fun v' w' h' => v' = v ∧ w' = w ∧ h' = h1
+  ∀ w h1, Frame fp s w → GetsAcc eng answer n h1 w (.obj C) k fun v' w' h' =>
+    v' = v ∧ h' = h1 ∧ ∃ f, w' = w.withFuel f ∧ w.fuel ≤ f + 1
 
 set_option maxRecDepth 400000 in
 set_option maxHeartbeats 4000000 in
@@ -247,8 +249,9 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
         refine getsAcc_mono (hNT _ _ ?fr4) ?k4
         case fr4 => frame_go' [*, fp, nts0, nts1, nts2, hne, Ne.symm hne, hG1]
         case k4 =>
-          intro v4 w4 h4 ⟨hv4, hw4, hh4⟩
+          intro v4 w4 h4 ⟨hv4, hh4, f_w4, hw4, hf_w4⟩
           subst hv4 hw4 hh4
+          try simp only [js_simp, State.pushEnv_fuel] at hf_w4
           js_until ["nodeType", "tagName", "namespaceURI"] [hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp3_VS_length, pp3_VS_0, pp3_RI_current, pp3_VS_1, pp3_CF_current, hS3, hC3, kk3_VS, kk3_RI, kk3_CF, kk3_CS, kk3_fP, kk3_fO, kk3_fGO, kk3_fGC, hh3_VS, hh3_RI, hh3_CF, hh3_CS, hh3_fP, hh3_fO, hh3_fGO, hh3_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3]
           -- (`nextRootInstance.tagName`)
           refine wp_getMemberAcc ?_
@@ -256,8 +259,9 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
           refine getsAcc_mono (hTN _ _ ?fr5) ?k5
           case fr5 => frame_go' [*, fp, nts0, nts1, nts2, hne, Ne.symm hne, hG1]
           case k5 =>
-            intro v5 w5 h5 ⟨hv5, hw5, hh5⟩
+            intro v5 w5 h5 ⟨hv5, hh5, f_w5, hw5, hf_w5⟩
             subst hv5 hw5 hh5
+            try simp only [js_simp, State.pushEnv_fuel] at hf_w5
             js_until ["nodeType", "tagName", "namespaceURI"] [hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp3_VS_length, pp3_VS_0, pp3_RI_current, pp3_VS_1, pp3_CF_current, hS3, hC3, kk3_VS, kk3_RI, kk3_CF, kk3_CS, kk3_fP, kk3_fO, kk3_fGO, kk3_fGC, hh3_VS, hh3_RI, hh3_CF, hh3_CS, hh3_fP, hh3_fO, hh3_fGO, hh3_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3]
             -- (`nextRootInstance.namespaceURI`)
             refine wp_getMemberAcc ?_
@@ -265,8 +269,9 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
             refine getsAcc_mono (hNS _ _ ?fr6) ?k6
             case fr6 => frame_go' [*, fp, nts0, nts1, nts2, hne, Ne.symm hne, hG1]
             case k6 =>
-              intro v6 w6 h6 ⟨hv6, hw6, hh6⟩
+              intro v6 w6 h6 ⟨hv6, hh6, f_w6, hw6, hf_w6⟩
               subst hv6 hw6 hh6
+              try simp only [js_simp, State.pushEnv_fuel] at hf_w6
               js_until ["nodeType", "tagName", "namespaceURI"] [hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp3_VS_length, pp3_VS_0, pp3_RI_current, pp3_VS_1, pp3_CF_current, hS3, hC3, kk3_VS, kk3_RI, kk3_CF, kk3_CS, kk3_fP, kk3_fO, kk3_fGO, kk3_fGC, hh3_VS, hh3_RI, hh3_CF, hh3_CS, hh3_fP, hh3_fO, hh3_fGO, hh3_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3]
               refine ⟨by js_norm [CallableC, hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp3_VS_length, pp3_VS_0, pp3_RI_current, pp3_VS_1, pp3_CF_current, hS3, hC3, kk3_VS, kk3_RI, kk3_CF, kk3_CS, kk3_fP, kk3_fO, kk3_fGO, kk3_fGC, hh3_VS, hh3_RI, hh3_CF, hh3_CS, hh3_fP, hh3_fO, hh3_fGO, hh3_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3], ?_⟩
               refine wp_mono (ReactHostContext.own_html (d := dGO) ?_ ?_ ?_ hGOcode hGOcls hGOmode) ?p7
@@ -282,10 +287,10 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
                 have hEb7 : s.envs.size ≠ w7.envs.size := Nat.ne_of_lt hE7
                 have hGa7 : d.env < w7.envs.size + 1 := Nat.lt_succ_of_lt hGk7
                 have hGb7 : d.env ≠ w7.envs.size := Nat.ne_of_lt hGk7
-                have hBl7_0 : w4.envs.size < w7.envs.size := envs_frame hF7 (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
-                have hBw7_0 := envEntry_frame hF7 (e := w4.envs.size) (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega)) (by simp <;> omega)
-                have hBa7_0 : w4.envs.size < w7.envs.size + 1 := Nat.lt_succ_of_lt hBl7_0
-                have hBb7_0 : w4.envs.size ≠ w7.envs.size := Nat.ne_of_lt hBl7_0
+                have hBl7_0 : w3.envs.size < w7.envs.size := envs_frame hF7 (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+                have hBw7_0 := envEntry_frame hF7 (e := w3.envs.size) (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega)) (by simp <;> omega)
+                have hBa7_0 : w3.envs.size < w7.envs.size + 1 := Nat.lt_succ_of_lt hBl7_0
+                have hBb7_0 : w3.envs.size ≠ w7.envs.size := Nat.ne_of_lt hBl7_0
                 have hh7_VS : VS < w7.heap.size := heap_frame hF7 (by first | exact hh3_VS | (simp only [js_simp]; exact hh3_VS))
                 have kk7_VS : (w7.objEntry VS).kind = .array := by rw [kind_frame hF7 (by first | exact hh3_VS | (simp only [js_simp]; exact hh3_VS))]; first | exact kk3_VS | js_norm [hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp3_VS_length, pp3_VS_0, pp3_RI_current, pp3_VS_1, pp3_CF_current, hS3, hC3, kk3_VS, kk3_RI, kk3_CF, kk3_CS, kk3_fP, kk3_fO, kk3_fGO, kk3_fGC, hh3_VS, hh3_RI, hh3_CF, hh3_CS, hh3_fP, hh3_fO, hh3_fGO, hh3_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3]
                 have hh7_RI : RI < w7.heap.size := heap_frame hF7 (by first | exact hh3_RI | (simp only [js_simp]; exact hh3_RI))
@@ -325,10 +330,10 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
                   have hEb8 : s.envs.size ≠ w8.envs.size := Nat.ne_of_lt hE8
                   have hGa8 : d.env < w8.envs.size + 1 := Nat.lt_succ_of_lt hGk8
                   have hGb8 : d.env ≠ w8.envs.size := Nat.ne_of_lt hGk8
-                  have hBl8_0 : w4.envs.size < w8.envs.size := envs_frame hF8 (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
-                  have hBw8_0 := envEntry_frame hF8 (e := w4.envs.size) (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega)) (by simp <;> omega)
-                  have hBa8_0 : w4.envs.size < w8.envs.size + 1 := Nat.lt_succ_of_lt hBl8_0
-                  have hBb8_0 : w4.envs.size ≠ w8.envs.size := Nat.ne_of_lt hBl8_0
+                  have hBl8_0 : w3.envs.size < w8.envs.size := envs_frame hF8 (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+                  have hBw8_0 := envEntry_frame hF8 (e := w3.envs.size) (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega)) (by simp <;> omega)
+                  have hBa8_0 : w3.envs.size < w8.envs.size + 1 := Nat.lt_succ_of_lt hBl8_0
+                  have hBb8_0 : w3.envs.size ≠ w8.envs.size := Nat.ne_of_lt hBl8_0
                   have hh8_VS : VS < w8.heap.size := heap_frame hF8 (by first | exact hh7_VS | (simp only [js_simp]; exact hh7_VS))
                   have kk8_VS : (w8.objEntry VS).kind = .array := by rw [kind_frame hF8 (by first | exact hh7_VS | (simp only [js_simp]; exact hh7_VS))]; first | exact kk7_VS | js_norm [hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp7_VS_length, pp7_VS_0, pp7_RI_current, pp7_VS_1, pp7_CF_current, pp7_VS_2, pp7_CS_current, kk7_VS, kk7_RI, kk7_CF, kk7_CS, kk7_fP, kk7_fO, kk7_fGO, kk7_fGC, hh7_VS, hh7_RI, hh7_CF, hh7_CS, hh7_fP, hh7_fO, hh7_fGO, hh7_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3, hE7, hEw7, hGk7, hEa7, hEb7, hGa7, hGb7, Ne.symm hEb7, Ne.symm hGb7, hBl7_0, hBw7_0, hBa7_0, hBb7_0, Ne.symm hBb7_0, hGw7]
                   have hh8_RI : RI < w8.heap.size := heap_frame hF8 (by first | exact hh7_RI | (simp only [js_simp]; exact hh7_RI))
@@ -372,10 +377,10 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
                     have hEb9 : s.envs.size ≠ w9.envs.size := Nat.ne_of_lt hE9
                     have hGa9 : d.env < w9.envs.size + 1 := Nat.lt_succ_of_lt hGk9
                     have hGb9 : d.env ≠ w9.envs.size := Nat.ne_of_lt hGk9
-                    have hBl9_0 : w4.envs.size < w9.envs.size := envs_frame hF9 (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
-                    have hBw9_0 := envEntry_frame hF9 (e := w4.envs.size) (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega)) (by simp <;> omega)
-                    have hBa9_0 : w4.envs.size < w9.envs.size + 1 := Nat.lt_succ_of_lt hBl9_0
-                    have hBb9_0 : w4.envs.size ≠ w9.envs.size := Nat.ne_of_lt hBl9_0
+                    have hBl9_0 : w3.envs.size < w9.envs.size := envs_frame hF9 (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+                    have hBw9_0 := envEntry_frame hF9 (e := w3.envs.size) (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega)) (by simp <;> omega)
+                    have hBa9_0 : w3.envs.size < w9.envs.size + 1 := Nat.lt_succ_of_lt hBl9_0
+                    have hBb9_0 : w3.envs.size ≠ w9.envs.size := Nat.ne_of_lt hBl9_0
                     have hh9_VS : VS < w9.heap.size := heap_frame hF9 (by first | exact hh8_VS | (simp only [js_simp]; exact hh8_VS))
                     have kk9_VS : (w9.objEntry VS).kind = .array := by rw [kind_frame hF9 (by first | exact hh8_VS | (simp only [js_simp]; exact hh8_VS))]; first | exact kk8_VS | js_norm [hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp8_VS_length, pp8_VS_0, pp8_RI_current, pp8_VS_1, pp8_CF_current, pp8_VS_2, pp8_CS_current, kk8_VS, kk8_RI, kk8_CF, kk8_CS, kk8_fP, kk8_fO, kk8_fGO, kk8_fGC, hh8_VS, hh8_RI, hh8_CF, hh8_CS, hh8_fP, hh8_fO, hh8_fGO, hh8_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3, hE7, hEw7, hGk7, hEa7, hEb7, hGa7, hGb7, Ne.symm hEb7, Ne.symm hGb7, hBl7_0, hBw7_0, hBa7_0, hBb7_0, Ne.symm hBb7_0, hGw7, hE8, hEw8, hGk8, hEa8, hEb8, hGa8, hGb8, Ne.symm hEb8, Ne.symm hGb8, hBl8_0, hBw8_0, hBa8_0, hBb8_0, Ne.symm hBb8_0, hGw8]
                     have hh9_RI : RI < w9.heap.size := heap_frame hF9 (by first | exact hh8_RI | (simp only [js_simp]; exact hh8_RI))
@@ -416,10 +421,10 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
                       have hEb10 : s.envs.size ≠ w10.envs.size := Nat.ne_of_lt hE10
                       have hGa10 : d.env < w10.envs.size + 1 := Nat.lt_succ_of_lt hGk10
                       have hGb10 : d.env ≠ w10.envs.size := Nat.ne_of_lt hGk10
-                      have hBl10_0 : w4.envs.size < w10.envs.size := envs_frame hF10 (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
-                      have hBw10_0 := envEntry_frame hF10 (e := w4.envs.size) (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega)) (by simp <;> omega)
-                      have hBa10_0 : w4.envs.size < w10.envs.size + 1 := Nat.lt_succ_of_lt hBl10_0
-                      have hBb10_0 : w4.envs.size ≠ w10.envs.size := Nat.ne_of_lt hBl10_0
+                      have hBl10_0 : w3.envs.size < w10.envs.size := envs_frame hF10 (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+                      have hBw10_0 := envEntry_frame hF10 (e := w3.envs.size) (by first | assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega)) (by simp <;> omega)
+                      have hBa10_0 : w3.envs.size < w10.envs.size + 1 := Nat.lt_succ_of_lt hBl10_0
+                      have hBb10_0 : w3.envs.size ≠ w10.envs.size := Nat.ne_of_lt hBl10_0
                       have hh10_VS : VS < w10.heap.size := heap_frame hF10 (by first | exact hh9_VS | (simp only [js_simp]; exact hh9_VS))
                       have kk10_VS : (w10.objEntry VS).kind = .array := by rw [kind_frame hF10 (by first | exact hh9_VS | (simp only [js_simp]; exact hh9_VS))]; first | exact kk9_VS | js_norm [hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp9_VS_length, pp9_VS_0, pp9_RI_current, pp9_VS_1, pp9_CF_current, hS9, hC9, kk9_VS, kk9_RI, kk9_CF, kk9_CS, kk9_fP, kk9_fO, kk9_fGO, kk9_fGC, hh9_VS, hh9_RI, hh9_CF, hh9_CS, hh9_fP, hh9_fO, hh9_fGO, hh9_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3, hE7, hEw7, hGk7, hEa7, hEb7, hGa7, hGb7, Ne.symm hEb7, Ne.symm hGb7, hBl7_0, hBw7_0, hBa7_0, hBb7_0, Ne.symm hBb7_0, hGw7, hE8, hEw8, hGk8, hEa8, hEb8, hGa8, hGb8, Ne.symm hEb8, Ne.symm hGb8, hBl8_0, hBw8_0, hBa8_0, hBb8_0, Ne.symm hBb8_0, hGw8, hE9, hEw9, hGk9, hEa9, hEb9, hGa9, hGb9, Ne.symm hEb9, Ne.symm hGb9, hBl9_0, hBw9_0, hBa9_0, hBb9_0, Ne.symm hBb9_0, hR9]
                       have hh10_RI : RI < w10.heap.size := heap_frame hF10 (by first | exact hh9_RI | (simp only [js_simp]; exact hh9_RI))

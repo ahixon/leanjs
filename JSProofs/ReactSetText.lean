@@ -37,7 +37,7 @@ theorem stc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hNV : ∀ w h1, Frame {} s w → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str text)
       fun w' h' => R w' h' ∧ w.fuel ≤ w'.fuel + 1) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj node, .str text]) s fun v w h' =>
-      v = .undefined ∧ (∃ w0, R w0 h' ∧ w = w0.restore s) ∧ s.fuel ≤ w.fuel + 20 := by
+      v = .undefined ∧ (∃ w0, R w0 h' ∧ w = w0.restore s) ∧ s.fuel ≤ w.fuel + 24 := by
   apply wp_callGen STCGen.setTextContent_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "node", JSStr.ofString "text"] := by rw [hcode]; rfl
@@ -54,24 +54,27 @@ theorem stc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   refine getsAcc_mono (hFC _ _ ?fr1) ?k1
   case fr1 => frame_go' [*]
   case k1 =>
-  intro v1 w1 h1 ⟨hv1, hw1, hh1⟩
+  intro v1 w1 h1 ⟨hv1, hh1, f_w1, hw1, hf_w1⟩
   subst hv1 hw1 hh1
+  try simp only [js_simp, State.pushEnv_fuel] at hf_w1
   js_until ["lastChild", "nodeType", "nodeValue"] [htext, hTT, h33, beq_self_eq_true, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_getMemberAcc ?_
   js_until [] [htext, hTT, h33, beq_self_eq_true, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsAcc_mono (hLC _ _ ?fr2) ?k2
   case fr2 => frame_go' [*]
   case k2 =>
-  intro v2 w2 h2 ⟨hv2, hw2, hh2⟩
+  intro v2 w2 h2 ⟨hv2, hh2, f_w2, hw2, hf_w2⟩
   subst hv2 hw2 hh2
+  try simp only [js_simp, State.pushEnv_fuel] at hf_w2
   js_until ["nodeType", "nodeValue"] [htext, hTT, h33, beq_self_eq_true, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_getMemberAcc ?_
   js_until [] [htext, hTT, h33, beq_self_eq_true, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsAcc_mono (hNT _ _ ?fr3) ?k3
   case fr3 => frame_go' [*]
   case k3 =>
-  intro v3 w3 h3 ⟨hv3, hw3, hh3⟩
+  intro v3 w3 h3 ⟨hv3, hh3, f_w3, hw3, hf_w3⟩
   subst hv3 hw3 hh3
+  try simp only [js_simp, State.pushEnv_fuel] at hf_w3
   iterate 7 (first | js_go | js_norm [htext, hTT, h33, beq_self_eq_true, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_assignMemberSet ?_
   js_until [] [htext, hTT, h33, beq_self_eq_true, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
@@ -82,7 +85,7 @@ theorem stc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   refine wp_retNone ?_
   js [htext, hTT, h33, beq_self_eq_true, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨⟨w4, hR, rfl⟩, ?_⟩
-  simp at hfu ⊢
+  simp only [js_simp] at hfu ⊢
   omega
 
 end
