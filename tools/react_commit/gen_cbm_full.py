@@ -15,7 +15,7 @@ sb, _ = compose(SE, "hsc_spec", "S_", subst={"fo": "fHS", "t": ".undefined", "E"
                 drop=("n", "h", "s", "hf", "hlt"))
 # its premises over frames from its entry state: over frames from cbm's, widened by FB
 WID = {"hNN": 2, "hTL": 1, "hCE": 2}
-sb = [b.replace("DomRead eng answer n s {} E", "DomRead eng answer n s (FB d.env) E")
+sb = [b.replace("DomRead eng answer HI n s {} E", "DomRead eng answer HI n s (FB d.env) E")
        .replace("∀ w, Frame {} s w →", "∀ w, Frame (FB d.env) s w →") for b in sb]
 s_given = " ".join(f"({nm} := fun w' h1 hw' => S_{nm} w' h1 (frame_then_empty hw hw'))" if a == 2
                    else f"({nm} := fun w' hw' => S_{nm} w' (frame_then_empty hw hw'))" for nm, a in WID.items())

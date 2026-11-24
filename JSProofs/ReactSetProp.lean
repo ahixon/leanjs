@@ -15,7 +15,7 @@ open Std (HashMap)
 namespace ReactSetProp
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = SetPropGen.setProp_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -83,9 +83,9 @@ theorem children_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value}
     (hSo : fS < s.heap.size) (hSk : (s.objEntry fS).kind = .func dS) (hScode : dS.code = STCGen.setTextContent_func)
     (hScls : dS.isClassCtor = false) (hSmode : dS.thisMode = .strict)
     (htext : text.isEmpty = false)
-    (hFC : ReactHostContainer.DomRead eng answer n s {} dom "firstChild" (.obj T))
-    (hLC : ReactHostContainer.DomRead eng answer n s {} dom "lastChild" (.obj T))
-    (hNT : ReactHostContainer.DomRead eng answer n s {} T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
+    (hFC : ReactHostContainer.DomRead eng answer HI n s {} dom "firstChild" (.obj T))
+    (hLC : ReactHostContainer.DomRead eng answer HI n s {} dom "lastChild" (.obj T))
+    (hNT : ReactHostContainer.DomRead eng answer HI n s {} T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
     (hNV : ∀ w h1, Frame {} s w → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str text)
       fun w' h' => R w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1) :
     WP eng answer (n + 2) h

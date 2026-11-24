@@ -17,7 +17,7 @@ open Std (HashMap)
 namespace ReactRenderSync
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 /-- After `prepareFreshStack`: nothing exited, nothing suspended. -/
 def AfterPrep (w : State) (g : EnvId) (oG : Option EnvId) : Prop :=
@@ -111,31 +111,31 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hWLo : fWL < s.heap.size) (hWLk : (s.objEntry fWL).kind = .func dWL) (hIWL : I ≠ fWL)
     (hFQo : fFQ < s.heap.size) (hFQk : (s.objEntry fFQ).kind = .func dFQ) (hIFQ : I ≠ fFQ)
     -- (`prepareFreshStack(root, lanes)`)
-    (hPrep : ∀ w h1, Frame (fpPre d.env I) s w → s.fuel ≤ w.fuel + 60 → (∃ v a b, (w.objEntry I).props.get? (.str "H") = some (.data v true a b)) → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) →
+    (hPrep : ∀ w h1, Frame (fpPre d.env I) s w → HI h1 → s.fuel ≤ w.fuel + 60 → (∃ v a b, (w.objEntry I).props.get? (.str "H") = some (.data v true a b)) → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) →
       WP eng answer n h1 (callImpl eng (.obj fPF) .undefined #[.obj R, .num lanes]) w fun _ w' h' =>
-        Frame fpPF w w' ∧ w.fuel ≤ w'.fuel + kP ∧ AfterPrep w' d.env oG ∧ P1 w' h')
+        Frame fpPF w w' ∧ w.fuel ≤ w'.fuel + kP ∧ AfterPrep w' d.env oG ∧ P1 w' h' ∧ HI h')
     (hfpPB : fpPF.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
     (hfpPW : (d.env, JSStr.ofString "workLoopSync") ∉ fpPF.binds)
     (hfpPF : (d.env, JSStr.ofString "finishQueueingConcurrentUpdates") ∉ fpPF.binds)
     (hfpPI : (d.env, JSStr.ofString "ReactSharedInternals") ∉ fpPF.binds)
     (hfpPO : fpPF.props.all (fun q => q.1 != I && q.1 != fWL && q.1 != fFQ) = true)
     -- (`workLoopSync()`: the render)
-    (hLoop : ∀ w1 w h1, P1 w1 h1 → Frame (fpOwn s.envs.size) w1 w → s.fuel ≤ w.fuel + kP + 100 →
+    (hLoop : ∀ w1 w h1, P1 w1 h1 → HI h1 → Frame (fpOwn s.envs.size) w1 w → s.fuel ≤ w.fuel + kP + 100 →
       WP eng answer n h1 (callImpl eng (.obj fWL) .undefined #[]) w fun _ w' h' =>
-        Frame fpWL w w' ∧ w.fuel ≤ w'.fuel + kW ∧ AfterLoop w' d.env oG ∧ P2 w' h')
+        Frame fpWL w w' ∧ w.fuel ≤ w'.fuel + kW ∧ AfterLoop w' d.env oG ∧ P2 w' h' ∧ HI h')
     (hfpWB : fpWL.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
     (hfpWF : (d.env, JSStr.ofString "finishQueueingConcurrentUpdates") ∉ fpWL.binds)
     (hfpWI : (d.env, JSStr.ofString "ReactSharedInternals") ∉ fpWL.binds)
     (hfpWO : fpWL.props.all (fun q => q.1 != I && q.1 != fFQ) = true)
     -- (`finishQueueingConcurrentUpdates()`)
-    (hFinish : ∀ w2 w h1, P2 w2 h1 → Frame (fpEnd s.envs.size d.env I) w2 w → EndBinds w d.env oG ec → s.fuel ≤ w.fuel + kP + kW + 200 →
+    (hFinish : ∀ w2 w h1, P2 w2 h1 → HI h1 → Frame (fpEnd s.envs.size d.env I) w2 w → EndBinds w d.env oG ec → s.fuel ≤ w.fuel + kP + kW + 200 →
       WP eng answer n h1 (callImpl eng (.obj fFQ) .undefined #[]) w fun _ w' h' =>
-        Frame fpFQ w w' ∧ w.fuel ≤ w'.fuel + kF ∧ Q (w'.restore s) h')
+        Frame fpFQ w w' ∧ w.fuel ≤ w'.fuel + kF ∧ Q (w'.restore s) h' ∧ HI h')
     (hfpFB : fpFQ.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
-    (hf' : kP + kW + kF + 400 ≤ s.fuel) :
+    (hf' : kP + kW + kF + 400 ≤ s.fuel) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj R, .num lanes, .bool true]) s
       fun v w h' => v = .num (F64.fin false 5629499534213120 (-50)) ∧ Frame (fpRS d.env I fpPF fpWL fpFQ) s w ∧
-        s.fuel ≤ w.fuel + kP + kW + kF + 300 ∧ Q w h' := by
+        s.fuel ≤ w.fuel + kP + kW + kF + 300 ∧ Q w h' ∧ HI h' := by
   replace hPrep := ReactDSSI.Hold.mk hPrep
   replace hLoop := ReactDSSI.Hold.mk hLoop
   replace hFinish := ReactDSSI.Hold.mk hFinish
@@ -158,8 +158,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hPDmode (by rw [hPDenv]; simp; omega) (by rw [hPDenv]; js_norm [*, Ne.symm hne]; rfl) (by js_norm [*]) hGIv
     (by js_norm [*]) hGCv (by simpa using hI) (by simpa using hIk) (by simpa using hIH)) ?p1
   case p1 =>
-  intro r w1 h1 ⟨hr, hF1, hfu1, hIH1⟩
-  subst hr
+  intro r w1 h1 ⟨hr, hF1, hfu1, hIH1, hh1⟩
+  subst hr hh1
   try simp only [js_simp] at hfu1
   have hE1s : s.envs.size < w1.envs.size := envs_frame hF1 (by simp)
   have hG1s : d.env < w1.envs.size := envs_frame hF1 (by simp; omega)
@@ -182,8 +182,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hGIv (by js_norm [*]) hGDv (by simp only [js_simp]; exact hI1) (by simp only [js_simp]; exact hIk1)
     (by simp only [js_simp]; exact hIA1)) ?p2
   case p2 =>
-  intro r w2 h2 ⟨hr, hF2, hfu2, hIA2⟩
-  subst hr
+  intro r w2 h2 ⟨hr, hF2, hfu2, hIA2, hh2⟩
+  subst hr hh2
   try simp only [js_simp] at hfu2
   have hE2 := envEntry_frame hF2 (e := s.envs.size) (by simp only [js_simp]; exact hE1s) (by simp)
   have hG2e := envEntry_frame hF2 (e := d.env) (by simp only [js_simp]; exact hG1s) (by simp)
@@ -197,7 +197,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hGL, hGLv, hGT, hGTm, hGTv, hGPF, hGPFv, hPF2, hobj2 hPFo hIPF, hPFk, FDI.fdiCtx, Sem.inner]
   -- (`prepareFreshStack(root, lanes)`)
   refine ⟨by js_norm [CallableC, *, hobj2 hPFo hIPF], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hPrep) _ h2 ?fr3 ?fu3 ?ih3 ?ec3) ?post3
+  refine wp_mono ((ReactDSSI.Hold.get hPrep) _ h2 ?fr3 hHI ?fu3 ?ih3 ?ec3) ?post3
   case fr3 => simp only [fpPre]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu3 => simp only [js_simp]; simp at hfu1 hfu2; omega
   case ec3 =>
@@ -211,7 +211,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     simp only [js_simp]
     rw [props_frame hF2 (by simp only [js_simp]; exact hI1) (by simp [js_simp])]; simpa using hIH1
   case post3 =>
-  intro r w3 h3 ⟨hF3, hfu3, ⟨bm, bdE, bdS, hW3, hW3E, hW3Ev, hW3S, hW3Sv⟩, hP1⟩
+  intro r w3 h3 ⟨hF3, hfu3, ⟨bm, bdE, bdS, hW3, hW3E, hW3Ev, hW3S, hW3Sv⟩, hP1, hHI3⟩
   try simp only [js_simp] at hfu3
   have hle3 : s.envs.size ≤ w2.envs.size := Nat.le_of_lt hE2s
   have hE3 := envEntry_frame hF3 (e := s.envs.size) (by simp only [js_simp]; exact hE2s) (binds_avoid hfpPB (Nat.le_refl _))
@@ -246,12 +246,12 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hW3, hW3E, hW3Ev, hW3S, hW3Sv, hWWL, hGWL, hGWLv, hWL3, hWLk3, FDI.fdiCtx, Sem.inner]
   -- (`workLoopSync()`: the render)
   refine ⟨by js_norm [CallableC, *], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hLoop) w3 _ h3 hP1 ?fr4 ?fu4) ?post4
+  refine wp_mono ((ReactDSSI.Hold.get hLoop) w3 _ h3 hP1 hHI3 ?fr4 ?fu4) ?post4
   case fr4 => simp only [fpOwn]; frame_go' [*, hne, Ne.symm hne]
   case fu4 => simp only [js_simp]; simp at hfu1 hfu2; omega
   case post4 =>
   intro r w4 h4 ⟨hF4, hfu4, ⟨bm4, bdE4, bdW4, hW4, hW4E, hW4Ev, hW4W, hW4Wv, ⟨b1, hb1, hm1, hs1⟩, ⟨b2, hb2, hm2, hs2⟩,
-    ⟨b3, hb3, hm3, hs3⟩, ⟨b4, hb4, hm4, hs4⟩, ⟨b5, hb5, hm5, hs5⟩⟩, hP2⟩
+    ⟨b3, hb3, hm3, hs3⟩, ⟨b4, hb4, hm4, hs4⟩, ⟨b5, hb5, hm5, hs5⟩⟩, hP2, hHI4⟩
   try simp only [js_simp] at hfu4
   have hE4 := envEntry_frame hF4 (e := s.envs.size) (by simp only [js_simp]; exact hE3s) (binds_avoid hfpWB (Nat.le_refl _))
   have hE4s : s.envs.size < w4.envs.size := envs_frame hF4 (by simp only [js_simp]; exact hE3s)
@@ -297,7 +297,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hWFQ4, hWFQ, hGFQ, hGFQv, hWRI4, hWRI, hGI, hGIv, hFQ4, hFQk4, hI4, hIk4, hIH4, hIA4, FDI.fdiCtx, Sem.inner]
   -- (`finishQueueingConcurrentUpdates()`)
   refine ⟨by js_norm [CallableC, *], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hFinish) w4 _ h4 hP2 ?fr5 ?eb5 ?fu5) ?post5
+  refine wp_mono ((ReactDSSI.Hold.get hFinish) w4 _ h4 hP2 hHI4 ?fr5 ?eb5 ?fu5) ?post5
   case fr5 => simp only [fpEnd, fpOwn]; frame_go' [*, hne, Ne.symm hne]
   case fu5 => simp only [js_simp]; simp at hfu1 hfu2; omega
   case eb5 =>
@@ -308,7 +308,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     case e7 => simp [Std.HashMap.getElem?_modify, hb5]; rfl
     all_goals first | rfl | simp [hm3] | skip
   case post5 =>
-  intro r w5 h5 ⟨hF5, hfu5, hQ⟩
+  intro r w5 h5 ⟨hF5, hfu5, hQ, hHI5⟩
   try simp only [js_simp] at hfu5
   have hE5 := envEntry_frame hF5 (e := s.envs.size) (by simp only [js_simp]; exact hE4s) (binds_avoid hfpFB (Nat.le_refl _))
   have hE5s : s.envs.size < w5.envs.size := envs_frame hF5 (by simp only [js_simp]; exact hE4s)
@@ -316,7 +316,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
-  all_goals first | rfl | exact hQ | omega | (simp only [js_simp] at hfu1 hfu2 hfu3 hfu4 hfu5 ⊢; omega) |
+  all_goals (try apply And.intro)
+  all_goals first | rfl | exact hQ | exact hHI5 | omega | (simp only [js_simp] at hfu1 hfu2 hfu3 hfu4 hfu5 ⊢; omega) |
     skip
   simp only [fpRS]
   frame_go' [*, hne, Ne.symm hne, hG1]

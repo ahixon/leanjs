@@ -37,9 +37,9 @@ theorem push_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hGC : bG[JSStr.ofString "ContextOnlyDispatcher"]? = some bdC) (hGCv : bdC.value = some (.obj C))
     (hI : I < s.heap.size) (hIk : (s.objEntry I).kind.isPlain = true)
     (hIH : (s.objEntry I).props.get? (.str "H") = some (.data (.obj P) true he hc)) :
-    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
+    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
       v = .obj P ∧ Frame ⟨[], [(I, .str "H")], false⟩ s w ∧ s.fuel ≤ w.fuel + 10 ∧
-      (w.objEntry I).props.get? (.str "H") = some (.data (.obj C) true he hc) := by
+      (w.objEntry I).props.get? (.str "H") = some (.data (.obj C) true he hc) ∧ h' = h := by
   apply wp_callGen PDGen.pushDispatcher_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleD d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -51,6 +51,7 @@ theorem push_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   clear hcode
   simp only [PDGen.pushDispatcher]
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIv, hGC, hGCv, hI, hIk, hIH, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
@@ -67,9 +68,9 @@ theorem pushAsync_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value
     (hGD : bG[JSStr.ofString "DefaultAsyncDispatcher"]? = some bdD) (hGDv : bdD.value = some (.obj D))
     (hI : I < s.heap.size) (hIk : (s.objEntry I).kind.isPlain = true)
     (hIA : (s.objEntry I).props.get? (.str "A") = some (.data a true ae ac)) :
-    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
+    WP eng answer n h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
       v = a ∧ Frame ⟨[], [(I, .str "A")], false⟩ s w ∧ s.fuel ≤ w.fuel + 10 ∧
-      (w.objEntry I).props.get? (.str "A") = some (.data (.obj D) true ae ac) := by
+      (w.objEntry I).props.get? (.str "A") = some (.data (.obj D) true ae ac) ∧ h' = h := by
   apply wp_callGen PADGen.pushAsyncDispatcher_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleA d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[] := by rw [hcode]; rfl
@@ -81,6 +82,7 @@ theorem pushAsync_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value
   clear hcode
   simp only [PADGen.pushAsyncDispatcher]
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIv, hGD, hGDv, hI, hIk, hIA, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)

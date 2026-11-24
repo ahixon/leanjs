@@ -20,7 +20,7 @@ open Std (HashMap)
 namespace ReactHostContainer
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = PHCGen.pushHostContainer_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -31,11 +31,11 @@ def fp (g : EnvId) (VS RI CF CS : ObjId) : Footprint :=
   ⟨[(g, "index")], [(VS, .str "0"), (VS, .str "1"), (VS, .str "2"), (RI, .str "current"), (CF, .str "current"),
     (CS, .str "current")], false⟩
 
-/-- A DOM read: the getter found and returning `v`; nothing changed but the fuel, one step of it spent (the getter
+/-- A DOM read, from any host state the host invariant `HI` holds of: the getter found and returning `v`; nothing changed but the fuel, one step of it spent (the getter
 is a built-in: its call takes a step). -/
-def DomRead (eng : Engine) (answer : HostAnswer σ) (n : Nat) (s : State) (fp : Footprint) (C : ObjId) (k : JSStr)
-    (v : Value) : Prop :=
-  ∀ w h1, Frame fp s w → GetsAcc eng answer n h1 w (.obj C) k fun v' w' h' =>
+def DomRead (eng : Engine) (answer : HostAnswer σ) (HI : σ → Prop) (n : Nat) (s : State) (fp : Footprint) (C : ObjId)
+    (k : JSStr) (v : Value) : Prop :=
+  ∀ w h1, Frame fp s w → HI h1 → GetsAcc eng answer n h1 w (.obj C) k fun v' w' h' =>
     v' = v ∧ h' = h1 ∧ ∃ f, w' = w.withFuel f ∧ w.fuel ≤ f + 1
 
 set_option maxRecDepth 400000 in
@@ -85,10 +85,10 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (dO1 : fO ≠ VS) (dO2 : fO ≠ RI) (dO3 : fO ≠ CF) (dO4 : fO ≠ CS)
     (dG1 : fGO ≠ VS) (dG2 : fGO ≠ RI) (dG3 : fGO ≠ CF) (dG4 : fGO ≠ CS)
     (dC1 : fGC ≠ VS) (dC2 : fGC ≠ RI) (dC3 : fGC ≠ CF) (dC4 : fGC ≠ CS)
-    (hNT : DomRead eng answer n s (fp d.env VS RI CF CS) C "nodeType" (.num (F64.fin false 4503599627370496 (-52))))
-    (hTN : DomRead eng answer n s (fp d.env VS RI CF CS) C "tagName" (.str (JSStr.ofString "DIV")))
-    (hNS : DomRead eng answer n s (fp d.env VS RI CF CS) C "namespaceURI"
-      (.str (JSStr.ofString "http://www.w3.org/1999/xhtml"))) :
+    (hNT : DomRead eng answer HI n s (fp d.env VS RI CF CS) C "nodeType" (.num (F64.fin false 4503599627370496 (-52))))
+    (hTN : DomRead eng answer HI n s (fp d.env VS RI CF CS) C "tagName" (.str (JSStr.ofString "DIV")))
+    (hNS : DomRead eng answer HI n s (fp d.env VS RI CF CS) C "namespaceURI"
+      (.str (JSStr.ofString "http://www.w3.org/1999/xhtml"))) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj X, .obj C]) s fun v w h' =>
       v = .undefined ∧ Frame (fp d.env VS RI CF CS) s w ∧ s.fuel ≤ w.fuel + 200 ∧ h' = h ∧
       (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
@@ -246,7 +246,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
         -- (`nextRootInstance.nodeType`)
         refine wp_getMemberAcc ?_
         js_until [] [hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp3_VS_length, pp3_VS_0, pp3_RI_current, pp3_VS_1, pp3_CF_current, hS3, hC3, kk3_VS, kk3_RI, kk3_CF, kk3_CS, kk3_fP, kk3_fO, kk3_fGO, kk3_fGC, hh3_VS, hh3_RI, hh3_CF, hh3_CS, hh3_fP, hh3_fO, hh3_fGO, hh3_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3]
-        refine getsAcc_mono (hNT _ _ ?fr4) ?k4
+        refine getsAcc_mono (hNT _ _ ?fr4 hHI) ?k4
         case fr4 => frame_go' [*, fp, nts0, nts1, nts2, hne, Ne.symm hne, hG1]
         case k4 =>
           intro v4 w4 h4 ⟨hv4, hh4, f_w4, hw4, hf_w4⟩
@@ -256,7 +256,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
           -- (`nextRootInstance.tagName`)
           refine wp_getMemberAcc ?_
           js_until [] [hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp3_VS_length, pp3_VS_0, pp3_RI_current, pp3_VS_1, pp3_CF_current, hS3, hC3, kk3_VS, kk3_RI, kk3_CF, kk3_CS, kk3_fP, kk3_fO, kk3_fGO, kk3_fGC, hh3_VS, hh3_RI, hh3_CF, hh3_CS, hh3_fP, hh3_fO, hh3_fGO, hh3_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3]
-          refine getsAcc_mono (hTN _ _ ?fr5) ?k5
+          refine getsAcc_mono (hTN _ _ ?fr5 hHI) ?k5
           case fr5 => frame_go' [*, fp, nts0, nts1, nts2, hne, Ne.symm hne, hG1]
           case k5 =>
             intro v5 w5 h5 ⟨hv5, hh5, f_w5, hw5, hf_w5⟩
@@ -266,7 +266,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
             -- (`nextRootInstance.namespaceURI`)
             refine wp_getMemberAcc ?_
             js_until [] [hnsE, hsub, hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIm, hGIv, hGV, hGVv, hGCS, hGCSv, hGCF, hGCFv, hGRI, hGRIv, hGP, hGPv, hGO, hGOv, hGGO, hGGOv, hGGC, hGGCv, d1, d2, d3, d4, d5, d6, dP1, dP2, dP3, dP4, dO1, dO2, dO3, dO4, dG1, dG2, dG3, dG4, dC1, dC2, dC3, dC4, Ne.symm d1, Ne.symm d2, Ne.symm d3, Ne.symm d4, Ne.symm d5, Ne.symm d6, Ne.symm dP1, Ne.symm dP2, Ne.symm dP3, Ne.symm dP4, Ne.symm dO1, Ne.symm dO2, Ne.symm dO3, Ne.symm dO4, Ne.symm dG1, Ne.symm dG2, Ne.symm dG3, Ne.symm dG4, Ne.symm dC1, Ne.symm dC2, Ne.symm dC3, Ne.symm dC4, hPenv, hOenv, nts0, nts1, nts2, List.findIdx?_toArray, List.findIdx?_cons, List.findIdx?_nil, Option.isNone_some, Option.isNone_none, Option.map_some, Option.map_none, FDI.fdiCtx, Sem.inner, pp3_VS_length, pp3_VS_0, pp3_RI_current, pp3_VS_1, pp3_CF_current, hS3, hC3, kk3_VS, kk3_RI, kk3_CF, kk3_CS, kk3_fP, kk3_fO, kk3_fGO, kk3_fGC, hh3_VS, hh3_RI, hh3_CF, hh3_CS, hh3_fP, hh3_fO, hh3_fGO, hh3_fGC, hE1, hEw1, hGk1, hEa1, hEb1, hGa1, hGb1, Ne.symm hEb1, Ne.symm hGb1, hR1, hE2, hEw2, hGk2, hEa2, hEb2, hGa2, hGb2, Ne.symm hEb2, Ne.symm hGb2, hR2, hE3, hEw3, hGk3, hEa3, hEb3, hGa3, hGb3, Ne.symm hEb3, Ne.symm hGb3, hR3]
-            refine getsAcc_mono (hNS _ _ ?fr6) ?k6
+            refine getsAcc_mono (hNS _ _ ?fr6 hHI) ?k6
             case fr6 => frame_go' [*, fp, nts0, nts1, nts2, hne, Ne.symm hne, hG1]
             case k6 =>
               intro v6 w6 h6 ⟨hv6, hh6, f_w6, hw6, hf_w6⟩

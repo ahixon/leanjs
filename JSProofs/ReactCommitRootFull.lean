@@ -17,7 +17,7 @@ open Std (HashMap)
 namespace ReactCommitRoot
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 set_option maxRecDepth 40000 in
 set_option maxHeartbeats 8000000 in
@@ -110,7 +110,7 @@ theorem cme_root_full {n : Nat}
     (GH_hRNk : (s.objEntry GH_fRN).kind = .builtin GH_bdRN)
     (GH_hCall : ∀ w h1, Frame (ReactCommitRoot.F0 d.env) s w → WP eng answer (n + 7) h1 (callImpl eng (.obj GH_fRN) (.obj Cont) #[]) w fun v w' h' =>
       v = .obj GH_Doc ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10)
-    (GH_hNT : ReactHostContainer.DomRead eng answer (n + 7) s (ReactCommitRoot.F0 d.env) GH_Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49))))
+    (GH_hNT : ReactHostContainer.DomRead eng answer HI (n + 7) s (ReactCommitRoot.F0 d.env) GH_Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49))))
     {T_d : FuncData}
     {T_sf : F64}
     {T_dw : Bool}
@@ -401,9 +401,9 @@ theorem cme_root_full {n : Nat}
     (CT_BT_CH_U_hOC : ∀ w h1, Frame (Footprint.union (ReactCommitRoot.F0 d.env) ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩) s w → SetsAcc eng answer (n + 1) h1 w (.obj ((CT_dom))) "onclick" (.obj CT_BT_CH_U_fN)
       fun w' h' => CT_BT_CH_U_R1 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (CT_BT_CH_U_htext : CT_BT_CH_U_t1.isEmpty = false)
-    (CT_BT_CH_U_hFC : ReactHostContainer.DomRead eng answer n s (Footprint.union (ReactCommitRoot.F0 d.env) ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩) ((CT_dom)) "firstChild" (.obj CT_BT_CH_U_T))
-    (CT_BT_CH_U_hLC : ReactHostContainer.DomRead eng answer n s (Footprint.union (ReactCommitRoot.F0 d.env) ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩) ((CT_dom)) "lastChild" (.obj CT_BT_CH_U_T))
-    (CT_BT_CH_U_hNT : ReactHostContainer.DomRead eng answer n s (Footprint.union (ReactCommitRoot.F0 d.env) ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩) CT_BT_CH_U_T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
+    (CT_BT_CH_U_hFC : ReactHostContainer.DomRead eng answer HI n s (Footprint.union (ReactCommitRoot.F0 d.env) ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩) ((CT_dom)) "firstChild" (.obj CT_BT_CH_U_T))
+    (CT_BT_CH_U_hLC : ReactHostContainer.DomRead eng answer HI n s (Footprint.union (ReactCommitRoot.F0 d.env) ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩) ((CT_dom)) "lastChild" (.obj CT_BT_CH_U_T))
+    (CT_BT_CH_U_hNT : ReactHostContainer.DomRead eng answer HI n s (Footprint.union (ReactCommitRoot.F0 d.env) ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩) CT_BT_CH_U_T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
     (CT_BT_CH_U_hNV : ∀ w h1, Frame (Footprint.union (ReactCommitRoot.F0 d.env) ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩) s w → SetsAcc eng answer n h1 w (.obj CT_BT_CH_U_T) "nodeValue" (.str CT_BT_CH_U_t1)
       fun w' h' => CT_BT_CH_U_R2 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (CT_BT_CH_U_hdenv : CT_BT_CH_U_d.env = CT_BT_CH_d.env)

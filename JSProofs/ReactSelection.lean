@@ -15,7 +15,7 @@ open Std (HashMap)
 namespace ReactSelection
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 /-- **`str.toLowerCase()`**: the lowercase string; nothing changed, one step of fuel. -/
 theorem toLower_spec {n : Nat} {h : σ} {fo : ObjId} {bd : BuiltinData} {str : JSStr} {s : State}
@@ -50,7 +50,7 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 80 ≤ s.fuel)
     (hcode : d.code = HSCGen.hasSelectionCapabilities_func) (hcls : d.isClassCtor = false)
     (hmode : d.thisMode = .strict)
-    (hNN : ReactHostContainer.DomRead eng answer n s {} E "nodeName" (.str nm))
+    (hNN : ReactHostContainer.DomRead eng answer HI n s {} E "nodeName" (.str nm))
     (hnm : nm.isEmpty = false)
     (hTL : ∀ w, Frame {} s w → StrGets w nm (JSStr.ofString "toLowerCase") fun v => v = .obj fTL)
     (hTLo : fTL < s.heap.size) (hTLk : (s.objEntry fTL).kind = .builtin bdTL)
@@ -58,8 +58,8 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hlnm : (Unicode.toLower nm).isEmpty = false)
     (hin : isStrictlyEqual (.str (JSStr.ofString "input")) (.str (Unicode.toLower nm)) = false)
     (hta : isStrictlyEqual (.str (JSStr.ofString "textarea")) (.str (Unicode.toLower nm)) = false)
-    (hCE : ReactHostContainer.DomRead eng answer n s {} E "contentEditable" (.str ce))
-    (hce : isStrictlyEqual (.str (JSStr.ofString "true")) (.str ce) = false) :
+    (hCE : ReactHostContainer.DomRead eng answer HI n s {} E "contentEditable" (.str ce))
+    (hce : isStrictlyEqual (.str (JSStr.ofString "true")) (.str ce) = false) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj E]) s fun v w h' =>
       v = .bool false ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 80 ∧ h' = h := by
   apply wp_callGen HSCGen.hasSelectionCapabilities_eq (by decide) hlt hk (by omega) hcls hmode
@@ -74,7 +74,7 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   iterate 10 (first | js_go | js_norm [hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   js_until [] [hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hNN _ _ ?_) ?_
+  refine getsAcc_mono (hNN _ _ ?_ hHI) ?_
   · frame_go' [*]
   intro _ _ _ ⟨hv_, hh_, fA, hw_, hf_⟩
   subst hv_ hw_ hh_
@@ -83,7 +83,7 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   refine wp_callMemberStr ?_
   refine wp_getMemberAcc ?_
   js_until [] [hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hNN _ _ ?_) ?_
+  refine getsAcc_mono (hNN _ _ ?_ hHI) ?_
   · frame_go' [*]
   intro _ _ _ ⟨hv_, hh_, fB, hw_, hf_⟩
   subst hv_ hw_ hh_
@@ -106,7 +106,7 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until ["contentEditable"] [envEntry_withHeap, envs_withHeap, fuel_withHeap, hE1, hS1, hfw1, hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_getMemberAcc ?_
   js_until [] [envEntry_withHeap, envs_withHeap, fuel_withHeap, hE1, hS1, hfw1, hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hCE _ _ ?_) ?_
+  refine getsAcc_mono (hCE _ _ ?_ hHI) ?_
   · exact frame_setEnv_new hFs1 (Nat.le_refl _) _
   intro _ _ _ ⟨hv_, hh_, fC, hw_, hf_⟩
   subst hv_ hw_ hh_

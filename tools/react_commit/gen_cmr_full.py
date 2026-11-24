@@ -78,7 +78,7 @@ def widen(t, FP):
         i = m.end() - 1; j = _balanced(t, i)
         if t[j:].startswith(" s w →"):
             return t[:i] + f"({FP}.union {t[i:j]})" + t[j:]
-    m = re.search(r"DomRead eng answer (\(n \+ \d+\)|\S+) s \(", t)
+    m = re.search(r"DomRead eng answer HI (\(n \+ \d+\)|\S+) s \(", t)
     assert m, t
     i = m.end() - 1; j = _balanced(t, i)
     return t[:i] + f"({FP}.union {t[i:j]})" + t[j:]

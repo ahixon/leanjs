@@ -28,8 +28,8 @@ def widen(t):
     """Frames from the entry state `s` (or DomRead at `s`) widened by FPRE."""
     t2 = re.sub(r"Frame \((.*?)\) s w →", lambda m: f"Frame ({FPRE}.union ({m.group(1)})) s w →", t, count=1)
     if t2 == t:
-        t2 = re.sub(r"DomRead eng answer (\S+(?: \+ \d+\))?) s \((.*)\) (\(?\(?M_CT_dom\)?\)?|M_GH_Doc|M_CT_BT_CH_U_T) ",
-                    lambda m: f"DomRead eng answer {m.group(1)} s ({FPRE}.union ({m.group(2)})) {m.group(3)} ", t, count=1)
+        t2 = re.sub(r"DomRead eng answer HI (\S+(?: \+ \d+\))?) s \((.*)\) (\(?\(?M_CT_dom\)?\)?|M_GH_Doc|M_CT_BT_CH_U_T) ",
+                    lambda m: f"DomRead eng answer HI {m.group(1)} s ({FPRE}.union ({m.group(2)})) {m.group(3)} ", t, count=1)
     assert t2 != t, t
     return t2
 

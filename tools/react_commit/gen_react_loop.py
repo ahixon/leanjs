@@ -131,7 +131,7 @@ for n, k, t in wb:
     elif n in kept:
         tt = S(t).strip()
         if tt.startswith("ReactHostContainer.DomRead"):
-            m = re.match(r"ReactHostContainer\.DomRead eng answer (\(n \+ \d+\)|n) w (.*)$", re.sub(r"\s+", " ", tt))
+            m = re.match(r"ReactHostContainer\.DomRead eng answer HI (\(n \+ \d+\)|n) w (.*)$", re.sub(r"\s+", " ", tt))
             assert m, tt[:120]
             rest = m.group(2)
             # the footprint argument: the first balanced (...) group
@@ -140,7 +140,7 @@ for n, k, t in wb:
                 d0 += {"(": 1, ")": -1}.get(ch, 0)
                 if d0 == 0: break
             fp, tail = rest[:j + 1], rest[j + 1:]
-            tt = f"∀ e, ReactHostContainer.DomRead eng answer {m.group(1)} s ((FAE e).union {fp}){tail}"
+            tt = f"∀ e, ReactHostContainer.DomRead eng answer HI {m.group(1)} s ((FAE e).union {fp}){tail}"
             DOMR.append(REN[n])
         ebinds.append(f"({REN[n]} : {tt})")
 extra0 = ["(hPUenv : l_dPU.env = d.env)"] + [f"(eq_{i} : {b} = {a})" for i, (a, b, n) in enumerate(eqs)]

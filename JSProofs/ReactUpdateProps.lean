@@ -20,7 +20,7 @@ open Std (HashMap)
 namespace ReactUpdateProps
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 @[simp] theorem objEntry_withFuel (s : State) (f : Nat) (o : ObjId) : (s.withFuel f).objEntry o = s.objEntry o := rfl
 @[simp] theorem heap_withFuel (s : State) (f : Nat) : (s.withFuel f).heap = s.heap := rfl
@@ -94,9 +94,9 @@ theorem up_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : 
     (hOC : ∀ w h1, Frame {} s w → SetsAcc eng answer (n + 1) h1 w (.obj dom) "onclick" (.obj fN)
       fun w' h' => R1 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (htext : t1.isEmpty = false)
-    (hFC : ReactHostContainer.DomRead eng answer n s {} dom "firstChild" (.obj T))
-    (hLC : ReactHostContainer.DomRead eng answer n s {} dom "lastChild" (.obj T))
-    (hNT : ReactHostContainer.DomRead eng answer n s {} T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
+    (hFC : ReactHostContainer.DomRead eng answer HI n s {} dom "firstChild" (.obj T))
+    (hLC : ReactHostContainer.DomRead eng answer HI n s {} dom "lastChild" (.obj T))
+    (hNT : ReactHostContainer.DomRead eng answer HI n s {} T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
     (hNV : ∀ w h1, Frame {} s w → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str t1)
       fun w' h' => R2 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1) :
     WP eng answer (n + 3) h

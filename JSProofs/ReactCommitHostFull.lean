@@ -14,7 +14,7 @@ open Std (HashMap)
 namespace ReactCommitHost
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 set_option maxRecDepth 40000 in
 set_option maxHeartbeats 4000000 in
@@ -146,9 +146,9 @@ theorem chu_full {n : Nat}
     (U_hOC : ∀ w h1, Frame {} (s) w → SetsAcc eng answer (n + 1) h1 w (.obj (dom)) "onclick" (.obj U_fN)
       fun w' h' => U_R1 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (U_htext : U_t1.isEmpty = false)
-    (U_hFC : ReactHostContainer.DomRead eng answer n (s) {} (dom) "firstChild" (.obj U_T))
-    (U_hLC : ReactHostContainer.DomRead eng answer n (s) {} (dom) "lastChild" (.obj U_T))
-    (U_hNT : ReactHostContainer.DomRead eng answer n (s) {} U_T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
+    (U_hFC : ReactHostContainer.DomRead eng answer HI n (s) {} (dom) "firstChild" (.obj U_T))
+    (U_hLC : ReactHostContainer.DomRead eng answer HI n (s) {} (dom) "lastChild" (.obj U_T))
+    (U_hNT : ReactHostContainer.DomRead eng answer HI n (s) {} U_T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
     (U_hNV : ∀ w h1, Frame {} (s) w → SetsAcc eng answer n h1 w (.obj U_T) "nodeValue" (.str U_t1)
       fun w' h' => U_R2 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (U_hdenv : U_d.env = d.env)

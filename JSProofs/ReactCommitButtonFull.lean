@@ -19,7 +19,7 @@ open Std (HashMap)
 namespace ReactCommitButton
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 set_option maxRecDepth 40000 in
 set_option maxHeartbeats 8000000 in
@@ -240,9 +240,9 @@ theorem cme_button_full {n : Nat}
     (CH_U_hOC : ∀ w h1, Frame ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ s w → SetsAcc eng answer (n + 1) h1 w (.obj ((dom))) "onclick" (.obj CH_U_fN)
       fun w' h' => CH_U_R1 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (CH_U_htext : CH_U_t1.isEmpty = false)
-    (CH_U_hFC : ReactHostContainer.DomRead eng answer n s ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ((dom)) "firstChild" (.obj CH_U_T))
-    (CH_U_hLC : ReactHostContainer.DomRead eng answer n s ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ((dom)) "lastChild" (.obj CH_U_T))
-    (CH_U_hNT : ReactHostContainer.DomRead eng answer n s ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ CH_U_T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
+    (CH_U_hFC : ReactHostContainer.DomRead eng answer HI n s ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ((dom)) "firstChild" (.obj CH_U_T))
+    (CH_U_hLC : ReactHostContainer.DomRead eng answer HI n s ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ((dom)) "lastChild" (.obj CH_U_T))
+    (CH_U_hNT : ReactHostContainer.DomRead eng answer HI n s ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ CH_U_T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
     (CH_U_hNV : ∀ w h1, Frame ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ s w → SetsAcc eng answer n h1 w (.obj CH_U_T) "nodeValue" (.str CH_U_t1)
       fun w' h' => CH_U_R2 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (CH_U_hdenv : CH_U_d.env = CH_d.env)

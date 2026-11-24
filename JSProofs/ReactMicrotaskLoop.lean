@@ -13,7 +13,7 @@ open Std (HashMap)
 namespace ReactMicrotaskLoop
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 set_option maxRecDepth 40000 in
 set_option maxHeartbeats 8000000 in
@@ -239,9 +239,9 @@ theorem loop_hyp {n : Nat} {eng : Engine} {answer : HostAnswer σ} {h : σ} {d :
     (l_R_a_dC2 : l_R_a_fGC ≠ l_RI)
     (l_R_a_dC3 : l_R_a_fGC ≠ l_CF)
     (l_R_a_dC4 : l_R_a_fGC ≠ l_CS)
-    (l_R_a_hNT : ∀ e, ReactHostContainer.DomRead eng answer (n + 5) s (((((((ReactMicrotaskClick.fpPerf d.env R A).union {}).union {}).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H)).union (ReactRenderSync.fpOwn e)).union (Logic.Footprint.union (ReactHostContainer.fp l_dPU.env l_VS l_RI l_CF l_CS) ⟨[(l_dPU.env, "didReceiveUpdate")], [], false⟩)) l_R_C "nodeType" (.num (F64.fin false 4503599627370496 (-52))))
-    (l_R_a_hTN : ∀ e, ReactHostContainer.DomRead eng answer (n + 5) s (((((((ReactMicrotaskClick.fpPerf d.env R A).union {}).union {}).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H)).union (ReactRenderSync.fpOwn e)).union (Logic.Footprint.union (ReactHostContainer.fp l_dPU.env l_VS l_RI l_CF l_CS) ⟨[(l_dPU.env, "didReceiveUpdate")], [], false⟩)) l_R_C "tagName" (.str (JSStr.ofString "DIV")))
-    (l_R_a_hNS : ∀ e, ReactHostContainer.DomRead eng answer (n + 5) s (((((((ReactMicrotaskClick.fpPerf d.env R A).union {}).union {}).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H)).union (ReactRenderSync.fpOwn e)).union (Logic.Footprint.union (ReactHostContainer.fp l_dPU.env l_VS l_RI l_CF l_CS) ⟨[(l_dPU.env, "didReceiveUpdate")], [], false⟩)) l_R_C "namespaceURI" (.str (JSStr.ofString "http://www.w3.org/1999/xhtml")))
+    (l_R_a_hNT : ∀ e, ReactHostContainer.DomRead eng answer HI (n + 5) s (((((((ReactMicrotaskClick.fpPerf d.env R A).union {}).union {}).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H)).union (ReactRenderSync.fpOwn e)).union (Logic.Footprint.union (ReactHostContainer.fp l_dPU.env l_VS l_RI l_CF l_CS) ⟨[(l_dPU.env, "didReceiveUpdate")], [], false⟩)) l_R_C "nodeType" (.num (F64.fin false 4503599627370496 (-52))))
+    (l_R_a_hTN : ∀ e, ReactHostContainer.DomRead eng answer HI (n + 5) s (((((((ReactMicrotaskClick.fpPerf d.env R A).union {}).union {}).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H)).union (ReactRenderSync.fpOwn e)).union (Logic.Footprint.union (ReactHostContainer.fp l_dPU.env l_VS l_RI l_CF l_CS) ⟨[(l_dPU.env, "didReceiveUpdate")], [], false⟩)) l_R_C "tagName" (.str (JSStr.ofString "DIV")))
+    (l_R_a_hNS : ∀ e, ReactHostContainer.DomRead eng answer HI (n + 5) s (((((((ReactMicrotaskClick.fpPerf d.env R A).union {}).union {}).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H)).union (ReactRenderSync.fpOwn e)).union (Logic.Footprint.union (ReactHostContainer.fp l_dPU.env l_VS l_RI l_CF l_CS) ⟨[(l_dPU.env, "didReceiveUpdate")], [], false⟩)) l_R_C "namespaceURI" (.str (JSStr.ofString "http://www.w3.org/1999/xhtml")))
     (l_R_b_hGC : l_bG0[JSStr.ofString "valueCursor"]? = some l_R_b_bdC)
     (l_R_b_hGCv : l_R_b_bdC.value = some (.obj l_Cu))
     (l_R_b_hCu : l_Cu < s.heap.size)

@@ -16,7 +16,7 @@ open ReactFacts (BindIs)
 namespace ReactBeforeMutation
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 set_option maxRecDepth 40000 in
 set_option maxHeartbeats 8000000 in
@@ -120,7 +120,7 @@ theorem cbm_full {n : Nat}
     (S_hcode : S_d.code = HSCGen.hasSelectionCapabilities_func)
     (S_hcls : S_d.isClassCtor = false)
     (S_hmode : S_d.thisMode = .strict)
-    (S_hNN : ReactHostContainer.DomRead eng answer n s (FB d.env) E "nodeName" (.str S_nm))
+    (S_hNN : ReactHostContainer.DomRead eng answer HI n s (FB d.env) E "nodeName" (.str S_nm))
     (S_hnm : S_nm.isEmpty = false)
     (S_hTL : ∀ w, Frame (FB d.env) s w → StrGets w S_nm (JSStr.ofString "toLowerCase") fun v => v = .obj S_fTL)
     (S_hTLo : S_fTL < s.heap.size)
@@ -129,7 +129,7 @@ theorem cbm_full {n : Nat}
     (S_hlnm : (Unicode.toLower S_nm).isEmpty = false)
     (S_hin : isStrictlyEqual (.str (JSStr.ofString "input")) (.str (Unicode.toLower S_nm)) = false)
     (S_hta : isStrictlyEqual (.str (JSStr.ofString "textarea")) (.str (Unicode.toLower S_nm)) = false)
-    (S_hCE : ReactHostContainer.DomRead eng answer n s (FB d.env) E "contentEditable" (.str S_ce))
+    (S_hCE : ReactHostContainer.DomRead eng answer HI n s (FB d.env) E "contentEditable" (.str S_ce))
     (S_hce : isStrictlyEqual (.str (JSStr.ofString "true")) (.str S_ce) = false)
     {C_d : FuncData}
     {C_av : Value}

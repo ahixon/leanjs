@@ -28,7 +28,7 @@ macro "dom_read" H:term : tactic => `(tactic| (
   try simp only [js_simp, State.pushEnv_fuel] at hf_))
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 /-- **`l instanceof r`**: InstanceofOperator's Boolean. -/
 theorem wp_instanceof {n : Nat} {h : σ} {lv rv : Value} {s : State} {Q : Value → State → σ → Prop}
@@ -48,7 +48,7 @@ theorem gae_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 60 ≤ s.fuel)
     (hcode : d.code = GAEGen.getActiveElement_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (hDoc : Doc < s.heap.size) (hDocK : (s.objEntry Doc).kind = .ordinary)
-    (hAE : ReactHostContainer.DomRead eng answer n s {} Doc "activeElement" (.obj E)) :
+    (hAE : ReactHostContainer.DomRead eng answer HI n s {} Doc "activeElement" (.obj E)) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj Doc]) s fun v w h' =>
       v = .obj E ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 60 ∧ h' = h := by
   apply wp_callGen GAEGen.getActiveElement_eq (by decide) hlt hk (by omega) hcls hmode
@@ -65,7 +65,7 @@ theorem gae_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until ["activeElement"] [TypeofC, hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_getMemberAcc ?_
   js_until [] [hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hAE _ _ (by frame_go' [*])) ?_
+  refine getsAcc_mono (hAE _ _ (by frame_go' [*]) hHI) ?_
   intro v2 w2 h2 ⟨hv2, hh2, f_w2, hw2, hf_w2⟩
   subst hv2 hw2 hh2
   try simp only [js_simp, State.pushEnv_fuel] at hf_w2
@@ -92,15 +92,15 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGGA : bG[JSStr.ofString "getActiveElement"]? = some bdGA) (hGGAv : bdGA.value = some (.obj fGA))
     (hGAo : fGA < s.heap.size) (hGAc : ∃ dd, (s.objEntry fGA).kind = .func dd)
-    (hOD : ReactHostContainer.DomRead eng answer n s {} Cont "ownerDocument" (.obj Doc))
-    (hDV : ReactHostContainer.DomRead eng answer n s {} Doc "defaultView" (.obj Win))
-    (hWD : ReactHostContainer.DomRead eng answer n s {} Win "document" (.obj Doc))
+    (hOD : ReactHostContainer.DomRead eng answer HI n s {} Cont "ownerDocument" (.obj Doc))
+    (hDV : ReactHostContainer.DomRead eng answer HI n s {} Doc "defaultView" (.obj Win))
+    (hWD : ReactHostContainer.DomRead eng answer HI n s {} Win "document" (.obj Doc))
     (hGA : ∀ w h1, Frame {} s w → 100 ≤ w.fuel →
       WP eng answer n h1 (callImpl eng (.obj fGA) .undefined #[.obj Doc]) w fun v w' h' =>
         v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 60 ∧ h' = h1)
     (hIF : ∀ w, Frame {} s w → GetsTo w (.obj Win) (JSStr.ofString "HTMLIFrameElement") fun v => v = .obj IFC)
     (hInst : ∀ w h1, Frame {} s w → WP eng answer (n + 1) h1 (instanceofOperator (.obj E) (.obj IFC)) w fun b w' h' =>
-      b = false ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 20 ∧ h' = h1) :
+      b = false ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 20 ∧ h' = h1) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj Cont]) s fun v w h' =>
       v = .obj E ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 200 ∧ h' = h := by
   apply wp_callGen GAEDGen.getActiveElementDeep_eq (by decide) hlt hk (by omega) hcls hmode
@@ -122,7 +122,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   iterate 3 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hOD _ _ ?_) ?_
+  refine getsAcc_mono (hOD _ _ ?_ hHI) ?_
   · frame_go' [*]
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
@@ -132,12 +132,12 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   refine wp_getMemberAcc ?_
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hOD _ _ ?_) ?_
+  refine getsAcc_mono (hOD _ _ ?_ hHI) ?_
   · frame_go' [*]
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
-  refine getsAcc_mono (hDV _ _ ?_) ?_
+  refine getsAcc_mono (hDV _ _ ?_ hHI) ?_
   · frame_go' [*]
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
@@ -147,12 +147,12 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   refine wp_getMemberAcc ?_
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hOD _ _ ?_) ?_
+  refine getsAcc_mono (hOD _ _ ?_ hHI) ?_
   · frame_go' [*]
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
-  refine getsAcc_mono (hDV _ _ ?_) ?_
+  refine getsAcc_mono (hDV _ _ ?_ hHI) ?_
   · frame_go' [*]
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
@@ -160,7 +160,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   iterate 9 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hWD _ _ ?_) ?_
+  refine getsAcc_mono (hWD _ _ ?_ hHI) ?_
   · frame_go' [*]
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
