@@ -27,7 +27,7 @@ HANDOFF = lt[i:j + 1]
 IDN = {"fo": "fCR", "FR": "R", "R": "p_X", "CR_CM_B_K": "p_Fa", "CR_CM_ME_M_CT_B": "l_X", "CR_CM_MF_XA": "A",
        "CR_CM_RSI": "I", "oG": "oG", "s": "s", "w": "w", "n": "n", "h": "h", "eng": "eng", "σ": "σ", "answer": "answer"}
 SUBV = {"t": ".undefined", "c1": ".null", "c2": ".num (F64.fin false 0 (-1074)).neg", "c3": ".num (F64.fin false 0 (-1074))"}
-DROP = {"fpA", "bW", "hFA", "hGw", "hcb", "hcp", "hco"}
+DROP = {"fpA", "bW", "hFA", "hGw", "hcb", "hcp", "hco", "hHI"}
 REN = {}
 for n, k, t in cb:
     if n in DROP: continue
@@ -307,7 +307,7 @@ assert len(kpairs) == KP.count("), (") + 1, (len(kpairs), KP.count("), (") + 1)
 WH = re.search(r"\(hco : ∀ o, o ∈ \(\[(.*?)\] : List ObjId\)", wtxt).group(1).split(", ")
 FPAe = FPA.replace("eW", "sW.envs.size")
 DLN = "@@DLN@@"
-proof = f"""  intro sP hP hMF fuP sW hW fuW w2 w h1 C alt bm x1 x2 x3 x4 x5 x6 x7 hRD ⟨eR, eE, hFA2, Cn, F, {', '.join(HN)}⟩ hOwn fuw
+proof = f"""  intro sP hP hMF fuP sW hW fuW w2 w h1 C alt bm x1 x2 x3 x4 x5 x6 x7 hRD ⟨eR, eE, hFA2, Cn, F, {', '.join(HN)}⟩ hHI1 hOwn fuw
   have heW : d.env ≠ sW.envs.size := Nat.ne_of_lt (Nat.lt_of_lt_of_le hG (Nat.le_trans hP.envs_le hW.envs_le))
   have hT := frame_trans hFA2 hOwn
   have hO2 : ∀ o, o < w2.heap.size → w.objEntry o = w2.objEntry o :=
@@ -315,7 +315,7 @@ proof = f"""  intro sP hP hMF fuP sW hW fuW w2 w h1 C alt bm x1 x2 x3 x4 x5 x6 x
   have hE2 : w.envEntry d.env = w2.envEntry d.env :=
     hOwn.env_eq _ (Nat.lt_of_lt_of_le hG hFA2.envs_le) (by simp [ReactPerformWork.fpOwn, heW])
   {PRE}
-  refine' wp_mono (ReactCommitOne.crw_one (fpA := {FPAe}) (bW := bm) {' '.join(impl)}
+  refine' wp_mono (ReactCommitOne.crw_one (fpA := {FPAe}) (bW := bm) (hHI := hHI1) {' '.join(impl)}
     {' '.join(args)} {' '.join(qargs)}
     (hFA := hT) (hGw := by rw [hcdenv, hE2]; exact hRD.record)
     (hcb := fun x hx => by
@@ -331,7 +331,10 @@ proof = f"""  intro sP hP hMF fuP sW hW fuW w2 w h1 C alt bm x1 x2 x3 x4 x5 x6 x
     ..) ?post
   case post =>
     rintro v w' h' ⟨-, hfu, w0, hPc, hF0⟩
-    exact ⟨frame_trans hPc.2 hF0, by omega, w, w0, hPc, hF0⟩
+    have hHIc : HI h' := by
+      obtain ⟨⟨_, _, -, ⟨⟨_, ⟨⟨_, -, -, hHIc⟩, -⟩, -⟩, -⟩, -⟩, -⟩ := hPc
+      exact hHIc
+    exact ⟨frame_trans hPc.2 hF0, by omega, ⟨w, w0, hPc, hF0⟩, hHIc⟩
   all_goals first | with_reducible assumption | (rw [props_frame hT (by with_reducible assumption) (by simp (config := {{ decide := true }}) [{ALLDEFS}, {DLN}])] <;> with_reducible assumption) | (rw [kind_frame hT (by with_reducible assumption)] <;> with_reducible assumption)
 """
 EXTRA2 = ["(hG : d.env < s.envs.size)", "(hRo : R < s.heap.size)", "(hH : p_H < s.heap.size)",
