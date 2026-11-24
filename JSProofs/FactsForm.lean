@@ -221,10 +221,9 @@ def factsForm (n : Name) : TermElabM Unit := do
         if !recs.any (·.decl == i) && !E.containsFVar sid && !bG.containsFVar sid && !oG.containsFVar sid &&
             !recs.any (·.e == E) && !whole.any (·.e == E) then
           whole := whole.push ⟨E, bG, oG, i⟩
-    let mut A : AtomsB := { envs := recs.map (·.e) ++ whole.map (·.e) }
     -- facts (the records first, then the others in binder order), each built once the atoms are complete
     let mut mk : Array (Expr → MetaM Expr) :=
-      recs.mapIdx fun r rc a => pure (mkApp3 (mkConst ``Fact.record) a (mkNatLit r) rc.oG)
+      recs.map fun rc _ => pure (mkApp2 (mkConst ``Fact.record) rc.e rc.oG)
     let mut roles : Array Role := #[]
     for i in [:xs.size] do
       let t := tys[i]!
@@ -233,13 +232,14 @@ def factsForm (n : Name) : TermElabM Unit := do
       if let some r := whole.findIdx? (·.decl == i) then
         let rc := whole[r]!
         roles := roles.push (.direct mk.size true)
-        mk := mk.push fun a => pure (mkApp4 (mkConst ``Fact.recordIs) a (mkNatLit (recs.size + r)) rc.bG rc.oG)
+        mk := mk.push fun _ => pure (mkApp3 (mkConst ``Fact.recordIs) rc.e rc.bG rc.oG)
         continue
       if let some (mp, x, v) := lookupOf? t then
         if let some r := recs.findIdx? (·.bG == mp) then
           let oG := recs[r]!.oG
+          let E := recs[r]!.e
           roles := roles.push (.lookup r mk.size)
-          mk := mk.push fun a => do return mkApp5 (mkConst ``Fact.bind) a (mkNatLit r) oG x (← eqPred v)
+          mk := mk.push fun _ => do return mkApp4 (mkConst ``Fact.bind) E oG x (← eqPred v)
           continue
       if let some E := sizeLtOf? s t ``ES.State.envs then
         if let some r := recs.findIdx? (·.e == E) then roles := roles.push (.envLt r); continue
@@ -254,18 +254,14 @@ def factsForm (n : Name) : TermElabM Unit := do
           if pm.isAppOfArity ``ES.Obj.props 1 then
             if let some o := objEntryOf? s pm.appArg! then
               unless o.containsFVar sid do
-                let (A', j) := A.obj o
-                A := A'
                 let k := lhs.appArg!
                 roles := roles.push (.direct mk.size true)
-                mk := mk.push fun a => pure (mkApp4 (mkConst ``Fact.prop) a (mkNatLit j) k v)
+                mk := mk.push fun _ => pure (mkApp3 (mkConst ``Fact.prop) o k v)
                 continue
       -- an object's existence
       if let some o := sizeLtOf? s t ``ES.State.heap then
-        let (A', j) := A.obj o
-        A := A'
         roles := roles.push (.direct mk.size false)
-        mk := mk.push fun a => pure (mkApp3 (mkConst ``Fact.kindP) a (mkNatLit j)
+        mk := mk.push fun _ => pure (mkApp2 (mkConst ``Fact.kindP) o
           (mkLambda `K .default (mkConst ``ES.Kind) (mkConst ``True)))
         continue
       -- its kind
@@ -274,29 +270,23 @@ def factsForm (n : Name) : TermElabM Unit := do
           let pat := mkApp (mkConst ``ES.Obj.kind) (mkApp2 (mkConst ``ES.State.objEntry) s o)
           let body ← kabstract t pat
           unless body.containsFVar sid do
-            let (A', j) := A.obj o
-            A := A'
             let P := mkLambda `K .default (mkConst ``ES.Kind) body
             roles := roles.push (.direct mk.size true)
-            mk := mk.push fun a => pure (mkApp3 (mkConst ``Fact.kindP) a (mkNatLit j) P)
+            mk := mk.push fun _ => pure (mkApp2 (mkConst ``Fact.kindP) o P)
             continue
       -- frame-closed
       if let some (tu, fp, P) ← closedOf? s t then
-        if let some (A', sf) ← reflectFoot A fp 64 then
-          A := A'
-          roles := roles.push (.closed mk.size tu)
-          mk := mk.push fun a => pure (mkApp3 (mkConst ``Fact.closed) a sf P)
-          continue
+        roles := roles.push (.closed mk.size tu)
+        mk := mk.push fun _ => pure (mkApp2 (mkConst ``Fact.closed) fp P)
+        continue
       roles := roles.push .kept
-    let a := mkApp2 (mkConst ``Atoms.mk) (← mkListLit (mkConst ``ES.ObjId) A.objs.toList)
-      (← mkListLit (mkConst ``ES.EnvId) A.envs.toList)
-    let fs ← mk.mapM (· a)
-    let L ← mkListLit (mkApp (mkConst ``Fact) a) fs.toList
+    let fs ← mk.mapM (· (mkConst ``Unit.unit))
+    let L ← mkListLit (mkConst ``Fact) fs.toList
     let kept := (List.range xs.size).filter (fun i => match roles[i]! with | .kept => true | _ => false) |>.map (xs[·]!)
-    withLocalDeclD `hf (mkApp3 (mkConst ``Facts.holds) a L s) fun hf => do
+    withLocalDeclD `hf (mkApp2 (mkConst ``Facts.holds) L s) fun hf => do
     let get (m : Nat) : MetaM Expr := do
       let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit m, mkNatLit fs.size])
-      return mkAppN (mkConst ``Facts.get) #[a, L, s, hf, mkNatLit m, hm]
+      return mkAppN (mkConst ``Facts.get) #[L, s, hf, mkNatLit m, hm]
     -- the records' maps, obtained from their facts, then `T`
     let rec go (r : Nat) (bss hds : Array Expr) : MetaM Expr := do
       if h : r < recs.size then
@@ -304,7 +294,7 @@ def factsForm (n : Name) : TermElabM Unit := do
         let ex ← mkAppM ``And.right #[← get r]
         let mapTy ← inferType rc.bG
         let motive ← withLocalDeclD `bs mapTy fun bs => do
-          mkLambdaFVars #[bs] (← declLikeEq s (mkApp2 (mkConst ``Atoms.env) a (mkNatLit r)) bs rc.oG)
+          mkLambdaFVars #[bs] (← declLikeEq s rc.e bs rc.oG)
         withLocalDeclD `bs mapTy fun bs => do
           withLocalDeclD `hd (← declLikeEq s rc.e bs rc.oG) fun hd => do
             let body ← go (r + 1) (bss.push bs) (hds.push hd)
@@ -326,7 +316,7 @@ def factsForm (n : Name) : TermElabM Unit := do
             let rc := recs[r]!
             let some (_, x, v) := lookupOf? tys[i]! | throwError "lookup"
             args := args.push (mkAppN (mkConst ``Fact.bind_get)
-              #[a, mkNatLit r, rc.oG, x, ← eqPred v, s, bss[r]!, hds[r]!, ← get m])
+              #[rc.e, rc.oG, x, ← eqPred v, s, bss[r]!, hds[r]!, ← get m])
           | .direct m right => args := args.push (← mkAppM (if right then ``And.right else ``And.left) #[← get m])
           | .closed m tu =>
             let hc ← get m
@@ -343,8 +333,120 @@ def factsForm (n : Name) : TermElabM Unit := do
     let ty ← instantiateMVars (← mkForallFVars bs concl)
     let val ← instantiateMVars (← mkLambdaFVars bs val)
     addDecl (.thmDecl { name := n ++ `facts, levelParams := ci.levelParams, type := ty, value := val })
+    -- `T.L` the facts; `T.Pre vars s` the facts about values alone and the facts at `s`; `T.ofPre`; `T.Pre_frame`
+    let hvar? ← xs.findM? (fun x => return (← x.fvarId!.getUserName) == `h)
+    let isContract (t : Expr) : Bool := (t.find? fun e => e.isConst && e.constName!.getString! == "callImpl").isSome
+    let mut vars : Array Expr := #[]
+    let mut pures : Array Expr := #[]
+    let mut others : Array Expr := #[]
+    for x in kept do
+      let t ← inferType x
+      if !(← isProp t) then vars := vars.push x
+      else if isContract t || t.containsFVar sid || (hvar?.map (t.containsFVar ·.fvarId!)).getD false then
+        others := others.push x
+      else pures := pures.push x
+    let lps := ci.levelParams.map mkLevelParam
+    let varsL := vars.filter (· != s)
+    let lName := Name.mkStr n "L"
+    addDecl (.defnDecl (mkDefinitionValEx lName ci.levelParams
+      (← instantiateMVars (← mkForallFVars varsL (mkApp (mkConst ``List [Level.zero]) (mkConst ``Fact))))
+      (← instantiateMVars (← mkLambdaFVars varsL L)) .abbrev .safe []))
+    let Lc := mkAppN (mkConst lName lps) varsL
+    let ptys ← pures.mapM fun p => inferType p
+    let conj := ptys.foldr (fun pt acc => mkAnd pt acc) (mkApp2 (mkConst ``Facts.holds) Lc s)
+    let preName := Name.mkStr n "Pre"
+    addDecl (.defnDecl (mkDefinitionValEx preName ci.levelParams
+      (← instantiateMVars (← mkForallFVars vars (mkSort .zero)))
+      (← instantiateMVars (← mkLambdaFVars vars conj)) .abbrev .safe []))
+    let preApp := mkAppN (mkConst preName lps) vars
+    withLocalDeclD `hpre preApp fun hpre => do
+      -- the conjuncts: the `k`-th is `.2.….2.1`, the facts the last `.2`s
+      let mut cur := hpre
+      let mut pargs : Array Expr := #[]
+      for _ in pures do
+        pargs := pargs.push (mkProj ``And 0 cur)
+        cur := mkProj ``And 1 cur
+      let mut fargs : Array Expr := #[]
+      let mut pi := 0
+      for x in kept do
+        if pures.contains x then fargs := fargs.push pargs[pi]!; pi := pi + 1
+        else fargs := fargs.push x
+      fargs := fargs.push cur
+      let v2 := mkAppN (mkConst (n ++ `facts) lps) fargs
+      let bs2 := vars ++ #[hpre] ++ others
+      let ty2 ← instantiateMVars (← mkForallFVars bs2 concl)
+      let val2 ← instantiateMVars (← mkLambdaFVars bs2 v2)
+      addDecl (.thmDecl { name := Name.mkStr n "ofPre", levelParams := ci.levelParams, type := ty2, value := val2 })
+      -- through a frame missing the facts' places, `Pre` holds at the frame's end
+      withLocalDeclD `w (mkConst ``ES.State) fun w => do
+      withLocalDeclD `fp (mkConst ``Logic.Footprint) fun fp => do
+      withLocalDeclD `hF (mkApp3 (mkConst ``Logic.Frame) fp s w) fun hF => do
+      withLocalDeclD `hap (mkApp2 (mkConst ``Facts.Apart) fp Lc) fun hap => do
+        let varsW := vars.map fun x => if x == s then w else x
+        let concl3 := mkAppN (mkConst preName lps) varsW
+        let last := mkAppN (mkConst ``Facts.frame) #[fp, s, w, hF, Lc, hap, cur]
+        let ptysW := ptys
+        let mut acc := last
+        let mut accTy := mkApp2 (mkConst ``Facts.holds) Lc w
+        for k in (List.range pures.size).reverse do
+          acc := mkApp4 (mkConst ``And.intro) ptysW[k]! accTy pargs[k]! acc
+          accTy := mkAnd ptysW[k]! accTy
+        let bs3 := vars ++ #[w, fp, hpre, hF, hap]
+        let ty3 ← instantiateMVars (← mkForallFVars bs3 concl3)
+        let val3 ← instantiateMVars (← mkLambdaFVars bs3 acc)
+        addDecl (.thmDecl { name := Name.mkStr n "Pre_frame", levelParams := ci.levelParams, type := ty3, value := val3 })
     let nc := roles.foldl (fun c r => match r with | .closed .. => c + 1 | _ => c) 0
-    logInfo m!"{n ++ `facts}: {fs.size} facts ({recs.size} records, {A.objs.size} objects, {nc} frame-closed); {kept.length} premises kept"
+    logInfo m!"{n ++ `facts}: {fs.size} facts ({recs.size + whole.size} records, {nc} frame-closed); {kept.length} premises kept; L, Pre, ofPre, Pre_frame declared"
+
+/-- A fact's place reflected over the atoms (its objects and records added). -/
+def reflectLoc (A : AtomsB) (loc : Expr) : MetaM (Option (AtomsB × Expr)) := do
+  let loc ← whnf loc
+  let args := loc.getAppArgs
+  match loc.getAppFn.constName? with
+  | some ``Logic.Loc.pure => return some (A, mkConst ``RLoc.pure)
+  | some ``Logic.Loc.obj => return some (A, mkApp (mkConst ``RLoc.obj) args[0]!)
+  | some ``Logic.Loc.prop =>
+    let (A, i) := A.obj args[0]!; return some (A, mkApp2 (mkConst ``RLoc.prop) (mkNatLit i) args[1]!)
+  | some ``Logic.Loc.bind =>
+    let (A, i) := A.env args[0]!; return some (A, mkApp2 (mkConst ``RLoc.bind) (mkNatLit i) args[1]!)
+  | some ``Logic.Loc.record => return some (A, mkApp (mkConst ``RLoc.record) args[0]!)
+  | some ``Logic.Loc.recordAll =>
+    let (A, i) := A.env args[0]!; return some (A, mkApp (mkConst ``RLoc.recordAll) (mkNatLit i))
+  | some ``Logic.Loc.closed =>
+    let some (A, f) ← reflectFoot A args[0]! 64 | return none
+    return some (A, mkApp (mkConst ``RLoc.closed) f)
+  | _ => return none
+
+/-- `facts_apart` proves `Facts.Apart fp L` (`L` a list of facts) by reflection, leaving `Atoms.Wf` of the objects and
+records both name: that they are distinct. -/
+elab "facts_apart" : tactic => Tactic.withMainContext do
+  let g ← Tactic.getMainGoal
+  let t ← whnfR (← instantiateMVars (← g.getType))
+  unless t.isAppOfArity ``Logic.Facts.Apart 2 do throwError "facts_apart: not `Facts.Apart fp L`: {t}"
+  let fp := t.appFn!.appArg!
+  let L := t.appArg!
+  let some elems ← listElems L 4096 | throwError "facts_apart: the facts are not a list"
+  let mut A : AtomsB := {}
+  let mut rs : Array Expr := #[]
+  for x in elems do
+    let some (A', r) ← reflectLoc A (mkApp (mkConst ``Fact.loc) x) | throwError "facts_apart: a place not reflected: {x}"
+    A := A'
+    rs := rs.push r
+  let some (A', sf) ← reflectFoot A fp 64 | throwError "facts_apart: the footprint not reflected: {fp}"
+  A := A'
+  let U := mkApp2 (mkConst ``Atoms.mk) (← mkListLit (mkConst ``ES.ObjId) A.objs.toList)
+    (← mkListLit (mkConst ``ES.EnvId) A.envs.toList)
+  let rsL ← mkListLit (mkConst ``RLoc) rs.toList
+  let hw ← mkFreshExprSyntheticOpaqueMVar (mkApp (mkConst ``Atoms.Wf) U) `wf
+  let lhs ← mkAppM ``List.map #[mkConst ``Fact.loc, L]
+  let rhs ← mkAppM ``List.map #[mkApp (mkConst ``RLoc.eval) U, rsL]
+  let hl ← mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs)
+  let chk ← mkAppM ``List.all #[rsL, mkApp2 (mkConst ``RLoc.apart) U sf]
+  let hc ← mkExpectedTypeHint (← mkEqRefl (mkConst ``Bool.true)) (← mkEq chk (mkConst ``Bool.true))
+  let prf := mkAppN (mkConst ``Facts.apart_refl) #[U, hw, sf, L, rsL, hl, hc]
+  unless ← isDefEq (← inferType prf) t do throwError "facts_apart: the footprint is not its reflection"
+  g.assign prf
+  Tactic.replaceMainGoal [hw.mvarId!]
 
 elab "facts_form " id:ident : command => do
   let n ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
