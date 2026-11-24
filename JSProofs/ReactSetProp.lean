@@ -31,7 +31,7 @@ theorem onClick_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
     (hcode : d.code = SetPropGen.setProp_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGN : bG[JSStr.ofString "noop$1"]? = some bdN) (hGNv : bdN.value = some (.obj fN))
-    (hOC : ∀ w h1, Frame {} s w → HI h1 → SetsAcc eng answer n h1 w (.obj dom) "onclick" (.obj fN)
+    (hOC : ∀ w h1, Frame {} s w → HI h1 → 2 ≤ w.fuel → SetsAcc eng answer n h1 w (.obj dom) "onclick" (.obj fN)
       fun w' h' => R w' h' ∧ HI h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1) (hHI : HI h) :
     WP eng answer (n + 1) h
       (callImpl eng (.obj fo) t #[.obj dom, .str tag, .str (JSStr.ofString "onClick"), .obj fv, props, prev]) s
@@ -57,8 +57,9 @@ theorem onClick_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
   iterate 1 (first | js_go | js_norm [e1, e2, e3, e4, hGe, hGN, hGNv, hG, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_assignMemberSet ?_
   js_until [] [e1, e2, e3, e4, hGe, hGN, hGNv, hG, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine setsAcc_mono (hOC _ _ ?frS hHI) ?kS
+  refine setsAcc_mono (hOC _ _ ?frS hHI ?fuS) ?kS
   case frS => frame_go' [*]
+  case fuS => (try simp only [js_simp, State.pushEnv_fuel]); omega
   case kS =>
   intro w4 h4 ⟨hR, hHI4, hF4, hfu4⟩
   js_until [] [e1, e2, e3, e4, hGe, hGN, hGNv, hG, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
@@ -86,7 +87,7 @@ theorem children_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value}
     (hFC : ReactHostContainer.DomRead eng answer HI n s {} dom "firstChild" (.obj T))
     (hLC : ReactHostContainer.DomRead eng answer HI n s {} dom "lastChild" (.obj T))
     (hNT : ReactHostContainer.DomRead eng answer HI n s {} T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
-    (hNV : ∀ w h1, Frame {} s w → HI h1 → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str text)
+    (hNV : ∀ w h1, Frame {} s w → HI h1 → 2 ≤ w.fuel → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str text)
       fun w' h' => R w' h' ∧ HI h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1) (hHI : HI h) :
     WP eng answer (n + 2) h
       (callImpl eng (.obj fo) t #[.obj dom, .str (JSStr.ofString "button"), .str (JSStr.ofString "children"),
@@ -123,7 +124,7 @@ theorem children_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value}
   refine wp_mono (ReactSetText.stc_spec (R := fun w' h' => R w' h' ∧ Frame {} ((bodyState s fo d t #[.obj dom, .str (JSStr.ofString "button"), .str (JSStr.ofString "children"), .str text, props, prev]).pushEnv (Env.decl ∅ (some s.envs.size))) w') (by js_norm [htext, e1, e2, e3, e4, hGe, hGS, hGSv, hG, hSo, hSk, hScls, hSmode, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) (by js_norm [htext, e1, e2, e3, e4, hGe, hGS, hGSv, hG, hSo, hSk, hScls, hSmode, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) (by simp; omega) hScode
     hScls hSmode htext (fun w' h1 hw hi => hFC w' h1 (frame_empty_trans hw0 hw) hi)
     (fun w' h1 hw hi => hLC w' h1 (frame_empty_trans hw0 hw) hi) (fun w' h1 hw hi => hNT w' h1 (frame_empty_trans hw0 hw) hi)
-    (fun w' h1 hw hi => setsAcc_mono (hNV w' h1 (frame_empty_trans hw0 hw) hi)
+    (fun w' h1 hw hi hfu => setsAcc_mono (hNV w' h1 (frame_empty_trans hw0 hw) hi hfu)
       fun w2 h2 ⟨hR, hHI2, hF, hfu⟩ => ⟨⟨hR, frame_empty_trans hw hF⟩, hHI2, hfu⟩) hHI) ?_
   rintro v5 w5 h5 ⟨rfl, ⟨w0, ⟨hR, hF0⟩, rfl⟩, hfu0, hHI5⟩
   simp only [State.restore] at hfu0

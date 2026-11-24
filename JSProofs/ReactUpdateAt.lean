@@ -58,13 +58,13 @@ theorem up_at {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : St
     (hScls : dS.isClassCtor = false) (hSmode : dS.thisMode = .strict)
     (hGV : bG[JSStr.ofString "viewTransitionMutationContext"]? = some bdV) (hGVm : bdV.mutable = true)
     (hGVi : bdV.value.isSome = true)
-    (hOC : ∀ w h1, Frame {} s w → HI h1 → SetsAcc eng answer (n + 1) h1 w (.obj dom) "onclick" (.obj fN)
+    (hOC : ∀ w h1, Frame {} s w → HI h1 → 2 ≤ w.fuel → SetsAcc eng answer (n + 1) h1 w (.obj dom) "onclick" (.obj fN)
       fun w' h' => R1 w' h' ∧ HI h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (htext : t1.isEmpty = false)
     (hFC : ReactHostContainer.DomRead eng answer HI n s {} dom "firstChild" (.obj T))
     (hLC : ReactHostContainer.DomRead eng answer HI n s {} dom "lastChild" (.obj T))
     (hNT : ReactHostContainer.DomRead eng answer HI n s {} T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
-    (hNV : ∀ w h1, Frame {} s w → HI h1 → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str t1)
+    (hNV : ∀ w h1, Frame {} s w → HI h1 → 2 ≤ w.fuel → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str t1)
       fun w' h' => R2 w' h' ∧ HI h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     {u : State} (hw : Frame {} s u) (hfw : 2000 ≤ u.fuel) (hHI : HI h) :
     WP eng answer (n + 3) h

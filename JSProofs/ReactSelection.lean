@@ -74,8 +74,9 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   iterate 10 (first | js_go | js_norm [hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   js_until [] [hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hNN _ _ ?_ hHI) ?_
+  refine getsAcc_mono (hNN _ _ ?_ hHI ?_) ?_
   · frame_go' [*]
+  · (try simp only [js_simp, State.pushEnv_fuel]); omega
   intro _ _ _ ⟨hv_, hh_, fA, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
@@ -83,8 +84,9 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   refine wp_callMemberStr ?_
   refine wp_getMemberAcc ?_
   js_until [] [hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hNN _ _ ?_ hHI) ?_
+  refine getsAcc_mono (hNN _ _ ?_ hHI ?_) ?_
   · frame_go' [*]
+  · (try simp only [js_simp, State.pushEnv_fuel]); omega
   intro _ _ _ ⟨hv_, hh_, fB, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
@@ -106,8 +108,9 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until ["contentEditable"] [envEntry_withHeap, envs_withHeap, fuel_withHeap, hE1, hS1, hfw1, hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_getMemberAcc ?_
   js_until [] [envEntry_withHeap, envs_withHeap, fuel_withHeap, hE1, hS1, hfw1, hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hCE _ _ ?_ hHI) ?_
+  refine getsAcc_mono (hCE _ _ ?_ hHI ?_) ?_
   · exact frame_setEnv_new hFs1 (Nat.le_refl _) _
+  · (try simp only [js_simp, State.pushEnv_fuel]); omega
   intro _ _ _ ⟨hv_, hh_, fC, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_

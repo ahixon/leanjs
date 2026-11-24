@@ -94,7 +94,7 @@ theorem ghr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until ["nodeType"] [hE1, hS1, hfw1, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_getMemberAcc ?_
   js_until [] [hE1, hS1, hfw1, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hNT _ _ (by frame_go' [*]) hHI) ?_
+  refine getsAcc_mono (hNT _ _ (by frame_go' [*]) hHI (by (try simp only [js_simp, State.pushEnv_fuel]); omega)) ?_
   intro v2 w2 h2 ⟨hv2, hh2, f_w2, hw2, hf_w2⟩
   subst hv2 hw2 hh2
   try simp only [js_simp, State.pushEnv_fuel] at hf_w2

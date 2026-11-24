@@ -65,7 +65,7 @@ theorem gae_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until ["activeElement"] [TypeofC, hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_getMemberAcc ?_
   js_until [] [hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hAE _ _ (by frame_go' [*]) hHI) ?_
+  refine getsAcc_mono (hAE _ _ (by frame_go' [*]) hHI (by (try simp only [js_simp, State.pushEnv_fuel]); omega)) ?_
   intro v2 w2 h2 ⟨hv2, hh2, f_w2, hw2, hf_w2⟩
   subst hv2 hw2 hh2
   try simp only [js_simp, State.pushEnv_fuel] at hf_w2
@@ -122,8 +122,9 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   iterate 3 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hOD _ _ ?_ hHI) ?_
+  refine getsAcc_mono (hOD _ _ ?_ hHI ?_) ?_
   · frame_go' [*]
+  · (try simp only [js_simp, State.pushEnv_fuel]); omega
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
@@ -132,13 +133,15 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   refine wp_getMemberAcc ?_
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hOD _ _ ?_ hHI) ?_
+  refine getsAcc_mono (hOD _ _ ?_ hHI ?_) ?_
   · frame_go' [*]
+  · (try simp only [js_simp, State.pushEnv_fuel]); omega
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
-  refine getsAcc_mono (hDV _ _ ?_ hHI) ?_
+  refine getsAcc_mono (hDV _ _ ?_ hHI ?_) ?_
   · frame_go' [*]
+  · (try simp only [js_simp, State.pushEnv_fuel]); omega
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
@@ -147,21 +150,24 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   refine wp_getMemberAcc ?_
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hOD _ _ ?_ hHI) ?_
+  refine getsAcc_mono (hOD _ _ ?_ hHI ?_) ?_
   · frame_go' [*]
+  · (try simp only [js_simp, State.pushEnv_fuel]); omega
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
-  refine getsAcc_mono (hDV _ _ ?_ hHI) ?_
+  refine getsAcc_mono (hDV _ _ ?_ hHI ?_) ?_
   · frame_go' [*]
+  · (try simp only [js_simp, State.pushEnv_fuel]); omega
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
   iterate 9 (first | js_go | js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_getMemberAcc ?_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine getsAcc_mono (hWD _ _ ?_ hHI) ?_
+  refine getsAcc_mono (hWD _ _ ?_ hHI ?_) ?_
   · frame_go' [*]
+  · (try simp only [js_simp, State.pushEnv_fuel]); omega
   intro _ _ _ ⟨hv_, hh_, _, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
