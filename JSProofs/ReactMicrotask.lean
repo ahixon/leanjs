@@ -21,7 +21,7 @@ open Std (HashMap)
 namespace ReactMicrotask
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = SIRGen.fn5_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -36,8 +36,8 @@ theorem call_spec {n : Nat} {h : σ} {c : ObjId} {e g : EnvId} {s : State} {bG :
       (.num (numberBinOp .bitAnd ec (F64.fin false 6755399441055744 (-50)))) = true)
     (hGP : bG[JSStr.ofString "processRootScheduleInMicrotask"]? = some bdP) (hGPv : bdP.value = some (.obj fP))
     (hPo : fP < s.heap.size) (hPk : (s.objEntry fP).kind = .func dP)
-    (hSpec : ∀ w h1, Frame {} s w → s.fuel ≤ w.fuel + 2 →
-      WP eng answer n h1 (callImpl eng (.obj fP) .undefined #[]) w fun _ w' h' => Q (w'.restore s) h') :
+    (hSpec : ∀ w h1, Frame {} s w → HI h1 → s.fuel ≤ w.fuel + 2 →
+      WP eng answer n h1 (callImpl eng (.obj fP) .undefined #[]) w fun _ w' h' => Q (w'.restore s) h') (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj c) .undefined #[]) s fun v w h' => v = .undefined ∧ Q w h' := by
   replace hSpec := ReactDSSI.Hold.mk hSpec
   obtain ⟨hlt, d, hk, hcode, hmode, hcls, hde, he, hE⟩ := hcb
@@ -58,7 +58,7 @@ theorem call_spec {n : Nat} {h : σ} {c : ObjId} {e g : EnvId} {s : State} {bG :
     hPo, hPk, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, *], ?_⟩
   refine wp_mono ((ReactDSSI.Hold.get hSpec) _ h (frame_bodyState (frame_refl {} s) c d .undefined #[])
-    (by simp; omega)) ?post
+    hHI (by simp; omega)) ?post
   case post =>
     intro b w1 h1 hQ
     js [FDI.fdiCtx, Sem.inner, hQ]

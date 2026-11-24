@@ -63,8 +63,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hRs : (s.objEntry R).props.get? (.str "suspendedLanes") = some (.data (.num (F64.fin false 0 (-1074))) sw se sc))
     (hRi : (s.objEntry R).props.get? (.str "pingedLanes") = some (.data (.num (F64.fin false 0 (-1074))) pw pe pc)) :
     WP eng answer n h (callImpl eng (.obj fo) t #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) s
-      fun v w _ => v = .bool false ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 :=
-  wp_mono (call_spec_h hlt hk hf hcode hcls hmode hR hRk hRp hRs hRi) fun _ _ _ ⟨a, b, c, _⟩ => ⟨a, b, c⟩
+      fun v w h' => v = .bool false ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 ∧ h' = h :=
+  call_spec_h hlt hk hf hcode hcls hmode hR hRk hRp hRs hRi
 
 end
 

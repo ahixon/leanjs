@@ -31,8 +31,8 @@ def fp (R A : ObjId) : Footprint :=
 def Reads (eng : Engine) (answer : HostAnswer σ) (n : Nat) (f : ObjId) (args : Array Value) (v : Value)
     (s : State) (fpS : Footprint) (k : Nat) : Prop :=
   ∀ w h1, Frame fpS s w → s.fuel ≤ w.fuel + 40 →
-    WP eng answer n h1 (callImpl eng (.obj f) .undefined args) w fun r w' _ =>
-      r = v ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + k
+    WP eng answer n h1 (callImpl eng (.obj f) .undefined args) w fun r w' h' =>
+      r = v ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + k ∧ h' = h1
 
 set_option maxHeartbeats 2000000 in
 set_option maxRecDepth 10000 in
@@ -77,8 +77,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t tm : Value} 
     (hNext : Reads eng answer n fG #[.obj R, .num (F64.fin false 0 (-1074)), .bool false]
       (.num (F64.fin false 4503599627370496 (-51))) s (fp R A) 20)
     (hPre : Reads eng answer n fP #[.obj R, .num (F64.fin false 4503599627370496 (-51))] (.bool false) s (fp R A) 10) :
-    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj R, tm]) s fun v w _ =>
-      v = .num (F64.fin false 4503599627370496 (-51)) ∧ Frame (fp R A) s w ∧ s.fuel ≤ w.fuel + 60 ∧
+    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj R, tm]) s fun v w h' =>
+      v = .num (F64.fin false 4503599627370496 (-51)) ∧ Frame (fp R A) s w ∧ s.fuel ≤ w.fuel + 60 ∧ h' = h ∧
       (w.objEntry A).props.get? (.str "1") = some (.data (.num et) true ae ac) ∧
       (w.objEntry R).props.get? (.str "callbackPriority") =
         some (.data (.num (F64.fin false 4503599627370496 (-51))) true qe qc) ∧
@@ -108,8 +108,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t tm : Value} 
   case fr1 => simp only [fp]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu1 => js_side
   case post1 =>
-  intro r w1 h1 ⟨hr, hF1, hfu1⟩
-  subst hr
+  intro r w1 h1 ⟨hr, hF1, hfu1, hh1⟩
+  subst hr hh1
   try simp only [js_simp] at hfu1
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGE, hGEv, hEo, hEk, hR, hRk, hRA, Ne.symm hRA, hRs, hRi, hRx,
     hRp, hA, hAk, hA1, hAL, hL, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1,
@@ -120,8 +120,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t tm : Value} 
   case fr2 => simp only [fp]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu2 => js_side
   case post2 =>
-  intro r w2 h2 ⟨hr, hF2, hfu2⟩
-  subst hr
+  intro r w2 h2 ⟨hr, hF2, hfu2, hh2⟩
+  subst hr hh2
   try simp only [js_simp] at hfu2
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGE, hGEv, hGW, hGWv, hGL, hGLv, hGG, hGGv, hGP, hGPv, hEo, hEk,
     hGo, hGk, hPo, hPk, hR, hRk, hRA, Ne.symm hRA, hRs, hRi, hRx, hRp, hRc, hRt, hRn, hRq, hA, hAk, hA1, hAL, hL, hAE, hAG, hAP, hRG, hRP, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1,
@@ -132,8 +132,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t tm : Value} 
   case fr3 => simp only [fp]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu3 => js_side
   case post3 =>
-  intro r w3 h3 ⟨hr, hF3, hfu3⟩
-  subst hr
+  intro r w3 h3 ⟨hr, hF3, hfu3, hh3⟩
+  subst hr hh3
   try simp only [js_simp] at hfu3
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGE, hGEv, hGW, hGWv, hGL, hGLv, hGG, hGGv, hGP, hGPv, hEo, hEk,
     hGo, hGk, hPo, hPk, hR, hRk, hRA, Ne.symm hRA, hRs, hRi, hRx, hRp, hRc, hRt, hRn, hRq, hA, hAk, hA1, hAL, hL, hAE, hAG, hAP, hRG, hRP, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2,
@@ -144,13 +144,14 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t tm : Value} 
   case fr4 => simp only [fp]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu4 => js_side
   case post4 =>
-  intro r w4 h4 ⟨hr, hF4, hfu4⟩
-  subst hr
+  intro r w4 h4 ⟨hr, hF4, hfu4, hh4⟩
+  subst hr hh4
   try simp only [js_simp] at hfu4
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGE, hGEv, hGW, hGWv, hGL, hGLv, hGG, hGGv, hGP, hGPv, hEo, hEk,
     hGo, hGk, hPo, hPk, hR, hRk, hRA, Ne.symm hRA, hRs, hRi, hRx, hRp, hRc, hRt, hRn, hRq, hA, hAk, hA1, hAL, hL, hAE, hAG, hAP, hRG, hRP, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2,
     envEntry_frame0 hF3, objEntry_frame0 hF3, heap_frame hF3, envs_frame hF3,
     envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4, envs_frame hF4, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals first | rfl | omega | (simp only [fp]; frame_go' [*, hne, Ne.symm hne, hG1, hRA, Ne.symm hRA])

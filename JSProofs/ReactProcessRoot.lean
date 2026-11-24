@@ -31,7 +31,7 @@ open Std (HashMap)
 namespace ReactProcessRoot
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = PRSGen.processRootScheduleInMicrotask_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -70,13 +70,13 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hL3 : isStrictlyEqual (.num (F64.fin false 0 (-1074)))
       (.num (numberBinOp .bitAnd L (F64.fin false 6755399441055744 (-51)))) = false)
     -- (`now()`: reads the time, writes nothing)
-    (hNow : ∀ w h1, Frame (fpA d.env) s w → s.fuel ≤ w.fuel + 10 →
-      WP eng answer n h1 (callImpl eng (.obj fN) .undefined #[]) w fun r w' _ =>
-        (∃ tv, r = .num tv) ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10)
+    (hNow : ∀ w h1, Frame (fpA d.env) s w → HI h1 → s.fuel ≤ w.fuel + 10 →
+      WP eng answer n h1 (callImpl eng (.obj fN) .undefined #[]) w fun r w' h' =>
+        (∃ tv, r = .num tv) ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10 ∧ HI h')
     -- (`scheduleTaskForRootDuringMicrotask(root, currentTime)`: the root's lanes `L`, sync)
-    (hTask : ∀ w h1 tv, Frame (fpA d.env) s w → s.fuel ≤ w.fuel + 30 →
+    (hTask : ∀ w h1 tv, Frame (fpA d.env) s w → HI h1 → s.fuel ≤ w.fuel + 30 →
       WP eng answer n h1 (callImpl eng (.obj fT) .undefined #[.obj R, .num tv]) w fun v w' h' =>
-        v = .num L ∧ Frame fpT w w' ∧ w.fuel ≤ w'.fuel + 60 ∧ P w' h')
+        v = .num L ∧ Frame fpT w w' ∧ w.fuel ≤ w'.fuel + 60 ∧ P w' h' ∧ HI h')
     (hfpE : fpT.binds.all (fun q => q.1 != s.envs.size) = true)
     (hfpM : (d.env, JSStr.ofString "mightHavePendingSyncWork") ∉ fpT.binds)
     (hfpD : (d.env, JSStr.ofString "didScheduleMicrotask") ∉ fpT.binds)
@@ -85,7 +85,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hfpC : (d.env, JSStr.ofString "currentEventTransitionLane") ∉ fpT.binds)
     (hfpO : fpT.props.all (fun q => q.1 != fL) = true)
     -- (`flushSyncWorkAcrossRoots_impl(0, false)`)
-    (hFlush : ∀ w2 w h1, P w2 h1 →
+    (hFlush : ∀ w2 w h1, P w2 h1 → HI h1 →
       Frame ⟨[(d.env, "mightHavePendingSyncWork"), (s.envs.size, "nextLanes"), (s.envs.size, "prev"),
         (s.envs.size, "root")], [], false⟩ w2 w →
       (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
@@ -94,10 +94,10 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
         (∃ bd, bm[JSStr.ofString "didScheduleMicrotask"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false))) →
       s.fuel ≤ w.fuel + 120 →
       WP eng answer n h1 (callImpl eng (.obj fL) .undefined #[.num (F64.fin false 0 (-1074)), .bool false]) w
-        fun _ w' h' => Frame fpF w w' ∧ w.fuel ≤ w'.fuel + kF ∧ Q (w'.restore s) h')
+        fun _ w' h' => Frame fpF w w' ∧ w.fuel ≤ w'.fuel + kF ∧ Q (w'.restore s) h' ∧ HI h')
     (hfpFE : fpF.binds.all (fun q => q.1 != s.envs.size) = true)
-    (hfpFC : (d.env, JSStr.ofString "currentEventTransitionLane") ∉ fpF.binds) :
-    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v w h' => v = .undefined ∧ Q w h' := by
+    (hfpFC : (d.env, JSStr.ofString "currentEventTransitionLane") ∉ fpF.binds) (hHI : HI h) :
+    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v w h' => v = .undefined ∧ Q w h' ∧ HI h' := by
   replace hNow := ReactDSSI.Hold.mk hNow
   replace hTask := ReactDSSI.Hold.mk hTask
   replace hFlush := ReactDSSI.Hold.mk hFlush
@@ -117,11 +117,11 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGM, hGMm, hGMv, hGD, hGDm, hGDv, hGC, hGCv, hGF, hGFv, hGN,
     hGNv, hNo, hNk, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, *], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hNow) _ h ?fr ?fu) ?post1
+  refine wp_mono ((ReactDSSI.Hold.get hNow) _ h ?fr hHI ?fu) ?post1
   case fr => simp only [fpA]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu => js_side
   case post1 =>
-  intro tmv w1 h1 ⟨⟨tm, htm⟩, hF1, hfu1⟩
+  intro tmv w1 h1 ⟨⟨tm, htm⟩, hF1, hfu1, hHI1⟩
   subst htm
   have hE1 := envEntry_frame0 hF1 (e := s.envs.size) (by simp)
   have hG1e := envEntry_frame0 hF1 (e := d.env) (by simp; omega)
@@ -135,11 +135,11 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGM, hGMm, hGMv, hGD, hGDm, hGDv, hGC, hGCv, hGF, hGFv,
     hGT, hGTv, hE1, hG1e, hE1s, hG1s, hR1, hT1, hR1s, hT1s, hR, hRk, hRn, hTo, hTk, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, *], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hTask) _ h1 tm ?fr2 ?fu2) ?post2
+  refine wp_mono ((ReactDSSI.Hold.get hTask) _ h1 tm ?fr2 hHI1 ?fu2) ?post2
   case fr2 => simp only [fpA]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu2 => js_side
   case post2 =>
-  intro v w2 h2 ⟨hv2, hF2, hfu2, hP2⟩
+  intro v w2 h2 ⟨hv2, hF2, hfu2, hP2, hHI2⟩
   subst hv2
   have hE1s' : s.envs.size < (bodyState s fo d t #[]).envs.size := by simp
   have hE2 := envEntry_frame hF2 (e := s.envs.size) (by simp only [js_simp]; first | exact hE1s | omega) hfpE
@@ -163,7 +163,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   js [hE2, hE2s, hG2s, hW, hWM, hWP, hWL, hWC, hGM, hGP, hGL, hGC, hGMm, hGMv, hGPv, hGLv, hGCv, hL2, hLk2, hL0, hL3, hne, Ne.symm hne,
     FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, *], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hFlush) w2 _ h2 hP2 ?frF ?mF ?fuF) ?post3
+  refine wp_mono ((ReactDSSI.Hold.get hFlush) w2 _ h2 hP2 hHI2 ?frF ?mF ?fuF) ?post3
   case frF => frame_go' [*, hne, Ne.symm hne]
   case mF =>
     refine ⟨_, by js_norm [*]; rfl, ?mv, ⟨?mbd, ?m1, ?m2⟩, ⟨?dbd, ?d1, ?d2, ?d3⟩⟩
@@ -175,7 +175,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     case d3 => rfl
   case fuF => js_side
   case post3 =>
-  intro b w3 h3 ⟨hF3, hfu3, hQ⟩
+  intro b w3 h3 ⟨hF3, hfu3, hQ, hHI3⟩
   try simp only [js_simp] at hfu3
   have hE3 := envEntry_frame hF3 (e := s.envs.size) (by simp only [js_simp]; first | exact hE2s | omega) hfpFE
   have hE3s : s.envs.size < w3.envs.size := envs_frame hF3 (by simp only [js_simp]; first | exact hE2s | omega)
@@ -184,7 +184,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   have hW3C := hW3x _ hfpFC
   have hG3s : d.env < w3.envs.size := envs_frame hF3 (by simp only [js_simp]; first | exact hG2s | omega)
   have hd3 : depth ≤ w3.fuel := by simp only [depth]; omega
-  js [hE3, hE3s, hW3, hW3C, hWC, hGC, hGCv, hE2, hW, hd3, hG3s, FDI.fdiCtx, Sem.inner, hQ]
+  js [hE3, hE3s, hW3, hW3C, hWC, hGC, hGCv, hE2, hW, hd3, hG3s, FDI.fdiCtx, Sem.inner, hQ, hHI3]
 
 
 end

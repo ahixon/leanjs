@@ -17,13 +17,15 @@ open Std (HashMap)
 namespace SchedulerNow
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
-/-- A host function that only reads, called with `this` and `args`, giving `v`. -/
-def HostReads (eng : Engine) (answer : HostAnswer σ) (n : Nat) (f : ObjId) (thisV : Value) (args : Array Value)
-    (v : Value) (s : State) (k : Nat) : Prop :=
-  ∀ w h1, Frame {} s w → s.fuel ≤ w.fuel + 5 →
-    WP eng answer n h1 (callImpl eng (.obj f) thisV args) w fun r w' _ => r = v ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + k
+/-- A host function that only reads, called with `this` and `args`, giving `v`: from any host state the host
+invariant `HI` holds of, which it keeps. -/
+def HostReads (eng : Engine) (answer : HostAnswer σ) (HI : σ → Prop) (n : Nat) (f : ObjId) (thisV : Value)
+    (args : Array Value) (v : Value) (s : State) (k : Nat) : Prop :=
+  ∀ w h1, Frame {} s w → HI h1 → s.fuel ≤ w.fuel + 5 →
+    WP eng answer n h1 (callImpl eng (.obj f) thisV args) w fun r w' h' =>
+      r = v ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + k ∧ HI h'
 
 theorem simple (d : FuncData) (hc : d.code = NOWGen.fn0_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -42,9 +44,9 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hPP : PP < s.heap.size) (hPPk : (s.objEntry PP).kind.isPlain = true)
     (hPn : (s.objEntry PP).props.get? (.str "now") = some (.data (.obj fN) pw pe pc))
     (hNo : fN < s.heap.size) (hNk : (s.objEntry fN).kind = .builtin bP)
-    (hNow : HostReads eng answer n fN (.obj P) #[] (.num tm) s 5) :
-    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v w _ =>
-      v = .num tm ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 := by
+    (hNow : HostReads eng answer HI n fN (.obj P) #[] (.num tm) s 5) (hHI : HI h) :
+    WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
+      v = .num tm ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 ∧ HI h' := by
   replace hNow := ReactDSSI.Hold.mk hNow
   apply wp_callGen NOWGen.fn0_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
@@ -58,9 +60,9 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   simp only [NOWGen.fn0]
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGP, hGPv, hP, hPk, hPn0, hPp, hPP, hPPk, hPn, hNo, hNk, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, *], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hNow) _ h (frame_bodyState (frame_refl {} s) fo d t #[]) (by simp; omega)) ?post
+  refine wp_mono ((ReactDSSI.Hold.get hNow) _ h (frame_bodyState (frame_refl {} s) fo d t #[]) hHI (by simp; omega)) ?post
   case post =>
-  intro r w1 h1 ⟨hr, hF1, hfu1⟩
+  intro r w1 h1 ⟨hr, hF1, hfu1, hHI1⟩
   subst hr
   try simp only [js_simp] at hfu1
   js [FDI.fdiCtx, Sem.inner, envEntry_frame0 hF1, objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1]

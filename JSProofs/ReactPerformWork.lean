@@ -17,7 +17,7 @@ open Std (HashMap)
 namespace ReactPerformWork
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 /-- After the render: the root's current fiber and its alternate (the finished work), the module's record with the
 values `performWorkOnRoot` passes on to the commit. -/
@@ -75,33 +75,33 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hCRo : fCR < s.heap.size) (hCRk : (s.objEntry fCR).kind = .func dCR)
     (hEo : fE < s.heap.size) (hEk : (s.objEntry fE).kind = .func dE)
     -- (`renderRootSync(root, 2, true)`: completed, 5)
-    (hRender : ∀ w h1, Frame {} s w → s.fuel ≤ w.fuel + 40 →
+    (hRender : ∀ w h1, Frame {} s w → HI h1 → s.fuel ≤ w.fuel + 40 →
       WP eng answer n h1 (callImpl eng (.obj fRS) .undefined
           #[.obj R, .num (F64.fin false 4503599627370496 (-51)), .bool true]) w fun v w' h' =>
         v = .num (F64.fin false 5629499534213120 (-50)) ∧ Frame fpR w w' ∧ w.fuel ≤ w'.fuel + kR ∧
-        (∃ C alt bm x1 x2 x3 x4 x5 x6 x7, RenderDone w' d.env oG R C alt bm x1 x2 x3 x4 x5 x6 x7) ∧ PR w' h')
+        (∃ C alt bm x1 x2 x3 x4 x5 x6 x7, RenderDone w' d.env oG R C alt bm x1 x2 x3 x4 x5 x6 x7) ∧ PR w' h' ∧ HI h')
     (hfpRE : fpR.binds.all (fun q => q.1 != s.envs.size) = true)
     (hfpRC : (d.env, JSStr.ofString "completeRootWhenReady") ∉ fpR.binds)
     (hfpRS : (d.env, JSStr.ofString "ensureRootIsScheduled") ∉ fpR.binds)
     (hfpRO : fpR.props.all (fun q => q.1 != fCR && q.1 != fE) = true)
     -- (`completeRootWhenReady(root, finishedWork, …, lanes, …, 5, null, -0, 0)`: the commit)
     (hComplete : ∀ w2 w h1 C alt bm x1 x2 x3 x4 x5 x6 x7, RenderDone w2 d.env oG R C alt bm x1 x2 x3 x4 x5 x6 x7 →
-      PR w2 h1 → Frame (fpOwn s.envs.size) w2 w → s.fuel ≤ w.fuel + kR + 80 →
+      PR w2 h1 → HI h1 → Frame (fpOwn s.envs.size) w2 w → s.fuel ≤ w.fuel + kR + 80 →
       WP eng answer n h1 (callImpl eng (.obj fCR) .undefined #[.obj R, alt, x1, x2, x3,
           .num (F64.fin false 4503599627370496 (-51)), x4, x5, x6, x7, .num (F64.fin false 5629499534213120 (-50)),
           .null, .num (F64.fin false 0 (-1074)).neg, .num (F64.fin false 0 (-1074))]) w fun _ w' h' =>
-        Frame fpC w w' ∧ w.fuel ≤ w'.fuel + kC ∧ PC w' h')
+        Frame fpC w w' ∧ w.fuel ≤ w'.fuel + kC ∧ PC w' h' ∧ HI h')
     (hfpCE : fpC.binds.all (fun q => q.1 != s.envs.size) = true)
     (hfpCS : (d.env, JSStr.ofString "ensureRootIsScheduled") ∉ fpC.binds)
     (hfpCO : fpC.props.all (fun q => q.1 != fE) = true)
     -- (`ensureRootIsScheduled(root)`)
-    (hEnsure : ∀ w3 w h1, PC w3 h1 → Frame (fpOwn s.envs.size) w3 w → 20 ≤ w.fuel →
+    (hEnsure : ∀ w3 w h1, PC w3 h1 → HI h1 → Frame (fpOwn s.envs.size) w3 w → 20 ≤ w.fuel →
       WP eng answer n h1 (callImpl eng (.obj fE) .undefined #[.obj R]) w fun _ w' h' =>
-        Frame fpE w w' ∧ w.fuel ≤ w'.fuel + kE ∧ Q (w'.restore s) h')
-    (hfpEB : fpE.binds.all (fun q => decide (q.1 < s.envs.size)) = true) :
+        Frame fpE w w' ∧ w.fuel ≤ w'.fuel + kE ∧ Q (w'.restore s) h' ∧ HI h')
+    (hfpEB : fpE.binds.all (fun q => decide (q.1 < s.envs.size)) = true) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj R, .num (F64.fin false 4503599627370496 (-51)), .bool true]) s
       fun v w h' => v = .undefined ∧ Frame ⟨fpR.binds ++ fpC.binds ++ fpE.binds, fpR.props ++ fpC.props ++ fpE.props,
-        fpR.jobs || fpC.jobs || fpE.jobs⟩ s w ∧ s.fuel ≤ w.fuel + kR + kC + kE + 300 ∧ Q w h' := by
+        fpR.jobs || fpC.jobs || fpE.jobs⟩ s w ∧ s.fuel ≤ w.fuel + kR + kC + kE + 300 ∧ Q w h' ∧ HI h' := by
   replace hRender := ReactDSSI.Hold.mk hRender
   replace hComplete := ReactDSSI.Hold.mk hComplete
   replace hEnsure := ReactDSSI.Hold.mk hEnsure
@@ -123,8 +123,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   refine wp_mono (ReactPrerender.call_spec (by simpa using hPo) (by simpa using hPk) (by simp; omega) hPcode hPcls
     hPmode (by simpa using hR) (by simpa using hRk) (by simpa using hRp) (by simpa using hRs) (by simpa using hRi)) ?p1
   case p1 =>
-  intro r w1 h1 ⟨hr, hF1, hfu1⟩
-  subst hr
+  intro r w1 h1 ⟨hr, hF1, hfu1, hh1⟩
+  subst hr hh1
   try simp only [js_simp] at hfu1
   have hE1s : s.envs.size < w1.envs.size := envs_frame hF1 (by simp)
   have hG1s : d.env < w1.envs.size := envs_frame hF1 (by simp; omega)
@@ -132,11 +132,11 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, FDI.fdiCtx, Sem.inner]
   -- (`renderRootSync(root, 2, true)`)
   refine ⟨by js_norm [CallableC, *, objEntry_frame0 hF1, heap_frame hF1], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hRender) _ h1 ?fr2 ?fu2) ?post2
+  refine wp_mono ((ReactDSSI.Hold.get hRender) _ h1 ?fr2 hHI ?fu2) ?post2
   case fr2 => frame_go' [*, hne, Ne.symm hne, hG1]
   case fu2 => simp at hfu1 ⊢; omega
   case post2 =>
-  intro r w2 h2 ⟨hr, hF2, hfu2, ⟨C, alt, bm, x1, x2, x3, x4, x5, x6, x7, hRD⟩, hPR⟩
+  intro r w2 h2 ⟨hr, hF2, hfu2, ⟨C, alt, bm, x1, x2, x3, x4, x5, x6, x7, hRD⟩, hPR, hHI2⟩
   subst hr
   have hRD' := hRD
   obtain ⟨hW, ⟨bd1, hb1, hv1⟩, ⟨bd2, hb2, hv2⟩, ⟨bd3, hb3, hv3⟩, ⟨bd4, hb4, hv4⟩, ⟨bd5, hb5, hv5⟩, ⟨bd6, hb6, hv6⟩,
@@ -165,11 +165,11 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hCR2, hCRk2, FDI.fdiCtx, Sem.inner]
   -- (`completeRootWhenReady(…)`: the commit)
   refine ⟨by js_norm [CallableC, *], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hComplete) w2 _ h2 C alt bm x1 x2 x3 x4 x5 x6 x7 hRD' hPR ?fr3 ?fu3) ?post3
+  refine wp_mono ((ReactDSSI.Hold.get hComplete) w2 _ h2 C alt bm x1 x2 x3 x4 x5 x6 x7 hRD' hPR hHI2 ?fr3 ?fu3) ?post3
   case fr3 => simp only [fpOwn]; frame_go' [*, hne, Ne.symm hne]
   case fu3 => simp only [js_simp] at hfu1 hfu2 ⊢; omega
   case post3 =>
-  intro r w3 h3 ⟨hF3, hfu3, hPC⟩
+  intro r w3 h3 ⟨hF3, hfu3, hPC, hHI3⟩
   try simp only [js_simp] at hfu3
   have hsz : ∀ {x : Nat}, x < w2.envs.size → x < w3.envs.size := fun hx =>
     envs_frame hF3 (by simp only [js_simp]; first | exact Nat.lt_succ_of_lt hx | exact hx | omega)
@@ -197,18 +197,19 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     hW3, hWE3, hWE, hGE, hGEv, hE3o, hEk3, FDI.fdiCtx, Sem.inner]
   -- (`ensureRootIsScheduled(root)`)
   refine ⟨by js_norm [CallableC, *], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hEnsure) w3 _ h3 hPC ?fr4 ?fu4) ?post4
+  refine wp_mono ((ReactDSSI.Hold.get hEnsure) w3 _ h3 hPC hHI3 ?fr4 ?fu4) ?post4
   case fr4 => simp only [fpOwn]; frame_go' [*, hne, Ne.symm hne]
   case fu4 => first | omega | (simp only [js_simp] at hfu3; omega)
   case post4 =>
-  intro r w4 h4 ⟨hF4, hfu4, hQ⟩
+  intro r w4 h4 ⟨hF4, hfu4, hQ, hHI4⟩
   have hE4 := envEntry_frame hF4 (e := s.envs.size) (by first | exact hE3s | (simp only [js_simp]; exact hE3s) | (simp only [js_simp]; omega))
     (binds_avoid hfpEB (Nat.le_refl _))
   js [FDI.fdiCtx, Sem.inner, hQ, hE4]
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
-  all_goals first | rfl | exact hQ | omega | (simp only [js_simp] at *; omega) | skip
+  all_goals (try apply And.intro)
+  all_goals first | rfl | exact hQ | exact hHI4 | omega | (simp only [js_simp] at *; omega) | skip
   frame_go' [*, hne, Ne.symm hne, hG1]
 
 end

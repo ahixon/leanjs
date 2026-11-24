@@ -34,7 +34,7 @@ open Std (HashMap)
 namespace ReactFlushSync
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = FSWGen.flushSyncWorkAcrossRoots_impl_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -89,9 +89,9 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
       (.num (F64.fin false 4503599627370496 (-51))) s (fpA d.env) 20)
     (hPre : ReactSchedTaskRoot.Reads eng answer n fP #[.obj R, .num (F64.fin false 4503599627370496 (-51))]
       (.bool false) s (fpA d.env) 10)
-    (hPerf : ∀ w h1, Frame (fpA d.env) s w → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "isFlushingWork"]? = some bd ∧ bd.value = some (.bool true)) → s.fuel ≤ w.fuel + 60 →
+    (hPerf : ∀ w h1, Frame (fpA d.env) s w → HI h1 → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "isFlushingWork"]? = some bd ∧ bd.value = some (.bool true)) → s.fuel ≤ w.fuel + 60 →
       WP eng answer n h1 (callImpl eng (.obj fS) .undefined #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) w
-        fun _ w' h' => Frame fpP w w' ∧ w.fuel ≤ w'.fuel + kP ∧ After w' d.env oG R bdF ∧ P w' h')
+        fun _ w' h' => Frame fpP w w' ∧ w.fuel ≤ w'.fuel + kP ∧ After w' d.env oG R bdF ∧ P w' h' ∧ HI h')
     (hfpE : fpP.binds.all (fun q => q.1 != s.envs.size) = true)
     (hfpG : (d.env, JSStr.ofString "getNextLanes") ∉ fpP.binds)
     (hfpI : (d.env, JSStr.ofString "isFlushingWork") ∉ fpP.binds)
@@ -99,11 +99,12 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     -- (the second pass: nothing left)
     (hNext2 : ∀ w2 w h1, P w2 h1 → Frame (fpW s.envs.size d.env) w2 w → 30 ≤ w.fuel →
       WP eng answer n h1 (callImpl eng (.obj fG) .undefined #[.obj R, .num (F64.fin false 0 (-1074)), .bool false]) w
-        fun r w' _ => r = .num (F64.fin false 0 (-1074)) ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 20) :
+        fun r w' h' => r = .num (F64.fin false 0 (-1074)) ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 20 ∧ h' = h1)
+    (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t
         #[.num (F64.fin false 0 (-1074)), .bool false]) s fun v w h' =>
       v = .undefined ∧ Frame ⟨(d.env, JSStr.ofString "isFlushingWork") :: fpP.binds, fpP.props, fpP.jobs⟩ s w ∧
-      s.fuel ≤ w.fuel + kP + 200 ∧ ∃ w2 h2, P w2 h2 ∧ Frame (fpW s.envs.size d.env) w2 w := by
+      s.fuel ≤ w.fuel + kP + 200 ∧ (∃ w2 h2, P w2 h2 ∧ Frame (fpW s.envs.size d.env) w2 w) ∧ HI h' := by
   replace hNext1 := ReactDSSI.Hold.mk hNext1
   replace hPre := ReactDSSI.Hold.mk hPre
   replace hPerf := ReactDSSI.Hold.mk hPerf
@@ -130,8 +131,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   case fr1 => simp only [fpA]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu1 => js_side
   case post1 =>
-  intro r w1 h1 ⟨hr, hF1, hfu1⟩
-  subst hr
+  intro r w1 h1 ⟨hr, hF1, hfu1, hh1⟩
+  subst hr hh1
   try simp only [js_simp] at hfu1
   have hE1s : s.envs.size < w1.envs.size := envs_frame hF1 (by first | (simp only [js_simp]; done) | (simp only [js_simp]; omega) | (simp only [js_simp]; simp))
   have hG1s : d.env < w1.envs.size := envs_frame hF1 (by first | (simp only [js_simp]; done) | (simp only [js_simp]; omega) | (simp only [js_simp]; simp; omega))
@@ -149,8 +150,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   case fr2 => simp only [fpA]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu2 => js_side
   case post2 =>
-  intro r w2 h2 ⟨hr, hF2, hfu2⟩
-  subst hr
+  intro r w2 h2 ⟨hr, hF2, hfu2, hh2⟩
+  subst hr hh2
   try simp only [js_simp] at hfu2
   have hE2s : s.envs.size < w2.envs.size := envs_frame hF2 (by simp only [js_simp]; exact hE1s)
   have hG2s : d.env < w2.envs.size := envs_frame hF2 (by simp only [js_simp]; exact hG1s)
@@ -165,7 +166,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     envEntry_frame0 hF2, objEntry_frame0 hF2, heap_frame hF2, envs_frame hF2, FDI.fdiCtx, Sem.inner]
   -- (`performSyncWorkOnRoot(root, 2)`: the render and commit)
   refine ⟨by js_norm [CallableC, *, objEntry_frame0 hF1, heap_frame hF1, objEntry_frame0 hF2, heap_frame hF2], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hPerf) _ h2 ?fr3 ?if3 ?fu3) ?post3
+  refine wp_mono ((ReactDSSI.Hold.get hPerf) _ h2 ?fr3 hHI ?if3 ?fu3) ?post3
   case if3 =>
     refine ⟨?ibm, ?i1, ?ibd, ?i2, ?i3⟩
     case i1 => js_norm [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGI, hGIv, hGIm, envEntry_frame0 hF1, envs_frame hF1, envEntry_frame0 hF2, envs_frame hF2, hE1s, hG1s]; rfl
@@ -174,7 +175,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   case fr3 => simp only [fpA]; frame_go' [*, hne, Ne.symm hne, hG1]
   case fu3 => js_side
   case post3 =>
-  intro r w3 h3 ⟨hF3, hfu3, hAft, hP3⟩
+  intro r w3 h3 ⟨hF3, hfu3, hAft, hP3, hHI3⟩
   obtain ⟨bW, bdW', bdL', lv, hW, hWW, hWWv, hWL, hWLv, hWF⟩ := hAft.record
   obtain ⟨n1, n2, n3, hRn3⟩ := hAft.next
   obtain ⟨c1, c2, c3, hRc3⟩ := hAft.cancel
@@ -203,15 +204,16 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   case fr4 => simp only [fpW]; frame_go' [*, hne, Ne.symm hne]
   case fu4 => js_side
   case post4 =>
-  intro r w4 h4 ⟨hr, hF4, hfu4⟩
-  subst hr
+  intro r w4 h4 ⟨hr, hF4, hfu4, hh4⟩
+  subst hr hh4
   try simp only [js_simp] at hfu4
   js [hpn, hv, hl, ha, hG, hne, Ne.symm hne, hE3, hE3s, hG3s, hW, hWW, hWWv, hWL, hWLv, hWF, hGFv, hWG, hWI, hGG, hGGv,
     hGI, hGIm, hR3, hRk3, hRn3, hRc3, hRt3, hG3, hGk3, envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4,
     envs_frame hF4, FDI.fdiCtx, Sem.inner]
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
-  all_goals first | rfl | omega | (refine ⟨w3, h3, hP3, ?_⟩; simp only [fpW]; frame_go' [*, hne, Ne.symm hne, envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4, envs_frame hF4]) | frame_go' [*, hne, Ne.symm hne, hG1, fpA, envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4, envs_frame hF4]
+  all_goals (try apply And.intro)
+  all_goals first | rfl | omega | exact hHI3 | (refine ⟨w3, _, hP3, ?_⟩; simp only [fpW]; frame_go' [*, hne, Ne.symm hne, envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4, envs_frame hF4]) | frame_go' [*, hne, Ne.symm hne, hG1, fpA, envEntry_frame0 hF4, objEntry_frame0 hF4, heap_frame hF4, envs_frame hF4]
 
 end
 

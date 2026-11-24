@@ -21,7 +21,7 @@ open Std (HashMap)
 namespace ReactPerformSync
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = PSWGen.performSyncWorkOnRoot_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -58,12 +58,12 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t root lanes :
     (hPo : fP < s.heap.size) (hPk : (s.objEntry fP).kind = .func dP) (hPcode : dP.code = FPAGen.flushPassiveEffects_func)
     (hPcls : dP.isClassCtor = false) (hPmode : dP.thisMode = .strict) (hPenv : dP.env = d.env)
     -- (`performWorkOnRoot(root, lanes, true)`)
-    (hWork : ∀ w h1, Frame {} s w → s.fuel ≤ w.fuel + 70 →
+    (hWork : ∀ w h1, Frame {} s w → HI h1 → s.fuel ≤ w.fuel + 70 →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fW) .undefined #[root, lanes, .bool true]) w fun _ w' h' =>
-        Frame fpW w w' ∧ w.fuel ≤ w'.fuel + kW ∧ Q (w'.restore s) h')
-    (hfpWB : fpW.binds.all (fun q => decide (q.1 < s.envs.size)) = true) :
+        Frame fpW w w' ∧ w.fuel ≤ w'.fuel + kW ∧ Q (w'.restore s) h' ∧ HI h')
+    (hfpWB : fpW.binds.all (fun q => decide (q.1 < s.envs.size)) = true) (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[root, lanes]) s fun v w h' =>
-      v = .undefined ∧ Frame fpW s w ∧ s.fuel ≤ w.fuel + kW + 100 ∧ Q w h' := by
+      v = .undefined ∧ Frame fpW s w ∧ s.fuel ≤ w.fuel + kW + 100 ∧ Q w h' ∧ HI h' := by
   replace hWork := ReactDSSI.Hold.mk hWork
   apply wp_callGen PSWGen.performSyncWorkOnRoot_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
@@ -84,17 +84,17 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t root lanes :
     (by simpa using hXo) (by simpa using hXk) hXcode hXcls hXmode (by rw [hXenv, hFenv]) (by simpa using hPo)
     (by simpa using hPk) hPcode hPcls hPmode (by rw [hPenv, hFenv])) ?p1
   case p1 =>
-  rintro r w1 h1 ⟨hr, hF1, hfu1, -⟩
-  subst hr
+  rintro r w1 h1 ⟨hr, hF1, hfu1, hh1⟩
+  subst hr hh1
   try simp only [js_simp] at hfu1
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGW, hGWv, hWo, hWk, envEntry_frame0 hF1, objEntry_frame0 hF1,
     heap_frame hF1, envs_frame hF1, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, *, objEntry_frame0 hF1, heap_frame hF1], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hWork) _ h1 ?fr ?fu) ?post
+  refine wp_mono ((ReactDSSI.Hold.get hWork) _ h1 ?fr hHI ?fu) ?post
   case fr => frame_go' [*, hne, Ne.symm hne, hG1]
   case fu => simp at hfu1 ⊢; omega
   case post =>
-    intro b w2 h2 ⟨hF2, hfu2, hQ⟩
+    intro b w2 h2 ⟨hF2, hfu2, hQ, hHI2⟩
     have hE1s : s.envs.size < w1.envs.size := envs_frame hF1 (by simp)
     have hE2 := envEntry_frame hF2 (e := s.envs.size) (by first | exact hE1s | (simp only [js_simp]; exact hE1s))
       (binds_avoid hfpWB (Nat.le_refl _))
@@ -102,7 +102,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t root lanes :
     all_goals (try apply And.intro)
     all_goals (try apply And.intro)
     all_goals (try apply And.intro)
-    all_goals first | rfl | exact hQ | omega | (simp only [js_simp] at *; omega) | skip
+    all_goals (try apply And.intro)
+    all_goals first | rfl | exact hQ | exact hHI2 | omega | (simp only [js_simp] at *; omega) | skip
     frame_go' [*, hne, Ne.symm hne, hG1]
 
 end

@@ -28,7 +28,7 @@ theorem highest_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
     (hcode : d.code = GHPGen.getHighestPriorityLanes_func) (hcls : d.isClassCtor = false)
     (hmode : d.thisMode = .strict) :
     WP eng answer n h (callImpl eng (.obj fo) t #[.num (F64.fin false 4503599627370496 (-51))]) s
-      fun v w _ => v = .num (F64.fin false 4503599627370496 (-51)) ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 := by
+      fun v w h' => v = .num (F64.fin false 4503599627370496 (-51)) ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 ∧ h' = h := by
   apply wp_callGen GHPGen.getHighestPriorityLanes_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleH d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "lanes"] := by rw [hcode]; rfl
@@ -38,6 +38,8 @@ theorem highest_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} 
   clear hcode
   simp only [GHPGen.getHighestPriorityLanes]
   js [hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals first | rfl | omega | frame_go' [*]
@@ -66,7 +68,7 @@ theorem next_click {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
     (hRi : (s.objEntry R).props.get? (.str "pingedLanes") = some (.data (.num (F64.fin false 0 (-1074))) pw pe pc))
     (hRw : (s.objEntry R).props.get? (.str "warmLanes") = some (.data wv ww we wc)) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj R, .num (F64.fin false 0 (-1074)), .bool false]) s
-      fun v w _ => v = .num (F64.fin false 4503599627370496 (-51)) ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 20 := by
+      fun v w h' => v = .num (F64.fin false 4503599627370496 (-51)) ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 20 ∧ h' = h := by
   apply wp_callGen GNLGen.getNextLanes_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleN d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root", JSStr.ofString "wipLanes",
@@ -90,6 +92,8 @@ theorem next_click {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
     objEntry_frame0 hF1, heap_frame hF1, envs_frame hF1, FDI.fdiCtx, Sem.inner]
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
   all_goals first | rfl | omega | frame_go' [*, hne, Ne.symm hne, hG1]
 
 set_option maxRecDepth 10000 in
@@ -101,7 +105,7 @@ theorem next_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t a b : Value}
     (hR : R < s.heap.size) (hRk : (s.objEntry R).kind.isPlain = true)
     (hRp : (s.objEntry R).props.get? (.str "pendingLanes") = some (.data (.num (F64.fin false 0 (-1074))) lw le lc)) :
     WP eng answer n h (callImpl eng (.obj fo) t #[.obj R, a, b]) s
-      fun v w _ => v = .num (F64.fin false 0 (-1074)) ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 := by
+      fun v w h' => v = .num (F64.fin false 0 (-1074)) ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 10 ∧ h' = h := by
   apply wp_callGen GNLGen.getNextLanes_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleN d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "root", JSStr.ofString "wipLanes",
@@ -112,6 +116,8 @@ theorem next_none {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t a b : Value}
   clear hcode
   simp only [GNLGen.getNextLanes]
   js [hpn, hv, hl, ha, hR, hRk, hRp, FDI.fdiCtx, Sem.inner]
+  all_goals (try apply And.intro)
+  all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals (try apply And.intro)
   all_goals first | rfl | omega | frame_go' [*]
