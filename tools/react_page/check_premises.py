@@ -98,6 +98,12 @@ class P:
                 s.eat(")"); return ("tuple", items)
             s.eat(")"); return e
         if v == "⟨": raise Unknown("anonymous constructor")
+        if v == "[":  # a list literal
+            items = []
+            if s.peek()[1] != "]":
+                items.append(s.expr())
+                while s.peek()[1] == ",": s.eat(); items.append(s.expr())
+            s.eat("]"); return ("list", items)
         if k == "id": return ("id", v)
         raise Unknown("atom " + str(v))
 
@@ -105,6 +111,11 @@ def parse(t):
     t = re.sub(r"\s+", " ", t).strip()
     m = re.match(r"∃ ([\w' ]+?)( : [^,]+)?, (.*)$", t)
     if m: return ("exists", m.group(1).split(), parse(m.group(3)))
+    # bounded quantifiers over a list literal: `∀ X ∈ [..], body` and `∀ X, X ∈ [..] → body`
+    m = re.match(r"∀ ([\w']+) ∈ (\[[^\[\]]*\]), (.*)$", t) or re.match(r"∀ ([\w']+), \1 ∈ (\[[^\[\]]*\]) → (.*)$", t)
+    if m:
+        p = P(lex(m.group(2))); lst = p.atom()
+        return ("forall_in", m.group(1), lst, parse(m.group(3)))
     p = P(lex(t)); e = p.expr()
     if p.i != len(p.t): raise Unknown("trailing " + str(p.peek()[1]))
     return e
@@ -198,6 +209,7 @@ class Ev:
         t = e[0]
         if t == "lit": return e[1]
         if t == "tuple": return ("tuple",) + tuple(s.ev(x) for x in e[1])
+        if t == "list": return ("list",) + tuple(s.ev(x) for x in e[1])
         if t == "id":
             n = e[1]
             if n in CTORS0: return CTORS0[n]
@@ -389,6 +401,19 @@ class Ev:
                 return ok
             raise Unbound("both sides")
         if t == "≠": return not eq(s.ev(e[1]), s.ev(e[2]))
+        if t in ("∈", "∉"):
+            a, l = s.ev(e[1]), s.ev(e[2])
+            if l[0] != "list": raise Unknown("membership in " + l[0])
+            r = any(eq(a, x) for x in l[1:])
+            return r if t == "∈" else not r
+        if t == "forall_in":  # each element in turn; the body binds nothing
+            saved = s.env
+            try:
+                for x in s.ev(e[2])[1:]:
+                    s.env = {**saved, e[1]: x}
+                    if not s.check(e[3]): return False
+            finally: s.env = saved
+            return True
         if t == "<": return s.ev(e[1]) < s.ev(e[2])
         if t == "≤": return s.ev(e[1]) <= s.ev(e[2])
         if t == "exists":
@@ -425,7 +450,8 @@ def main():
     parsed = {}
     for n, t in prem:
         tt = re.sub(r"\s+", " ", t).strip()
-        if tt.startswith("∀"): status[n] = ("UNCHECKED", "contract (∀)"); continue
+        if tt.startswith("∀") and not re.match(r"∀ ([\w']+)( ∈ \[[^\[\]]*\],|, \1 ∈ \[)", tt):
+            status[n] = ("UNCHECKED", "contract (∀)"); continue
         if "eng.builtins" in tt: status[n] = ("UNCHECKED", "engine built-in table"); continue
         if "Footprint" in tt or "⟨" in tt or ".binds" in tt or ".props.all" in tt: status[n] = ("UNCHECKED", "footprint side condition"); continue
         m = re.fullmatch(r"ReactSchedTask\.Callback s (\w+) (\w+) ([\w.]+)", tt)
