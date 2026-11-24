@@ -18,6 +18,7 @@ step from one click to the next: what a click leaves of its start state is `Fact
 -/
 
 open ES
+open Std (HashMap)
 
 namespace Logic
 
@@ -85,10 +86,12 @@ inductive Loc where
   | prop (o : Nat) (k : PropKey)
   /-- A binding in a declarative or function record. -/
   | bind (e : Nat) (x : JSStr)
+  /-- A record's being declarative or a function's, and its outer record: no footprint changes them. -/
+  | record (e : Nat)
 
 /-- The place lies outside the footprint (decided on atoms). -/
 def Loc.apart (a : Atoms) (f : SFoot) : Loc → Bool
-  | .pure | .obj _ => true
+  | .pure | .obj _ | .record _ => true
   | .prop o k => f.inRange a && decide (o < a.objs.length) && !f.props.contains (o, k)
   | .bind e x => f.inRange a && decide (e < a.envs.length) && !f.binds.contains (e, x)
 
@@ -162,6 +165,22 @@ def bind (e : Nat) (oG : Option EnvId) (x : JSStr) (P : Option Binding → Prop)
     fun _ _ _ hw hF hap ⟨hl, bs, hd, hp⟩ => by
       obtain ⟨bw, hdw, hag⟩ := declLike_frame hF hl hd
       exact ⟨envs_frame hF hl, bw, hdw, by rw [hag x (Loc.apart_bind hw hap)]; exact hp⟩⟩
+
+/-- Record atom `e` is a declarative or function record with outer record `oG`. -/
+def record (e : Nat) (oG : Option EnvId) : Fact a :=
+  ⟨.record e, fun s => a.env e < s.envs.size ∧ ∃ bs, Scope.declLike? (s.envEntry (a.env e)) = some (bs, oG),
+    fun _ _ _ _ hF _ ⟨hl, bs, hd⟩ => by
+      obtain ⟨bw, hdw, -⟩ := declLike_frame hF hl hd
+      exact ⟨envs_frame hF hl, bw, hdw⟩⟩
+
+/-- A binding fact read in the record's bindings `bs`. -/
+theorem bind_get {e : Nat} {oG : Option EnvId} {x : JSStr} {P : Option Binding → Prop} {s : State}
+    {bs : HashMap JSStr Binding} (hd : Scope.declLike? (s.envEntry (a.env e)) = some (bs, oG))
+    (h : (bind (a := a) e oG x P).holds s) : P bs[x]? := by
+  obtain ⟨-, bs', hd', hp⟩ := h
+  rw [hd] at hd'
+  cases hd'
+  exact hp
 
 end Fact
 
