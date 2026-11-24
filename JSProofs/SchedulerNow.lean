@@ -23,7 +23,7 @@ variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 invariant `HI` holds of, which it keeps. -/
 def HostReads (eng : Engine) (answer : HostAnswer σ) (HI : σ → Prop) (n : Nat) (f : ObjId) (thisV : Value)
     (args : Array Value) (v : Value) (s : State) (k : Nat) : Prop :=
-  ∀ w h1, Frame {} s w → HI h1 → s.fuel ≤ w.fuel + 5 →
+  ∀ w h1, Frame {} s w → HI h1 → s.fuel ≤ w.fuel + 5 → 2 ≤ w.fuel →
     WP eng answer n h1 (callImpl eng (.obj f) thisV args) w fun r w' h' =>
       r = v ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + k ∧ HI h'
 
@@ -60,7 +60,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   simp only [NOWGen.fn0]
   js [hpn, hv, hl, ha, hG, hG1, hne, Ne.symm hne, hGe, hGP, hGPv, hP, hPk, hPn0, hPp, hPP, hPPk, hPn, hNo, hNk, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, *], ?_⟩
-  refine wp_mono ((ReactDSSI.Hold.get hNow) _ h (frame_bodyState (frame_refl {} s) fo d t #[]) hHI (by simp; omega)) ?post
+  refine wp_mono ((ReactDSSI.Hold.get hNow) _ h (frame_bodyState (frame_refl {} s) fo d t #[]) hHI (by simp; omega) (by simp; omega)) ?post
   case post =>
   intro r w1 h1 ⟨hr, hF1, hfu1, hHI1⟩
   subst hr
