@@ -44,7 +44,7 @@ csubst = {"fo": "fCM", "t": ".undefined", "FR": "FR", "R": "R", "bG": "bG", "oG"
 QUANT = []
 for nm, k, t in mb:
     if k == "(" and ("Frame" in t and t.strip().startswith("∀") or "DomRead" in t): QUANT.append(nm)
-drop = ["n", "h", "s", "hf", "hlt", "hG", "hGe", "SP_hfpE"] + list(supplied)
+drop = ["n", "h", "s", "hf", "hlt", "hG", "hGe", "SP_hfpE", "hHI"] + list(supplied)
 cm, _ = compose(CF, "cmr_full", "CM_", subst=csubst, given={}, drop=tuple(drop))
 FPE = "(FPE d.env FR)"
 qgiven = {}
@@ -101,14 +101,14 @@ stmt = f"""theorem cpr_full {binds} :
       exact ⟨hF, by omega, rfl⟩
     all_goals {RB}
   case hCMf =>
-    intro w h1 hw hFW hER hEL hRE hCP hfw
+    intro w h1 hw hHI1 hFW hER hEL hRE hCP hfw
     obtain ⟨cpw', cpe', cpc', hCP'⟩ := hCP
     obtain ⟨bw, hdw, hbw⟩ := declLike_frame hw hG hGe
     {BI.format(bd="bdFW'", hd="hd1", hb="hbFW", hv="hvFW", hm="hmFW", src="hFW")}
     {BI.format(bd="bdER'", hd="hd2", hb="hbER", hv="hvER", hm="hmER", src="hER")}
     {BI.format(bd="bdEL'", hd="hd3", hb="hbEL", hv="hvEL", hm="hmEL", src="hEL")}
     {BI.format(bd="bdRE'", hd="hd4", hb="hbRE", hv="hvRE", hm="hmRE", src="hRE")}
-    refine' wp_mono (ReactCommitRootFn.cmr_full (s := w) (n := n) (bG := bw) {cimp} (hf := by omega)
+    refine' wp_mono (ReactCommitRootFn.cmr_full (s := w) (n := n) (bG := bw) {cimp} (hf := by omega) (hHI := hHI1)
       (hlt := lt_heap_of_frame hw hCMo) (hG := by rw [CM_hdenv]; exact lt_envs_of_frame hw hG)
       (hGe := by rw [CM_hdenv]; exact hdw) {cexp} {qg}
       (SP_E_hP := by rw [hw.realms_eq]; exact CM_SP_E_hP) ..) ?cpost

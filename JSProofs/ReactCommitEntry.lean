@@ -26,7 +26,7 @@ def FPE (g : EnvId) (FR : ObjId) : Footprint :=
     (g, JSStr.ofString "pendingRecoverableErrors")], [(FR, .str (JSStr.ofString "cancelPendingCommit"))], false⟩
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple_cr (d : FuncData) (hc : d.code = CMPRGen.completeRoot_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -70,14 +70,14 @@ theorem cpr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hPEf : ∀ w h1, Frame (FPE d.env FR) s w → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fPE) .undefined #[]) w fun v w' h' =>
         Frame {} w w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1)
-    (hCMf : ∀ w h1, Frame (FPE d.env FR) s w →
+    (hCMf : ∀ w h1, Frame (FPE d.env FR) s w → HI h1 →
       BindIs w d.env (JSStr.ofString "pendingFinishedWork") (.obj A) →
       BindIs w d.env (JSStr.ofString "pendingEffectsRoot") (.obj FR) →
       BindIs w d.env (JSStr.ofString "pendingEffectsLanes") lanes →
       BindIs w d.env (JSStr.ofString "pendingRecoverableErrors") re →
       ReactFacts.PropHas w FR (JSStr.ofString "cancelPendingCommit") .null → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fCM) .undefined #[.obj FR, .obj A, lanes, sl, ul, srl, sst]) w
-        fun v w' h' => w.fuel ≤ w'.fuel + K ∧ P w' h') :
+        fun v w' h' => w.fuel ≤ w'.fuel + K ∧ P w' h') (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj A, lanes, re, tr, di, sl, ul, srl, ds, es, sst])
       s fun v w h' => v = .undefined ∧ s.fuel ≤ w.fuel + 2 * K + 200 ∧ ∃ w0, P w0 h' ∧ Frame {} w0 w := by
   apply wp_callGen CMPRGen.completeRoot_eq (by decide) hlt hk (by omega) hcls hmode
@@ -116,7 +116,7 @@ theorem cpr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   have hAC' : isStrictlyEqual (.obj A) (.obj C) = false := by simp [isStrictlyEqual, sameValue, hAC]
   js_until [] [hfw1, hE1, hEd1, hS1, hGd1, hob1 FR hFR, hob1 fCM hCMo, hlt1 FR hFR, hlt1 fCM hCMo, gPE, gPEv, gS, gSv, gSm, gE, gEv, hec, gWR, gWRv, gFW, gFWm, gFWv, gER, gERm, gERv, gEL, gELm, gELv, gPT, gPTm, gPTv, gRE, gREm, gREv, gCM, gCMv, hFRc, hAC, hAC', hCMk, dCF, Ne.symm dCF, e1, e1', e4, hG, hGe, hFR, hFRk, hFRp, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hlt1 fCM hCMo, hob1 fCM hCMo, hCMk, dCF, Ne.symm dCF], ?_⟩
-  refine wp_mono (hCMf _ _ ?fr2 ?b1 ?b2 ?b3 ?b4 ?b5 (by simp; omega)) ?_
+  refine wp_mono (hCMf _ _ ?fr2 hHI ?b1 ?b2 ?b3 ?b4 ?b5 (by simp; omega)) ?_
   case fr2 =>
     unfold FPE
     refine frame_setEnv_split (frame_setEnv_with_in ?_ hG (setEnv_envEntry_self _ _ _ (by first | exact hGd1 | (simp; omega))) (by simp only [declLike_isSome_withBindings]; rw [hGe]; rfl) (by simp) _)
@@ -186,13 +186,13 @@ theorem crw_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hCRo : fCR < s.heap.size) (hCRc : ∃ dd, (s.objEntry fCR).kind = .func dd) (dCF : fCR ≠ FR)
     (dFA : FR ≠ A)
     {K : Nat} (hK : K + 100 ≤ s.fuel) {P : State → σ → Prop}
-    (hCRf : ∀ w h1, Frame ⟨[], [(FR, .str (JSStr.ofString "timeoutHandle"))], false⟩ s w →
+    (hCRf : ∀ w h1, Frame ⟨[], [(FR, .str (JSStr.ofString "timeoutHandle"))], false⟩ s w → HI h1 →
       ReactFacts.PropHas w FR (JSStr.ofString "timeoutHandle") (.num (F64.fin false 4503599627370496 (-52)).neg) →
       K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fCR) .undefined #[.obj FR, .obj A,
         .num (F64.fin false 4503599627370496 (-51)), x1, x2, x3, x4, x5, x6, x7,
         .num (F64.fin false 5629499534213120 (-50)), .null]) w
-        fun v w' h' => w.fuel ≤ w'.fuel + K ∧ P w' h') :
+        fun v w' h' => w.fuel ≤ w'.fuel + K ∧ P w' h') (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj A, x1, x2, x3,
       .num (F64.fin false 4503599627370496 (-51)), x4, x5, x6, x7, .num (F64.fin false 5629499534213120 (-50)),
       c1, c2, c3]) s fun v w h' => v = .undefined ∧ s.fuel ≤ w.fuel + K + 100 ∧ ∃ w0, P w0 h' ∧ Frame {} w0 w := by
@@ -216,7 +216,7 @@ theorem crw_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   simp only [CRWRGen.completeRootWhenReady]
   js_until [] [e1, e1', e4, hG, hGe, gCR, gCRv, hFR, hFRk, hFRt, hA, hAk, hAs, hsf1, hsf2, hCRo, hCRk, dCF, Ne.symm dCF, dFA, Ne.symm dFA, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hCRo, hCRk, dCF, Ne.symm dCF], ?_⟩
-  refine wp_mono (hCRf _ _ ?fr ?th (by simp; omega)) ?_
+  refine wp_mono (hCRf _ _ ?fr hHI ?th (by simp; omega)) ?_
   case th =>
     refine ⟨true, te, tc, ?_⟩
     simp only [js_simp]
