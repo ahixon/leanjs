@@ -27,7 +27,7 @@ theorem up_at {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : St
     (hGC : bG[JSStr.ofString "isCustomElement"]? = some bdC) (hGCv : bdC.value = some (.obj fC))
     (hCo : fC < s.heap.size) (hCk : (s.objEntry fC).kind = .func dC) (hCcode : dC.code = ICEGen.isCustomElement_func)
     (hCcls : dC.isClassCtor = false) (hCmode : dC.thisMode = .strict)
-    (hI : ∀ w, Frame {} s w → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj fI)
+    (hI : ∀ w, Frame {} s w → w.realm = dC.realm → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj fI)
     (hIlt : fI < s.heap.size) (hIk : (s.objEntry fI).kind = .builtin bdI)
     (hIfn : eng.builtins[bdI.id]? = some ES.Builtins.Text.stringProtoIndexOf)
     (hLPlt : LP < s.heap.size) (hLPk : (s.objEntry LP).kind.isPlain = true)
@@ -75,7 +75,7 @@ theorem up_at {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : St
           (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true) ∧ bd.mutable = true) ∧
           ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]? :=
   by
-  apply up_spec (s := u) (hf := hfw) (hHI := hHI) (hI := fun w' hw' => hI w' (frame_empty_trans hw hw'))
+  apply up_spec (s := u) (hf := hfw) (hHI := hHI) (hI := fun w' hw' hr => hI w' (frame_empty_trans hw hw') hr)
     (hOC := fun w' h1 hw' hi => hOC w' h1 (frame_empty_trans hw hw') hi)
     (hNV := fun w' h1 hw' hi => hNV w' h1 (frame_empty_trans hw hw') hi)
     (hFC := fun w' h1 hw' hi => hFC w' h1 (frame_empty_trans hw hw') hi)

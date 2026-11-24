@@ -28,7 +28,7 @@ theorem ice_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     {fI : ObjId} {bdI : BuiltinData}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 20 ≤ s.fuel)
     (hcode : d.code = ICEGen.isCustomElement_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
-    (hI : ∀ w, Frame {} s w → StrGets w tag (JSStr.ofString "indexOf") fun v => v = .obj fI)
+    (hI : ∀ w, Frame {} s w → w.realm = d.realm → StrGets w tag (JSStr.ofString "indexOf") fun v => v = .obj fI)
     (hIlt : fI < s.heap.size) (hIk : (s.objEntry fI).kind = .builtin bdI)
     (hIfn : eng.builtins[bdI.id]? = some ES.Builtins.Text.stringProtoIndexOf)
     (hno : tag.indexOf (JSStr.ofString "-") 0 = none) :
@@ -46,7 +46,7 @@ theorem ice_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   refine wp_callMemberStr ?_
   js_until [] [hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   have hw0 : Frame {} s (bodyState s fo d t #[.str tag]) := by frame_go' [*]
-  obtain ⟨SP, v, we, ee, ce, hSP, hSPlt, hSPk, hv0, hkl, hki, rfl⟩ := hI _ hw0
+  obtain ⟨SP, v, we, ee, ce, hSP, hSPlt, hSPk, hv0, hkl, hki, rfl⟩ := hI _ hw0 (by first | rfl | simp [bodyState, entryState, State.withFuel, State.pushEnv, js_simp])
   refine ⟨tag, rfl, SP, _, we, ee, ce, hSP, hSPlt, hSPk, hv0, hkl, hki, fun W => ?_⟩
   have hIe : ((bodyState s fo d t #[.str tag]).withHeap (·.push W)).objEntry fI = s.objEntry fI := by
     rw [objEntry_push_old' _ _ _ (by simp; omega)]; simp

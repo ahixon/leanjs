@@ -188,7 +188,7 @@ theorem cme_button_full {n : Nat}
     (CH_U_hCcode : CH_U_dC.code = ICEGen.isCustomElement_func)
     (CH_U_hCcls : CH_U_dC.isClassCtor = false)
     (CH_U_hCmode : CH_U_dC.thisMode = .strict)
-    (CH_U_hI : ∀ w, Frame ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ s w → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj CH_U_fI)
+    (CH_U_hI : ∀ w, Frame ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ s w → w.realm = CH_U_dC.realm → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj CH_U_fI)
     (CH_U_hIlt : CH_U_fI < ((s)).heap.size)
     (CH_U_hIk : (((s)).objEntry CH_U_fI).kind = .builtin CH_U_bdI)
     (CH_U_hIfn : eng.builtins[CH_U_bdI.id]? = some ES.Builtins.Text.stringProtoIndexOf)

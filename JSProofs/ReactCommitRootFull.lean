@@ -353,7 +353,7 @@ theorem cme_root_full {n : Nat}
     (CT_BT_CH_U_hCcode : CT_BT_CH_U_dC.code = ICEGen.isCustomElement_func)
     (CT_BT_CH_U_hCcls : CT_BT_CH_U_dC.isClassCtor = false)
     (CT_BT_CH_U_hCmode : CT_BT_CH_U_dC.thisMode = .strict)
-    (CT_BT_CH_U_hI : ∀ w, Frame (Footprint.union (ReactCommitRoot.F0 d.env) ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩) s w → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj CT_BT_CH_U_fI)
+    (CT_BT_CH_U_hI : ∀ w, Frame (Footprint.union (ReactCommitRoot.F0 d.env) ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩) s w → w.realm = CT_BT_CH_U_dC.realm → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj CT_BT_CH_U_fI)
     (CT_BT_CH_U_hIlt : CT_BT_CH_U_fI < ((s)).heap.size)
     (CT_BT_CH_U_hIk : (((s)).objEntry CT_BT_CH_U_fI).kind = .builtin CT_BT_CH_U_bdI)
     (CT_BT_CH_U_hIfn : eng.builtins[CT_BT_CH_U_bdI.id]? = some ES.Builtins.Text.stringProtoIndexOf)

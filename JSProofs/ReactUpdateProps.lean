@@ -60,7 +60,7 @@ theorem up_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : 
     (hGC : bG[JSStr.ofString "isCustomElement"]? = some bdC) (hGCv : bdC.value = some (.obj fC))
     (hCo : fC < s.heap.size) (hCk : (s.objEntry fC).kind = .func dC) (hCcode : dC.code = ICEGen.isCustomElement_func)
     (hCcls : dC.isClassCtor = false) (hCmode : dC.thisMode = .strict)
-    (hI : ∀ w, Frame {} s w → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj fI)
+    (hI : ∀ w, Frame {} s w → w.realm = dC.realm → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj fI)
     (hIlt : fI < s.heap.size) (hIk : (s.objEntry fI).kind = .builtin bdI)
     (hIfn : eng.builtins[bdI.id]? = some ES.Builtins.Text.stringProtoIndexOf)
     (hLPlt : LP < s.heap.size) (hLPk : (s.objEntry LP).kind.isPlain = true)
@@ -130,7 +130,7 @@ theorem up_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : 
       (Env.decl ∅ (some s.envs.size))) := by frame_go' [*]
   refine ⟨by js_norm [CallableC, e1, e2, e3, e4, hGe, hGC, hGCv, hG, hCo, hCk, hCcls, hCmode, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
   refine wp_mono (ReactIsCustom.ice_spec (by js_norm [e1, e2, e3, e4, hGe, hGC, hGCv, hG, hCo, hCk, hCcls, hCmode, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) (by js_norm [e1, e2, e3, e4, hGe, hGC, hGCv, hG, hCo, hCk, hCcls, hCmode, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) (by simp; omega) hCcode hCcls hCmode
-    (fun w hw => hI w (frame_empty_trans hw0 hw)) (by js_norm [hIlt, e1, e2, e3, e4, hGe, hGC, hGCv, hG, hCo, hCk, hCcls, hCmode, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) (by js_norm [hIk, hIlt, e1, e2, e3, e4, hGe, hGC, hGCv, hG, hCo, hCk, hCcls, hCmode, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) hIfn
+    (fun w hw hr => hI w (frame_empty_trans hw0 hw) hr) (by js_norm [hIlt, e1, e2, e3, e4, hGe, hGC, hGCv, hG, hCo, hCk, hCcls, hCmode, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) (by js_norm [hIk, hIlt, e1, e2, e3, e4, hGe, hGC, hGCv, hG, hCo, hCk, hCcls, hCmode, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) hIfn
     (by decide +kernel)) ?_
   rintro v1 w1 h1 ⟨rfl, hF1, hfu1, rfl⟩
   have hlt0 : s.envs.size < ((bodyState s fo d t #[.obj dom, .str (JSStr.ofString "button"), .obj LP, .obj NP]).pushEnv (Env.decl ∅ (some s.envs.size))).envs.size := by simp; omega

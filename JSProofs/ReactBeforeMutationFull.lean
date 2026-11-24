@@ -123,7 +123,7 @@ theorem cbm_full {n : Nat}
     (S_hmode : S_d.thisMode = .strict)
     (S_hNN : ReactHostContainer.DomRead eng answer HI n s (FB d.env) E "nodeName" (.str S_nm))
     (S_hnm : S_nm.isEmpty = false)
-    (S_hTL : ∀ w, Frame (FB d.env) s w → StrGets w S_nm (JSStr.ofString "toLowerCase") fun v => v = .obj S_fTL)
+    (S_hTL : ∀ w, Frame (FB d.env) s w → w.realm = S_d.realm → StrGets w S_nm (JSStr.ofString "toLowerCase") fun v => v = .obj S_fTL)
     (S_hTLo : S_fTL < s.heap.size)
     (S_hTLk : (s.objEntry S_fTL).kind = .builtin S_bdTL)
     (S_hTLfn : eng.builtins[S_bdTL.id]? = some (ES.Builtins.Text.stringCase true "toLowerCase"))

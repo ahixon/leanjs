@@ -94,7 +94,7 @@ theorem chu_full {n : Nat}
     (U_hCcode : U_dC.code = ICEGen.isCustomElement_func)
     (U_hCcls : U_dC.isClassCtor = false)
     (U_hCmode : U_dC.thisMode = .strict)
-    (U_hI : ∀ w, Frame {} (s) w → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj U_fI)
+    (U_hI : ∀ w, Frame {} (s) w → w.realm = U_dC.realm → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj U_fI)
     (U_hIlt : U_fI < (s).heap.size)
     (U_hIk : ((s).objEntry U_fI).kind = .builtin U_bdI)
     (U_hIfn : eng.builtins[U_bdI.id]? = some ES.Builtins.Text.stringProtoIndexOf)

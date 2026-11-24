@@ -245,7 +245,7 @@ theorem cme_counter_full {n : Nat}
     (BT_CH_U_hCcode : BT_CH_U_dC.code = ICEGen.isCustomElement_func)
     (BT_CH_U_hCcls : BT_CH_U_dC.isClassCtor = false)
     (BT_CH_U_hCmode : BT_CH_U_dC.thisMode = .strict)
-    (BT_CH_U_hI : ∀ w, Frame ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ s w → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj BT_CH_U_fI)
+    (BT_CH_U_hI : ∀ w, Frame ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ s w → w.realm = BT_CH_U_dC.realm → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj BT_CH_U_fI)
     (BT_CH_U_hIlt : BT_CH_U_fI < ((s)).heap.size)
     (BT_CH_U_hIk : (((s)).objEntry BT_CH_U_fI).kind = .builtin BT_CH_U_bdI)
     (BT_CH_U_hIfn : eng.builtins[BT_CH_U_bdI.id]? = some ES.Builtins.Text.stringProtoIndexOf)

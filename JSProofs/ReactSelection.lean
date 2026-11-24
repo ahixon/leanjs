@@ -52,7 +52,7 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hmode : d.thisMode = .strict)
     (hNN : ReactHostContainer.DomRead eng answer HI n s {} E "nodeName" (.str nm))
     (hnm : nm.isEmpty = false)
-    (hTL : ∀ w, Frame {} s w → StrGets w nm (JSStr.ofString "toLowerCase") fun v => v = .obj fTL)
+    (hTL : ∀ w, Frame {} s w → w.realm = d.realm → StrGets w nm (JSStr.ofString "toLowerCase") fun v => v = .obj fTL)
     (hTLo : fTL < s.heap.size) (hTLk : (s.objEntry fTL).kind = .builtin bdTL)
     (hTLfn : eng.builtins[bdTL.id]? = some (ES.Builtins.Text.stringCase true "toLowerCase"))
     (hlnm : (Unicode.toLower nm).isEmpty = false)
@@ -90,7 +90,7 @@ theorem hsc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   intro _ _ _ ⟨hv_, hh_, fB, hw_, hf_⟩
   subst hv_ hw_ hh_
   try simp only [js_simp, State.pushEnv_fuel] at hf_
-  obtain ⟨SP, v0, a0, b0, c0, h1, h2, h3, h4, h5, h6, rfl⟩ := hTL _ (frame_withFuel (frame_withFuel hw0 fA) fB)
+  obtain ⟨SP, v0, a0, b0, c0, h1, h2, h3, h4, h5, h6, rfl⟩ := hTL _ (frame_withFuel (frame_withFuel hw0 fA) fB) (by first | rfl | simp [bodyState, entryState, State.withFuel, State.pushEnv, js_simp])
   refine ⟨nm, rfl, SP, _, a0, b0, c0, h1, h2, h3, h4, h5, h6, fun W => ?_⟩
   js_until [] [envEntry_withHeap, envs_withHeap, fuel_withHeap, hnm, hlnm, hin, hta, hce, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   have hTLe : ((((bodyState s fo d t #[.obj E]).withFuel fA).withFuel fB).withHeap (·.push W)).objEntry fTL = s.objEntry fTL := by

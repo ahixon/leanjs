@@ -489,7 +489,7 @@ theorem fme_full {n : Nat}
     (M_CT_BT_CH_U_hCcode : M_CT_BT_CH_U_dC.code = ICEGen.isCustomElement_func)
     (M_CT_BT_CH_U_hCcls : M_CT_BT_CH_U_dC.isClassCtor = false)
     (M_CT_BT_CH_U_hCmode : M_CT_BT_CH_U_dC.thisMode = .strict)
-    (M_CT_BT_CH_U_hI : ∀ w, Frame ((FPRE d.env RSI RDSI).union (Footprint.union (ReactCommitRoot.F0 M_d.env) ⟨[(M_d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩)) s w → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj M_CT_BT_CH_U_fI)
+    (M_CT_BT_CH_U_hI : ∀ w, Frame ((FPRE d.env RSI RDSI).union (Footprint.union (ReactCommitRoot.F0 M_d.env) ⟨[(M_d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩)) s w → w.realm = M_CT_BT_CH_U_dC.realm → StrGets w (JSStr.ofString "button") (JSStr.ofString "indexOf") fun v => v = .obj M_CT_BT_CH_U_fI)
     (M_CT_BT_CH_U_hIlt : M_CT_BT_CH_U_fI < ((s)).heap.size)
     (M_CT_BT_CH_U_hIk : (((s)).objEntry M_CT_BT_CH_U_fI).kind = .builtin M_CT_BT_CH_U_bdI)
     (M_CT_BT_CH_U_hIfn : eng.builtins[M_CT_BT_CH_U_bdI.id]? = some ES.Builtins.Text.stringProtoIndexOf)
