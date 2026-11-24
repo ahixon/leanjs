@@ -58,29 +58,29 @@ theorem up_at {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : St
     (hScls : dS.isClassCtor = false) (hSmode : dS.thisMode = .strict)
     (hGV : bG[JSStr.ofString "viewTransitionMutationContext"]? = some bdV) (hGVm : bdV.mutable = true)
     (hGVi : bdV.value.isSome = true)
-    (hOC : ∀ w h1, Frame {} s w → SetsAcc eng answer (n + 1) h1 w (.obj dom) "onclick" (.obj fN)
-      fun w' h' => R1 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
+    (hOC : ∀ w h1, Frame {} s w → HI h1 → SetsAcc eng answer (n + 1) h1 w (.obj dom) "onclick" (.obj fN)
+      fun w' h' => R1 w' h' ∧ HI h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (htext : t1.isEmpty = false)
     (hFC : ReactHostContainer.DomRead eng answer HI n s {} dom "firstChild" (.obj T))
     (hLC : ReactHostContainer.DomRead eng answer HI n s {} dom "lastChild" (.obj T))
     (hNT : ReactHostContainer.DomRead eng answer HI n s {} T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
-    (hNV : ∀ w h1, Frame {} s w → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str t1)
-      fun w' h' => R2 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
-    {u : State} (hw : Frame {} s u) (hfw : 2000 ≤ u.fuel) :
+    (hNV : ∀ w h1, Frame {} s w → HI h1 → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str t1)
+      fun w' h' => R2 w' h' ∧ HI h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
+    {u : State} (hw : Frame {} s u) (hfw : 2000 ≤ u.fuel) (hHI : HI h) :
     WP eng answer (n + 3) h
       (callImpl eng (.obj fo) t #[.obj dom, .str (JSStr.ofString "button"), .obj LP, .obj NP]) u
-      fun v w h' => v = .undefined ∧ (∃ w0 h0, R1 w0 h0) ∧ (∃ w0, R2 w0 h') ∧ u.fuel ≤ w.fuel + 2000 ∧
+      fun v w h' => v = .undefined ∧ (∃ w0 h0, R1 w0 h0) ∧ (∃ w0, R2 w0 h') ∧ HI h' ∧ u.fuel ≤ w.fuel + 2000 ∧
         Frame ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [], false⟩ u w ∧
         ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
           (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true) ∧ bd.mutable = true) ∧
           ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]? :=
   by
-  apply up_spec (s := u) (hf := hfw) (hI := fun w' hw' => hI w' (frame_empty_trans hw hw'))
-    (hOC := fun w' h1 hw' => hOC w' h1 (frame_empty_trans hw hw'))
-    (hNV := fun w' h1 hw' => hNV w' h1 (frame_empty_trans hw hw'))
-    (hFC := fun w' h1 hw' => hFC w' h1 (frame_empty_trans hw hw'))
-    (hLC := fun w' h1 hw' => hLC w' h1 (frame_empty_trans hw hw'))
-    (hNT := fun w' h1 hw' => hNT w' h1 (frame_empty_trans hw hw'))
+  apply up_spec (s := u) (hf := hfw) (hHI := hHI) (hI := fun w' hw' => hI w' (frame_empty_trans hw hw'))
+    (hOC := fun w' h1 hw' hi => hOC w' h1 (frame_empty_trans hw hw') hi)
+    (hNV := fun w' h1 hw' hi => hNV w' h1 (frame_empty_trans hw hw') hi)
+    (hFC := fun w' h1 hw' hi => hFC w' h1 (frame_empty_trans hw hw') hi)
+    (hLC := fun w' h1 hw' hi => hLC w' h1 (frame_empty_trans hw hw') hi)
+    (hNT := fun w' h1 hw' hi => hNT w' h1 (frame_empty_trans hw hw') hi)
   all_goals rebase_tac hw
 
 end

@@ -17,7 +17,7 @@ open Std (HashMap)
 namespace ReactCommitButton
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = CMEGen.commitMutationEffectsOnFiber_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -63,12 +63,12 @@ theorem cme_button {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
     (hBc : Bc < s.heap.size) (hBck : (s.objEntry Bc).kind.isPlain = true)
     (hBcm : (s.objEntry Bc).props.get? (.str (JSStr.ofString "memoizedProps")) = some (.data (.obj LP) cw ce cc))
     (hCHo : fCH < s.heap.size) (hCHc : ∃ dd, (s.objEntry fCH).kind = .func dd)
-    (hCH : ∀ w h1, Frame ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ s w → 3000 ≤ w.fuel →
+    (hCH : ∀ w h1, Frame ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ s w → HI h1 → 3000 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fCH) .undefined #[.obj B, .obj NP, .obj LP]) w fun v w' h' =>
         v = .undefined ∧ w.fuel ≤ w'.fuel + 2100 ∧ PH w' h' ∧ Frame fpH w w')
     (hfpH : ∀ p, p ∈ fpH.binds → p.1 = d.env)
     (hPHst : ∀ w w' h', PH w h' → w'.heap = w.heap → (∀ e, e < s.envs.size → w'.envEntry e = w.envEntry e) →
-      PH w' h') :
+      PH w' h') (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj B, rv, lv]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + 2300 ∧ PH w h' ∧
       Frame ((Footprint.union ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ fpH)) s w := by
@@ -143,7 +143,7 @@ theorem cme_button {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
   refine wp_neNullObj' (by omega) ?_
   js_until [] [hEa2, hEb2, hEc2, hSa2, hSb2, hGd2, hB2, hBlt2, hBc2, hBclt2, hCH2, hCHlt2, hfw2, h512, h32, h4, h1024, hBs, hBm, hBc, hBck, hBcm, hGCH, hGCHv, hCHo, hCHk, hEa, hEb, hEc, hSa, hSb, hGd, hB1, hBlt1, hfw1, hGRE, hGREv, hREo, hREk, hRE1, hRElt1, e1, e2, e4, e5, Ne.symm e1, Ne.symm e2, hG, hGe, hGO, hGOv, hGOm, hGRT, hGRTv, hRTo, hRTk, hB, hBk, hBa, hBf, hBt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hEa2, hEb2, hEc2, hSa2, hSb2, hGd2, hB2, hBlt2, hBc2, hBclt2, hCH2, hCHlt2, hfw2, h512, h32, h4, h1024, hBs, hBm, hBc, hBck, hBcm, hGCH, hGCHv, hCHo, hCHk, hEa, hEb, hEc, hSa, hSb, hGd, hB1, hBlt1, hfw1, hGRE, hGREv, hREo, hREk, hRE1, hRElt1, e1, e2, e4, e5, Ne.symm e1, Ne.symm e2, hG, hGe, hGO, hGOv, hGOm, hGRT, hGRTv, hRTo, hRTk, hB, hBk, hBa, hBf, hBt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (hCH _ _ (frame_setEnv_new hFs2 (Nat.le_refl _) _) (by simp only [State.setEnv_fuel]; omega)) ?_
+  refine wp_mono (hCH _ _ (frame_setEnv_new hFs2 (Nat.le_refl _) _) hHI (by simp only [State.setEnv_fuel]; omega)) ?_
   rintro v3 w3 h3 ⟨rfl, hfu3, hP3, hF3⟩
   have hEa3 := envEntry_frame hF3 (e := s.envs.size) (by simp; omega)
     (List.all_eq_true.mpr fun p hp => by simp [hfpH p hp, e1])

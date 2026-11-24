@@ -15,7 +15,7 @@ open Std (HashMap)
 namespace ReactCommitCounter
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = CMEGen.commitMutationEffectsOnFiber_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -41,7 +41,7 @@ theorem cme_counter {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {
     (hGRE : bG[JSStr.ofString "commitReconciliationEffects"]? = some bdRE) (hGREv : bdRE.value = some (.obj fRE))
     (hRTo : fRT < s.heap.size) (hRTc : ∃ dd, (s.objEntry fRT).kind = .func dd)
     (hREo : fRE < s.heap.size) (hREc : ∃ dd, (s.objEntry fRE).kind = .func dd)
-    (hRT : ∀ w h1, Frame {} s w → KR + 200 ≤ w.fuel →
+    (hRT : ∀ w h1, Frame {} s w → HI h1 → KR + 200 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fRT) .undefined #[rv, .obj K, lv]) w fun v w' h' =>
         v = .undefined ∧ w.fuel ≤ w'.fuel + KR + 100 ∧ PC w' h' ∧ Frame fpC w w')
     (hfpC : ∀ p, p ∈ fpC.binds → p.1 = d.env ∧ p.2 ≠ JSStr.ofString "commitReconciliationEffects")
@@ -50,7 +50,7 @@ theorem cme_counter {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {
       WP eng answer (n + 1) h1 (callImpl eng (.obj fRE) .undefined #[.obj K]) w fun v w' h' =>
         Frame {} w w' ∧ w.fuel ≤ w'.fuel + 40 ∧ h' = h1 ∧ w'.heap = w.heap)
     (hPCst : ∀ w w' h', PC w h' → w'.heap = w.heap → (∀ e, e < s.envs.size → w'.envEntry e = w.envEntry e) →
-      PC w' h') :
+      PC w' h') (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj K, rv, lv]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + KR + 200 ∧ PC w h' ∧ Frame fpC s w := by
   apply wp_callGen CMEGen.commitMutationEffectsOnFiber_eq (by decide) hlt hk (by omega) hcls hmode
@@ -78,7 +78,7 @@ theorem cme_counter {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {
   refine wp_switchC CMESwitch.lex ?_
   js_until [] [h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGRT, hGRTv, hRTo, hRTk, hK, hKk, hKa, hKf, hKt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGRT, hGRTv, hRTo, hRTk, hK, hKk, hKa, hKf, hKt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (hRT _ _ (by frame_go' [*]) (by js_norm [h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGRT, hGRTv, hRTo, hRTk, hK, hKk, hKa, hKf, hKt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
+  refine wp_mono (hRT _ _ (by frame_go' [*]) hHI (by js_norm [h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGRT, hGRTv, hRTo, hRTk, hK, hKk, hKa, hKf, hKt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
   rintro v1 w1 h1 ⟨rfl, hfu1, hP1, hF1⟩
   have hEa := envEntry_frame hF1 (e := s.envs.size) (by js_norm [h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGRT, hGRTv, hRTo, hRTk, hK, hKk, hKa, hKf, hKt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
     (List.all_eq_true.mpr fun p hp => by simp [(hfpC p hp).1, e1])

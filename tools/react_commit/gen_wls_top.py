@@ -125,7 +125,7 @@ import JSProofs.Rebase
 namespace ReactWorkLoopTop
 
 section
-variable {{eng : Engine}} {{σ : Type}} {{answer : HostAnswer σ}}
+variable {{eng : Engine}} {{σ : Type}} {{answer : HostAnswer σ}} {{HI : σ → Prop}}
 
 set_option maxRecDepth 40000 in
 set_option maxHeartbeats 8000000 in

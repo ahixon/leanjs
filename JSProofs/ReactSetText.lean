@@ -34,10 +34,10 @@ theorem stc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hFC : ReactHostContainer.DomRead eng answer HI n s {} node "firstChild" (.obj T))
     (hLC : ReactHostContainer.DomRead eng answer HI n s {} node "lastChild" (.obj T))
     (hNT : ReactHostContainer.DomRead eng answer HI n s {} T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
-    (hNV : ∀ w h1, Frame {} s w → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str text)
-      fun w' h' => R w' h' ∧ w.fuel ≤ w'.fuel + 1) (hHI : HI h) :
+    (hNV : ∀ w h1, Frame {} s w → HI h1 → SetsAcc eng answer n h1 w (.obj T) "nodeValue" (.str text)
+      fun w' h' => R w' h' ∧ HI h' ∧ w.fuel ≤ w'.fuel + 1) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj node, .str text]) s fun v w h' =>
-      v = .undefined ∧ (∃ w0, R w0 h' ∧ w = w0.restore s) ∧ s.fuel ≤ w.fuel + 24 := by
+      v = .undefined ∧ (∃ w0, R w0 h' ∧ w = w0.restore s) ∧ s.fuel ≤ w.fuel + 24 ∧ HI h' := by
   apply wp_callGen STCGen.setTextContent_eq (by decide) hlt hk (by omega) hcls hmode
     (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
   have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "node", JSStr.ofString "text"] := by rw [hcode]; rfl
@@ -78,10 +78,10 @@ theorem stc_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   iterate 7 (first | js_go | js_norm [htext, hTT, h33, beq_self_eq_true, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner] | js_split)
   refine wp_assignMemberSet ?_
   js_until [] [htext, hTT, h33, beq_self_eq_true, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine setsAcc_mono (hNV _ _ ?frS) ?kS
+  refine setsAcc_mono (hNV _ _ ?frS hHI) ?kS
   case frS => frame_go' [*]
   case kS =>
-  intro w4 h4 ⟨hR, hfu⟩
+  intro w4 h4 ⟨hR, hHI4, hfu⟩
   refine wp_retNone ?_
   js [htext, hTT, h33, beq_self_eq_true, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨⟨w4, hR, rfl⟩, ?_⟩

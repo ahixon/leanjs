@@ -16,7 +16,7 @@ open Std (HashMap)
 namespace ReactCommitHost
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 /-- **`obj[key] = rhs`**, the key a string naming an own writable data property of a plain object. -/
 theorem wp_assignStrKey {n : Nat} {h : σ} {obj ke rhs : Sem.CExpr} {ctx : Ctx} {s : State}
@@ -62,12 +62,12 @@ theorem chu_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hXs : (s.objEntry X).props.get? (.str (JSStr.ofString "stateNode")) = some (.data (.obj dom) sw se sc))
     (hXt : (s.objEntry X).props.get? (.str (JSStr.ofString "type")) = some (.data (.str tag) tw te tc))
     (hD : dom < s.heap.size)
-    (hU : ∀ w h1, Frame {} s w → 2900 ≤ w.fuel →
+    (hU : ∀ w h1, Frame {} s w → HI h1 → 2900 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fU) .undefined #[.obj dom, .str tag, .obj LP, .obj NP]) w
         fun v w' h' => v = .undefined ∧ Frame fpU w w' ∧ w.fuel ≤ w'.fuel + 2000 ∧ P w' h' ∧
           (w'.objEntry dom).kind.isPlain = true ∧
           ∃ v0 e c, (w'.objEntry dom).props.get? (.str kP) = some (.data v0 true e c))
-    (hfpU : ∀ p, p ∈ fpU.binds → p.1 = d.env ∧ p.2 ≠ JSStr.ofString "internalPropsKey") :
+    (hfpU : ∀ p, p ∈ fpU.binds → p.1 = d.env ∧ p.2 ≠ JSStr.ofString "internalPropsKey") (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj X, .obj NP, .obj LP]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + 2100 ∧ ∃ wm e0 c0, P wm h' ∧ Frame fpU s wm ∧
         w = (wm.setProp dom (.str kP) (.data (.obj NP) true e0 c0)).restore s := by
@@ -89,7 +89,7 @@ theorem chu_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until [] [e1, e2, e3, e4, hGe, hGU, hGUv, hGK, hGKv, hG, hUo, hX, hXk, hXs, hXt, Ne.symm e1, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   obtain ⟨dU, hUk⟩ := hUc
   refine ⟨by js_norm [CallableC, hUk, e1, e2, e3, e4, hGe, hGU, hGUv, hGK, hGKv, hG, hUo, hX, hXk, hXs, hXt, Ne.symm e1, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (hU _ _ (by frame_go' [*]) (by js_norm [e1, e2, e3, e4, hGe, hGU, hGUv, hGK, hGKv, hG, hUo, hX, hXk, hXs, hXt, Ne.symm e1, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
+  refine wp_mono (hU _ _ (by frame_go' [*]) hHI (by js_norm [e1, e2, e3, e4, hGe, hGU, hGUv, hGK, hGKv, hG, hUo, hX, hXk, hXs, hXt, Ne.symm e1, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
   rintro v1 w1 h1 ⟨rfl, hF1, hfu1, hP1, hDk1, v0, e0, c0, hD1⟩
   have hlt0 : s.envs.size < (bodyState s fo d t #[.obj X, .obj NP, .obj LP]).envs.size := by simp
   have hE1 := envEntry_frame hF1 (e := s.envs.size) (by simpa using hlt0)

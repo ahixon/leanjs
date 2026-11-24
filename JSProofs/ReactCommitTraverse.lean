@@ -16,7 +16,7 @@ open Std (HashMap)
 namespace ReactCommitTraverse
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = RTMGen.recursivelyTraverseMutationEffects_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -70,13 +70,13 @@ theorem rtm_one {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : 
     (hsf : (!((numberBinOp .bitAnd sf (F64.fin false 7633909231648768 (-39))).isZero ||
       numberBinOp .bitAnd sf (F64.fin false 7633909231648768 (-39)) == F64.nan)) = true)
     (hPc : (s.objEntry P).props.get? (.str (JSStr.ofString "child")) = some (.data (.obj C) cw ce cc))
-    (hC : ∀ w h1, Frame {} s w → KC ≤ w.fuel →
+    (hC : ∀ w h1, Frame {} s w → HI h1 → KC ≤ w.fuel →
       WP eng answer n h1 (callImpl eng (.obj fC) .undefined #[.obj C, rv, lv]) w fun v w' h' =>
         Frame fpC w w' ∧ w.fuel ≤ w'.fuel + KC ∧ PC w' h' ∧ C < w'.heap.size ∧ (w'.objEntry C).kind.isPlain = true ∧
         ∃ sw se sc, (w'.objEntry C).props.get? (.str (JSStr.ofString "sibling")) = some (.data .null sw se sc))
     (hfpC : ∀ p, p ∈ fpC.binds → p.1 = d.env)
     (hPCst : ∀ w w' h', PC w h' → w'.heap = w.heap → (∀ e, e < s.envs.size → w'.envEntry e = w.envEntry e) →
-      PC w' h') :
+      PC w' h') (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[rv, .obj P, lv]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + KC + 100 ∧ PC w h' ∧ Frame fpC s w := by
   apply wp_callGen RTMGen.recursivelyTraverseMutationEffects_eq (by decide) hlt hk (by omega) hcls hmode
@@ -99,7 +99,7 @@ theorem rtm_one {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : 
   js_until [] [hP, hPk, hPd, hPs, hsf, hPc, e1, Ne.symm e1, e4, hG, hGe, hGC, hGCv, hCo, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   obtain ⟨dC, hCk⟩ := hCc
   refine ⟨by js_norm [CallableC, hCk, hP, hPk, hPd, hPs, hsf, hPc, e1, Ne.symm e1, e4, hG, hGe, hGC, hGCv, hCo, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (hC _ _ (by frame_go' [*]) (by js_norm [hP, hPk, hPd, hPs, hsf, hPc, e1, Ne.symm e1, e4, hG, hGe, hGC, hGCv, hCo, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
+  refine wp_mono (hC _ _ (by frame_go' [*]) hHI (by js_norm [hP, hPk, hPd, hPs, hsf, hPc, e1, Ne.symm e1, e4, hG, hGe, hGC, hGCv, hCo, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
   rintro v1 w1 h1 ⟨hF1, hfu1, hP1, hClt1, hCk1, sw, se, sc, hCs1⟩
   have hE1 := envEntry_frame hF1 (e := s.envs.size) (by js_norm [hP, hPk, hPd, hPs, hsf, hPc, e1, Ne.symm e1, e4, hG, hGe, hGC, hGCv, hCo, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
     (List.all_eq_true.mpr fun p hp => by simp [hfpC p hp, e1])

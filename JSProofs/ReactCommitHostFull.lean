@@ -143,31 +143,31 @@ theorem chu_full {n : Nat}
     (U_hGV : (bG)[JSStr.ofString "viewTransitionMutationContext"]? = some U_bdV)
     (U_hGVm : U_bdV.mutable = true)
     (U_hGVi : U_bdV.value.isSome = true)
-    (U_hOC : ∀ w h1, Frame {} (s) w → SetsAcc eng answer (n + 1) h1 w (.obj (dom)) "onclick" (.obj U_fN)
-      fun w' h' => U_R1 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
+    (U_hOC : ∀ w h1, Frame {} (s) w → HI h1 → SetsAcc eng answer (n + 1) h1 w (.obj (dom)) "onclick" (.obj U_fN)
+      fun w' h' => U_R1 w' h' ∧ HI h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (U_htext : U_t1.isEmpty = false)
     (U_hFC : ReactHostContainer.DomRead eng answer HI n (s) {} (dom) "firstChild" (.obj U_T))
     (U_hLC : ReactHostContainer.DomRead eng answer HI n (s) {} (dom) "lastChild" (.obj U_T))
     (U_hNT : ReactHostContainer.DomRead eng answer HI n (s) {} U_T "nodeType" (.num (F64.fin false 6755399441055744 (-51))))
-    (U_hNV : ∀ w h1, Frame {} (s) w → SetsAcc eng answer n h1 w (.obj U_T) "nodeValue" (.str U_t1)
-      fun w' h' => U_R2 w' h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
+    (U_hNV : ∀ w h1, Frame {} (s) w → HI h1 → SetsAcc eng answer n h1 w (.obj U_T) "nodeValue" (.str U_t1)
+      fun w' h' => U_R2 w' h' ∧ HI h' ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 1)
     (U_hdenv : U_d.env = d.env)
     (hDk : (s.objEntry dom).kind.isPlain = true)
-    {v0 : Value} {e0 c0 : Bool} (hDp : (s.objEntry dom).props.get? (.str kP) = some (.data v0 true e0 c0)) :
+    {v0 : Value} {e0 c0 : Bool} (hDp : (s.objEntry dom).props.get? (.str kP) = some (.data v0 true e0 c0)) (hHI : HI h) :
     WP eng answer (n + 4) h (callImpl eng (.obj fo) t #[.obj X, .obj NP, .obj LP]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + 2100 ∧ ∃ wm e1 c1, (fun w' h' => (∃ w0 h0, U_R1 w0 h0) ∧ (∃ w0, U_R2 w0 h') ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true) ∧ bd.mutable = true) ∧ ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]?) wm h' ∧
+      v = .undefined ∧ s.fuel ≤ w.fuel + 2100 ∧ ∃ wm e1 c1, (fun w' h' => (∃ w0 h0, U_R1 w0 h0) ∧ (∃ w0, U_R2 w0 h') ∧ HI h' ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true) ∧ bd.mutable = true) ∧ ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]?) wm h' ∧
         Frame ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [], false⟩ s wm ∧
         w = (wm.setProp dom (.str kP) (.data (.obj NP) true e1 c1)).restore s := by
-  refine ReactCommitHost.chu_spec (n := n + 2) (P := fun w' h' => (∃ w0 h0, U_R1 w0 h0) ∧ (∃ w0, U_R2 w0 h') ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true) ∧ bd.mutable = true) ∧ ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]?)
+  refine ReactCommitHost.chu_spec (n := n + 2) (P := fun w' h' => (∃ w0 h0, U_R1 w0 h0) ∧ (∃ w0, U_R2 w0 h') ∧ HI h' ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.value = some (.bool true) ∧ bd.mutable = true) ∧ ∀ x, x ≠ JSStr.ofString "viewTransitionMutationContext" → bm[x]? = bG[x]?)
     (fpU := ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [], false⟩) hlt hk hf hcode hcls hmode hG hGe
-    hGU hGUv hGK hGKv hUo ⟨U_d, U_hk⟩ hX hXk hXs hXt hD ?_ (fun p hp => by simp at hp; subst hp; exact ⟨rfl, by show JSStr.ofString "viewTransitionMutationContext" ≠ JSStr.ofString "internalPropsKey"; decide⟩)
-  intro w h1 hw hfw
-  refine wp_mono (ReactUpdateProps.up_at (n := n) (h := h1) (u := w) (hw := hw) (hfw := by omega)
+    hGU hGUv hGK hGKv hUo ⟨U_d, U_hk⟩ hX hXk hXs hXt hD ?_ (fun p hp => by simp at hp; subst hp; exact ⟨rfl, by show JSStr.ofString "viewTransitionMutationContext" ≠ JSStr.ofString "internalPropsKey"; decide⟩) hHI
+  intro w h1 hw hHI1 hfw
+  refine wp_mono (ReactUpdateProps.up_at (n := n) (h := h1) (u := w) (hw := hw) (hfw := by omega) (hHI := hHI1)
     (fo := fU) (d := U_d) (t := .undefined) (s := s) (bG := bG) (oG := oG) (bdC := U_bdC) (fC := U_fC) (dC := U_dC) (bdSP := U_bdSP) (bdN := U_bdN) (bdS := U_bdS) (bdV := U_bdV) (fSP := U_fSP) (fN := U_fN) (fS := U_fS) (T := U_T) (dSP := U_dSP) (dS := U_dS) (R1 := U_R1) (R2 := U_R2) (fI := U_fI) (bdI := U_bdI) (dom := dom) (LP := LP) (NP := NP) (OP := U_OP) (fH := U_fH) (bdH := U_bdH) (f0 := U_f0) (f1 := U_f1) (t0 := U_t0) (t1 := U_t1) (hlt := hUo) (hk := U_hk) (hcode := U_hcode) (hcls := U_hcls) (hmode := U_hmode) (hG := (by rw [U_hdenv]; exact hG)) (hGe := (by rw [U_hdenv]; exact hGe)) (hGC := U_hGC) (hGCv := U_hGCv) (hCo := U_hCo) (hCk := U_hCk) (hCcode := U_hCcode) (hCcls := U_hCcls) (hCmode := U_hCmode) (hI := U_hI) (hIlt := U_hIlt) (hIk := U_hIk) (hIfn := U_hIfn) (hLPlt := U_hLPlt) (hLPk := U_hLPk) (hLPkeys := U_hLPkeys) (hLPon := U_hLPon) (hLPch := U_hLPch) (hLPh := U_hLPh) (hLPp := U_hLPp) (hNPlt := U_hNPlt) (hNPk := U_hNPk) (hNPkeys := U_hNPkeys) (hNPon := U_hNPon) (hNPch := U_hNPch) (hNPh := U_hNPh) (hNPp := U_hNPp) (hOPlt := U_hOPlt) (hOPk := U_hOPk) (hOPh := U_hOPh) (hHlt := U_hHlt) (hHk := U_hHk) (hHfn := U_hHfn) (hOPp := U_hOPp) (hOPn := U_hOPn) (hOPne := U_hOPne) (hf01 := U_hf01) (ht01 := U_ht01) (hGSP := U_hGSP) (hGSPv := U_hGSPv) (hSPo := U_hSPo) (hSPk := U_hSPk) (hSPcode := U_hSPcode) (hSPcls := U_hSPcls) (hSPmode := U_hSPmode) (hSPenv := U_hSPenv) (hGN := U_hGN) (hGNv := U_hGNv) (hGS := U_hGS) (hGSv := U_hGSv) (hSo := U_hSo) (hSk := U_hSk) (hScode := U_hScode) (hScls := U_hScls) (hSmode := U_hSmode) (hGV := U_hGV) (hGVm := U_hGVm) (hGVi := U_hGVi) (hOC := U_hOC) (htext := U_htext) (hFC := U_hFC) (hLC := U_hLC) (hNT := U_hNT) (hNV := U_hNV)) ?_
-  rintro v w' h' ⟨rfl, hR1, hR2, hfu, hF, bm, hbm, hVT, hrest⟩
+  rintro v w' h' ⟨rfl, hR1, hR2, hHI', hfu, hF, bm, hbm, hVT, hrest⟩
   have hD' : w'.objEntry dom = s.objEntry dom := by
     rw [hF.obj_eq dom (lt_heap_of_frame hw hD) (fun _ hh => by simp at hh), objEntry_frame0 hw hD]
-  refine ⟨rfl, U_hdenv ▸ hF, hfu, ⟨hR1, hR2, bm, U_hdenv ▸ hbm, hVT, hrest⟩, by rw [hD']; exact hDk, v0, e0, c0, by rw [hD']; exact hDp⟩
+  refine ⟨rfl, U_hdenv ▸ hF, hfu, ⟨hR1, hR2, hHI', bm, U_hdenv ▸ hbm, hVT, hrest⟩, by rw [hD']; exact hDk, v0, e0, c0, by rw [hD']; exact hDp⟩
 
 end
 

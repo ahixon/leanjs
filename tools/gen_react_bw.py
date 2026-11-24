@@ -180,7 +180,7 @@ open Std (HashMap)
 namespace ReactBeginRoot
 
 section
-variable {{eng : Engine}} {{σ : Type}} {{answer : HostAnswer σ}}
+variable {{eng : Engine}} {{σ : Type}} {{answer : HostAnswer σ}} {{HI : σ → Prop}}
 
 theorem simple (d : FuncData) (hc : d.code = BWGen.beginWork_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
