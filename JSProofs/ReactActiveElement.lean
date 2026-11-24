@@ -37,19 +37,24 @@ theorem wp_instanceof {n : Nat} {h : σ} {lv rv : Value} {s : State} {Q : Value 
   show WP eng answer n h (instanceofOperator lv rv >>= fun b => Pure.pure (Value.bool b)) s Q
   exact wp_bind (wp_mono hw fun _ _ _ q => wp_pure q)
 
-/-- `typeof v` as `TypeofC`, for a host's object (`internal`, as Zippy's wrappers are): not callable, `"object"`. -/
+/-- A host's object that is not callable: an internal object (Zippy's wrappers), or a proxy without [[Call]] (a legacy
+platform object's wrapper: the document). -/
+def HostObjKind (k : Kind) : Prop := (∃ t sl, k = .internal t sl) ∨ (∃ a b c, k = .proxy a b false c)
+
+/-- `typeof v` as `TypeofC`, for a host's object (`HostObjKind`): not callable, `"object"`. -/
 def TypeofCI (s : State) (v : Value) (P : JSStr → Prop) : Prop :=
   match v with
-  | .obj o => o < s.heap.size ∧ (∃ t sl, (s.objEntry o).kind = .internal t sl) ∧ P "object"
+  | .obj o => o < s.heap.size ∧ HostObjKind (s.objEntry o).kind ∧ P "object"
   | _ => TypeofC s v P
 
 theorem typeOf_ofI {s : State} {v : Value} {P : JSStr → Prop} (h : TypeofCI s v P) :
     ∃ t, typeOf v s = .ok t s ∧ P t := by
   cases v with
   | obj o =>
-    obtain ⟨hlt, ⟨_, _, hk⟩, hp⟩ := h
+    obtain ⟨hlt, hk, hp⟩ := h
     refine ⟨"object", ?_, hp⟩
-    simp [typeOf, isCallable, readObj_entry o _ s hlt, hk, M.bind_eq, M.bind_apply, Pure.pure, M.pure]
+    rcases hk with ⟨_, _, hk⟩ | ⟨_, _, _, hk⟩ <;>
+      simp [typeOf, isCallable, readObj_entry o _ s hlt, hk, M.bind_eq, M.bind_apply, Pure.pure, M.pure]
   | _ => exact typeOf_of h
 
 /-- **`typeof x`** of a variable holding a host's object. -/
@@ -82,15 +87,15 @@ theorem simple (d : FuncData) (hc : d.code = GAEGen.getActiveElement_func) : FDI
 
 set_option maxRecDepth 40000 in
 set_option maxHeartbeats 4000000 in
-/-- **`getActiveElement(doc)`**, `doc.activeElement` the element `E`: `E`. The document a host's object (`internal`, as
-Zippy's wrappers are). -/
+/-- **`getActiveElement(doc)`**, `doc.activeElement` the element `E`: `E`. The document a host's object (`HostObjKind`: an
+internal object, or a proxy without [[Call]], as Zippy's document is). -/
 theorem gae_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State} {Doc E : ObjId}
-    {tg : String} {sl : Array Value}
+    {K : Kind}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 60 ≤ s.fuel)
     (hcode : d.code = GAEGen.getActiveElement_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (hDoc : Doc < s.heap.size)
-    (hDocK : (s.objEntry Doc).kind = .internal tg sl)
-    (hAE : ReactHostContainer.DomRead eng answer HI n s {} Doc "activeElement" (.obj E)) (hHI : HI h) :
+    (hDocK : (s.objEntry Doc).kind = K) (hK : HostObjKind K)
+    (hAE : ReactHostContainer.DomRead2 eng answer HI n s {} Doc "activeElement" (.obj E)) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj Doc]) s fun v w h' =>
       v = .obj E ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 60 ∧ h' = h := by
   apply wp_callGen GAEGen.getActiveElement_eq (by decide) hlt hk (by omega) hcls hmode
@@ -105,7 +110,6 @@ theorem gae_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until ["activeElement"] [hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_typeofIdentCI (by show 8 ≤ _; simp; omega) ?_
   js_until ["activeElement"] [TypeofCI, hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine ⟨⟨_, _, rfl⟩, ?_⟩
   js_until ["activeElement"] [hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_getMemberAcc ?_
   js_until [] [hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
@@ -137,7 +141,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hGGA : bG[JSStr.ofString "getActiveElement"]? = some bdGA) (hGGAv : bdGA.value = some (.obj fGA))
     (hGAo : fGA < s.heap.size) (hGAc : ∃ dd, (s.objEntry fGA).kind = .func dd)
     (hOD : ReactHostContainer.DomRead eng answer HI n s {} Cont "ownerDocument" (.obj Doc))
-    (hDV : ReactHostContainer.DomRead eng answer HI n s {} Doc "defaultView" (.obj Win))
+    (hDV : ReactHostContainer.DomRead2 eng answer HI n s {} Doc "defaultView" (.obj Win))
     (hWD : ReactHostContainer.DomRead eng answer HI n s {} Win "document" (.obj Doc))
     (hGA : ∀ w h1, Frame {} s w → HI h1 → 100 ≤ w.fuel →
       WP eng answer n h1 (callImpl eng (.obj fGA) .undefined #[.obj Doc]) w fun v w' h' =>

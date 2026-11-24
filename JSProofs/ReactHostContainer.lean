@@ -39,6 +39,13 @@ def DomRead (eng : Engine) (answer : HostAnswer σ) (HI : σ → Prop) (n : Nat)
   ∀ w h1, Frame fp s w → HI h1 → 2 ≤ w.fuel → GetsAcc eng answer n h1 w (.obj C) k fun v' w' h' =>
     v' = v ∧ h' = h1 ∧ ∃ f, w' = w.withFuel f ∧ w.fuel ≤ f + 1
 
+/-- `DomRead` of a legacy platform object (a proxy over the wrapper: the document, which has named properties): two
+built-in calls, the proxy's `get` trap's and then the getter's, so two steps of fuel. -/
+def DomRead2 (eng : Engine) (answer : HostAnswer σ) (HI : σ → Prop) (n : Nat) (s : State) (fp : Footprint) (C : ObjId)
+    (k : JSStr) (v : Value) : Prop :=
+  ∀ w h1, Frame fp s w → HI h1 → 3 ≤ w.fuel → GetsAcc eng answer n h1 w (.obj C) k fun v' w' h' =>
+    v' = v ∧ h' = h1 ∧ ∃ f, w' = w.withFuel f ∧ w.fuel ≤ f + 2
+
 set_option maxRecDepth 400000 in
 set_option maxHeartbeats 4000000 in
 theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}

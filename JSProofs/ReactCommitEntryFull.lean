@@ -638,7 +638,7 @@ theorem cpr_full {R : ObjId}
     (CM_ME_M_GH_hRNk : (s.objEntry CM_ME_M_GH_fRN).kind = .builtin CM_ME_M_GH_bdRN)
     (CM_ME_M_GH_hCall : ∀ s1, Frame (FPE d.env FR) s s1 → ∀ w h1, Frame ((((FPC CM_d.env FR CM_RSI CM_RDSI).union (ReactMarkFinished.FPM FR CM_MF_EA CM_MF_XA)).union (ReactBeforeMutation.FB CM_d.env)).union ((FPRE CM_ME_d.env CM_RSI CM_RDSI).union (ReactCommitRoot.F0 CM_ME_M_d.env))) s1 w → HI h1 → 2 ≤ w.fuel → WP eng answer (n + 7) h1 (callImpl eng (.obj CM_ME_M_GH_fRN) (.obj CM_ME_M_Cont) #[]) w fun v w' h' =>
       v = .obj CM_ME_M_GH_Doc ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10 ∧ h' = h1)
-    (CM_ME_M_GH_hNT : ∀ s1, Frame (FPE d.env FR) s s1 → ReactHostContainer.DomRead eng answer HI (n + 7) s1 ((((FPC CM_d.env FR CM_RSI CM_RDSI).union (ReactMarkFinished.FPM FR CM_MF_EA CM_MF_XA)).union (ReactBeforeMutation.FB CM_d.env)).union ((FPRE CM_ME_d.env CM_RSI CM_RDSI).union (ReactCommitRoot.F0 CM_ME_M_d.env))) CM_ME_M_GH_Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49))))
+    (CM_ME_M_GH_hNT : ∀ s1, Frame (FPE d.env FR) s s1 → ReactHostContainer.DomRead2 eng answer HI (n + 7) s1 ((((FPC CM_d.env FR CM_RSI CM_RDSI).union (ReactMarkFinished.FPM FR CM_MF_EA CM_MF_XA)).union (ReactBeforeMutation.FB CM_d.env)).union ((FPRE CM_ME_d.env CM_RSI CM_RDSI).union (ReactCommitRoot.F0 CM_ME_M_d.env))) CM_ME_M_GH_Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49))))
     {CM_ME_M_T_d : FuncData}
     {CM_ME_M_T_sf : F64}
     {CM_ME_M_T_dw : Bool}
@@ -2124,7 +2124,7 @@ theorem crw_full {R : ObjId}
     (CR_CM_ME_M_GH_hRNk : (s.objEntry CR_CM_ME_M_GH_fRN).kind = .builtin CR_CM_ME_M_GH_bdRN)
     (CR_CM_ME_M_GH_hCall : ∀ s2, Frame ⟨[], [(FR, .str (JSStr.ofString "timeoutHandle"))], false⟩ s s2 → ∀ s1, Frame (FPE CR_d.env FR) s2 s1 → ∀ w h1, Frame ((((FPC CR_CM_d.env FR CR_CM_RSI CR_CM_RDSI).union (ReactMarkFinished.FPM FR CR_CM_MF_EA CR_CM_MF_XA)).union (ReactBeforeMutation.FB CR_CM_d.env)).union ((FPRE CR_CM_ME_d.env CR_CM_RSI CR_CM_RDSI).union (ReactCommitRoot.F0 CR_CM_ME_M_d.env))) s1 w → HI h1 → 2 ≤ w.fuel → WP eng answer (n + 7) h1 (callImpl eng (.obj CR_CM_ME_M_GH_fRN) (.obj CR_CM_ME_M_Cont) #[]) w fun v w' h' =>
       v = .obj CR_CM_ME_M_GH_Doc ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10 ∧ h' = h1)
-    (CR_CM_ME_M_GH_hNT : ∀ s2, Frame ⟨[], [(FR, .str (JSStr.ofString "timeoutHandle"))], false⟩ s s2 → ∀ s1, Frame (FPE CR_d.env FR) s2 s1 → ReactHostContainer.DomRead eng answer HI (n + 7) s1 ((((FPC CR_CM_d.env FR CR_CM_RSI CR_CM_RDSI).union (ReactMarkFinished.FPM FR CR_CM_MF_EA CR_CM_MF_XA)).union (ReactBeforeMutation.FB CR_CM_d.env)).union ((FPRE CR_CM_ME_d.env CR_CM_RSI CR_CM_RDSI).union (ReactCommitRoot.F0 CR_CM_ME_M_d.env))) CR_CM_ME_M_GH_Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49))))
+    (CR_CM_ME_M_GH_hNT : ∀ s2, Frame ⟨[], [(FR, .str (JSStr.ofString "timeoutHandle"))], false⟩ s s2 → ∀ s1, Frame (FPE CR_d.env FR) s2 s1 → ReactHostContainer.DomRead2 eng answer HI (n + 7) s1 ((((FPC CR_CM_d.env FR CR_CM_RSI CR_CM_RDSI).union (ReactMarkFinished.FPM FR CR_CM_MF_EA CR_CM_MF_XA)).union (ReactBeforeMutation.FB CR_CM_d.env)).union ((FPRE CR_CM_ME_d.env CR_CM_RSI CR_CM_RDSI).union (ReactCommitRoot.F0 CR_CM_ME_M_d.env))) CR_CM_ME_M_GH_Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49))))
     {CR_CM_ME_M_T_d : FuncData}
     {CR_CM_ME_M_T_sf : F64}
     {CR_CM_ME_M_T_dw : Bool}

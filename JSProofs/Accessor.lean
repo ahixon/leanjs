@@ -49,17 +49,20 @@ theorem get_chain_accessor (s : State) (k : PropKey) (r : Value) {g sv : Value} 
 section
 variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
 
-/-- `o.k` finds an accessor whose getter is called next (one level down). -/
+/-- `o.k` finds an accessor whose getter is called next (one level down); or, for an object whose [[Get]] is not an
+ordinary lookup (a proxy: a legacy platform object's wrapper), its [[Get]] itself. -/
 def GetsAcc (eng : Engine) (answer : HostAnswer σ) (n : Nat) (h : σ) (s : State) (base : Value) (k : JSStr)
     (Q : Value → State → σ → Prop) : Prop :=
-  ∃ o m g sv e c, base = .obj o ∧ PlainChain s m o (.str k) ∧ m ≤ 9999 ∧
+  (∃ o m g sv e c, base = .obj o ∧ PlainChain s m o (.str k) ∧ m ≤ 9999 ∧
     ordLookup s m o (.str k) = some (.accessor g sv e c) ∧ g.isUndefined = false ∧
-    WP eng answer n h (callImpl eng g (.obj o) #[]) s Q
+    WP eng answer n h (callImpl eng g (.obj o) #[]) s Q) ∨
+  (∃ o, base = .obj o ∧ WP eng answer (n + 1) h (Obj'.get o (.str k) (.obj o)) s Q)
 
 theorem getsAcc_mono {n : Nat} {h : σ} {s : State} {b : Value} {k : JSStr} {P Q : Value → State → σ → Prop}
     (hg : GetsAcc eng answer n h s b k P) (hpq : ∀ v w h', P v w h' → Q v w h') : GetsAcc eng answer n h s b k Q := by
-  obtain ⟨o, m, g, sv, e, c, hb, hc, hm, hl, hgu, q⟩ := hg
-  exact ⟨o, m, g, sv, e, c, hb, hc, hm, hl, hgu, wp_mono q hpq⟩
+  rcases hg with ⟨o, m, g, sv, e, c, hb, hc, hm, hl, hgu, q⟩ | ⟨o, hb, q⟩
+  · exact .inl ⟨o, m, g, sv, e, c, hb, hc, hm, hl, hgu, wp_mono q hpq⟩
+  · exact .inr ⟨o, hb, wp_mono q hpq⟩
 
 /-- **`obj.k`, an accessor**: the getter's call with `obj` as `this`. -/
 theorem wp_getMemberAcc {n : Nat} {h : σ} {obj : Sem.CExpr} {k : JSStr} {ctx : Ctx} {s : State}
@@ -70,7 +73,15 @@ theorem wp_getMemberAcc {n : Nat} {h : σ} {obj : Sem.CExpr} {k : JSStr} {ctx : 
   simp only [Sem.getValue, Sem.memberRef, M.bind_eq, M.bind_apply]
   apply wpr_bind
   apply wpr_bind
-  refine wp_mono hw fun bv w h1 ⟨o, m, g, sv, e, c, hb, hc, hm, hl, hg, q⟩ => ?_
+  refine wp_mono hw fun bv w h1 hga => ?_
+  rcases hga with ⟨o, m, g, sv, e, c, hb, hc, hm, hl, hg, q⟩ | ⟨o, hb, q⟩
+  rotate_left
+  · subst hb
+    simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte]
+    refine wp_of_eq (a := Ref.prop (.obj o) (.str k) ctx.strict none) rfl ?_
+    rw [show getRefValue (Ref.prop (.obj o) (.str k) ctx.strict none) = Obj'.get o (.str k) (.obj o) from
+      funext (getRefValue_prop o k ctx.strict)]
+    exact q
   subst hb
   simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte]
   refine wp_of_eq (a := Ref.prop (.obj o) (.str k) ctx.strict none) rfl ?_

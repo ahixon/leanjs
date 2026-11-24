@@ -64,7 +64,7 @@ theorem ghr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hRNo : fRN < s.heap.size) (hRNk : (s.objEntry fRN).kind = .builtin bdRN)
     (hCall : ∀ w h1, Frame {} s w → HI h1 → 2 ≤ w.fuel → WP eng answer n h1 (callImpl eng (.obj fRN) (.obj Cont) #[]) w fun v w' h' =>
       v = .obj Doc ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10 ∧ h' = h1)
-    (hNT : ReactHostContainer.DomRead eng answer HI n s {} Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49)))) (hHI : HI h) :
+    (hNT : ReactHostContainer.DomRead2 eng answer HI n s {} Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49)))) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj Cont]) s fun v w h' =>
       v = .obj Doc ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 100 ∧ h' = h := by
   apply wp_callGen GHRGen.getHoistableRoot_eq (by decide) hlt hk (by omega) hcls hmode

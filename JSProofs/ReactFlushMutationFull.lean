@@ -247,7 +247,7 @@ theorem fme_full {n : Nat}
     (M_GH_hRNk : (s.objEntry M_GH_fRN).kind = .builtin M_GH_bdRN)
     (M_GH_hCall : ∀ w h1, Frame ((FPRE d.env RSI RDSI).union (ReactCommitRoot.F0 M_d.env)) s w → HI h1 → 2 ≤ w.fuel → WP eng answer (n + 7) h1 (callImpl eng (.obj M_GH_fRN) (.obj M_Cont) #[]) w fun v w' h' =>
       v = .obj M_GH_Doc ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10 ∧ h' = h1)
-    (M_GH_hNT : ReactHostContainer.DomRead eng answer HI (n + 7) s ((FPRE d.env RSI RDSI).union (ReactCommitRoot.F0 M_d.env)) M_GH_Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49))))
+    (M_GH_hNT : ReactHostContainer.DomRead2 eng answer HI (n + 7) s ((FPRE d.env RSI RDSI).union (ReactCommitRoot.F0 M_d.env)) M_GH_Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49))))
     {M_T_d : FuncData}
     {M_T_sf : F64}
     {M_T_dw : Bool}
