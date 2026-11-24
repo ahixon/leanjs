@@ -49,7 +49,11 @@ FFF = PCRW[k:j + 1]
 def full(t): return ren(usubst(t, SUBV))
 FC = f"(Logic.Footprint.union {full(FFF)} {{}})"
 PCRWr = re.sub(r"(?<![A-Za-z0-9_'.])w(?![A-Za-z0-9_'])", "ws", full(PCRW))
-PC = f"(fun (w' : State) (h' : σ) => ∃ ws w0, {PCRWr} w0 h' ∧ Frame {{}} w0 w')"
+PC_CORE = f"(∃ ws w0, {PCRWr} w0 h' ∧ Frame {{}} w0 w')"
+# (with the frame from the microtask's start to the commit's end: the render's and performWorkOnRoot's locals', then
+# the commit's — what the click leaves of the state at its start, for an invariant across clicks)
+FALLM0 = re.search(r"Frame (\(.*?\)) s x ∧ ∃ Cn F,", HANDOFF).group(1)
+PC = f"(fun (w' : State) (h' : σ) => {PC_CORE} ∧ ∃ eR eE eW, Frame (({FALLM0}.union (ReactPerformWork.fpOwn eW)).union {FC}) s w')"
 concl = hc.replace("((j + 2) + 1)", "(n + 13)")
 for a, b in [("PRu", HANDOFF), ("fpC", FC), ("kC", "59500"), ("PC", PC), ("kW", "2400")]:
     concl = re.sub(r"(?<![\w'])" + a + r"(?![\w'])", lambda _m: b, concl)
@@ -334,7 +338,7 @@ proof = f"""  intro sP hP hMF fuP sW hW fuW w2 w h1 C alt bm x1 x2 x3 x4 x5 x6 x
     have hHIc : HI h' := by
       obtain ⟨⟨_, _, -, ⟨⟨_, ⟨⟨_, -, -, hHIc⟩, -⟩, -⟩, -⟩, -⟩, -⟩ := hPc
       exact hHIc
-    exact ⟨frame_trans hPc.2 hF0, by omega, ⟨w, w0, hPc, hF0⟩, hHIc⟩
+    exact ⟨frame_trans hPc.2 hF0, by omega, ⟨⟨w, w0, hPc, hF0⟩, eR, eE, sW.envs.size, frame_trans hT (frame_trans hPc.2 hF0)⟩, hHIc⟩
   all_goals first | with_reducible assumption | (rw [props_frame hT (by with_reducible assumption) (by simp (config := {{ decide := true }}) [{ALLDEFS}, {DLN}])] <;> with_reducible assumption) | (rw [kind_frame hT (by with_reducible assumption)] <;> with_reducible assumption)
 """
 EXTRA2 = ["(hG : d.env < s.envs.size)", "(hRo : R < s.heap.size)", "(hH : p_H < s.heap.size)",

@@ -45,7 +45,7 @@ def add(name, k, t):
     binds.append(f"{k}{name} : {t2}{'}' if k == '{' else ')'}")
 ENSURE = """fun sP hP1 hP2 sW hW1 hW2 w3 w h1 hPC hHI1 hO hfw => by
       have hPC' := hPC
-      obtain ⟨ws, w0a, ⟨⟨s1, w0b, -, ⟨⟨w0c, ⟨-, hD⟩, hFc⟩, -⟩, hFb⟩, -⟩, hFa⟩ := hPC
+      obtain ⟨⟨ws, w0a, ⟨⟨s1, w0b, -, ⟨⟨w0c, ⟨-, hD⟩, hFc⟩, -⟩, hFb⟩, -⟩, hFa⟩, -⟩ := hPC
       have eg : c_CR_CM_d.env = d.env := by rw [c_CR_CM_hdenv, c_CR_hdenv, hcdenv]
       have ebG : c_bG = bG := by
         have hc := c_hGe; rw [hcdenv, hGe] at hc; simp only [Option.some.injEq, Prod.mk.injEq] at hc; exact hc.1.symm
