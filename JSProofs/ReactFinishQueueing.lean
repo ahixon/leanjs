@@ -87,7 +87,7 @@ theorem finish_of_ready {n : Nat} {Post : State → σ → Prop} {EP : State →
       Post (w'.restore c) h1)
     (hFe : Frame (ReactRenderSync.fpEnd e g I) w2 w) (hEP : EP w) (hfu : 20 ≤ w.fuel) :
     WP eng answer n h1 (callImpl eng (.obj f) .undefined #[]) w fun _ w' h' =>
-      Frame (fp g) w w' ∧ w.fuel ≤ w'.fuel + 20 ∧ Post (w'.restore c) h' := by
+      Frame (fp g) w w' ∧ w.fuel ≤ w'.fuel + 20 ∧ Post (w'.restore c) h' ∧ h' = h1 := by
   obtain ⟨hg, hf, hk, bG, oG, bdI, bdL, hd, hI, hIm, hIv, hL, hLm, hLv⟩ := hR
   obtain ⟨bW, hdW, hx⟩ := declLike_frame hFe hg hd
   have hnI : (g, JSStr.ofString "concurrentQueuesIndex") ∉ (ReactRenderSync.fpEnd e g I).binds := by
@@ -100,7 +100,7 @@ theorem finish_of_ready {n : Nat} {Post : State → σ → Prop} {EP : State →
   intro v w' h' ⟨_, hFr, hfu', hh, hQD⟩
   subst hh
   exact ⟨by rw [hdenv] at hFr; exact hFr, hfu', hP e w w' hFe hEP (by rw [hdenv] at hFr; exact hFr)
-    (by rw [hdenv] at hQD; exact hQD) c⟩
+    (by rw [hdenv] at hQD; exact hQD) c, rfl⟩
 
 /-- What it writes with one update queued: the bindings, the array's four elements, the queue's `pending`, the
 update's `next`, and the lanes `markUpdateLaneFromFiberToRoot` marks. -/

@@ -72,7 +72,7 @@ theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : Ob
     (pI : p_X ≠ I ∧ p_A ≠ I ∧ p_Qo ≠ I ∧ p_U ≠ I ∧ p_F ≠ I ∧ p_Fa ≠ I ∧ p_H ≠ I)
     {chr(10).join("    " + x for x in hyps)} :
     {rp_i} := by
-  intro sP hP hMF fuP sW hW fuW sR hR fuR w h1 hpre fuw ⟨iv, ia, ib, hIHw⟩ ⟨bme, hbme, ⟨bdx, hbdx, hbdxm, hbdxv⟩, ⟨bdt, hbdt, hbdtv⟩⟩
+  intro sP hP hMF fuP sW hW fuW sR hR fuR w h1 hpre hHI1 fuw ⟨iv, ia, ib, hIHw⟩ ⟨bme, hbme, ⟨bdx, hbdx, hbdxm, hbdxv⟩, ⟨bdt, hbdt, hbdtv⟩⟩
   have hT := frame_trans (frame_trans (frame_trans hP hW) hR) hpre
   obtain ⟨bW, hWd, hWx⟩ := declLike_frame hT hG hGe
   refine wp_mono (ReactPrepareFresh.call_spec (n := j) (d := {{ dPF with env := d.env }}) (bG := bW)
@@ -81,9 +81,9 @@ theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : Ob
   intro v w' h' ⟨_, hF', hfu', hh, hAP, hPB, hPF⟩
   subst hh
   obtain ⟨bw', hdw', hbw'⟩ := declLike_frame hF' (envs_frame hT hG) hbme
-  refine ⟨hF', by omega, hAP, frame_trans hT hF', hPB, hPF, ⟨iv, ia, ib, ?_⟩, bw', hdw',
+  refine ⟨hF', by omega, hAP, ⟨frame_trans hT hF', hPB, hPF, ⟨iv, ia, ib, ?_⟩, bw', hdw',
     ⟨bdx, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdx, hbdxm, hbdxv⟩,
-    ⟨bdt, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdt, hbdtv⟩, ?mf⟩
+    ⟨bdt, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdt, hbdtv⟩, ?mf⟩, hHI1⟩
   case mf =>
     have hT' := frame_trans (frame_trans (frame_trans hW hR) hpre) hF'
     obtain ⟨⟨bmF, hbmF, bdF, hbdF, hbdFv⟩, ⟨⟨av, ae, ac, hA1⟩, ⟨pv, pe, pc, hCP⟩, ⟨nv, ne, nc, hCN⟩⟩, ⟨bmG, hbmG, ⟨bdM, hbdM, hbdMm, hbdMv⟩, ⟨bdD, hbdD, hbdDm, hbdDv⟩⟩⟩ := hMF
@@ -152,7 +152,7 @@ open Std (HashMap)
 namespace ReactRenderClick
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 '''
 open(ROOT + "/JSProofs/ReactMicrotaskPrep.lean", "w").write(hdr + lemma + "\nend\n\n" + top + "\nend ReactRenderClick\n")

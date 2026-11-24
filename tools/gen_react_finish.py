@@ -5,15 +5,15 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 path = ROOT + "/JSProofs/ReactMicrotaskRender.lean"
 _, oh = sig(path, "microtask_render", "    WP eng answer (j + 6)")
 rf = [b for b in oh if hname(b) == "r_Finish"][0]
-POST = re.search(r"w\.fuel ≤ w'\.fuel \+ kF ∧ (\(fun x h => .*\)) \(w'\.restore sR\) h'\)$", rf, re.S).group(1)
+POST = re.search(r"w\.fuel ≤ w'\.fuel \+ kF ∧ (\(fun x h => .*\)) \(w'\.restore sR\) h' ∧ HI h'\)$", rf, re.S).group(1)
 P2 = ("(fun w2 h => ReactFinishQueueing.Ready w2 d.env fFQ dFQ ∧ ∀ e w w', Frame (ReactRenderSync.fpEnd e d.env I) w2 w → "
       "ReactRenderSync.EndBinds w d.env oG v_ec → Frame (ReactFinishQueueing.fp d.env) w w' → "
       "ReactFinishQueueing.QueuesDone w' d.env → ∀ c, " + POST + " (w'.restore c) h)")
 o = dict(path=path, name="microtask_render", marker="    WP eng answer (j + 6)", thm="microtask_render",
   newname="microtask_render_fin",
   set={"P2": P2, "fpFQ": "(ReactFinishQueueing.fp d.env)", "kF": "20"},
-  prove={"r_Finish": "fun sP _ fuP sW _ fuW sR _ fuR w2 w h1 hP2 hFe hEB hfu => ReactFinishQueueing.finish_of_ready (Post := " + POST + ") (c := sR) "
-                     "f_code f_cls f_mode f_env hP2.1 hP2.2 hFe hEB (by omega)"},
+  prove={"r_Finish": "fun sP _ fuP sW _ fuW sR _ fuR w2 w h1 hP2 hHI1 hFe hEB hfu => wp_mono (ReactFinishQueueing.finish_of_ready (Post := " + POST + ") (c := sR) "
+                     "f_code f_cls f_mode f_env hP2.1 hP2.2 hFe hEB (by omega)) (fun _ _ _ ⟨a, b, c, d⟩ => ⟨a, b, c, by rw [d]; exact hHI1⟩)"},
   auto_re=r"ReactFinishQueueing\.fp d\.env\)\.(binds|props)", auto_tac="by simp [ReactFinishQueueing.fp, hG]",
   extra_hyps=["(f_code : dFQ.code = FQCGen.finishQueueingConcurrentUpdates_func)", "(f_cls : dFQ.isClassCtor = false)",
               "(f_mode : dFQ.thisMode = .strict)", "(f_env : dFQ.env = d.env)"])
