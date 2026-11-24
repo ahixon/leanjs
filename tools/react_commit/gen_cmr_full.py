@@ -38,7 +38,7 @@ if "hMEf" in DO:
     for nm, k, t in binders(FMF, "fme_full"):
         if nm in ("n", "h", "s"): continue
         _ren[nm] = ME_SUBST.get(nm, "ME_" + nm)
-    _pm = re.match(r"v = \.undefined ∧ s\.fuel ≤ w\.fuel \+ 5700 ∧ \(∃ w0, (.*?) w0 h'\) ∧\s*Frame (.*) s w ∧\s*BindIs w d\.env", _post, re.S)
+    _pm = re.match(r"v = \.undefined ∧ s\.fuel ≤ w\.fuel \+ 5700 ∧ \(∃ w0, (.*?) w0 h'\) ∧ HI h' ∧\s*Frame (.*) s w ∧\s*BindIs w d\.env", _post, re.S)
     PCME = _rename(_pm.group(1), _ren)
     FME = _rename(_pm.group(2), _ren)
     outer_ren["fpME"] = FME
@@ -97,13 +97,13 @@ if "hMf" in DO:
 bgiven = {}
 if "hBf" in DO:
     bb, _ = compose(BMF, "cbm_full", "B_", subst={"fo": "fB", "t": ".undefined", "FR": "FR", "R": "R", "bG": "bG",
-                    "oG": "oG", "E": "E", "ev0": "ev0", "lanes": LANE}, given={}, drop=("n", "h", "s", "hf", "hlt", "hG", "hGe"))
+                    "oG": "oG", "E": "E", "ev0": "ev0", "lanes": LANE}, given={}, drop=("n", "h", "s", "hf", "hlt", "hG", "hGe", "hHI"))
     BQ = {"hGDC": 2, "S_hNN": 2, "S_hTL": 1, "S_hCE": 2}
     for i, b in enumerate(bb):
         nm = b[1:b.index(" : ")]
         if nm[2:] in BQ:
             bb[i] = b[0] + nm + " : " + widen(b[b.index(" : ") + 3:-1], F1) + b[-1]
-            bgiven[nm[2:]] = (f"fun w' h1 hw' => {nm} w' h1 (frame_trans hw hw')" if BQ[nm[2:]] == 2
+            bgiven[nm[2:]] = (f"fun w' h1 hw' hi => {nm} w' h1 (frame_trans hw hw') hi" if BQ[nm[2:]] == 2
                               else f"fun w' hw' => {nm} w' (frame_trans hw hw')")
     bb = [re.sub(r"(?<![A-Za-z0-9_'.])FB(?= )", "ReactBeforeMutation.FB", b) for b in bb]
     bb = [re.sub(r"(?<![A-Za-z0-9_'.])n(?![A-Za-z0-9_'])", "(n + 8)", b) for b in bb]
@@ -111,7 +111,7 @@ if "hBf" in DO:
 megiven = {}
 if "hMEf" in DO:
     mb, _ = compose(FMF, "fme_full", "ME_", subst=ME_SUBST, given={},
-                    drop=tuple(["n", "h", "s", "hf", "hlt", "hG", "hGe"] + ME_SUPPLIED))
+                    drop=tuple(["n", "h", "s", "hf", "hlt", "hG", "hGe", "hHI"] + ME_SUPPLIED))
     MQ = ["hGDC", "M_GH_hRN", "M_GH_hCall", "M_GH_hNT", "M_CT_BT_CH_U_hI", "M_CT_BT_CH_U_hOC", "M_CT_BT_CH_U_hFC",
           "M_CT_BT_CH_U_hLC", "M_CT_BT_CH_U_hNT", "M_CT_BT_CH_U_hNV"]
     MQ1 = {"M_GH_hRN", "M_CT_BT_CH_U_hI"}
@@ -120,7 +120,7 @@ if "hMEf" in DO:
         if nm[3:] in MQ:
             mb[i] = b[0] + nm + " : " + widen(b[b.index(" : ") + 3:-1], F2) + b[-1]
             megiven[nm[3:]] = (f"fun w' hw' => {nm} w' (frame_trans hw hw')" if nm[3:] in MQ1
-                               else f"fun w' h1 hw' => {nm} w' h1 (frame_trans hw hw')")
+                               else f"fun w' h1 hw' hi => {nm} w' h1 (frame_trans hw hw') hi")
     added += mb + ["(ME_hdenv : ME_d.env = d.env) (dDomH : ME_M_CT_dom < s.heap.size)",
                    "(dDomL : ME_M_CT_dom ≠ fLE) (dDomS : ME_M_CT_dom ≠ fSP) (dDomA : ME_M_CT_dom ≠ MF_EA) (dDomX : ME_M_CT_dom ≠ MF_XA)"] + \
              [f"(d{o}{x} : {e} ≠ {y})" for o, e in (("LP", "ME_M_CT_BT_LP"), ("NP", "ME_M_CT_BT_NP"), ("OP", "ME_M_CT_BT_CH_U_OP"))
@@ -191,10 +191,10 @@ if "hBf" in DO:
                     if k == "{" and nm not in ("n", "h", "s", "fo", "t", "FR", "R", "bG", "oG", "E", "ev0", "lanes"))
     bgv = " ".join(f"({nm} := {v})" for nm, v in bgiven.items())
     cases.append(f"""  case hBf =>
-    intro w h1 hw hfw
+    intro w h1 hw hHI1 hfw
     obtain ⟨bw, hdw, hbw⟩ := declLike_frame hw hG hGe
     refine' wp_mono (ReactBeforeMutation.cbm_full (s := w) (n := n + 8) (fo := fB) (t := .undefined) (FR := FR)
-      (R := R) (bG := bw) (oG := oG) (E := E) (ev0 := ev0) (lanes := {LANE}) {bimp} (hf := by omega)
+      (R := R) (bG := bw) (oG := oG) (E := E) (ev0 := ev0) (lanes := {LANE}) {bimp} (hf := by omega) (hHI := hHI1)
       (hlt := lt_heap_of_frame hw hBo) (hG := by rw [B_hdenv]; exact lt_envs_of_frame hw hG)
       (hGe := by rw [B_hdenv]; exact hdw) {bgv} ..) ?bpost
     case bpost =>
@@ -214,7 +214,7 @@ if "hMEf" in DO:
     megv = " ".join(f"({nm} := {v})" for nm, v in megiven.items())
     BI = "obtain ⟨_, _, {bd}, {hd}, {hb}, {hv}, {hm}⟩ := {src}\n    rw [hdw] at {hd}; cases {hd}"
     cases.append(f"""  case hMEf =>
-    intro w h1 hw hst hec hT hp hsel hfw
+    intro w h1 hw hHI1 hst hec hT hp hsel hfw
     obtain ⟨bw, hdw, hbw⟩ := declLike_frame hw hG hGe
     {BI.format(bd="bS'", hd="hd1", hb="hb1", hv="hv1", hm="hm1", src="hst")}
     {BI.format(bd="bE'", hd="hd2", hb="hb2", hv="hv2", hm="hm2", src="hec")}
@@ -229,7 +229,7 @@ if "hMEf" in DO:
       (FR := FR) (R := R) (RSI := RSI) (RDSI := RDSI) (E := E) (ec := ec) (tv := tv) (pv := pv) (SI := SI)
       (bdS := bS') (bdE := bE') (bdSI := bSI') (bdEv := bEv') (bdEn := bEn') (evv := ev0) (te := te') (tc := tc')
       (pe := pe') (pc := pc') (fw := fw') (fe := fe') (fc := fc') (srv := srv') (rw := rw') (re := re') (rc := rc')
-      {meimp} (hf := by omega) (hlt := lt_heap_of_frame hw hMEo)
+      {meimp} (hf := by omega) (hHI := hHI1) (hlt := lt_heap_of_frame hw hMEo)
       (hG := by rw [ME_hdenv]; exact lt_envs_of_frame hw hG) (hGe := by rw [ME_hdenv]; exact hdw)
       (hGS := hb1) (hGSv := hv1) (hGSm := hm1) (hGE := hb2) (hGEv := hv2) (hGEm := hm2)
       (hGSI := hb3) (hGSIv := hv3) (hGSIm := hm3) (hGEv' := hb4) (hGEvv := hv4) (hGEvm := hm4)
@@ -239,7 +239,7 @@ if "hMEf" in DO:
       (dFS := Nat.ne_of_lt (Nat.lt_of_lt_of_le hFR hSIs)) (dMS := Nat.ne_of_lt (Nat.lt_of_lt_of_le dDomH hSIs))
       {megv} ..) ?mpost
     case mpost =>
-      rintro v w' h' ⟨-, hfu, hPC, hF, hst2, hec2, hT2, hp2⟩
+      rintro v w' h' ⟨-, hfu, hPC, -, hF, hst2, hec2, hT2, hp2⟩
       rw [ME_hdenv] at hst2 hec2
       exact ⟨hF, frame_trans hw hF, by omega, hPC, hst2, hec2, hT2, hp2⟩
     all_goals try (simp only [ME_M_T_hdenv, ME_M_CT_T_hdenv, ME_M_CT_BT_CH_hdenv, ME_M_hdenv, ME_hdenv]; first | exact hdw | exact lt_envs_of_frame hw hG)

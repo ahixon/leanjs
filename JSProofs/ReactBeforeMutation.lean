@@ -22,7 +22,7 @@ open ReactFacts (BindIs)
 namespace ReactBeforeMutation
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simpleC (d : FuncData) (hc : d.code = CBMCGen.commitBeforeMutationEffects_complete_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -127,10 +127,10 @@ theorem cbm_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hGDo : fGD < s.heap.size) (hGDc : ∃ dd, (s.objEntry fGD).kind = .func dd)
     (hHSo : fHS < s.heap.size) (hHSc : ∃ dd, (s.objEntry fHS).kind = .func dd)
     (hCCo : fCC < s.heap.size) (hCCc : ∃ dd, (s.objEntry fCC).kind = .func dd)
-    (hGDC : ∀ w h1, Frame (FB d.env) s w → 200 ≤ w.fuel →
+    (hGDC : ∀ w h1, Frame (FB d.env) s w → HI h1 → 200 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fGD) .undefined #[.obj Cont]) w fun v w' h' =>
         v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 200 ∧ h' = h1)
-    (hHSC : ∀ w h1, Frame (FB d.env) s w → 100 ≤ w.fuel →
+    (hHSC : ∀ w h1, Frame (FB d.env) s w → HI h1 → 100 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fHS) .undefined #[.obj E]) w fun v w' h' =>
         v = .bool false ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 80 ∧ h' = h1)
     (hCCC : ∀ w h1, Frame (FB d.env) s w → 200 ≤ w.fuel →
@@ -140,7 +140,7 @@ theorem cbm_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
         v = .undefined ∧ w.fuel ≤ w'.fuel + 200 ∧ h' = h1 ∧
         Frame ⟨[(d.env, JSStr.ofString "nextEffect")], [], false⟩ w w' ∧ Frame (FB d.env) s w' ∧
         ∀ bm o, Scope.declLike? (w'.envEntry d.env) = some (bm, o) →
-          ∃ bd, bm[JSStr.ofString "nextEffect"]? = some bd ∧ bd.value = some .null) :
+          ∃ bd, bm[JSStr.ofString "nextEffect"]? = some bd ∧ bd.value = some .null) (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, .num lanes]) s fun v w h' =>
       v = .undefined ∧ h' = h ∧ Frame (FB d.env) s w ∧ s.fuel ≤ w.fuel + 1000 ∧
       (∃ SI, s.heap.size ≤ SI ∧ SI < w.heap.size ∧ (w.objEntry SI).kind.isPlain = true ∧
@@ -167,7 +167,7 @@ theorem cbm_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   clear hcode
   simp only [CBMGen.commitBeforeMutationEffects]
   js_until [] [e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine ⟨by js_norm [CallableC, e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], wp_mono (hGDC _ _ (by unfold FB; frame_go' [*]) (by js_norm [e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_⟩
+  refine ⟨by js_norm [CallableC, e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], wp_mono (hGDC _ _ (by unfold FB; frame_go' [*]) hHI (by js_norm [e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_⟩
   rintro v1 w1 h1 ⟨rfl, hF1, hfu1, rfl⟩
   have hE1 := envEntry_frame0 hF1 (e := s.envs.size) (by js_norm [e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
   have hEd1 := envEntry_frame0 hF1 (e := d.env) (by js_norm [e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
@@ -178,7 +178,7 @@ theorem cbm_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   have hob1 : ∀ o, o < s.heap.size → w1.objEntry o = s.objEntry o := fun o ho => obj_eq_np hFs1 rfl ho
   have hlt1 : ∀ o, o < s.heap.size → o < w1.heap.size := fun o ho => Nat.lt_of_lt_of_le ho hFs1.heap_le
   js_until [] [hE1, hEd1, hS1, hGd1, hfw1, hob1 R hR, hob1 fHS hHSo, hob1 fCC hCCo, hob1 FR hFR, hlt1 R hR, hlt1 fHS hHSo, hlt1 fCC hCCo, hGHS, hGHSv, hHSk, hGCC, hGCCv, hCCk, hGSI, hGSIm, hGSIi, hGNE, hGNEm, hGNEi, hGAV, hGAVm, hGAVi, hRk, hRa, hRt, hRc, hRs, hsf, hlanes, e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine ⟨by js_norm [CallableC, hE1, hEd1, hS1, hGd1, hfw1, hob1 R hR, hob1 fHS hHSo, hob1 fCC hCCo, hob1 FR hFR, hlt1 R hR, hlt1 fHS hHSo, hlt1 fCC hCCo, hGHS, hGHSv, hHSk, hGCC, hGCCv, hCCk, hGSI, hGSIm, hGSIi, hGNE, hGNEm, hGNEi, hGAV, hGAVm, hGAVi, hRk, hRa, hRt, hRc, hRs, hsf, hlanes, e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], wp_mono (hHSC _ _ (frame_setEnv_new hFs1 (Nat.le_refl _) _) (by simp; omega)) ?_⟩
+  refine ⟨by js_norm [CallableC, hE1, hEd1, hS1, hGd1, hfw1, hob1 R hR, hob1 fHS hHSo, hob1 fCC hCCo, hob1 FR hFR, hlt1 R hR, hlt1 fHS hHSo, hlt1 fCC hCCo, hGHS, hGHSv, hHSk, hGCC, hGCCv, hCCk, hGSI, hGSIm, hGSIi, hGNE, hGNEm, hGNEi, hGAV, hGAVm, hGAVi, hRk, hRa, hRt, hRc, hRs, hsf, hlanes, e1, e1', e4, hG, hGe, hGEv, hGEvm, hGEvi, hGEn, hGEnv, hGEnm, hGGD, hGGDv, hFR, hFRk, hFRc, hGDo, hGDk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], wp_mono (hHSC _ _ (frame_setEnv_new hFs1 (Nat.le_refl _) _) hHI (by simp; omega)) ?_⟩
   rintro v2 w2 h2 ⟨rfl, hF2, hfu2, rfl⟩
   have hE2 := envEntry_frame0 hF2 (e := s.envs.size) (by simp; omega)
   have hEd2 := envEntry_frame0 hF2 (e := d.env) (by simp; omega)

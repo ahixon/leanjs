@@ -29,7 +29,7 @@ def FPC (g : EnvId) (FR RSI RDSI : ObjId) : Footprint :=
     (RSI, .str (JSStr.ofString "T")), (RDSI, .str (JSStr.ofString "p"))], false⟩
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = CMRGen.commitRoot_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -102,7 +102,7 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hfpMp : ∀ p, p ∈ fpM.props → p.1 ≠ R ∧ p.1 ≠ RSI ∧ p.1 ≠ RDSI ∧ p.1 ≠ fB ∧ p.1 ≠ fME ∧ p.1 ≠ fLE ∧ p.1 ≠ fSP ∧
       (p.1 = FR → p.2 ≠ .str (JSStr.ofString "callbackNode") ∧ p.2 ≠ .str (JSStr.ofString "callbackPriority")))
     {fpB fpME fpLE fpSP : Footprint} {Q1 Q2 Q3 : State → σ → Prop}
-    (hBf : ∀ w h1, Frame ((FPC d.env FR RSI RDSI).union fpM) s w → K ≤ w.fuel →
+    (hBf : ∀ w h1, Frame ((FPC d.env FR RSI RDSI).union fpM) s w → HI h1 → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fB) .undefined #[.obj FR, .obj R,
         .num (F64.fin false 4503599627370496 (-51))]) w fun v w' h' =>
         Frame fpB w w' ∧ Frame (((FPC d.env FR RSI RDSI).union fpM).union fpB) s w' ∧ w.fuel ≤ w'.fuel + K ∧ h' = h1 ∧
@@ -113,7 +113,7 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       JSStr.ofString "ReactSharedInternals", JSStr.ofString "ReactDOMSharedInternals", JSStr.ofString "pendingViewTransitionEvents", JSStr.ofString "pendingTransitionTypes"]))
     (hfpBp : ∀ p, p ∈ fpB.props → p.1 ≠ RSI ∧ p.1 ≠ RDSI ∧ p.1 ≠ fME ∧ p.1 ≠ fLE ∧ p.1 ≠ fSP ∧
       p ≠ (FR, .str (JSStr.ofString "pendingLanes")))
-    (hMEf : ∀ w h1, Frame (((FPC d.env FR RSI RDSI).union fpM).union fpB) s w →
+    (hMEf : ∀ w h1, Frame (((FPC d.env FR RSI RDSI).union fpM).union fpB) s w → HI h1 →
       BindIs w d.env (JSStr.ofString "pendingEffectsStatus") (.num (F64.fin false 4503599627370496 (-52))) →
       BindIs w d.env (JSStr.ofString "executionContext") (.num ec) →
       PropIs w RSI (JSStr.ofString "T") tv → PropIs w RDSI (JSStr.ofString "p") pv →
@@ -134,7 +134,8 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       BindIs w d.env (JSStr.ofString "pendingViewTransitionEvents") .null →
       BindIs w d.env (JSStr.ofString "pendingTransitionTypes") .null → K ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fSP) .undefined #[]) w fun v w' h' =>
-        Frame ((((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE).union fpSP) s w' ∧ w.fuel ≤ w'.fuel + K ∧ Q3 w' h') :
+        Frame ((((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE).union fpSP) s w' ∧ w.fuel ≤ w'.fuel + K ∧ Q3 w' h')
+    (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj FR, .obj R, .num (F64.fin false 4503599627370496 (-51)),
       sl, ul, srl, sst]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + 5 * K + 400 ∧ (∃ w0, Q3 w0 h' ∧ Frame {} w0 w) ∧ Frame ((((((FPC d.env FR RSI RDSI).union fpM).union fpB).union fpME).union fpLE).union fpSP) s w := by
@@ -193,7 +194,7 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   obtain ⟨dB, hBk⟩ := hBc
   js_until [] [hfw1, hE1, hEd1, hS1, hGd1, hR1, hT1, hD1, hB1, hFRk1, hFRn1, hFRp1, hlt1 R hR, hlt1 FR hFR, hlt1 RSI hRSI, hlt1 RDSI hRDSI, hlt1 fB hBo, gVE, gVEm, gVEv, gTT, gTTm, gTTv, gSV, gSVm, gSVv, gT, gTv, gD, gDv, gE, gEv, gEm, gB, gBv, hRs, hRf, hrs, hrf, hrs2, hFRk, hRSIk, hRSIt, hRDSIk, hRDSIp, dRF, Ne.symm dRF, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTR, Ne.symm dTR, dDR, Ne.symm dDR, hBk, e1, e1', e4, hG, hGe, gRL, gRLm, gRLv, gCU, gCUv, gM, gMv, hMo, hMk, hR, hRk, hRl, hRc, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hlt1 fB hBo, hB1, hBk, dBF, dBT, dBD, Ne.symm dBF, Ne.symm dBT, Ne.symm dBD], ?_⟩
-  refine wp_mono (hBf _ _ ?fr2 (by simp; omega)) ?_
+  refine wp_mono (hBf _ _ ?fr2 hHI (by simp; omega)) ?_
   case fr2 =>
     unfold FPC
     have hdS : (Scope.declLike? (s.envEntry d.env)).isSome = true := by rw [hGe]; rfl
@@ -283,7 +284,7 @@ theorem cmr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until [] [hfw2, hE2, hd2, b1, b2, b3, b4, b5, b6, hS2, hGd2, hT2.1, hT2.2, hD2.1, hD2.2, hME2, hlt2 RSI hRSI, hlt2 RDSI hRDSI, hlt2 fME hMEo, Std.HashMap.getElem?_modify, gS, gSm, gSv, gME, gMEv, hfw1, hE1, hEd1, hS1, hGd1, hR1, hT1, hD1, hB1, hFRk1, hFRn1, hFRp1, hlt1 R hR, hlt1 FR hFR, hlt1 RSI hRSI, hlt1 RDSI hRDSI, hlt1 fB hBo, gVE, gVEm, gVEv, gTT, gTTm, gTTv, gSV, gSVm, gSVv, gT, gTv, gD, gDv, gE, gEv, gEm, gB, gBv, hRs, hRf, hrs, hrf, hrs2, hFRk, hRSIk, hRSIt, hRDSIk, hRDSIp, dRF, Ne.symm dRF, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTR, Ne.symm dTR, dDR, Ne.symm dDR, hBk, e1, e1', e4, hG, hGe, gRL, gRLm, gRLv, gCU, gCUv, gM, gMv, hMo, hMk, hR, hRk, hRl, hRc, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   obtain ⟨dME, hMEk⟩ := hMEc
   refine ⟨by js_norm [CallableC, hlt2 fME hMEo, hME2, hMEk, dMF, dMT, dMD, Ne.symm dMF, Ne.symm dMT, Ne.symm dMD], ?_⟩
-  refine wp_mono (hMEf _ _ ?fr3 ?bs ?be ?pt ?pp ?sel (by simp; omega)) ?_
+  refine wp_mono (hMEf _ _ ?fr3 hHI ?bs ?be ?pt ?pp ?sel (by simp; omega)) ?_
   case sel =>
     exact SelInfo.setEnv_modify (SelInfo.setProp (SelInfo.setProp (SelInfo.setEnv_modify hSel2 hGd2 rfl (by simp))
       hRDSI _ _) hRSI _ _) (by simpa using hGd2)

@@ -12,12 +12,12 @@ fb = binders(BM, "cbm_spec")
 drop_outer = {"hHSC", "hCCC", "hHSc", "hCCc", "hf"}
 outer = [f"{k}{nm} : {t}{'}' if k == '{' else ')'}" for nm, k, t in fb if nm not in drop_outer]
 sb, _ = compose(SE, "hsc_spec", "S_", subst={"fo": "fHS", "t": ".undefined", "E": "E"}, given={},
-                drop=("n", "h", "s", "hf", "hlt"))
+                drop=("n", "h", "s", "hf", "hlt", "hHI"))
 # its premises over frames from its entry state: over frames from cbm's, widened by FB
 WID = {"hNN": 2, "hTL": 1, "hCE": 2}
 sb = [b.replace("DomRead eng answer HI n s {} E", "DomRead eng answer HI n s (FB d.env) E")
        .replace("∀ w, Frame {} s w →", "∀ w, Frame (FB d.env) s w →") for b in sb]
-s_given = " ".join(f"({nm} := fun w' h1 hw' => S_{nm} w' h1 (frame_then_empty hw hw'))" if a == 2
+s_given = " ".join(f"({nm} := fun w' h1 hw' hi => S_{nm} w' h1 (frame_then_empty hw hw') hi)" if a == 2
                    else f"({nm} := fun w' hw' => S_{nm} w' (frame_then_empty hw hw'))" for nm, a in WID.items())
 cb, _ = compose(BM, "cbmc_root", "C_", subst={"fo": "fCC", "t": ".undefined", "R": "R", "bG": "bG", "oG": "oG"},
                 given={}, drop=("n", "h", "s", "hf", "hlt", "hG", "hGe", "hGN", "hGNv", "hGNm", "bdN"))
@@ -35,9 +35,9 @@ stmt = f"""theorem cbm_full {binds} :
       {POST} := by
   refine cbm_spec {fargs} (hf := by omega) (hHSc := ⟨_, S_hk⟩) (hCCc := ⟨_, C_hk⟩) (hHSC := ?hHSC) (hCCC := ?hCCC)
   case hHSC =>
-    intro w h1 hw hfw
+    intro w h1 hw hHI1 hfw
     apply ReactSelection.hsc_spec (s := w) (fo := fHS) (t := .undefined) (E := E) {s_imp}
-      (hf := by omega) (hlt := lt_heap_of_frame hw hHSo) {s_given}
+      (hf := by omega) (hlt := lt_heap_of_frame hw hHSo) (hHI := hHI1) {s_given}
     all_goals rebase_tac hw
   case hCCC =>
     intro w h1 hw hfw hN

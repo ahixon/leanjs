@@ -108,9 +108,10 @@ theorem cbm_full {n : Nat}
     (hGDc : ∃ dd, (s.objEntry fGD).kind = .func dd)
     (hHSo : fHS < s.heap.size)
     (hCCo : fCC < s.heap.size)
-    (hGDC : ∀ w h1, Frame (FB d.env) s w → 200 ≤ w.fuel →
+    (hGDC : ∀ w h1, Frame (FB d.env) s w → HI h1 → 200 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fGD) .undefined #[.obj Cont]) w fun v w' h' =>
         v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 200 ∧ h' = h1)
+    (hHI : HI h)
     {S_d : FuncData}
     {S_fTL : ObjId}
     {S_bdTL : BuiltinData}
@@ -171,11 +172,11 @@ theorem cbm_full {n : Nat}
         (∃ v a b c, (w.objEntry SI).props.get? (.str (JSStr.ofString "selectionRange")) = some (.data v a b c)) ∧
         BindIs w d.env (JSStr.ofString "selectionInformation") (.obj SI)) ∧
       BindIs w d.env (JSStr.ofString "eventsEnabled") ev0 ∧ BindIs w d.env (JSStr.ofString "_enabled") (.bool false) := by
-  refine cbm_spec (fo := fo) (d := d) (t := t) (bG := bG) (oG := oG) (bdEv := bdEv) (bdEn := bdEn) (bdGD := bdGD) (bdHS := bdHS) (bdSI := bdSI) (bdNE := bdNE) (bdCC := bdCC) (bdAV := bdAV) (FR := FR) (R := R) (Cont := Cont) (E := E) (Rc := Rc) (K := K) (fGD := fGD) (fHS := fHS) (fCC := fCC) (ev0 := ev0) (lanes := lanes) (sf := sf) (cw := cw) (ce := ce) (cc := cc) (aw := aw) (ae := ae) (ac := ac) (tw := tw) (te := te) (tc := tc) (kw := kw) (ke := ke) (kc := kc) (sw := sw) (se := se) (sc := sc) (hlt := hlt) (hk := hk) (hcode := hcode) (hcls := hcls) (hmode := hmode) (hG := hG) (hGe := hGe) (hGEv := hGEv) (hGEvm := hGEvm) (hGEvi := hGEvi) (hGEn := hGEn) (hGEnv := hGEnv) (hGEnm := hGEnm) (hGGD := hGGD) (hGGDv := hGGDv) (hGHS := hGHS) (hGHSv := hGHSv) (hGSI := hGSI) (hGSIm := hGSIm) (hGSIi := hGSIi) (hGNE := hGNE) (hGNEm := hGNEm) (hGNEi := hGNEi) (hGCC := hGCC) (hGCCv := hGCCv) (hGAV := hGAV) (hGAVm := hGAVm) (hGAVi := hGAVi) (hFR := hFR) (hFRk := hFRk) (hFRc := hFRc) (hR := hR) (hRk := hRk) (hRa := hRa) (hRt := hRt) (hRc := hRc) (hRs := hRs) (hsf := hsf) (hlanes := hlanes) (hGDo := hGDo) (hGDc := hGDc) (hHSo := hHSo) (hCCo := hCCo) (hGDC := hGDC) (hf := by omega) (hHSc := ⟨_, S_hk⟩) (hCCc := ⟨_, C_hk⟩) (hHSC := ?hHSC) (hCCC := ?hCCC)
+  refine cbm_spec (fo := fo) (d := d) (t := t) (bG := bG) (oG := oG) (bdEv := bdEv) (bdEn := bdEn) (bdGD := bdGD) (bdHS := bdHS) (bdSI := bdSI) (bdNE := bdNE) (bdCC := bdCC) (bdAV := bdAV) (FR := FR) (R := R) (Cont := Cont) (E := E) (Rc := Rc) (K := K) (fGD := fGD) (fHS := fHS) (fCC := fCC) (ev0 := ev0) (lanes := lanes) (sf := sf) (cw := cw) (ce := ce) (cc := cc) (aw := aw) (ae := ae) (ac := ac) (tw := tw) (te := te) (tc := tc) (kw := kw) (ke := ke) (kc := kc) (sw := sw) (se := se) (sc := sc) (hlt := hlt) (hk := hk) (hcode := hcode) (hcls := hcls) (hmode := hmode) (hG := hG) (hGe := hGe) (hGEv := hGEv) (hGEvm := hGEvm) (hGEvi := hGEvi) (hGEn := hGEn) (hGEnv := hGEnv) (hGEnm := hGEnm) (hGGD := hGGD) (hGGDv := hGGDv) (hGHS := hGHS) (hGHSv := hGHSv) (hGSI := hGSI) (hGSIm := hGSIm) (hGSIi := hGSIi) (hGNE := hGNE) (hGNEm := hGNEm) (hGNEi := hGNEi) (hGCC := hGCC) (hGCCv := hGCCv) (hGAV := hGAV) (hGAVm := hGAVm) (hGAVi := hGAVi) (hFR := hFR) (hFRk := hFRk) (hFRc := hFRc) (hR := hR) (hRk := hRk) (hRa := hRa) (hRt := hRt) (hRc := hRc) (hRs := hRs) (hsf := hsf) (hlanes := hlanes) (hGDo := hGDo) (hGDc := hGDc) (hHSo := hHSo) (hCCo := hCCo) (hGDC := hGDC) (hHI := hHI) (hf := by omega) (hHSc := ⟨_, S_hk⟩) (hCCc := ⟨_, C_hk⟩) (hHSC := ?hHSC) (hCCC := ?hCCC)
   case hHSC =>
-    intro w h1 hw hfw
+    intro w h1 hw hHI1 hfw
     apply ReactSelection.hsc_spec (s := w) (fo := fHS) (t := .undefined) (E := E) (d := S_d) (fTL := S_fTL) (bdTL := S_bdTL) (nm := S_nm) (ce := S_ce)
-      (hf := by omega) (hlt := lt_heap_of_frame hw hHSo) (hNN := fun w' h1 hw' => S_hNN w' h1 (frame_then_empty hw hw')) (hTL := fun w' hw' => S_hTL w' (frame_then_empty hw hw')) (hCE := fun w' h1 hw' => S_hCE w' h1 (frame_then_empty hw hw'))
+      (hf := by omega) (hlt := lt_heap_of_frame hw hHSo) (hHI := hHI1) (hNN := fun w' h1 hw' hi => S_hNN w' h1 (frame_then_empty hw hw') hi) (hTL := fun w' hw' => S_hTL w' (frame_then_empty hw hw')) (hCE := fun w' h1 hw' hi => S_hCE w' h1 (frame_then_empty hw hw') hi)
     all_goals rebase_tac hw
   case hCCC =>
     intro w h1 hw hfw hN
