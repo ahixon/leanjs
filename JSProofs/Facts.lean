@@ -74,6 +74,30 @@ theorem eval_union (a : Atoms) (f g : SFoot) : (f.union g).eval a = (f.eval a).u
 def inRange (a : Atoms) (f : SFoot) : Bool :=
   f.binds.all (fun p => decide (p.1 < a.envs.length)) && f.props.all (fun p => decide (p.1 < a.objs.length))
 
+/-- Every entry of `f` is one of `g`'s (and `f` queues jobs only if `g` may). -/
+def sub (f g : SFoot) : Bool :=
+  f.binds.all (fun p => g.binds.contains p) && f.props.all (fun p => g.props.contains p) && (!f.jobs || g.jobs)
+
+/-- A frame through a footprint within another's is one through the other's. -/
+theorem frame_sub {a : Atoms} {f g : SFoot} {s w : State} (hF : Frame (f.eval a) s w) (h : f.sub g = true) :
+    Frame (g.eval a) s w := by
+  simp only [sub, Bool.and_eq_true, List.all_eq_true, Bool.or_eq_true, Bool.not_eq_true'] at h
+  obtain ⟨⟨hb, hp⟩, hj⟩ := h
+  refine frame_mono hF ?_ ?_ ?_
+  · intro q hq
+    simp only [eval, List.mem_map] at hq ⊢
+    obtain ⟨r, hr, rfl⟩ := hq
+    exact ⟨r, List.contains_iff_mem.mp (hb r hr), rfl⟩
+  · intro q hq
+    simp only [eval, List.mem_map] at hq ⊢
+    obtain ⟨r, hr, rfl⟩ := hq
+    exact ⟨r, List.contains_iff_mem.mp (hp r hr), rfl⟩
+  · intro hg
+    simp only [eval] at hg ⊢
+    cases hj with
+    | inl h => exact h
+    | inr h => rw [hg] at h; cases h
+
 end SFoot
 
 /-- The place a fact reads. -/
@@ -88,12 +112,18 @@ inductive Loc where
   | bind (e : Nat) (x : JSStr)
   /-- A record's being declarative or a function's, and its outer record: no footprint changes them. -/
   | record (e : Nat)
+  /-- All of a record: kept by a frame that changes none of its bindings. -/
+  | recordAll (e : Nat)
+  /-- Every state a frame through `f` reaches: kept by a frame within `f`. -/
+  | closed (f : SFoot)
 
 /-- The place lies outside the footprint (decided on atoms). -/
 def Loc.apart (a : Atoms) (f : SFoot) : Loc → Bool
   | .pure | .obj _ | .record _ => true
   | .prop o k => f.inRange a && decide (o < a.objs.length) && !f.props.contains (o, k)
   | .bind e x => f.inRange a && decide (e < a.envs.length) && !f.binds.contains (e, x)
+  | .recordAll e => f.inRange a && decide (e < a.envs.length) && f.binds.all (fun p => p.1 != e)
+  | .closed g => f.sub g
 
 theorem Loc.apart_prop {a : Atoms} {f : SFoot} {o : Nat} {k : PropKey} (hw : a.Wf)
     (h : (Loc.prop o k).apart a f = true) : (f.eval a).props.contains (a.obj o, k) = false := by
@@ -172,6 +202,41 @@ def record (e : Nat) (oG : Option EnvId) : Fact a :=
     fun _ _ _ _ hF _ ⟨hl, bs, hd⟩ => by
       obtain ⟨bw, hdw, -⟩ := declLike_frame hF hl hd
       exact ⟨envs_frame hF hl, bw, hdw⟩⟩
+
+theorem Loc.apart_recordAll {f : SFoot} {e : Nat} (hw : a.Wf) (h : (Loc.recordAll e).apart a f = true) :
+    (f.eval a).binds.all (fun p => p.1 != a.env e) = true := by
+  simp only [Loc.apart, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true, bne_iff_ne, ne_eq] at h
+  obtain ⟨⟨hr, he⟩, hn⟩ := h
+  simp only [SFoot.inRange, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at hr
+  simp only [SFoot.eval, List.all_eq_true, List.mem_map, bne_iff_ne, ne_eq]
+  rintro _ ⟨p, hp, rfl⟩ hq
+  exact hn p hp (Atoms.env_inj hw (hr.1 p hp) he hq)
+
+/-- Record atom `e` is a declarative or function record whose bindings are exactly `bs` (outer `oG`). -/
+def recordIs (e : Nat) (bs : HashMap JSStr Binding) (oG : Option EnvId) : Fact a :=
+  ⟨.recordAll e, fun s => a.env e < s.envs.size ∧ Scope.declLike? (s.envEntry (a.env e)) = some (bs, oG),
+    fun _ _ _ hw hF hap ⟨hl, hd⟩ => ⟨envs_frame hF hl, by rw [envEntry_frame hF hl (Loc.apart_recordAll hw hap)]; exact hd⟩⟩
+
+/-- `P` holds at every state a frame through `f` reaches from here (a read of the DOM, a string's method, …). -/
+def closed (f : SFoot) (P : State → Prop) : Fact a :=
+  ⟨.closed f, fun s => ∀ w, Frame (f.eval a) s w → P w,
+    fun g _ _ _ hF hap h w hw => h w (SFoot.frame_sub (by
+      have := frame_trans hF hw
+      rw [← SFoot.eval_union] at this
+      exact this) (by
+        simp only [Loc.apart] at hap
+        simp only [SFoot.sub, SFoot.union, Bool.and_eq_true, List.all_eq_true, List.mem_append, Bool.or_eq_true,
+          Bool.not_eq_true', Bool.or_eq_false_iff] at hap ⊢
+        obtain ⟨⟨hb, hp⟩, hj⟩ := hap
+        refine ⟨⟨fun q hq => hq.elim (hb q) (fun h => List.contains_iff_mem.mpr h),
+          fun q hq => hq.elim (hp q) (fun h => List.contains_iff_mem.mpr h)⟩, ?_⟩
+        cases hj with
+        | inl h => cases hf : f.jobs <;> simp_all
+        | inr h => exact .inr h))⟩
+
+/-- A closed fact through a wider footprint gives it through a narrower one. -/
+theorem closed_mono {f g : SFoot} {P : State → Prop} {s : State} (h : (closed (a := a) g P).holds s)
+    (hs : f.sub g = true) : (closed (a := a) f P).holds s := fun w hw => h w (SFoot.frame_sub hw hs)
 
 /-- A binding fact read in the record's bindings `bs`. -/
 theorem bind_get {e : Nat} {oG : Option EnvId} {x : JSStr} {P : Option Binding → Prop} {s : State}
