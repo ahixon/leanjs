@@ -58,11 +58,26 @@ theorem objEntry_push_old' (st : State) (W : Obj) (o : ObjId) (h : o < st.heap.s
 theorem size_push (st : State) (W : Obj) : (st.withHeap (·.push W)).heap.size = st.heap.size + 1 := by
   simp [State.withHeap]
 
+/-- **[[Get]] of a String exotic object's own data property** (`%String.prototype%` is one: a `String` object whose
+string is empty): its own properties come first, before the string's indices. -/
+theorem get_strPrim_data (n : Nat) (o : ObjId) (k : PropKey) (r : Value) (s : State) (t : JSStr) (v : Value)
+    (w e c : Bool) (h : o < s.heap.size) (hk : (s.objEntry o).kind = .primitive (.str t))
+    (hp : (s.objEntry o).props.get? k = some (.data v w e c)) :
+    ES.get (n + 3) o k r s = .ok v s := by
+  rw [show n + 3 = (n + 2) + 1 from rfl, ES.get.eq_2]
+  simp only [M.bind_eq, M.bind_apply, objKind, readObj_entry' _ _ _ h, M.bindRes_ok, hk]
+  rw [show n + 2 = (n + 1) + 1 from rfl, ordinaryGet.eq_2]
+  simp only [M.bind_eq, M.bind_apply]
+  rw [getOwnProperty.eq_2]
+  simp only [M.bind_eq, M.bind_apply, objKind, readObj_entry' _ _ _ h, M.bindRes_ok, hk, ownProp, hp]
+  rfl
+
 /-- **`str.k`**, `k` neither `length` nor an index: `%String.prototype%`'s data property `k`; the state gains the
 wrapper. -/
 theorem getRefValue_str (s k : JSStr) (strict : Bool) (st : State) (SP : ObjId) (v : Value) (w e c : Bool)
     (hSP : st.curRealm.intrinsics.get? "%String.prototype%" = some SP) (hlt : SP < st.heap.size)
-    (hk : (st.objEntry SP).kind.isPlain = true) (hv : (st.objEntry SP).props.get? (.str k) = some (.data v w e c))
+    (hk : (st.objEntry SP).kind.isPlain = true ∨ ∃ t, (st.objEntry SP).kind = .primitive (.str t))
+    (hv : (st.objEntry SP).props.get? (.str k) = some (.data v w e c))
     (hkl : (k == kLength) = false) (hki : k.toIndex? = none) :
     getRefValue (.prop (.str s) (.str k) strict none) st = .ok v (st.withHeap (·.push (strWrapper SP s))) := by
   simp only [getRefValue, Value.isNullish, toPropertyKey, M.bind_eq, M.bind_apply, hkl, hki]
@@ -89,9 +104,11 @@ theorem getRefValue_str (s k : JSStr) (strict : Bool) (st : State) (SP : ObjId) 
   rw [getPrototypeOf.eq_2]
   simp only [M.bind_eq, M.bind_apply, objKind, objProto, readObj_entry' _ _ _ hW, hWe, M.bindRes_ok, strWrapper_kind,
     strWrapper_proto]
-  rw [show (19997 + 1 : Nat) = 19995 + 3 from rfl,
-    get_entry_data 19995 SP (.str k) (.str s) st2 hSPlt (by rw [hSPe]; exact hk) (by rw [hSPe, hv]; rfl), hSPe, hv]
-  rfl
+  rw [show (19997 + 1 : Nat) = 19995 + 3 from rfl]
+  rcases hk with hk | ⟨t, hk⟩
+  · rw [get_entry_data 19995 SP (.str k) (.str s) st2 hSPlt (by rw [hSPe]; exact hk) (by rw [hSPe, hv]; rfl), hSPe, hv]
+    rfl
+  · rw [get_strPrim_data 19995 SP (.str k) (.str s) st2 t v w e c hSPlt (by rw [hSPe]; exact hk) (by rw [hSPe]; exact hv)]
 
 end Logic
 
@@ -114,7 +131,8 @@ variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
 /-- `str.k` reads `%String.prototype%`'s data property `k` (not `length`, not an index). -/
 def StrGets (s : State) (str : JSStr) (k : JSStr) (P : Value → Prop) : Prop :=
   ∃ SP v w e c, s.curRealm.intrinsics.get? "%String.prototype%" = some SP ∧ SP < s.heap.size ∧
-    (s.objEntry SP).kind.isPlain = true ∧ (s.objEntry SP).props.get? (.str k) = some (.data v w e c) ∧
+    ((s.objEntry SP).kind.isPlain = true ∨ ∃ t, (s.objEntry SP).kind = .primitive (.str t)) ∧
+    (s.objEntry SP).props.get? (.str k) = some (.data v w e c) ∧
     (k == kLength) = false ∧ k.toIndex? = none ∧ P v
 
 /-- **`str.k(args)`** on a primitive string: `%String.prototype%`'s method `k` called with the string as `this`; the
