@@ -16,7 +16,7 @@ outer = [f"{k}{nm} : {t}{'}' if k == '{' else ')'}" for nm, k, t in fb if nm not
 
 cb = binders(CR, "cme_root_full")
 subst = {"fo": "fC", "t": ".undefined", "R": "R", "FR": "FR", "lv": "lv", "bG": "bG", "oG": "oG"}
-drop = {"n", "h", "s", "hf", "hlt", "hG", "hGe"}
+drop = {"n", "h", "s", "hf", "hlt", "hG", "hGe", "hHI"}
 ren = {}
 for nm, k, t in cb:
     if nm in drop: continue
@@ -39,7 +39,7 @@ for nm, k, t in cb:
     tt = _rename(t, ren)
     if nm in QUANT:
         tt = widen(tt)
-        given[nm] = (f"fun w' h1 hw' => M_{nm} w' h1 (frame_trans hw hw')" if QUANT[nm] == 2
+        given[nm] = (f"fun w' h1 hw' hi => M_{nm} w' h1 (frame_trans hw hw') hi" if QUANT[nm] == 2
                      else f"fun w' hw' => M_{nm} w' (frame_trans hw hw')")
     added.append(f"{k}M_{nm} : {tt}{'}' if k == '{' else ')'}")
 
@@ -66,7 +66,7 @@ fpre_names = ["pendingEffectsStatus", "rootViewTransitionAffected", "inUpdateVie
 
 stmt = f"""theorem fme_full {binds} :
     WP eng answer (n + 10) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + 5700 ∧ (∃ w0, {PC} w0 h') ∧
+      v = .undefined ∧ s.fuel ≤ w.fuel + 5700 ∧ (∃ w0, {PC} w0 h') ∧ HI h' ∧
       Frame ((({FPRE}.union {FPC})).union ⟨[(d.env, JSStr.ofString "selectionInformation"),
         (d.env, JSStr.ofString "eventsEnabled"), (d.env, JSStr.ofString "_enabled")],
         [(FR, .str (JSStr.ofString "current"))], false⟩) s w ∧
@@ -87,21 +87,21 @@ stmt = f"""theorem fme_full {binds} :
     rw [hp1]
     exact ⟨dMS, dMT, dMD, dMF, dMG⟩
   case hC =>
-    intro w h1 hw hfw
+    intro w h1 hw hHI1 hfw
     obtain ⟨bw, hdw, hbw⟩ := declLike_frame hw hG hGe
     have hdw' : Scope.declLike? (w.envEntry M_d.env) = some (bw, oG) := by rw [M_hdenv]; exact hdw
     have hGw : M_d.env < w.envs.size := by rw [M_hdenv]; exact lt_envs_of_frame hw hG
     refine wp_mono (Q := fun v w' h' => v = .undefined ∧ w.fuel ≤ w'.fuel + 4700 ∧ {PC} w' h' ∧
       Frame {FPC} w w') ?_ ?_
     · apply ReactCommitRoot.cme_root_full (s := w) (n := n) (bG := bw) {imp_args}
-        (hf := hfw) (hlt := lt_heap_of_frame hw hCo) (hG := hGw) (hGe := hdw') {exp_args}
+        (hf := hfw) (hlt := lt_heap_of_frame hw hCo) (hG := hGw) (hGe := hdw') (hHI := hHI1) {exp_args}
       all_goals first | rebase_fpre hw, hbw |
         (simp only [M_T_hdenv, M_CT_T_hdenv, M_CT_BT_CH_hdenv]; first | exact hdw' | exact hGw) |
         (rw [hw.obj_eq _ (by with_reducible assumption) (fun k hk => by
           simp [FPRE] at hk; rcases hk with ⟨hh, -⟩ | ⟨hh, -⟩ <;> exact absurd hh (by assumption))] <;>
           with_reducible assumption)
     · rintro v w' h' ⟨rfl, hfu, hP, hF⟩
-      exact ⟨rfl, by omega, hP, hF⟩
+      exact ⟨rfl, by omega, hP, hP.2.2, hF⟩
 """
 out = f'''import JSProofs.ReactFlushMutation
 import JSProofs.ReactCommitRootFull

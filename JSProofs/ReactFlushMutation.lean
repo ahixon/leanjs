@@ -26,7 +26,7 @@ def FPRE (g : EnvId) (RSI RDSI : ObjId) : Footprint :=
    [(RSI, .str (JSStr.ofString "T")), (RDSI, .str (JSStr.ofString "p"))], false⟩
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = FMEGen.flushMutationEffects_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -78,20 +78,20 @@ theorem fme_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (dTD : RSI ≠ RDSI) (dTF : RSI ≠ FR) (dDF : RDSI ≠ FR) (dTS : RSI ≠ SI) (dDS : RDSI ≠ SI) (dFS : FR ≠ SI)
     (dTR : RSI ≠ R) (dDR : RDSI ≠ R) (dTC : RSI ≠ fC) (dDC : RDSI ≠ fC) (dTG : RSI ≠ fGD) (dDG : RDSI ≠ fGD)
     {KC : Nat} {fpC : Footprint} {PC : State → σ → Prop}
-    (hC : ∀ w h1, Frame (FPRE d.env RSI RDSI) s w → KC ≤ w.fuel →
+    (hC : ∀ w h1, Frame (FPRE d.env RSI RDSI) s w → HI h1 → KC ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fC) .undefined #[.obj R, .obj FR, lv]) w fun v w' h' =>
-        v = .undefined ∧ w.fuel ≤ w'.fuel + KC ∧ PC w' h' ∧ Frame fpC w w')
+        v = .undefined ∧ w.fuel ≤ w'.fuel + KC ∧ PC w' h' ∧ HI h' ∧ Frame fpC w w')
     (hfC : KC + 700 ≤ s.fuel)
     (hfpC : ∀ p, p ∈ fpC.binds → p.1 = d.env ∧ p.2 ∉ [JSStr.ofString "selectionInformation",
       JSStr.ofString "getActiveElementDeep", JSStr.ofString "eventsEnabled", JSStr.ofString "_enabled",
       JSStr.ofString "executionContext", JSStr.ofString "ReactDOMSharedInternals", JSStr.ofString "ReactSharedInternals",
       JSStr.ofString "pendingEffectsStatus"])
     (hfpCp : ∀ p, p ∈ fpC.props → p.1 ≠ SI ∧ p.1 ≠ RSI ∧ p.1 ≠ RDSI ∧ p.1 ≠ FR ∧ p.1 ≠ fGD)
-    (hGDC : ∀ w h1, Frame ((FPRE d.env RSI RDSI).union fpC) s w → 100 ≤ w.fuel →
+    (hGDC : ∀ w h1, Frame ((FPRE d.env RSI RDSI).union fpC) s w → HI h1 → 100 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fGD) .undefined #[.obj Cont]) w fun v w' h' =>
-        v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 200 ∧ h' = h1) :
+        v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 200 ∧ h' = h1) (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>
-      v = .undefined ∧ s.fuel ≤ w.fuel + KC + 700 ∧ (∃ w0, PC w0 h') ∧
+      v = .undefined ∧ s.fuel ≤ w.fuel + KC + 700 ∧ (∃ w0, PC w0 h') ∧ HI h' ∧
       Frame (((FPRE d.env RSI RDSI).union fpC).union ⟨[(d.env, JSStr.ofString "selectionInformation"),
         (d.env, JSStr.ofString "eventsEnabled"), (d.env, JSStr.ofString "_enabled")],
         [(FR, .str (JSStr.ofString "current"))], false⟩) s w ∧
@@ -123,10 +123,10 @@ theorem fme_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   simp only [FMEGen.flushMutationEffects]
   js_until [] [e1, e1', e2, e2', e4, e5, hG, hGe, hGS, hGSv, hGSm, hGR, hGRv, hGF, hGFv, hGL, hGLv, hGT, hGTv, hGD, hGDv, hGE, hGEv, hGEm, hGU, hGUm, hGUi, hGA, hGAm, hGAi, hGC, hGCv, hR, hRk, hRf, hRs, hsf, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTS, Ne.symm dTS, dDS, Ne.symm dDS, dFS, Ne.symm dFS, dTR, Ne.symm dTR, dDR, Ne.symm dDR, dTC, Ne.symm dTC, dDC, Ne.symm dDC, dTG, Ne.symm dTG, dDG, Ne.symm dDG, hRSI, hRSIk, hRSIt, hRDSI, hRDSIk, hRDSIp, hCo, hCk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hCo, hCk, dTC, Ne.symm dTC, dDC, Ne.symm dDC], ?_⟩
-  refine wp_mono (hC _ _ ?_ ?_) ?_
+  refine wp_mono (hC _ _ ?_ hHI ?_) ?_
   · unfold FPRE; frame_go' [*]
   · simp; omega
-  rintro v1 w1 h1 ⟨rfl, hfu1, hP1, hF1⟩
+  rintro v1 w1 h1 ⟨rfl, hfu1, hP1, hHI1, hF1⟩
   have hEa := envEntry_frame hF1 (e := s.envs.size) (by js_norm [e1, e1', e2, e2', e4, e5, hG, hGe, hGS, hGSv, hGSm, hGR, hGRv, hGF, hGFv, hGL, hGLv, hGT, hGTv, hGD, hGDv, hGE, hGEv, hGEm, hGU, hGUm, hGUi, hGA, hGAm, hGAi, hGC, hGCv, hR, hRk, hRf, hRs, hsf, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTS, Ne.symm dTS, dDS, Ne.symm dDS, dFS, Ne.symm dFS, dTR, Ne.symm dTR, dDR, Ne.symm dDR, dTC, Ne.symm dTC, dDC, Ne.symm dDC, dTG, Ne.symm dTG, dDG, Ne.symm dDG, hRSI, hRSIk, hRSIt, hRDSI, hRDSIk, hRDSIp, hCo, hCk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
     (List.all_eq_true.mpr fun p hp => by simp [(hfpC p hp).1, e1])
   have hSb : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (by js_norm [e1, e1', e2, e2', e4, e5, hG, hGe, hGS, hGSv, hGSm, hGR, hGRv, hGF, hGFv, hGL, hGLv, hGT, hGTv, hGD, hGDv, hGE, hGEv, hGEm, hGU, hGUm, hGUi, hGA, hGAm, hGAi, hGC, hGCv, hR, hRk, hRf, hRs, hsf, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTS, Ne.symm dTS, dDS, Ne.symm dDS, dFS, Ne.symm dFS, dTR, Ne.symm dTR, dDR, Ne.symm dDR, dTC, Ne.symm dTC, dDC, Ne.symm dDC, dTG, Ne.symm dTG, dDG, Ne.symm dDG, hRSI, hRSIk, hRSIt, hRDSI, hRDSIk, hRDSIp, hCo, hCk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) hF1.envs_le
@@ -149,7 +149,7 @@ theorem fme_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   have hlt1 : ∀ o, o < s.heap.size → o < w1.heap.size := fun o ho => Nat.lt_of_lt_of_le ho hFs1.heap_le
   js_until [] [hlt1 FR hFR, hlt1 SI hSI, hlt1 RSI hRSI, hlt1 RDSI hRDSI, hlt1 fGD hGDo, hEa, hSb, hGd, hd1, hb0, hb1, hb2, hb3, hb4, hb5, hb6, hb7, hobj SI (by simp), hobj RSI (by simp), hobj RDSI (by simp), hobj FR (by simp), hobj fGD (by simp), hfw1, hGSI, hGSIv, hGGD, hGGDv, hSI, hSIk, hSIf, hSIr, hFRc, hFR, hFRk, hGDo, hGDk, e1, e1', e2, e2', e4, e5, hG, hGe, hGS, hGSv, hGSm, hGR, hGRv, hGF, hGFv, hGL, hGLv, hGT, hGTv, hGD, hGDv, hGE, hGEv, hGEm, hGU, hGUm, hGUi, hGA, hGAm, hGAi, hGC, hGCv, hR, hRk, hRf, hRs, hsf, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTS, Ne.symm dTS, dDS, Ne.symm dDS, dFS, Ne.symm dFS, dTR, Ne.symm dTR, dDR, Ne.symm dDR, dTC, Ne.symm dTC, dDC, Ne.symm dDC, dTG, Ne.symm dTG, dDG, Ne.symm dDG, hRSI, hRSIk, hRSIt, hRDSI, hRDSIk, hRDSIp, hCo, hCk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hlt1 FR hFR, hlt1 SI hSI, hlt1 RSI hRSI, hlt1 RDSI hRDSI, hlt1 fGD hGDo, hEa, hSb, hGd, hd1, hb0, hb1, hb2, hb3, hb4, hb5, hb6, hb7, hobj SI (by simp), hobj RSI (by simp), hobj RDSI (by simp), hobj FR (by simp), hobj fGD (by simp), hfw1, hGSI, hGSIv, hGGD, hGGDv, hSI, hSIk, hSIf, hSIr, hFRc, hFR, hFRk, hGDo, hGDk, e1, e1', e2, e2', e4, e5, hG, hGe, hGS, hGSv, hGSm, hGR, hGRv, hGF, hGFv, hGL, hGLv, hGT, hGTv, hGD, hGDv, hGE, hGEv, hGEm, hGU, hGUm, hGUi, hGA, hGAm, hGAi, hGC, hGCv, hR, hRk, hRf, hRs, hsf, dTD, Ne.symm dTD, dTF, Ne.symm dTF, dDF, Ne.symm dDF, dTS, Ne.symm dTS, dDS, Ne.symm dDS, dFS, Ne.symm dFS, dTR, Ne.symm dTR, dDR, Ne.symm dDR, dTC, Ne.symm dTC, dDC, Ne.symm dDC, dTG, Ne.symm dTG, dDG, Ne.symm dDG, hRSI, hRSIk, hRSIt, hRDSI, hRDSIk, hRDSIp, hCo, hCk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (hGDC _ _ (frame_setEnv_new hFs1 (by simp) _) (by simp; omega)) ?_
+  refine wp_mono (hGDC _ _ (frame_setEnv_new hFs1 (by simp) _) hHI1 (by simp; omega)) ?_
   rintro v2 w2 h2 ⟨rfl, hF2, hfu2, rfl⟩
   have hE2 := envEntry_frame0 hF2 (e := s.envs.size) (by simp; omega)
   have hE2d := envEntry_frame0 hF2 (e := d.env) (by simp; omega)

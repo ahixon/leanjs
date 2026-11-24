@@ -22,10 +22,10 @@ FO = '⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩
 FD = f"(Footprint.union {F0} {FO})"
 FH = '⟨[(CT_BT_CH_d.env, JSStr.ofString "viewTransitionMutationContext")], [(CT_dom, .str CT_BT_CH_kP)], false⟩'
 FC = f"(Footprint.union {FO} {FH})"
-PCc = ('(fun w h => (∃ w0 h0, CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, CT_BT_CH_U_R2 w0 h) ∧ (∀ bm o, Scope.declLike? '
+PCc = ('(fun w h => (∃ w0 h0, CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, CT_BT_CH_U_R2 w0 h) ∧ HI h ∧ (∀ bm o, Scope.declLike? '
        '(w.envEntry d.env) = some (bm, o) → ∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ '
        'bd.mutable = true ∧ bd.value.isSome = true))')
-PCr = "(fun w h => (∃ w0 h0, CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, CT_BT_CH_U_R2 w0 h))"
+PCr = "(fun w h => (∃ w0 h0, CT_BT_CH_U_R1 w0 h0) ∧ (∃ w0, CT_BT_CH_U_R2 w0 h) ∧ HI h)"
 def mono(a, b):
     return f"(frame_then_empty {a} {b})"
 
@@ -36,41 +36,41 @@ cr = binders("JSProofs/ReactCommitRoot.lean", "cme_root")
 outer = fmt(cr, {"hGHC", "hRT", "hRE", "hPCst", "fpC", "PC", "hGHc", "hRTc", "hREc", "hfpC", "hfpCp", "KR", "hf"})
 outer.append("(hf : 5000 ≤ s.fuel)")
 gh, _ = compose("JSProofs/ReactHoistable.lean", "ghr_spec", "GH_",
-    subst={"fo": "fGH", "t": ".undefined", "s": "s", "Cont": "Cont", "n": "n + 7"}, given={"hlt": "hGHo"}, drop=("h", "hf"))
+    subst={"fo": "fGH", "t": ".undefined", "s": "s", "Cont": "Cont", "n": "n + 7"}, given={"hlt": "hGHo"}, drop=("h", "hf", "hHI"))
 gh = [b.replace("Frame {} s w →", f"Frame {F0} s w →").replace(" (n + 7) s {} ", f" (n + 7) s {F0} ") for b in gh]
 rt, _ = compose("JSProofs/ReactCommitTraverse.lean", "rtm_one", "T_",
     subst={"fo": "fRT", "t": ".undefined", "s": "s", "rv": ".obj FR", "lv": "lv", "P": "R", "C": "K", "bG": "bG",
            "oG": "oG", "fC": "fo"},
-    given={"hlt": "hRTo"}, drop=("n", "h", "hf", "hC", "hfpC", "hPCst", "fpC", "KC", "PC", "hCo", "hCc"))
+    given={"hlt": "hRTo"}, drop=("n", "h", "hf", "hC", "hfpC", "hPCst", "fpC", "KC", "PC", "hCo", "hCc", "hHI"))
 re_, _ = compose("JSProofs/ReactCommitRec.lean", "cre_spec", "RE_",
     subst={"fo": "fRE", "t": ".undefined", "s": "s", "F": "R", "fl": "fl", "fw": "fw", "fe": "fe", "fc": "fc"},
     given={"hlt": "hREo", "hF": "hR", "hFk": "hRk", "hFf": "hRf"}, drop=("n", "h", "hf"))
 ct, _ = compose("JSProofs/ReactCommitCounterFull.lean", "cme_counter_full", "CT_",
     subst={"fo": "fo", "d": "d", "t": ".undefined", "s": "s", "rv": ".obj FR", "lv": "lv", "bG": "bG", "oG": "oG", "K": "K"},
     given={"hlt": "hlt", "hk": "hk", "hcode": "hcode", "hcls": "hcls", "hmode": "hmode", "hG": "hG", "hGe": "hGe"},
-    drop=("n", "h", "hf", "BT_CH_U_bdV", "BT_CH_U_hGV", "BT_CH_U_hGVm", "BT_CH_U_hGVi"))
+    drop=("n", "h", "hf", "hHI", "BT_CH_U_bdV", "BT_CH_U_hGV", "BT_CH_U_hGVm", "BT_CH_U_hGVi"))
 ct = [b.replace(f"Frame {FO} s w →", f"Frame {FD} s w →").replace(f" n s {FO} ", f" n s {FD} ") for b in ct]
 extra = ["(T_hdenv : T_d.env = d.env)", "(hDR : CT_dom ≠ R)", "(hDRE : CT_dom ≠ fRE)",
          "{ksw kse ksc : Bool} (hKsib : (s.objEntry K).props.get? (.str (JSStr.ofString \"sibling\")) = some (.data .null ksw kse ksc))"]
 binds = "\n    ".join(outer + ["{K : ObjId}"] + gh + rt + re_ + ct + extra)
 
 dom_ct = ["BT_CH_U_hOC", "BT_CH_U_hNV", "BT_CH_U_hFC", "BT_CH_U_hLC", "BT_CH_U_hNT"]
-sp = {"hf": "hfw2", "hG": "lt_envs_of_frame hw0 hG", "hGe": "hd2", "BT_CH_U_bdV": "bdV'", "BT_CH_U_hGV": "hbV'",
+sp = {"hf": "hfw2", "hHI": "hHI2", "hG": "lt_envs_of_frame hw0 hG", "hGe": "hd2", "BT_CH_U_bdV": "bdV'", "BT_CH_U_hGV": "hbV'",
       "BT_CH_U_hGVm": "hbVm'", "BT_CH_U_hGVi": "hbVi'"}
-for nm in dom_ct: sp[nm] = f"fun w' h1 hw' => CT_{nm} w' h1 {monoS('hw0', 'hw' + chr(39))}"
+for nm in dom_ct: sp[nm] = f"fun w' h1 hw' hi => CT_{nm} w' h1 {monoS('hw0', 'hw' + chr(39))} hi"
 sp["BT_CH_U_hI"] = f"fun w' hw' => CT_BT_CH_U_hI w' {monoS('hw0', 'hw' + chr(39))}"
 ct_call = callargs("JSProofs/ReactCommitCounterFull.lean", "cme_counter_full", "CT_",
     {"fo": "fo", "d": "d", "t": ".undefined", "rv": ".obj FR", "lv": "lv", "bG": "bw2", "oG": "oG", "K": "K"}, sp)
 rt_call = callargs("JSProofs/ReactCommitTraverse.lean", "rtm_one", "T_",
     {"fo": "fRT", "t": ".undefined", "rv": ".obj FR", "lv": "lv", "P": "R", "C": "K", "bG": "bw", "oG": "oG", "fC": "fo",
      "fpC": FC, "KC": "4200", "PC": PCc},
-    {"hf": "by omega", "hC": "?hC", "hfpC": "?hfpCT", "hG": "by rw [T_hdenv]; exact lt_envs_of_frame hw hG", "hGe": "hd",
-     "hPCst": "fun w0 w' h hp _ hE => ⟨hp.1, hp.2.1, fun bm o hd' => hp.2.2 bm o (by rw [← hE _ (lt_envs_of_frame hw hG)]; exact hd')⟩",
+    {"hf": "by omega", "hHI": "hHI1", "hC": "?hC", "hfpC": "?hfpCT", "hG": "by rw [T_hdenv]; exact lt_envs_of_frame hw hG", "hGe": "hd",
+     "hPCst": "fun w0 w' h hp _ hE => ⟨hp.1, hp.2.1, hp.2.2.1, fun bm o hd' => hp.2.2.2 bm o (by rw [← hE _ (lt_envs_of_frame hw hG)]; exact hd')⟩",
      "hCo": "lt_heap_of_frame hw hlt", "hCc": "⟨_, by rw [hw.obj_eq fo hlt (fun _ hh => by simp at hh)]; exact hk⟩"})
 gh_call = callargs("JSProofs/ReactHoistable.lean", "ghr_spec", "GH_", {"fo": "fGH", "t": ".undefined", "Cont": "Cont"},
-    {"hf": "by omega", "hRN": f"fun w' hw' => GH_hRN w' {mono('hw', 'hw' + chr(39))}",
-     "hCall": f"fun w' h1 hw' => GH_hCall w' h1 {mono('hw', 'hw' + chr(39))}",
-     "hNT": f"fun w' h1 hw' => GH_hNT w' h1 {mono('hw', 'hw' + chr(39))}"})
+    {"hf": "by omega", "hHI": "hHI1", "hRN": f"fun w' hw' => GH_hRN w' {mono('hw', 'hw' + chr(39))}",
+     "hCall": f"fun w' h1 hw' hi => GH_hCall w' h1 {mono('hw', 'hw' + chr(39))} hi",
+     "hNT": f"fun w' h1 hw' hi => GH_hNT w' h1 {mono('hw', 'hw' + chr(39))} hi"})
 re_call = callargs("JSProofs/ReactCommitRec.lean", "cre_spec", "RE_",
     {"fo": "fRE", "t": ".undefined", "F": "R", "fl": "fl", "fw": "fw", "fe": "fe", "fc": "fc"}, {"hf": "by omega"})
 cr_args = " ".join(f"({nm} := {nm})" for nm, k, t in cr if k == "(" and nm not in
@@ -94,17 +94,17 @@ stmt = f"""theorem cme_root_full {binds} :
     subst hp
     exact ⟨hDR, hDRE⟩
   case hGHC =>
-    intro w h1 hw hfw
-    refine wp_mono (ReactHoistable.ghr_spec (s := w) {gh_call}) (fun _ _ _ ⟨_, hF, hfu⟩ => ⟨hF, by omega⟩)
+    intro w h1 hw hHI1 hfw
+    refine wp_mono (ReactHoistable.ghr_spec (s := w) {gh_call}) (fun _ _ _ ⟨_, hF, hfu, hh⟩ => ⟨hF, by omega, hh⟩)
     all_goals rebase_tac hw
   case hRT =>
-    intro w h1 hw hvt hfw
+    intro w h1 hw hHI1 hvt hfw
     obtain ⟨bw, hd, hbw⟩ := declLike_frame hw (e := d.env) hG hGe
     rw [← T_hdenv] at hd hbw
     refine wp_mono (ReactCommitTraverse.rtm_one (s := w) {rt_call}) ?postT
     case postT =>
       rintro v w' h' ⟨rfl, hfu, hPC, hF⟩
-      refine ⟨rfl, hfu, ⟨hPC.1, hPC.2.1⟩, hF, fun bm o hd' => hPC.2.2 bm o hd'⟩
+      refine ⟨rfl, hfu, ⟨hPC.1, hPC.2.1, hPC.2.2.1⟩, hF, fun bm o hd' => hPC.2.2.2 bm o hd'⟩
     case hfpCT =>
       intro p hp
       simp [Footprint.union] at hp
@@ -112,7 +112,7 @@ stmt = f"""theorem cme_root_full {binds} :
       · exact T_hdenv.symm
       · exact CT_BT_CH_hdenv.trans T_hdenv.symm
     case hC =>
-      intro w2 h2 hw2 hfw2
+      intro w2 h2 hw2 hHI2 hfw2
       have hw0 : Frame {FD} s w2 := frame_mono (frame_then_empty hw hw2)
         (fun p hp => List.mem_append.mpr (Or.inl hp)) (fun p hp => by simp at hp) (fun _ => rfl)
       obtain ⟨bw2, hd2, hbw2⟩ := declLike_frame (frame_then_empty hw hw2) (e := d.env) hG hGe

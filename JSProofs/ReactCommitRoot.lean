@@ -28,7 +28,7 @@ def F0 (g : EnvId) : Footprint :=
     (g, JSStr.ofString "tagCaches"), (g, JSStr.ofString "currentHoistableRoot")] := rfl
 
 section
-variable {eng : Engine} {σ : Type} {answer : HostAnswer σ}
+variable {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop}
 
 theorem simple (d : FuncData) (hc : d.code = CMEGen.commitMutationEffectsOnFiber_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
@@ -65,10 +65,10 @@ theorem cme_root {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hGHo : fGH < s.heap.size) (hGHc : ∃ dd, (s.objEntry fGH).kind = .func dd)
     (hRTo : fRT < s.heap.size) (hRTc : ∃ dd, (s.objEntry fRT).kind = .func dd)
     (hREo : fRE < s.heap.size) (hREc : ∃ dd, (s.objEntry fRE).kind = .func dd)
-    (hGHC : ∀ w h1, Frame (F0 d.env) s w → 300 ≤ w.fuel →
+    (hGHC : ∀ w h1, Frame (F0 d.env) s w → HI h1 → 300 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fGH) .undefined #[.obj Cont]) w fun v w' h' =>
-        Frame {} w w' ∧ w.fuel ≤ w'.fuel + 100)
-    (hRT : ∀ w h1, Frame (F0 d.env) s w →
+        Frame {} w w' ∧ w.fuel ≤ w'.fuel + 100 ∧ h' = h1)
+    (hRT : ∀ w h1, Frame (F0 d.env) s w → HI h1 →
       (∀ bm o, Scope.declLike? (w.envEntry d.env) = some (bm, o) →
         ∃ bd, bm[JSStr.ofString "viewTransitionMutationContext"]? = some bd ∧ bd.mutable = true ∧
           bd.value.isSome = true) → KR + 200 ≤ w.fuel →
@@ -84,7 +84,7 @@ theorem cme_root {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       WP eng answer (n + 1) h1 (callImpl eng (.obj fRE) .undefined #[.obj R]) w fun v w' h' =>
         Frame {} w w' ∧ w.fuel ≤ w'.fuel + 40 ∧ h' = h1 ∧ w'.heap = w.heap)
     (hPCst : ∀ w w' h', PC w h' → w'.heap = w.heap → (∀ e, e < s.envs.size → e ≠ d.env → w'.envEntry e = w.envEntry e) →
-      PC w' h') :
+      PC w' h') (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[.obj R, .obj FR, lv]) s fun v w h' =>
       v = .undefined ∧ s.fuel ≤ w.fuel + KR + 500 ∧ PC w h' ∧ Frame ((F0 d.env).union fpC) s w := by
   apply wp_callGen CMEGen.commitMutationEffectsOnFiber_eq (by decide) hlt hk (by omega) hcls hmode
@@ -113,8 +113,8 @@ theorem cme_root {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   refine wp_switchC CMESwitch.lex ?_
   js_until [] [h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (hGHC _ _ (by unfold F0; frame_go' [*]) (by js_norm [h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
-  rintro v1 w1 h1 ⟨hF1, hfu1⟩
+  refine wp_mono (hGHC _ _ (by unfold F0; frame_go' [*]) hHI (by js_norm [h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
+  rintro v1 w1 h1 ⟨hF1, hfu1, rfl⟩
   have hEa := envEntry_frame0 hF1 (e := s.envs.size) (by js_norm [h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
   have hEb := envEntry_frame0 hF1 (e := s.envs.size + 1) (by js_norm [h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
   have hEc := envEntry_frame0 hF1 (e := d.env) (by js_norm [h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
@@ -132,7 +132,7 @@ theorem cme_root {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (fun hj => by simpa [Footprint.union] using hj)
   js_until [] [hRT1, hRTlt1, hEa, hEb, hEc, hSa, hSb, hGd, hfw1, hGRT, hGRTv, hRTo, hRTk, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, hRT1, hRTlt1, hEa, hEb, hEc, hSa, hSb, hGd, hfw1, hGRT, hGRTv, hRTo, hRTk, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (hRT _ _ (by unfold F0; frame_go' [*]) ?vt (by js_norm [hRT1, hRTlt1, hEa, hEb, hEc, hSa, hSb, hGd, hfw1, hGRT, hGRTv, hRTo, hRTk, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
+  refine wp_mono (hRT _ _ (by unfold F0; frame_go' [*]) hHI ?vt (by js_norm [hRT1, hRTlt1, hEa, hEb, hEc, hSa, hSb, hGd, hfw1, hGRT, hGRTv, hRTo, hRTk, h4, e1, e2, e4, e5, e1', e2', hG, hGe, hGV, hGVm, hGVi, hGT, hGTm, hGTi, hGH, hGHm, hGHv, hGGH, hGGHv, hGHo, hGHk, hFR, hFRk, hFRc, hR, hRk, hRa, hRf, hRt, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega)) ?_
   case vt =>
     intro bm o hd
     rw [setEnv_envEntry, if_pos ⟨rfl, hGd⟩] at hd
