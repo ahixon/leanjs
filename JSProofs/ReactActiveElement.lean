@@ -37,17 +37,59 @@ theorem wp_instanceof {n : Nat} {h : σ} {lv rv : Value} {s : State} {Q : Value 
   show WP eng answer n h (instanceofOperator lv rv >>= fun b => Pure.pure (Value.bool b)) s Q
   exact wp_bind (wp_mono hw fun _ _ _ q => wp_pure q)
 
+/-- `typeof v` as `TypeofC`, for a host's object (`internal`, as Zippy's wrappers are): not callable, `"object"`. -/
+def TypeofCI (s : State) (v : Value) (P : JSStr → Prop) : Prop :=
+  match v with
+  | .obj o => o < s.heap.size ∧ (∃ t sl, (s.objEntry o).kind = .internal t sl) ∧ P "object"
+  | _ => TypeofC s v P
+
+theorem typeOf_ofI {s : State} {v : Value} {P : JSStr → Prop} (h : TypeofCI s v P) :
+    ∃ t, typeOf v s = .ok t s ∧ P t := by
+  cases v with
+  | obj o =>
+    obtain ⟨hlt, ⟨_, _, hk⟩, hp⟩ := h
+    refine ⟨"object", ?_, hp⟩
+    simp [typeOf, isCallable, readObj_entry o _ s hlt, hk, M.bind_eq, M.bind_apply, Pure.pure, M.pure]
+  | _ => exact typeOf_of h
+
+/-- **`typeof x`** of a variable holding a host's object. -/
+theorem wp_typeofIdentCI {n : Nat} {h : σ} {x : JSStr} {ctx : Ctx} {s : State} {Q : Value → State → σ → Prop}
+    (hk : depth ≤ s.fuel)
+    (hw : match Scope.resolve s depth ctx.lex x, Scope.lookup s depth ctx.lex x with
+      | some _, some v => TypeofCI s v fun t => Q (.str t) s h
+      | _, _ => False) :
+    WP eng answer n h (Sem.typeofRef (Sem.identRef x) ctx) s Q := by
+  cases hr : Scope.resolve s depth ctx.lex x with
+  | none => rw [hr] at hw; exact hw.elim
+  | some e =>
+    cases hl : Scope.lookup s depth ctx.lex x with
+    | none => rw [hr, hl] at hw; exact hw.elim
+    | some v =>
+      rw [hr, hl] at hw
+      obtain ⟨bm, o, bd, he, hd, hb, hv⟩ := resolve_lookup s x v depth ctx.lex e hr hl
+      have h1 : Sem.identRef x ctx s = .ok (.env (some e) x ctx.strict) s :=
+        Scope.resolveBinding_of_resolve s depth ctx.lex x ctx.strict e hr hk
+      have h2 := Scope.getRefValue_env s e x ctx.strict he bm o hd bd v hb hv
+      obtain ⟨t, ht, hq⟩ := typeOf_ofI hw
+      refine wp_of_eq ?_ hq
+      simp only [Sem.typeofRef, M.bind_eq, M.bind_apply, h1, M.bindRes_ok]
+      simp only [h2, M.bindRes_ok, M.bind_eq, M.bind_apply, ht]
+      rfl
+
 theorem simple (d : FuncData) (hc : d.code = GAEGen.getActiveElement_func) : FDI.Simple d := by
   constructor <;> rw [hc] <;> try rfl
   simp [GAEGen.getActiveElement_func, Func.params, Func.info]
 
 set_option maxRecDepth 40000 in
 set_option maxHeartbeats 4000000 in
-/-- **`getActiveElement(doc)`**, `doc.activeElement` the element `E`: `E`. -/
+/-- **`getActiveElement(doc)`**, `doc.activeElement` the element `E`: `E`. The document a host's object (`internal`, as
+Zippy's wrappers are). -/
 theorem gae_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State} {Doc E : ObjId}
+    {tg : String} {sl : Array Value}
     (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 60 ≤ s.fuel)
     (hcode : d.code = GAEGen.getActiveElement_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
-    (hDoc : Doc < s.heap.size) (hDocK : (s.objEntry Doc).kind = .ordinary)
+    (hDoc : Doc < s.heap.size)
+    (hDocK : (s.objEntry Doc).kind = .internal tg sl)
     (hAE : ReactHostContainer.DomRead eng answer HI n s {} Doc "activeElement" (.obj E)) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj Doc]) s fun v w h' =>
       v = .obj E ∧ Frame {} s w ∧ s.fuel ≤ w.fuel + 60 ∧ h' = h := by
@@ -61,8 +103,10 @@ theorem gae_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   have hw0 : Frame {} s (bodyState s fo d t #[.obj Doc]) := by frame_go' [*]
   simp only [GAEGen.getActiveElement]
   js_until ["activeElement"] [hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine wp_typeofIdentC (by show 8 ≤ _; simp; omega) ?_
-  js_until ["activeElement"] [TypeofC, hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
+  refine wp_typeofIdentCI (by show 8 ≤ _; simp; omega) ?_
+  js_until ["activeElement"] [TypeofCI, hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
+  refine ⟨⟨_, _, rfl⟩, ?_⟩
+  js_until ["activeElement"] [hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine wp_getMemberAcc ?_
   js_until [] [hDoc, hDocK, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsAcc_mono (hAE _ _ (by frame_go' [*]) hHI (by (try simp only [js_simp, State.pushEnv_fuel]); omega)) ?_
@@ -87,7 +131,7 @@ set_option maxHeartbeats 8000000 in
 document's focused element `E` (`getActiveElement`, a contract), not an iframe: `E`. -/
 theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s : State}
     {Cont Doc Win E IFC fGA : ObjId} {bG : HashMap JSStr Binding} {oG : Option EnvId} {bdGA : Binding}
-    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 300 ≤ s.fuel)
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 200 ≤ s.fuel)
     (hcode : d.code = GAEDGen.getActiveElementDeep_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (hG : d.env < s.envs.size) (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
     (hGGA : bG[JSStr.ofString "getActiveElement"]? = some bdGA) (hGGAv : bdGA.value = some (.obj fGA))
@@ -95,7 +139,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hOD : ReactHostContainer.DomRead eng answer HI n s {} Cont "ownerDocument" (.obj Doc))
     (hDV : ReactHostContainer.DomRead eng answer HI n s {} Doc "defaultView" (.obj Win))
     (hWD : ReactHostContainer.DomRead eng answer HI n s {} Win "document" (.obj Doc))
-    (hGA : ∀ w h1, Frame {} s w → 100 ≤ w.fuel →
+    (hGA : ∀ w h1, Frame {} s w → HI h1 → 100 ≤ w.fuel →
       WP eng answer n h1 (callImpl eng (.obj fGA) .undefined #[.obj Doc]) w fun v w' h' =>
         v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 60 ∧ h' = h1)
     (hIF : ∀ w, Frame {} s w → GetsTo w (.obj Win) (JSStr.ofString "HTMLIFrameElement") fun v => v = .obj IFC)
@@ -173,7 +217,7 @@ theorem gaed_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   try simp only [js_simp, State.pushEnv_fuel] at hf_
   js_until [] [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine ⟨by js_norm [CallableC, e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], ?_⟩
-  refine wp_mono (hGA _ _ ?_ ?_) ?_
+  refine wp_mono (hGA _ _ ?_ hHI ?_) ?_
   · frame_go' [*]
   · js_norm [e1, e1', e4, hG, hGe, hGGA, hGGAv, hGAo, hGAk, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]; omega
   rintro v1 w1 h1 ⟨rfl, hF1, hfu1, rfl⟩

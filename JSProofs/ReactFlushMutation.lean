@@ -87,7 +87,7 @@ theorem fme_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
       JSStr.ofString "executionContext", JSStr.ofString "ReactDOMSharedInternals", JSStr.ofString "ReactSharedInternals",
       JSStr.ofString "pendingEffectsStatus"])
     (hfpCp : ∀ p, p ∈ fpC.props → p.1 ≠ SI ∧ p.1 ≠ RSI ∧ p.1 ≠ RDSI ∧ p.1 ≠ FR ∧ p.1 ≠ fGD)
-    (hGDC : ∀ w h1, Frame ((FPRE d.env RSI RDSI).union fpC) s w → HI h1 → 100 ≤ w.fuel →
+    (hGDC : ∀ w h1, Frame ((FPRE d.env RSI RDSI).union fpC) s w → HI h1 → 200 ≤ w.fuel →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fGD) .undefined #[.obj Cont]) w fun v w' h' =>
         v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 200 ∧ h' = h1) (hHI : HI h) :
     WP eng answer (n + 2) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>

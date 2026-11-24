@@ -570,7 +570,7 @@ theorem fme_full {n : Nat}
     (dMS : M_CT_dom ≠ SI) (dMT : M_CT_dom ≠ RSI) (dMD : M_CT_dom ≠ RDSI) (dMF : M_CT_dom ≠ FR) (dMG : M_CT_dom ≠ fGD)
     (dLT : M_CT_BT_LP ≠ RSI) (dLD : M_CT_BT_LP ≠ RDSI) (dNT : M_CT_BT_NP ≠ RSI) (dND : M_CT_BT_NP ≠ RDSI)
     (dOT : M_CT_BT_CH_U_OP ≠ RSI) (dOD : M_CT_BT_CH_U_OP ≠ RDSI)
-    (hGDC : ∀ w h1, Frame ((FPRE d.env RSI RDSI).union ((ReactCommitRoot.F0 M_d.env).union (Footprint.union ⟨[(M_d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ⟨[(M_CT_BT_CH_d.env, JSStr.ofString "viewTransitionMutationContext")], [(M_CT_dom, .str M_CT_BT_CH_kP)], false⟩))) s w → HI h1 → 100 ≤ w.fuel →
+    (hGDC : ∀ w h1, Frame ((FPRE d.env RSI RDSI).union ((ReactCommitRoot.F0 M_d.env).union (Footprint.union ⟨[(M_d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ⟨[(M_CT_BT_CH_d.env, JSStr.ofString "viewTransitionMutationContext")], [(M_CT_dom, .str M_CT_BT_CH_kP)], false⟩))) s w → HI h1 → 200 ≤ w.fuel →
       WP eng answer (n + 9) h1 (callImpl eng (.obj fGD) .undefined #[.obj Cont]) w fun v w' h' =>
         v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 200 ∧ h' = h1) :
     WP eng answer (n + 10) h (callImpl eng (.obj fo) t #[]) s fun v w h' =>

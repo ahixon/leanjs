@@ -907,7 +907,7 @@ theorem cmr_full {n : Nat}
     (ME_dND : ME_M_CT_BT_NP ≠ RDSI)
     (ME_dOT : ME_M_CT_BT_CH_U_OP ≠ RSI)
     (ME_dOD : ME_M_CT_BT_CH_U_OP ≠ RDSI)
-    (ME_hGDC : ∀ w h1, Frame ((((FPC d.env FR RSI RDSI).union (ReactMarkFinished.FPM FR MF_EA MF_XA)).union (ReactBeforeMutation.FB d.env)).union ((FPRE ME_d.env RSI RDSI).union ((ReactCommitRoot.F0 ME_M_d.env).union (Footprint.union ⟨[(ME_M_d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ⟨[(ME_M_CT_BT_CH_d.env, JSStr.ofString "viewTransitionMutationContext")], [(ME_M_CT_dom, .str ME_M_CT_BT_CH_kP)], false⟩)))) s w → HI h1 → 100 ≤ w.fuel →
+    (ME_hGDC : ∀ w h1, Frame ((((FPC d.env FR RSI RDSI).union (ReactMarkFinished.FPM FR MF_EA MF_XA)).union (ReactBeforeMutation.FB d.env)).union ((FPRE ME_d.env RSI RDSI).union ((ReactCommitRoot.F0 ME_M_d.env).union (Footprint.union ⟨[(ME_M_d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩ ⟨[(ME_M_CT_BT_CH_d.env, JSStr.ofString "viewTransitionMutationContext")], [(ME_M_CT_dom, .str ME_M_CT_BT_CH_kP)], false⟩)))) s w → HI h1 → 200 ≤ w.fuel →
       WP eng answer (n + 9) h1 (callImpl eng (.obj ME_fGD) .undefined #[.obj ME_Cont]) w fun v w' h' =>
         v = .obj E ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 200 ∧ h' = h1)
     (ME_hdenv : ME_d.env = d.env) (dDomH : ME_M_CT_dom < s.heap.size)
