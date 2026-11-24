@@ -22,7 +22,7 @@ def norm(x):
         x = y
 IDN = {"Rw": "p_X", "Rc": "p_H", "C0": "p_F", "C1": "p_Fa", "Q": "p_Qo", "U": "p_U", "RSI": "I", "fWL": "fWL",
        "dWL": "dWL", "oG": "oG", "s": "s", "n": "n", "h": "h", "eng": "eng", "σ": "σ", "answer": "answer"}
-DROP = {"w", "fpA", "bW", "hFA", "hGw", "hcb", "hcp", "hco", "hce"}
+DROP = {"w", "fpA", "bW", "hFA", "hGw", "hcb", "hcp", "hco", "hce", "hHI"}
 wnames = [n for n, k, t in wb]
 REN = {n: IDN.get(n, "l_" + n) for n in wnames if n not in DROP}
 def ren(t):
@@ -341,7 +341,7 @@ POST = """  case post =>
   have hbR : bmR = bm1 := by rw [hbm1] at hbmR; cases hbmR; rfl
   rw [hbR] at gEC gTr
   have hbmL' : Scope.declLike? (w'.envEntry d.env) = some (bmL, oG) := by rw [← hPUenv]; exact hbmL
-  refine ⟨hFw, hfuw, ?AL, ?RY, ?RD⟩
+  refine ⟨hFw, hfuw, ?AL, ⟨?RY, ?RD⟩, hHI1⟩
   case AL =>
     unfold ReactRenderSync.AfterLoop ReactRenderSync.Writable
     exact ⟨bmL, _, _, hbmL', gXs, gXsv, gWn, gWnv, ⟨_, gLc, gLcm, gLci⟩, ⟨_, gCr, gCrm, gCri⟩,
@@ -383,7 +383,7 @@ POST = """  case post =>
         _, _, _, by show (w3.objEntry p_H).props.get? _ = _; rw [props_frame TOT hH (by simp (config := { decide := true }) [@@FPD@@, @@FADEFS@@, ReactRenderSync.fpEnd, ReactRenderSync.fpOwn, ReactFinishQueueing.fp, @@DLN@@])]; exact hHa⟩⟩⟩, ?HO⟩
     @@HOPROOF@@
 """.replace("@@FPD@@", FPD).replace("@@FPW@@", S(FPW)).replace("@@FADEFS@@", FADEFS).replace("@@DLN@@", DLN).replace("@@HOPROOF@@", HOPROOF.replace("\\n", "\n"))
-proof = f"""  intro sP hP fuP sW hW fuW sR hR fuR w1 w h1 ⟨hFA1, hPB, hPF, ⟨iv, ia, ib, hIHv⟩, hRec⟩ hOwn fuw
+proof = f"""  intro sP hP fuP sW hW fuW sR hR fuR w1 w h1 ⟨hFA1, hPB, hPF, ⟨iv, ia, ib, hIHv⟩, hRec⟩ hHI1 hOwn fuw
   have hsR : s.envs.size ≤ sR.envs.size := Nat.le_trans hP.envs_le (Nat.le_trans hW.envs_le hR.envs_le)
   have hT := frame_trans hFA1 hOwn
   have hGs : d.env < s.envs.size := hG
@@ -396,7 +396,7 @@ proof = f"""  intro sP hP fuP sW hW fuW sR hR fuR w1 w h1 ⟨hFA1, hPB, hPF, ⟨
   obtain {PBPAT} := hPB
   obtain {PFPAT} := hPF
   have hbmw : Scope.declLike? (w.envEntry l_dPU.env) = some (bm1, oG) := by rw [hPUenv, hE]; exact hbm1
-  refine wp_mono (ReactWorkLoopTop.wls_top (s := s) (w := w) (bW := bm1) {' '.join(args)}
+  refine wp_mono (ReactWorkLoopTop.wls_top (s := s) (w := w) (bW := bm1) (hHI := hHI1) {' '.join(args)}
     (hFA := hT) (hGw := hbmw)
     (hcb := fun x hx => by
       rw [hPUenv]
