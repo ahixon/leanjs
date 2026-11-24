@@ -78,7 +78,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     {bA bJ : HashMap JSStr Binding} {oA oJ : Option EnvId} {bdIR bdIJ bdT : Binding} {bdV bdN : BuiltinData} {xE : F64}
     {irw ire irc ijw ije ijc pw pe pc nnw nne nnc : Bool} {bdRSI : Binding} {rw re rc uw ue' uc : Bool} {bdU bdB : Binding}
     {bdC bdW bdF bdUW bdUR bdRL bdCE bdSD bdDR bdIs : Binding} {bdIsb : BuiltinData}
-    {fW fR fIs C1 C0 H0 Q U : ObjId} {dW dR : FuncData} {r ms bs vE a dv : Value}
+    {fW fR fIs C1 C0 H0 Q U fBS : ObjId} {dW dR dBS : FuncData} {r ms bs vE a dv : Value}
     {aw ae ac me mc nw ne nc w1 e1 c1 w2 e2 c2 e3 c3 w4 e4 c4 : Bool}
     {qp qr ql qd ul ur ua ue uv un : Bool × Bool × Bool}
     (hS : fS < s.heap.size) (hSk : (s.objEntry fS).kind = .func dS) (hScode : dS.code = USGen.fn0_func)
@@ -141,10 +141,14 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     (hUl : (s.objEntry U).props.get? (.str "lane") = some (.data two ul.1 ul.2.1 ul.2.2))
     (hUr : (s.objEntry U).props.get? (.str "revertLane") = some (.data zero ur.1 ur.2.1 ur.2.2))
     (hUa : (s.objEntry U).props.get? (.str "action") = some (.data a ua.1 ua.2.1 ua.2.2))
-    (hUe : (s.objEntry U).props.get? (.str "hasEagerState") = some (.data (.bool true) ue.1 ue.2.1 ue.2.2))
-    (hUv : (s.objEntry U).props.get? (.str "eagerState") = some (.data vE uv.1 uv.2.1 uv.2.2))
+    (hUe : (s.objEntry U).props.get? (.str "hasEagerState") = some (.data (.bool false) ue.1 ue.2.1 ue.2.2))
+    (hUv : (s.objEntry U).props.get? (.str "action") = some (.data vE uv.1 uv.2.1 uv.2.2))
     (hUn : (s.objEntry U).props.get? (.str "next") = some (.data (.obj U) un.1 un.2.1 un.2.2))
     (hdiff : sameValue vE ms = false)
+    (hrBS : r = .obj fBS) (hBS : fBS < s.heap.size) (hBSk : (s.objEntry fBS).kind = .func dBS)
+    (hBScode : dBS.code = BSRGen.basicStateReducer_func) (hBScls : dBS.isClassCtor = false)
+    (hBSmode : dBS.thisMode = .strict)
+    (dBS1 : C1 ≠ fBS) (dBS2 : fBS ≠ H0) (dBS3 : fBS ≠ Q) (dBS4 : fBS ≠ U)
     (d1 : C1 ≠ C0) (d2 : C1 ≠ H0) (d3 : C1 ≠ Q) (d4 : C1 ≠ U) (d5 : C1 ≠ fIs) (d6 : C1 ≠ fR)
     (d7 : H0 ≠ Q) (d8 : H0 ≠ U) (d9 : Q ≠ U) (d10 : fIs ≠ H0) (d11 : fIs ≠ Q) (d12 : fIs ≠ U)
     -- (the component and its module scope: `import_react`, `import_jsx_runtime`)
@@ -225,6 +229,8 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2) ∧
       (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data vE true ql.2.1 ql.2.2) ∧
       ReactNewProps.NewProps w C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") := by
+  subst hrBS
+  have hap : ∀ o, vE ≠ .obj o := by intro o ho; rw [hvE] at ho; cases ho
   apply wp_callGen CounterGen.Counter_eq (by decide) hK hKk (by omega) hKcls hKmode
     (by rw [hKcode]; rfl) (by rw [hKcode]; rfl) (simpleK dK hKcode) (by rw [hKcode]; rfl) (by rw [hKcode]; rfl)
   have hpn : dK.code.info.fdi.paramNames = #[] := by rw [hKcode]; rfl
@@ -268,7 +274,8 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     (hC1m := hC1m) (hC0 := hC0) (hC0k := hC0k) (hC0m := hC0m) (hH0 := hH0) (hH0k := hH0k) (hHm := hHm)
     (hHb := hHb) (hHbq := hHbq) (hHq := hHq) (hQ := hQ) (hQk := hQk) (hQp := hQp) (hQr := hQr) (hQl := hQl)
     (hQd := hQd) (hU := hU) (hUk := hUk) (hUl := hUl) (hUr := hUr) (hUa := hUa) (hUe := hUe) (hUv := hUv)
-    (hUn := hUn) (hdiff := hdiff) (d1 := d1) (d2 := d2) (d3 := d3) (d4 := d4) (d5 := d5) (d6 := d6) (d7 := d7)
+    (hUn := hUn) (hdiff := hdiff) (hrBS := rfl) (hBS := hBS) (hBSk := hBSk) (hBScode := hBScode) (hBScls := hBScls) (hBSmode := hBSmode) (hap := hap)
+    (dBS1 := dBS1) (dBS2 := dBS2) (dBS3 := dBS3) (dBS4 := dBS4) (d1 := d1) (d2 := d2) (d3 := d3) (d4 := d4) (d5 := d5) (d6 := d6) (d7 := d7)
     (d8 := d8) (d9 := d9) (d10 := d10) (d11 := d11) (d12 := d12)) ?post
   intro v w h1 ⟨hv1, hF1, hfu1, hh1, hA1, hp1, hsym1, hdl1, hm1, hkk1, hkm1, hkb1, hkbq1, hkq1, hkn1, hH0b1, hQp1, hQr1,
     hQl1, hr1⟩

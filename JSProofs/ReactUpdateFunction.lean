@@ -47,7 +47,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     {bA bJ : HashMap JSStr Binding} {oA oJ : Option EnvId} {bdIR bdIJ bdT : Binding} {bdV bdN : BuiltinData} {xE : F64}
     {irw ire irc ijw ije ijc pw pe pc nnw nne nnc : Bool} {bdRSI : Binding} {rw re rc uw ue' uc : Bool} {bdU bdB : Binding}
     {bdC bdW bdF bdUW bdUR bdRL bdCE bdSD bdDR bdIs : Binding} {bdIsb : BuiltinData}
-    {fW fR fIs C1 C0 H0 Q U : ObjId} {dW dR : FuncData} {r ms bs vE a dv : Value}
+    {fW fR fIs C1 C0 H0 Q U fBS : ObjId} {dW dR dBS : FuncData} {r ms bs vE a dv : Value}
     {aw ae ac me mc nw ne nc w1 e1 c1 w2 e2 c2 e3 c3 w4 e4 c4 : Bool}
     {qp qr ql qd ul ur ua ue uv un : Bool × Bool × Bool}
     (hS : fS < s.heap.size) (hSk : (s.objEntry fS).kind = .func dS) (hScode : dS.code = USGen.fn0_func)
@@ -110,10 +110,14 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     (hUl : (s.objEntry U).props.get? (.str "lane") = some (.data two ul.1 ul.2.1 ul.2.2))
     (hUr : (s.objEntry U).props.get? (.str "revertLane") = some (.data zero ur.1 ur.2.1 ur.2.2))
     (hUa : (s.objEntry U).props.get? (.str "action") = some (.data a ua.1 ua.2.1 ua.2.2))
-    (hUe : (s.objEntry U).props.get? (.str "hasEagerState") = some (.data (.bool true) ue.1 ue.2.1 ue.2.2))
-    (hUv : (s.objEntry U).props.get? (.str "eagerState") = some (.data vE uv.1 uv.2.1 uv.2.2))
+    (hUe : (s.objEntry U).props.get? (.str "hasEagerState") = some (.data (.bool false) ue.1 ue.2.1 ue.2.2))
+    (hUv : (s.objEntry U).props.get? (.str "action") = some (.data vE uv.1 uv.2.1 uv.2.2))
     (hUn : (s.objEntry U).props.get? (.str "next") = some (.data (.obj U) un.1 un.2.1 un.2.2))
     (hdiff : sameValue vE ms = false)
+    (hrBS : r = .obj fBS) (hBS : fBS < s.heap.size) (hBSk : (s.objEntry fBS).kind = .func dBS)
+    (hBScode : dBS.code = BSRGen.basicStateReducer_func) (hBScls : dBS.isClassCtor = false)
+    (hBSmode : dBS.thisMode = .strict)
+    (dBS1 : C1 ≠ fBS) (dBS2 : fBS ≠ H0) (dBS3 : fBS ≠ Q) (dBS4 : fBS ≠ U)
     (d1 : C1 ≠ C0) (d2 : C1 ≠ H0) (d3 : C1 ≠ Q) (d4 : C1 ≠ U) (d5 : C1 ≠ fIs) (d6 : C1 ≠ fR)
     (d7 : H0 ≠ Q) (d8 : H0 ≠ U) (d9 : Q ≠ U) (d10 : fIs ≠ H0) (d11 : fIs ≠ Q) (d12 : fIs ≠ U)
     -- (the component and its module scope: `import_react`, `import_jsx_runtime`)
@@ -181,7 +185,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     (hH0n : (s.objEntry H0).props.get? (.str "next") = some (.data .null nw' ne' nc'))
     -- (the objects the component reads are neither the work in progress nor ReactSharedInternals; react's module
     -- scope is not react-dom's)
-    (hdist : ∀ X ∈ [fo, fW, fR, fIs, C0, H0, Q, U, fD, HD, fS, IR, IJ, fJ, AP, fV, AIP, fN, IP, OP, fK, fF],
+    (hdist : ∀ X ∈ [fo, fW, fR, fIs, fBS, C0, H0, Q, U, fD, HD, fS, IR, IJ, fJ, AP, fV, AIP, fN, IP, OP, fK, fF],
       X ≠ C1 ∧ X ≠ RSI) (dRC : RSI ≠ C1) (hSd : dS.env ≠ d.env)
     -- (renderWithHooks itself, a function of react-dom's module)
     (hRW : fRW < s.heap.size) (hRWk : (s.objEntry fRW).kind = .func dRW)
@@ -337,6 +341,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
         ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true ∧
         (∃ bd, bm[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         (∃ bd, bm[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) := by
+  subst hrBS
   apply wp_callGen UFCGen.updateFunctionComponent_eq (by decide) hUF hUFk (by omega) hUFcls hUFmode
     (by rw [hUFcode]; rfl) (by rw [hUFcode]; rfl) (simpleUF dUF hUFcode) (by rw [hUFcode]; rfl) (by rw [hUFcode]; rfl)
   have hpn : dUF.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
@@ -413,7 +418,9 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (hUk := (by rw [hw1o U hU]; exact hUk)) (hUl := (by rw [hw1o U hU]; exact hUl))
       (hUr := (by rw [hw1o U hU]; exact hUr)) (hUa := (by rw [hw1o U hU]; exact hUa))
       (hUe := (by rw [hw1o U hU]; exact hUe)) (hUv := (by rw [hw1o U hU]; exact hUv))
-      (hUn := (by rw [hw1o U hU]; exact hUn)) (hdiff := hdiff) (d1 := d1) (d2 := d2) (d3 := d3) (d4 := d4)
+      (hUn := (by rw [hw1o U hU]; exact hUn)) (hdiff := hdiff) (hrBS := rfl) (hBS := (Nat.lt_of_lt_of_le hBS hw1z))
+      (hBSk := (by rw [hw1o fBS hBS]; exact hBSk)) (hBScode := hBScode) (hBScls := hBScls) (hBSmode := hBSmode)
+      (dBS1 := dBS1) (dBS2 := dBS2) (dBS3 := dBS3) (dBS4 := dBS4) (d1 := d1) (d2 := d2) (d3 := d3) (d4 := d4)
       (d5 := d5) (d6 := d6) (d7 := d7) (d8 := d8) (d9 := d9) (d10 := d10) (d11 := d11) (d12 := d12)
       (hK := (Nat.lt_of_lt_of_le hK hw1z)) (hKk := (by rw [hw1o fK hK]; exact hKk)) (hKcode := hKcode)
       (hKcls := hKcls) (hKmode := hKmode) (hAG := (Nat.lt_of_lt_of_le (Nat.lt_succ_of_lt hAG) hw1E))

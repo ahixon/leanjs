@@ -46,7 +46,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     {bA bJ : HashMap JSStr Binding} {oA oJ : Option EnvId} {bdIR bdIJ bdT : Binding} {bdV bdN : BuiltinData} {xE : F64}
     {irw ire irc ijw ije ijc pw pe pc nnw nne nnc : Bool} {bdRSI : Binding} {rw re rc uw ue' uc : Bool} {bdU bdB : Binding}
     {bdC bdW bdF bdUW bdUR bdRL bdCE bdSD bdDR bdIs : Binding} {bdIsb : BuiltinData}
-    {fW fR fIs C1 C0 H0 Q U : ObjId} {dW dR : FuncData} {r ms bs vE a dv : Value}
+    {fW fR fIs C1 C0 H0 Q U fBS : ObjId} {dW dR dBS : FuncData} {r ms bs vE a dv : Value}
     {aw ae ac me mc nw ne nc w1 e1 c1 w2 e2 c2 e3 c3 w4 e4 c4 : Bool}
     {qp qr ql qd ul ur ua ue uv un : Bool × Bool × Bool}
     (hS : fS < s.heap.size) (hSk : (s.objEntry fS).kind = .func dS) (hScode : dS.code = USGen.fn0_func)
@@ -109,10 +109,14 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     (hUl : (s.objEntry U).props.get? (.str "lane") = some (.data two ul.1 ul.2.1 ul.2.2))
     (hUr : (s.objEntry U).props.get? (.str "revertLane") = some (.data zero ur.1 ur.2.1 ur.2.2))
     (hUa : (s.objEntry U).props.get? (.str "action") = some (.data a ua.1 ua.2.1 ua.2.2))
-    (hUe : (s.objEntry U).props.get? (.str "hasEagerState") = some (.data (.bool true) ue.1 ue.2.1 ue.2.2))
-    (hUv : (s.objEntry U).props.get? (.str "eagerState") = some (.data vE uv.1 uv.2.1 uv.2.2))
+    (hUe : (s.objEntry U).props.get? (.str "hasEagerState") = some (.data (.bool false) ue.1 ue.2.1 ue.2.2))
+    (hUv : (s.objEntry U).props.get? (.str "action") = some (.data vE uv.1 uv.2.1 uv.2.2))
     (hUn : (s.objEntry U).props.get? (.str "next") = some (.data (.obj U) un.1 un.2.1 un.2.2))
     (hdiff : sameValue vE ms = false)
+    (hrBS : r = .obj fBS) (hBS : fBS < s.heap.size) (hBSk : (s.objEntry fBS).kind = .func dBS)
+    (hBScode : dBS.code = BSRGen.basicStateReducer_func) (hBScls : dBS.isClassCtor = false)
+    (hBSmode : dBS.thisMode = .strict)
+    (dBS1 : C1 ≠ fBS) (dBS2 : fBS ≠ H0) (dBS3 : fBS ≠ Q) (dBS4 : fBS ≠ U)
     (d1 : C1 ≠ C0) (d2 : C1 ≠ H0) (d3 : C1 ≠ Q) (d4 : C1 ≠ U) (d5 : C1 ≠ fIs) (d6 : C1 ≠ fR)
     (d7 : H0 ≠ Q) (d8 : H0 ≠ U) (d9 : Q ≠ U) (d10 : fIs ≠ H0) (d11 : fIs ≠ Q) (d12 : fIs ≠ U)
     -- (the component and its module scope: `import_react`, `import_jsx_runtime`)
@@ -180,7 +184,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     (hH0n : (s.objEntry H0).props.get? (.str "next") = some (.data .null nw' ne' nc'))
     -- (the objects the component reads are neither the work in progress nor ReactSharedInternals; react's module
     -- scope is not react-dom's)
-    (hdist : ∀ X ∈ [fo, fW, fR, fIs, C0, H0, Q, U, fD, HD, fS, IR, IJ, fJ, AP, fV, AIP, fN, IP, OP, fK, fF],
+    (hdist : ∀ X ∈ [fo, fW, fR, fIs, fBS, C0, H0, Q, U, fD, HD, fS, IR, IJ, fJ, AP, fV, AIP, fN, IP, OP, fK, fF],
       X ≠ C1 ∧ X ≠ RSI) (dRC : RSI ≠ C1) (hSd : dS.env ≠ d.env)
     -- (renderWithHooks itself, a function of react-dom's module)
     (hRW : fRW < s.heap.size) (hRWk : (s.objEntry fRW).kind = .func dRW)
@@ -232,6 +236,7 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (w.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2) ∧
       (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data (.num xE) true ql.2.1 ql.2.2) ∧
       ReactNewProps.NewProps w C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") := by
+  subst hrBS
   apply wp_callGen RWHGen.renderWithHooks_eq (by decide) hRW hRWk (by omega) hRWcls hRWmode
     (by rw [hRWcode]; rfl) (by rw [hRWcode]; rfl) (simpleRW dRW hRWcode) (by rw [hRWcode]; rfl) (by rw [hRWcode]; rfl)
   have hpn : dRW.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
@@ -250,6 +255,8 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
   have dfR2 : fR ≠ RSI := (hdist fR (by simp)).2
   have dfIs1 : fIs ≠ C1 := (hdist fIs (by simp)).1
   have dfIs2 : fIs ≠ RSI := (hdist fIs (by simp)).2
+  have dfBS1 : fBS ≠ C1 := (hdist fBS (by simp)).1
+  have dfBS2 : fBS ≠ RSI := (hdist fBS (by simp)).2
   have dC01 : C0 ≠ C1 := (hdist C0 (by simp)).1
   have dC02 : C0 ≠ RSI := (hdist C0 (by simp)).2
   have dH01 : H0 ≠ C1 := (hdist H0 (by simp)).1
@@ -363,7 +370,9 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
       (hUk := (by rw [hStO U dU1 dU2]; exact hUk)) (hUl := (by rw [hStO U dU1 dU2]; exact hUl))
       (hUr := (by rw [hStO U dU1 dU2]; exact hUr)) (hUa := (by rw [hStO U dU1 dU2]; exact hUa))
       (hUe := (by rw [hStO U dU1 dU2]; exact hUe)) (hUv := (by rw [hStO U dU1 dU2]; exact hUv))
-      (hUn := (by rw [hStO U dU1 dU2]; exact hUn)) (hdiff := hdiff) (d1 := d1) (d2 := d2) (d3 := d3) (d4 := d4)
+      (hUn := (by rw [hStO U dU1 dU2]; exact hUn)) (hdiff := hdiff) (hrBS := rfl) (hBS := (by rw [hStz]; exact hBS))
+      (hBSk := (by rw [hStO fBS dfBS1 dfBS2]; exact hBSk)) (hBScode := hBScode) (hBScls := hBScls) (hBSmode := hBSmode)
+      (dBS1 := dBS1) (dBS2 := dBS2) (dBS3 := dBS3) (dBS4 := dBS4) (d1 := d1) (d2 := d2) (d3 := d3) (d4 := d4)
       (d5 := d5) (d6 := d6) (d7 := d7) (d8 := d8) (d9 := d9) (d10 := d10) (d11 := d11) (d12 := d12)
       (hK := (by rw [hStz]; exact hK)) (hKk := (by rw [hStO fK dfK1 dfK2]; exact hKk)) (hKcode := hKcode)
       (hKcls := hKcls) (hKmode := hKmode) (hAG := (by rw [hStE]; exact Nat.lt_succ_of_lt hAG))
