@@ -62,7 +62,7 @@ theorem ghr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
     (hcode : d.code = GHRGen.getHoistableRoot_func) (hcls : d.isClassCtor = false) (hmode : d.thisMode = .strict)
     (hRN : ∀ w, Frame {} s w → GetsTo w (.obj Cont) (JSStr.ofString "getRootNode") fun v => v = .obj fRN)
     (hRNo : fRN < s.heap.size) (hRNk : (s.objEntry fRN).kind = .builtin bdRN)
-    (hCall : ∀ w h1, Frame {} s w → HI h1 → WP eng answer n h1 (callImpl eng (.obj fRN) (.obj Cont) #[]) w fun v w' h' =>
+    (hCall : ∀ w h1, Frame {} s w → HI h1 → 2 ≤ w.fuel → WP eng answer n h1 (callImpl eng (.obj fRN) (.obj Cont) #[]) w fun v w' h' =>
       v = .obj Doc ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10 ∧ h' = h1)
     (hNT : ReactHostContainer.DomRead eng answer HI n s {} Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49)))) (hHI : HI h) :
     WP eng answer (n + 1) h (callImpl eng (.obj fo) t #[.obj Cont]) s fun v w h' =>
@@ -85,7 +85,7 @@ theorem ghr_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s :
   js_until [] [hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
   refine getsTo_eq (hRN _ (by frame_go' [*])) ?_
   js_until [] [hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
-  refine ⟨by js_norm [CallableC, hRNk, hRNo, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], wp_mono (hCall _ _ (by frame_go' [*]) hHI) ?_⟩
+  refine ⟨by js_norm [CallableC, hRNk, hRNo, hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner], wp_mono (hCall _ _ (by frame_go' [*]) hHI (by (try simp only [js_simp, State.pushEnv_fuel]); omega)) ?_⟩
   rintro v1 w1 h1 ⟨rfl, hF1, hfu1, rfl⟩
   have hE1 := envEntry_frame0 hF1 (e := s.envs.size) (by js_norm [hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner])
   have hS1 : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (by js_norm [hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]) hF1.envs_le

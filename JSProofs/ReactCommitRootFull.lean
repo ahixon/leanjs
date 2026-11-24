@@ -109,7 +109,7 @@ theorem cme_root_full {n : Nat}
     (GH_hRN : ∀ w, Frame (ReactCommitRoot.F0 d.env) s w → GetsTo w (.obj Cont) (JSStr.ofString "getRootNode") fun v => v = .obj GH_fRN)
     (GH_hRNo : GH_fRN < s.heap.size)
     (GH_hRNk : (s.objEntry GH_fRN).kind = .builtin GH_bdRN)
-    (GH_hCall : ∀ w h1, Frame (ReactCommitRoot.F0 d.env) s w → HI h1 → WP eng answer (n + 7) h1 (callImpl eng (.obj GH_fRN) (.obj Cont) #[]) w fun v w' h' =>
+    (GH_hCall : ∀ w h1, Frame (ReactCommitRoot.F0 d.env) s w → HI h1 → 2 ≤ w.fuel → WP eng answer (n + 7) h1 (callImpl eng (.obj GH_fRN) (.obj Cont) #[]) w fun v w' h' =>
       v = .obj GH_Doc ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10 ∧ h' = h1)
     (GH_hNT : ReactHostContainer.DomRead eng answer HI (n + 7) s (ReactCommitRoot.F0 d.env) GH_Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49))))
     {T_d : FuncData}

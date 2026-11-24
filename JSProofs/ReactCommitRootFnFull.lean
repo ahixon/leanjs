@@ -576,7 +576,7 @@ theorem cmr_full {n : Nat}
     (ME_M_GH_hRN : ∀ w, Frame ((((FPC d.env FR RSI RDSI).union (ReactMarkFinished.FPM FR MF_EA MF_XA)).union (ReactBeforeMutation.FB d.env)).union ((FPRE ME_d.env RSI RDSI).union (ReactCommitRoot.F0 ME_M_d.env))) s w → GetsTo w (.obj ME_M_Cont) (JSStr.ofString "getRootNode") fun v => v = .obj ME_M_GH_fRN)
     (ME_M_GH_hRNo : ME_M_GH_fRN < s.heap.size)
     (ME_M_GH_hRNk : (s.objEntry ME_M_GH_fRN).kind = .builtin ME_M_GH_bdRN)
-    (ME_M_GH_hCall : ∀ w h1, Frame ((((FPC d.env FR RSI RDSI).union (ReactMarkFinished.FPM FR MF_EA MF_XA)).union (ReactBeforeMutation.FB d.env)).union ((FPRE ME_d.env RSI RDSI).union (ReactCommitRoot.F0 ME_M_d.env))) s w → HI h1 → WP eng answer (n + 7) h1 (callImpl eng (.obj ME_M_GH_fRN) (.obj ME_M_Cont) #[]) w fun v w' h' =>
+    (ME_M_GH_hCall : ∀ w h1, Frame ((((FPC d.env FR RSI RDSI).union (ReactMarkFinished.FPM FR MF_EA MF_XA)).union (ReactBeforeMutation.FB d.env)).union ((FPRE ME_d.env RSI RDSI).union (ReactCommitRoot.F0 ME_M_d.env))) s w → HI h1 → 2 ≤ w.fuel → WP eng answer (n + 7) h1 (callImpl eng (.obj ME_M_GH_fRN) (.obj ME_M_Cont) #[]) w fun v w' h' =>
       v = .obj ME_M_GH_Doc ∧ Frame {} w w' ∧ w.fuel ≤ w'.fuel + 10 ∧ h' = h1)
     (ME_M_GH_hNT : ReactHostContainer.DomRead eng answer HI (n + 7) s ((((FPC d.env FR RSI RDSI).union (ReactMarkFinished.FPM FR MF_EA MF_XA)).union (ReactBeforeMutation.FB d.env)).union ((FPRE ME_d.env RSI RDSI).union (ReactCommitRoot.F0 ME_M_d.env))) ME_M_GH_Doc "nodeType" (.num (F64.fin false 5066549580791808 (-49))))
     {ME_M_T_d : FuncData}
