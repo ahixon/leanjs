@@ -1,3 +1,4 @@
+import JSProofs.Hide
 import JSProofs.ReactEarlyBailout
 import JSProofs.BWGen
 
@@ -469,6 +470,325 @@ theorem root_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
       js [hE1, hGk1, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
       all_goals (repeat' apply And.intro)
       all_goals first | omega | (simp only [js_simp] at *; omega) | assumption | exact ⟨bw', rfl, hidx, hhy, hdru⟩ | skip
+      simp only [fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, Logic.Footprint.union, List.cons_append, List.nil_append, List.append_assoc, Bool.false_or] at hF2 ⊢
+      rw [h_AEBenv] at hF2
+      frame_go' [*, hne, Ne.symm hne, hG1]
+
+
+set_option maxRecDepth 100000 in
+set_option maxHeartbeats 20000000 in
+/-- `root_spec` with its callee as a contract (`facts_compose` composes it). -/
+theorem root_spec_c {n : Nat}
+    {h : σ}
+    {fo : ObjId}
+    {d : FuncData}
+    {t : Value}
+    {s : State}
+    {bG : HashMap JSStr Binding}
+    {oG : Option EnvId}
+    {bdI bdV a_bdCS a_bdCF a_bdRI bdP a_bdO a_bdGO a_bdGC : Binding}
+    {VS a_CS a_CF a_RI fP a_fO a_fGO a_fGC X C : ObjId}
+    {dP a_dO a_dGO a_dGC : FuncData}
+    {L : F64}
+    {a_o0 a_o1 a_o2 a_vr a_vf a_vc : Value}
+    {a_e0 a_c0 a_e1 a_c1 a_e2 a_c2 lw le lc a_re a_rc a_fe a_fc a_ce a_cc : Bool}
+    {b_bdC : Binding}
+    {b_Cu Cx : ObjId}
+    {b_cur b_old b_cv : Value}
+    {b_ce b_cc b_oe b_oc b_xe b_xc : Bool}
+    {c_b1 c_b2 c_b3 : Binding}
+    {e_bdS e_bdC : Binding}
+    {e_fC H e_C0 e_C1 : ObjId}
+    {e_dC : FuncData}
+    {e_sk e_xl e_xcl e_fl : F64}
+    {e_vT e_vCL e_vL e_vC e_vMP e_vMS e_vUQ e_vS e_vI e_vR e_vRC e_pp e_xd e_or e_o0 e_o1 e_o2 e_o3 e_o4 e_o5 e_o6 e_o7 e_o8 e_o9 e_o10 e_o11 e_o12 e_o13 e_o14 e_o15 : Value}
+    {e_hdw e_hde e_hdc e_hcw e_hce e_hcc e_xlw e_xle e_xlc e_xclw e_xcle e_xclc e_cpw e_cpe e_cpc e_caw e_cae e_cac e_cfw e_cfe e_cfc e_cdw e_cde e_cdc e_c_typew e_c_typee e_c_typec e_c_childLanesw e_c_childLanese e_c_childLanesc e_c_lanesw e_c_lanese e_c_lanesc e_c_childw e_c_childe e_c_childc e_c_memoizedPropsw e_c_memoizedPropse e_c_memoizedPropsc e_c_memoizedStatew e_c_memoizedStatee e_c_memoizedStatec e_c_updateQueuew e_c_updateQueuee e_c_updateQueuec e_c_siblingw e_c_siblinge e_c_siblingc e_c_indexw e_c_indexe e_c_indexc e_c_refw e_c_refe e_c_refc e_c_refCleanupw e_c_refCleanupe e_c_refCleanupc e_e0 e_e1 e_e2 e_e3 e_e4 e_e5 e_e6 e_e7 e_e8 e_e9 e_e10 e_e11 e_e12 e_e13 e_e14 e_e15 e_c0 e_c1 e_c2 e_c3 e_c4 e_c5 e_c6 e_c7 e_c8 e_c9 e_c10 e_c11 e_c12 e_c13 e_c14 e_c15 e_xde e_xdc e_xce e_xcc e_re e_rc : Bool}
+    {fPHC fPPR fRHS fBOF Rt MS : ObjId}
+    {dPHC dPPR dRHS dBOF : FuncData}
+    {bdPHC bdPPR bdRHS bdBOF bdCC : Binding}
+    {cache : Value}
+    {tw te tc sw se sc kw ke kc mw me mc cw ce2 cc2 : Bool}
+    {fAEB fCHK : ObjId}
+    {dAEB dCHK : FuncData}
+    {bdAEB bdCHK bdDRU : Binding}
+    {hl0v : F64}
+    {xf : F64}
+    {hlw hle hlc hdw2 hde2 hdc2 mpw mpe mpc ppw ppe ppc xfw xfe xfc : Bool}
+    (hlt : fo < s.heap.size)
+    (hk : (s.objEntry fo).kind = .func d)
+    (hf : 700 ≤ s.fuel)
+    (hcode : d.code = BWGen.beginWork_func)
+    (hcls : d.isClassCtor = false)
+    (hmode : d.thisMode = .strict)
+    (hG : d.env < s.envs.size)
+    (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
+    (g_CHK : bG[JSStr.ofString "checkScheduledUpdateOrContext"]? = some bdCHK)
+    (g_CHKv : bdCHK.value = some (.obj fCHK))
+    (h_CHK : fCHK < s.heap.size)
+    (h_CHKk : (s.objEntry fCHK).kind = .func dCHK)
+    (h_CHKcode : dCHK.code = CSUGen.checkScheduledUpdateOrContext_func)
+    (h_CHKcls : dCHK.isClassCtor = false)
+    (h_CHKmode : dCHK.thisMode = .strict)
+    (g_AEB : bG[JSStr.ofString "attemptEarlyBailoutIfNoScheduledUpdate"]? = some bdAEB)
+    (g_AEBv : bdAEB.value = some (.obj fAEB))
+    (h_AEB : fAEB < s.heap.size)
+    (h_AEBk : (s.objEntry fAEB).kind = .func dAEB)
+    (h_AEBcode : dAEB.code = AEBGen.attemptEarlyBailoutIfNoScheduledUpdate_func)
+    (h_AEBcls : dAEB.isClassCtor = false)
+    (h_AEBmode : dAEB.thisMode = .strict)
+    (h_AEBenv : dAEB.env = d.env)
+    (g_DRU : bG[JSStr.ofString "didReceiveUpdate"]? = some bdDRU)
+    (g_DRUm : bdDRU.mutable = true)
+    (g_DRUv : bdDRU.value.isSome = true)
+    (hHmp : (s.objEntry H).props.get? (.str "memoizedProps") = some (.data .null mpw mpe mpc))
+    (hXpp : (s.objEntry X).props.get? (.str "pendingProps") = some (.data .null ppw ppe ppc))
+    (hHl : (s.objEntry H).props.get? (.str "lanes") = some (.data (.num hl0v) hlw hle hlc))
+    (hHd2 : (s.objEntry H).props.get? (.str "dependencies") = some (.data .null hdw2 hde2 hdc2))
+    (hl0 : isStrictlyEqual (.num (F64.fin false 0 (-1074))) (.num (numberBinOp .bitAnd hl0v (F64.fin false 4503599627370496 (-51)))) = true)
+    (hXf : (s.objEntry X).props.get? (.str "flags") = some (.data (.num xf) xfw xfe xfc))
+    (hxf : isStrictlyEqual (.num (F64.fin false 0 (-1074))) (.num (numberBinOp .bitAnd xf (F64.fin false 4503599627370496 (-45)))) = true)
+    (x_CHK_X : fCHK ≠ X)
+    (x_CHK_H : fCHK ≠ H)
+    (x_AEB_X : fAEB ≠ X)
+    (x_AEB_H : fAEB ≠ H)
+    (a_d1 : VS ≠ a_RI)
+    (a_d2 : VS ≠ a_CF)
+    (a_d3 : VS ≠ a_CS)
+    (a_d4 : a_RI ≠ a_CF)
+    (a_d5 : a_RI ≠ a_CS)
+    (a_d6 : a_CF ≠ a_CS)
+    (a_dP1 : fP ≠ VS)
+    (a_dP2 : fP ≠ a_RI)
+    (a_dP3 : fP ≠ a_CF)
+    (a_dP4 : fP ≠ a_CS)
+    (a_dO1 : a_fO ≠ VS)
+    (a_dO2 : a_fO ≠ a_RI)
+    (a_dO3 : a_fO ≠ a_CF)
+    (a_dO4 : a_fO ≠ a_CS)
+    (a_dG1 : a_fGO ≠ VS)
+    (a_dG2 : a_fGO ≠ a_RI)
+    (a_dG3 : a_fGO ≠ a_CF)
+    (a_dG4 : a_fGO ≠ a_CS)
+    (a_dC1 : a_fGC ≠ VS)
+    (a_dC2 : a_fGC ≠ a_RI)
+    (a_dC3 : a_fGC ≠ a_CF)
+    (a_dC4 : a_fGC ≠ a_CS)
+    (a_hNT : ReactHostContainer.DomRead eng answer HI n s (Logic.Footprint.union (ReactHostContainer.fp d.env VS a_RI a_CF a_CS) ⟨[(d.env, "didReceiveUpdate")], [], false⟩) C "nodeType" (.num (F64.fin false 4503599627370496 (-52))))
+    (a_hTN : ReactHostContainer.DomRead eng answer HI n s (Logic.Footprint.union (ReactHostContainer.fp d.env VS a_RI a_CF a_CS) ⟨[(d.env, "didReceiveUpdate")], [], false⟩) C "tagName" (.str (JSStr.ofString "DIV")))
+    (a_hNS : ReactHostContainer.DomRead eng answer HI n s (Logic.Footprint.union (ReactHostContainer.fp d.env VS a_RI a_CF a_CS) ⟨[(d.env, "didReceiveUpdate")], [], false⟩) C "namespaceURI"
+      (.str (JSStr.ofString "http://www.w3.org/1999/xhtml")))
+    (b_d1 : VS ≠ b_Cu)
+    (b_d2 : VS ≠ Cx)
+    (b_d3 : b_Cu ≠ Cx)
+    (b_d4 : fP ≠ VS)
+    (b_d5 : fP ≠ b_Cu)
+    (b_d6 : fP ≠ Cx)
+    (e_hH : H < s.heap.size)
+    (e_hHk : (s.objEntry H).kind.isPlain = true)
+    (e_hX : X < s.heap.size)
+    (e_hXk : (s.objEntry X).kind.isPlain = true)
+    (e_n_H_X : H ≠ X)
+    (e_n_H_C0 : H ≠ e_C0)
+    (e_n_H_C1 : H ≠ e_C1)
+    (e_n_X_C0 : X ≠ e_C0)
+    (e_n_X_C1 : X ≠ e_C1)
+    (e_n_C0_C1 : e_C0 ≠ e_C1)
+    (e_n_fC_X : e_fC ≠ X)
+    (e_n_fC_C1 : e_fC ≠ e_C1)
+    (x_VS_X : VS ≠ X)
+    (x_VS_H : VS ≠ H)
+    (x_VS_e_C0 : VS ≠ e_C0)
+    (x_VS_e_C1 : VS ≠ e_C1)
+    (x_VS_e_fC : VS ≠ e_fC)
+    (x_VS_Rt : VS ≠ Rt)
+    (x_VS_MS : VS ≠ MS)
+    (x_VS_fPHC : VS ≠ fPHC)
+    (x_VS_fPPR : VS ≠ fPPR)
+    (x_VS_fRHS : VS ≠ fRHS)
+    (x_VS_fBOF : VS ≠ fBOF)
+    (x_VS_fP : VS ≠ fP)
+    (x_VS_a_fO : VS ≠ a_fO)
+    (x_VS_a_fGO : VS ≠ a_fGO)
+    (x_VS_a_fGC : VS ≠ a_fGC)
+    (x_VS_a_RI : VS ≠ a_RI)
+    (x_VS_a_CF : VS ≠ a_CF)
+    (x_VS_a_CS : VS ≠ a_CS)
+    (x_VS_b_Cu : VS ≠ b_Cu)
+    (x_VS_Cx : VS ≠ Cx)
+    (x_a_RI_X : a_RI ≠ X)
+    (x_a_RI_H : a_RI ≠ H)
+    (x_a_RI_e_C0 : a_RI ≠ e_C0)
+    (x_a_RI_e_C1 : a_RI ≠ e_C1)
+    (x_a_RI_e_fC : a_RI ≠ e_fC)
+    (x_a_RI_Rt : a_RI ≠ Rt)
+    (x_a_RI_MS : a_RI ≠ MS)
+    (x_a_RI_fPHC : a_RI ≠ fPHC)
+    (x_a_RI_fPPR : a_RI ≠ fPPR)
+    (x_a_RI_fRHS : a_RI ≠ fRHS)
+    (x_a_RI_fBOF : a_RI ≠ fBOF)
+    (x_a_RI_fP : a_RI ≠ fP)
+    (x_a_RI_a_fO : a_RI ≠ a_fO)
+    (x_a_RI_a_fGO : a_RI ≠ a_fGO)
+    (x_a_RI_a_fGC : a_RI ≠ a_fGC)
+    (x_a_RI_a_CF : a_RI ≠ a_CF)
+    (x_a_RI_a_CS : a_RI ≠ a_CS)
+    (x_a_RI_b_Cu : a_RI ≠ b_Cu)
+    (x_a_RI_Cx : a_RI ≠ Cx)
+    (x_a_CF_X : a_CF ≠ X)
+    (x_a_CF_H : a_CF ≠ H)
+    (x_a_CF_e_C0 : a_CF ≠ e_C0)
+    (x_a_CF_e_C1 : a_CF ≠ e_C1)
+    (x_a_CF_e_fC : a_CF ≠ e_fC)
+    (x_a_CF_Rt : a_CF ≠ Rt)
+    (x_a_CF_MS : a_CF ≠ MS)
+    (x_a_CF_fPHC : a_CF ≠ fPHC)
+    (x_a_CF_fPPR : a_CF ≠ fPPR)
+    (x_a_CF_fRHS : a_CF ≠ fRHS)
+    (x_a_CF_fBOF : a_CF ≠ fBOF)
+    (x_a_CF_fP : a_CF ≠ fP)
+    (x_a_CF_a_fO : a_CF ≠ a_fO)
+    (x_a_CF_a_fGO : a_CF ≠ a_fGO)
+    (x_a_CF_a_fGC : a_CF ≠ a_fGC)
+    (x_a_CF_a_CS : a_CF ≠ a_CS)
+    (x_a_CF_b_Cu : a_CF ≠ b_Cu)
+    (x_a_CF_Cx : a_CF ≠ Cx)
+    (x_a_CS_X : a_CS ≠ X)
+    (x_a_CS_H : a_CS ≠ H)
+    (x_a_CS_e_C0 : a_CS ≠ e_C0)
+    (x_a_CS_e_C1 : a_CS ≠ e_C1)
+    (x_a_CS_e_fC : a_CS ≠ e_fC)
+    (x_a_CS_Rt : a_CS ≠ Rt)
+    (x_a_CS_MS : a_CS ≠ MS)
+    (x_a_CS_fPHC : a_CS ≠ fPHC)
+    (x_a_CS_fPPR : a_CS ≠ fPPR)
+    (x_a_CS_fRHS : a_CS ≠ fRHS)
+    (x_a_CS_fBOF : a_CS ≠ fBOF)
+    (x_a_CS_fP : a_CS ≠ fP)
+    (x_a_CS_a_fO : a_CS ≠ a_fO)
+    (x_a_CS_a_fGO : a_CS ≠ a_fGO)
+    (x_a_CS_a_fGC : a_CS ≠ a_fGC)
+    (x_a_CS_b_Cu : a_CS ≠ b_Cu)
+    (x_a_CS_Cx : a_CS ≠ Cx)
+    (x_b_Cu_X : b_Cu ≠ X)
+    (x_b_Cu_H : b_Cu ≠ H)
+    (x_b_Cu_e_C0 : b_Cu ≠ e_C0)
+    (x_b_Cu_e_C1 : b_Cu ≠ e_C1)
+    (x_b_Cu_e_fC : b_Cu ≠ e_fC)
+    (x_b_Cu_Rt : b_Cu ≠ Rt)
+    (x_b_Cu_MS : b_Cu ≠ MS)
+    (x_b_Cu_fPHC : b_Cu ≠ fPHC)
+    (x_b_Cu_fPPR : b_Cu ≠ fPPR)
+    (x_b_Cu_fRHS : b_Cu ≠ fRHS)
+    (x_b_Cu_fBOF : b_Cu ≠ fBOF)
+    (x_b_Cu_fP : b_Cu ≠ fP)
+    (x_b_Cu_a_fO : b_Cu ≠ a_fO)
+    (x_b_Cu_a_fGO : b_Cu ≠ a_fGO)
+    (x_b_Cu_a_fGC : b_Cu ≠ a_fGC)
+    (x_b_Cu_Cx : b_Cu ≠ Cx)
+    (x_Cx_X : Cx ≠ X)
+    (x_Cx_H : Cx ≠ H)
+    (x_Cx_e_C0 : Cx ≠ e_C0)
+    (x_Cx_e_C1 : Cx ≠ e_C1)
+    (x_Cx_e_fC : Cx ≠ e_fC)
+    (x_Cx_Rt : Cx ≠ Rt)
+    (x_Cx_MS : Cx ≠ MS)
+    (x_Cx_fPHC : Cx ≠ fPHC)
+    (x_Cx_fPPR : Cx ≠ fPPR)
+    (x_Cx_fRHS : Cx ≠ fRHS)
+    (x_Cx_fBOF : Cx ≠ fBOF)
+    (x_Cx_fP : Cx ≠ fP)
+    (x_Cx_a_fO : Cx ≠ a_fO)
+    (x_Cx_a_fGO : Cx ≠ a_fGO)
+    (x_Cx_a_fGC : Cx ≠ a_fGC)
+    (hcAEB : Hide (∀ w h1, Frame ⟨[(d.env, JSStr.ofString "didReceiveUpdate")], [], false⟩ s w → 500 ≤ w.fuel →
+      WP eng answer (n + 2) h1 (callImpl eng (.obj fAEB) .undefined #[.obj H, .obj X, .num (F64.fin false 4503599627370496 (-51))]) w fun v w' h' =>
+        v = .obj e_C1 ∧ Frame (ReactEarlyBailout.fp dAEB.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) w w' ∧ w.fuel ≤ w'.fuel + 500 ∧ h' = h1 ∧ (∃ bw, Scope.declLike? (w'.envEntry dAEB.env) = some (bw, oG) ∧ (∃ bd, bw[JSStr.ofString "index"]? = some bd ∧ bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧ ∃ bd, bw[JSStr.ofString "isHydrating"]? = some bd ∧ bd.value = some (.bool false)) ∧ (w'.objEntry VS).props.get? (.str "0") = some (.data a_vr true a_e0 a_c0) ∧ (w'.objEntry VS).props.get? (.str "1") = some (.data a_vf true a_e1 a_c1) ∧ (w'.objEntry VS).props.get? (.str "2") = some (.data a_vc true a_e2 a_c2) ∧ (w'.objEntry VS).props.get? (.str "3") = some (.data b_cur true b_oe b_oc) ∧ (w'.objEntry a_RI).props.get? (.str "current") = some (.data (.obj C) true a_re a_rc) ∧ (w'.objEntry a_CF).props.get? (.str "current") = some (.data (.obj X) true a_fe a_fc) ∧ (w'.objEntry a_CS).props.get? (.str "current") = some (.data (.num (F64.fin false 0 (-1074))) true a_ce a_cc) ∧ (w'.objEntry b_Cu).props.get? (.str "current") = some (.data b_cv true b_ce b_cc) ∧ (w'.objEntry Cx).props.get? (.str "_currentValue") = some (.data cache true b_xe b_xc) ∧ (w'.objEntry e_C1).props.get? (.str "pendingProps") = some (.data (e_pp) true e_e0 e_c0) ∧ (w'.objEntry e_C1).props.get? (.str "type") = some (.data (e_vT) true e_e1 e_c1) ∧ (w'.objEntry e_C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd e_fl (F64.fin false 5062151534280704 (-22)))) true e_e2 e_c2) ∧ (w'.objEntry e_C1).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true e_e3 e_c3) ∧ (w'.objEntry e_C1).props.get? (.str "deletions") = some (.data (.null) true e_e4 e_c4) ∧ (w'.objEntry e_C1).props.get? (.str "childLanes") = some (.data (e_vCL) true e_e5 e_c5) ∧ (w'.objEntry e_C1).props.get? (.str "lanes") = some (.data (e_vL) true e_e6 e_c6) ∧ (w'.objEntry e_C1).props.get? (.str "child") = some (.data (e_vC) true e_e7 e_c7) ∧ (w'.objEntry e_C1).props.get? (.str "memoizedProps") = some (.data (e_vMP) true e_e8 e_c8) ∧ (w'.objEntry e_C1).props.get? (.str "memoizedState") = some (.data (e_vMS) true e_e9 e_c9) ∧ (w'.objEntry e_C1).props.get? (.str "updateQueue") = some (.data (e_vUQ) true e_e10 e_c10) ∧ (w'.objEntry e_C1).props.get? (.str "dependencies") = some (.data (.null) true e_e11 e_c11) ∧ (w'.objEntry e_C1).props.get? (.str "sibling") = some (.data (.null) true e_e12 e_c12) ∧ (w'.objEntry e_C1).props.get? (.str "index") = some (.data (e_vI) true e_e13 e_c13) ∧ (w'.objEntry e_C1).props.get? (.str "ref") = some (.data (e_vR) true e_e14 e_c14) ∧ (w'.objEntry e_C1).props.get? (.str "refCleanup") = some (.data (e_vRC) true e_e15 e_c15) ∧ (w'.objEntry e_C1).props.get? (.str "return") = some (.data (.obj X) true e_re e_rc) ∧ (w'.objEntry X).props.get? (.str "child") = some (.data (.obj e_C1) true e_xce e_xcc))) :
+    WP eng answer (n + 3) h (callImpl eng (.obj fo) t #[.obj H, .obj X, .num (F64.fin false 4503599627370496 (-51))]) s fun v w h' =>
+      v = .obj e_C1 ∧ Frame (fp d.env VS a_RI a_CF a_CS b_Cu Cx X e_C1) s w ∧ s.fuel ≤ w.fuel + 700 ∧ h' = h ∧
+      (∃ bw, Scope.declLike? (w.envEntry d.env) = some (bw, oG) ∧ (∃ bd, bw[JSStr.ofString "index"]? = some bd ∧
+        bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧
+        (∃ bd, bw[JSStr.ofString "isHydrating"]? = some bd ∧ bd.value = some (.bool false)) ∧
+        ∃ bd, bw[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false)) ∧
+      (w.objEntry VS).props.get? (.str "0") = some (.data a_vr true a_e0 a_c0) ∧
+      (w.objEntry VS).props.get? (.str "1") = some (.data a_vf true a_e1 a_c1) ∧
+      (w.objEntry VS).props.get? (.str "2") = some (.data a_vc true a_e2 a_c2) ∧
+      (w.objEntry VS).props.get? (.str "3") = some (.data b_cur true b_oe b_oc) ∧
+      (w.objEntry a_RI).props.get? (.str "current") = some (.data (.obj C) true a_re a_rc) ∧
+      (w.objEntry a_CF).props.get? (.str "current") = some (.data (.obj X) true a_fe a_fc) ∧
+      (w.objEntry a_CS).props.get? (.str "current") = some (.data (.num (F64.fin false 0 (-1074))) true a_ce a_cc) ∧
+      (w.objEntry b_Cu).props.get? (.str "current") = some (.data b_cv true b_ce b_cc) ∧
+      (w.objEntry Cx).props.get? (.str "_currentValue") = some (.data cache true b_xe b_xc) ∧
+      (w.objEntry e_C1).props.get? (.str "pendingProps") = some (.data (e_pp) true e_e0 e_c0) ∧
+      (w.objEntry e_C1).props.get? (.str "type") = some (.data (e_vT) true e_e1 e_c1) ∧
+      (w.objEntry e_C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd e_fl (F64.fin false 5062151534280704 (-22)))) true e_e2 e_c2) ∧
+      (w.objEntry e_C1).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true e_e3 e_c3) ∧
+      (w.objEntry e_C1).props.get? (.str "deletions") = some (.data (.null) true e_e4 e_c4) ∧
+      (w.objEntry e_C1).props.get? (.str "childLanes") = some (.data (e_vCL) true e_e5 e_c5) ∧
+      (w.objEntry e_C1).props.get? (.str "lanes") = some (.data (e_vL) true e_e6 e_c6) ∧
+      (w.objEntry e_C1).props.get? (.str "child") = some (.data (e_vC) true e_e7 e_c7) ∧
+      (w.objEntry e_C1).props.get? (.str "memoizedProps") = some (.data (e_vMP) true e_e8 e_c8) ∧
+      (w.objEntry e_C1).props.get? (.str "memoizedState") = some (.data (e_vMS) true e_e9 e_c9) ∧
+      (w.objEntry e_C1).props.get? (.str "updateQueue") = some (.data (e_vUQ) true e_e10 e_c10) ∧
+      (w.objEntry e_C1).props.get? (.str "dependencies") = some (.data (.null) true e_e11 e_c11) ∧
+      (w.objEntry e_C1).props.get? (.str "sibling") = some (.data (.null) true e_e12 e_c12) ∧
+      (w.objEntry e_C1).props.get? (.str "index") = some (.data (e_vI) true e_e13 e_c13) ∧
+      (w.objEntry e_C1).props.get? (.str "ref") = some (.data (e_vR) true e_e14 e_c14) ∧
+      (w.objEntry e_C1).props.get? (.str "refCleanup") = some (.data (e_vRC) true e_e15 e_c15) ∧
+      (w.objEntry e_C1).props.get? (.str "return") = some (.data (.obj X) true e_re e_rc) ∧
+      (w.objEntry X).props.get? (.str "child") = some (.data (.obj e_C1) true e_xce e_xcc) := by
+  apply wp_callGen BWGen.beginWork_eq (by decide) hlt hk (by omega) hcls hmode
+    (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simple d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
+  have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
+    JSStr.ofString "renderLanes"] := by rw [hcode]; rfl
+  have hv : d.code.info.fdi.varNames = #[JSStr.ofString "props", JSStr.ofString "$$typeof", JSStr.ofString "prevState",
+    JSStr.ofString "nextState"] := by rw [hcode]; rfl
+  have hl : FDI.lexDecls d = #[] := by simp [FDI.lexDecls, hcode, BWGen.beginWork_func, Func.info]
+  have ha : d.code.isAsync = false := by rw [hcode]; rfl
+  have hne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
+  have hG1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  clear hcode
+  simp only [BWGen.beginWork]
+  js [hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
+  -- (`checkScheduledUpdateOrContext(current, renderLanes)`)
+  refine ⟨by js_norm [CallableC, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner], ?_⟩
+  refine wp_mono (ReactRootBailout.check_none (d := dCHK) (H := H) (hl := hl0v) (lw := hlw) (le := hle) (lc := hlc) (dw := hdw2) (de := hde2) (dc := hdc2) ?_ ?_ ?_ h_CHKcode h_CHKcls h_CHKmode ?_ ?_ ?_ ?_ hl0) ?p1
+  all_goals first | (simp only [js_simp]; omega) | (js_norm [hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]; done) | skip
+  case p1 =>
+    intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1⟩
+    subst hv1 hh1
+    try simp only [js_simp] at hfu1
+    have hE1 : s.envs.size < w1.envs.size := envs_frame hF1 (by first | with_reducible assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+    have hGk1 : d.env < w1.envs.size := envs_frame hF1 (by first | with_reducible assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+    have hEw1 := envEntry_frame0 hF1 (e := s.envs.size) (by first | with_reducible assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+    have hGw1 := envEntry_frame0 hF1 (e := d.env) (by first | with_reducible assumption | (simp only [js_simp]; done) | (simp only [js_simp]; omega))
+    have oo1 : ∀ o, o < s.heap.size → w1.objEntry o = s.objEntry o := fun o ho => by
+      rw [objEntry_frame0 hF1 (by simpa using ho)]; simp only [js_simp]
+    have hX1 : X < w1.heap.size := heap_frame hF1 (by simpa using e_hX)
+    have hH1 : H < w1.heap.size := heap_frame hF1 (by simpa using e_hH)
+    have hA1 : fAEB < w1.heap.size := heap_frame hF1 (by simpa using h_AEB)
+    js [hE1, hGk1, hEw1, hGw1, hX1, hH1, hA1, oo1 _ e_hX, oo1 _ e_hH, oo1 _ h_AEB, Nat.ne_of_lt hE1, Nat.lt_succ_of_lt hE1, Nat.ne_of_lt hGk1, Nat.lt_succ_of_lt hGk1, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
+    -- (`attemptEarlyBailoutIfNoScheduledUpdate(current, workInProgress, renderLanes)`)
+    refine ⟨by js_norm [CallableC, hX1, hH1, hA1, hE1, hGk1, hEw1, hGw1, oo1 _ e_hX, oo1 _ e_hH, oo1 _ h_AEB, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner], ?_⟩
+    refine wp_mono (hcAEB.get _ _  (by frame_go' [*, hne, Ne.symm hne, hG1]) (by first | omega | (simp only [js_simp]; omega)) ) ?p2
+    all_goals (try clear hcAEB)
+    all_goals first | (simp only [js_simp]; omega) | (js_norm [hX1, hH1, hA1, hE1, hGk1, hEw1, hGw1, oo1 _ h_AEB, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]; done) | skip
+    case p2 =>
+      intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hI2, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18⟩
+      subst hv2 hh2
+      rw [h_AEBenv] at hI2
+      obtain ⟨bw, hbw, hidx, hhy⟩ := hI2
+      obtain ⟨bw', hbw', hbwx'⟩ := declLike_frame hF2 (e := dAEB.env) (by rw [h_AEBenv]; js_norm [hE1, hGk1, hEw1, hGw1, hG]) (bs := (bG.modify (JSStr.ofString "didReceiveUpdate") (fun bd => { bd with value := some (.bool false) }))) (o := oG) (by rw [h_AEBenv]; js_norm [hE1, hGk1, hEw1, hGw1, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner])
+      rw [h_AEBenv] at hbw'
+      have hbwe : bw' = bw := by rw [hbw] at hbw'; cases hbw'; rfl
+      subst hbwe
+      have hdru : ∃ bd, bw'[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false) :=
+        ⟨{ bdDRU with value := some (.bool false) }, by rw [hbwx' _ (by simp [ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, Logic.Footprint.union] <;> decide)]; simp [Std.HashMap.getElem?_modify, g_DRU], g_DRUm, rfl⟩
+      have hI2 : ∃ bw, Scope.declLike? (w2.envEntry d.env) = some (bw, oG) ∧ (∃ bd, bw[JSStr.ofString "index"]? = some bd ∧ bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧ (∃ bd, bw[JSStr.ofString "isHydrating"]? = some bd ∧ bd.value = some (.bool false)) ∧ ∃ bd, bw[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false) :=
+        ⟨bw', hbw, hidx, hhy, hdru⟩
+      try simp only [js_simp] at hfu2
+      js [hE1, hGk1, hG, hGe, g_CHK, g_CHKv, h_CHK, h_CHKk, g_AEB, g_AEBv, h_AEB, h_AEBk, g_DRU, g_DRUm, g_DRUv, hHmp, hXpp, hHl, hHd2, hl0, hXf, hxf, e_hX, e_hXk, e_hH, e_hHk, x_CHK_X, x_CHK_H, x_AEB_X, x_AEB_H, Ne.symm x_CHK_X, Ne.symm x_CHK_H, Ne.symm x_AEB_X, Ne.symm x_AEB_H, hpn, hv, hl, ha, hne, Ne.symm hne, hG1, beq_self_eq_true, FDI.fdiCtx, Sem.inner]
+      all_goals (repeat' apply And.intro)
+      all_goals first | omega | (simp only [js_simp] at *; omega) | with_reducible assumption | exact ⟨bw', rfl, hidx, hhy, hdru⟩ | skip
       simp only [fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, Logic.Footprint.union, List.cons_append, List.nil_append, List.append_assoc, Bool.false_or] at hF2 ⊢
       rw [h_AEBenv] at hF2
       frame_go' [*, hne, Ne.symm hne, hG1]

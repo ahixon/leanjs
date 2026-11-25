@@ -10,6 +10,7 @@ import JSProofs.ReactBeginCounter
 import JSProofs.ReactUnitCounter
 import JSProofs.ReactUnitButton
 import JSProofs.ReactEarlyBailout
+import JSProofs.ReactBeginRoot
 
 /-! The render's callees composed in Lean (contract-style specs and `facts_compose`, replacing
 `tools/gen_react_*.py`): `useFiber` with `createWorkInProgress`; `reconcileChildFibersImpl` with `useFiber`;
@@ -18,7 +19,8 @@ import JSProofs.ReactEarlyBailout
 the counter component with `useState`; `renderWithHooks` with the counter component;
 `updateFunctionComponent` with `renderWithHooks` and `reconcileChildren`; the counter's `beginWork` with
 `updateFunctionComponent`; `performUnitOfWork` on the counter with its `beginWork`; on the button with its `beginWork` and
-`completeUnitOfWork`; the root's early bailout with its four callees. -/
+`completeUnitOfWork`; the root's early bailout with its four callees; the root's `beginWork` with
+the early bailout. -/
 
 facts_form ReactCreateWIP.reuse_spec
 facts_form ReactUseFiber.spec_c
@@ -158,3 +160,14 @@ facts_compose root_comp := root_spec_c
   | hcBOF => ReactBailout.root_spec (fo := fBOF) (d := dBOF) (t := .undefined) (bdS := e_bdS) (bdC := e_bdC) (fC := e_fC) (C0 := e_C0) (C1 := e_C1) (dC := e_dC) (sk := e_sk) (xl := e_xl) (xcl := e_xcl) (fl := e_fl) (vT := e_vT) (vCL := e_vCL) (vL := e_vL) (vC := e_vC) (vMP := e_vMP) (vMS := e_vMS) (vUQ := e_vUQ) (vS := e_vS) (vI := e_vI) (vR := e_vR) (vRC := e_vRC) (pp := e_pp) (xd := e_xd) (or := e_or) (o0 := e_o0) (o1 := e_o1) (o2 := e_o2) (o3 := e_o3) (o4 := e_o4) (o5 := e_o5) (o6 := e_o6) (o7 := e_o7) (o8 := e_o8) (o9 := e_o9) (o10 := e_o10) (o11 := e_o11) (o12 := e_o12) (o13 := e_o13) (o14 := e_o14) (o15 := e_o15) (hdw := e_hdw) (hde := e_hde) (hdc := e_hdc) (hcw := e_hcw) (hce := e_hce) (hcc := e_hcc) (xlw := e_xlw) (xle := e_xle) (xlc := e_xlc) (xclw := e_xclw) (xcle := e_xcle) (xclc := e_xclc) (cpw := e_cpw) (cpe := e_cpe) (cpc := e_cpc) (caw := e_caw) (cae := e_cae) (cac := e_cac) (cfw := e_cfw) (cfe := e_cfe) (cfc := e_cfc) (cdw := e_cdw) (cde := e_cde) (cdc := e_cdc) (c_typew := e_c_typew) (c_typee := e_c_typee) (c_typec := e_c_typec) (c_childLanesw := e_c_childLanesw) (c_childLanese := e_c_childLanese) (c_childLanesc := e_c_childLanesc) (c_lanesw := e_c_lanesw) (c_lanese := e_c_lanese) (c_lanesc := e_c_lanesc) (c_childw := e_c_childw) (c_childe := e_c_childe) (c_childc := e_c_childc) (c_memoizedPropsw := e_c_memoizedPropsw) (c_memoizedPropse := e_c_memoizedPropse) (c_memoizedPropsc := e_c_memoizedPropsc) (c_memoizedStatew := e_c_memoizedStatew) (c_memoizedStatee := e_c_memoizedStatee) (c_memoizedStatec := e_c_memoizedStatec) (c_updateQueuew := e_c_updateQueuew) (c_updateQueuee := e_c_updateQueuee) (c_updateQueuec := e_c_updateQueuec) (c_siblingw := e_c_siblingw) (c_siblinge := e_c_siblinge) (c_siblingc := e_c_siblingc) (c_indexw := e_c_indexw) (c_indexe := e_c_indexe) (c_indexc := e_c_indexc) (c_refw := e_c_refw) (c_refe := e_c_refe) (c_refc := e_c_refc) (c_refCleanupw := e_c_refCleanupw) (c_refCleanupe := e_c_refCleanupe) (c_refCleanupc := e_c_refCleanupc) (e0 := e_e0) (e1 := e_e1) (e2 := e_e2) (e3 := e_e3) (e4 := e_e4) (e5 := e_e5) (e6 := e_e6) (e7 := e_e7) (e8 := e_e8) (e9 := e_e9) (e10 := e_e10) (e11 := e_e11) (e12 := e_e12) (e13 := e_e13) (e14 := e_e14) (e15 := e_e15) (c0 := e_c0) (c1 := e_c1) (c2 := e_c2) (c3 := e_c3) (c4 := e_c4) (c5 := e_c5) (c6 := e_c6) (c7 := e_c7) (c8 := e_c8) (c9 := e_c9) (c10 := e_c10) (c11 := e_c11) (c12 := e_c12) (c13 := e_c13) (c14 := e_c14) (c15 := e_c15) (xde := e_xde) (xdc := e_xdc) (xce := e_xce) (xcc := e_xcc) (re := e_re) (rc := e_rc) same
 
 end ReactEarlyBailout
+
+facts_form ReactBeginRoot.root_spec_c
+
+namespace ReactBeginRoot
+open ES Logic
+
+set_option maxHeartbeats 4000000 in
+facts_compose root_comp := root_spec_c
+  | hcAEB => ReactEarlyBailout.root_comp (fo := fAEB) (d := dAEB) (t := .undefined) same
+
+end ReactBeginRoot
