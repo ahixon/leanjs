@@ -514,6 +514,452 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
     · rw [hF3.realms_eq]; show W.realms = w.realms; rw [hWrs, hFs.realms_eq]
     · rw [hF3.jobs_eq rfl]; show W.jobs = w.jobs; exact hWj
 
+
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 20000 in
+/-- `click_spec` with its callee as a contract (`facts_compose` composes it). -/
+theorem click_spec_c {n : Nat}
+    {h : σ}
+    {fo : ObjId}
+    {d : FuncData}
+    {s : State}
+    {bG : HashMap JSStr Binding}
+    {oG : Option EnvId}
+    {fD : ObjId}
+    {dD : FuncData}
+    {fS RSI HD : ObjId}
+    {dS : FuncData}
+    {bR : HashMap JSStr Binding}
+    {oR : Option EnvId}
+    {fK IR IJ fJ AP fV fN AIP IP OP : ObjId}
+    {dK dJ : FuncData}
+    {tK vT : Value}
+    {argsK : Array Value}
+    {bA bJ : HashMap JSStr Binding}
+    {oA oJ : Option EnvId}
+    {bdIR bdIJ bdT : Binding}
+    {bdV bdN : BuiltinData}
+    {xE : F64}
+    {irw ire irc ijw ije ijc pw pe pc nnw nne nnc : Bool}
+    {bdRSI : Binding}
+    {rw re rc uw ue' uc : Bool}
+    {bdU bdB : Binding}
+    {bdC bdW bdF bdUW bdUR bdRL bdCE bdSD bdDR bdIs : Binding}
+    {bdIsb : BuiltinData}
+    {fW fR fIs C1 C0 H0 Q U fBS : ObjId}
+    {dW dR dBS : FuncData}
+    {r ms bs vE a dv : Value}
+    {aw ae ac me mc nw ne nc w1 e1 c1 w2 e2 c2 e3 c3 w4 e4 c4 : Bool}
+    {qp qr ql qd ul ur ua ue uv un : Bool × Bool × Bool}
+    (hS : fS < s.heap.size)
+    (hSk : (s.objEntry fS).kind = .func dS)
+    -- (`react`'s module scope: `ReactSharedInternals`, whose `H` is the update dispatcher `HD`)
+    (hf : 200 ≤ s.fuel)
+    (hG : d.env < s.envs.size)
+    -- (`updateWorkInProgressHook`'s module variables)
+    -- (the two callees, functions of the same module)
+    (hW : fW < s.heap.size)
+    -- (`updateReducerImpl`'s module variables)
+    -- (the work in progress `C1`, its current `C0`, the current first hook `H0`, its queue `Q`, the update `U`)
+    (hC1 : C1 < s.heap.size)
+    (hH0 : H0 < s.heap.size)
+    (hQ : Q < s.heap.size)
+    (hrBS : r = .obj fBS)
+    -- (the component and its module scope: `import_react`, `import_jsx_runtime`)
+    (hK : fK < s.heap.size)
+    (hKk : (s.objEntry fK).kind = .func dK)
+    (hKcode : dK.code = CounterGen.Counter_func)
+    (hKcls : dK.isClassCtor = false)
+    (hKmode : dK.thisMode = .strict)
+    (hAG : dK.env < s.envs.size)
+    (hAGe : Scope.declLike? (s.envEntry dK.env) = some (bA, oA))
+    (hAR : bA[JSStr.ofString "import_react"]? = some bdIR)
+    (hARv : bdIR.value = some (.obj IR))
+    (hIR : IR < s.heap.size)
+    (hIRk : (s.objEntry IR).kind.isPlain = true)
+    (hIRu : (s.objEntry IR).props.get? (.str "useState") = some (.data (.obj fS) irw ire irc))
+    (hAJ : bA[JSStr.ofString "import_jsx_runtime"]? = some bdIJ)
+    (hAJv : bdIJ.value = some (.obj IJ))
+    (hIJ : IJ < s.heap.size)
+    (hIJk : (s.objEntry IJ).kind.isPlain = true)
+    (hIJj : (s.objEntry IJ).props.get? (.str "jsx") = some (.data (.obj fJ) ijw ije ijc))
+    -- (`jsxProd` and its module's `REACT_ELEMENT_TYPE`)
+    (hJ : fJ < s.heap.size)
+    (hJk : (s.objEntry fJ).kind = .func dJ)
+    (hJcode : dJ.code = JSXGen.jsxProd_func)
+    (hJcls : dJ.isClassCtor = false)
+    (hJmode : dJ.thisMode = .strict)
+    (hJG : dJ.env < s.envs.size)
+    (hJGe : Scope.declLike? (s.envEntry dJ.env) = some (bJ, oJ))
+    (hJT : bJ[JSStr.ofString "REACT_ELEMENT_TYPE"]? = some bdT)
+    (hJTv : bdT.value = some vT)
+    -- (the realm's built-ins the destructuring and the object literal use)
+    (hAP : s.realms[dR.realm]!.arrayProto = AP)
+    (hP : AP < s.heap.size)
+    (hPk : (s.objEntry AP).kind.isReadPlain = true)
+    (hPv : (s.objEntry AP).props.get? (.sym WK.iterator) = some (.data (.obj fV) pw pe pc))
+    (hV : fV < s.heap.size)
+    (hVk : (s.objEntry fV).kind = .builtin bdV)
+    (hVfn : eng.builtins[bdV.id]? = some (ES.arrayProtoValues 1))
+    (hVr : bdV.realm = dK.realm)
+    (hII : s.realms[dK.realm]!.intrinsics["%ArrayIteratorPrototype%"]? = some AIP)
+    (hAIP : AIP < s.heap.size)
+    (hAIPk : (s.objEntry AIP).kind.isReadPlain = true)
+    (hAIPn : (s.objEntry AIP).props.get? (.str kNext) = some (.data (.obj fN) nnw nne nnc))
+    (hN : fN < s.heap.size)
+    (hNk : (s.objEntry fN).kind = .builtin bdN)
+    (hNfn : eng.builtins[bdN.id]? = some ES.arrayIteratorNext)
+    (hNr : bdN.realm = dK.realm)
+    (hAIPp : (s.objEntry AIP).proto = .obj IP)
+    (hAIPr : (s.objEntry AIP).props.get? (.str "return") = none)
+    (hIP : IP < s.heap.size)
+    (hIPk : (s.objEntry IP).kind.isReadPlain = true)
+    (hIPr : (s.objEntry IP).props.get? (.str "return") = none)
+    (hIPp : (s.objEntry IP).proto = .obj OP)
+    (hOPe : s.realms[dK.realm]!.objectProto = OP)
+    (hOP : OP < s.heap.size)
+    (hOPk : (s.objEntry OP).kind.isPlain = true)
+    (hOPr : (s.objEntry OP).props.get? (.str "return") = none)
+    (hOPp : (s.objEntry OP).proto = .null)
+    (hOPkey : (s.objEntry OP).props.get? (.str "key") = none)
+    (hOPref : (s.objEntry OP).props.get? (.str "ref") = none)
+    (hFP : (s.realms[dK.realm]!.intrinsics["%Function.prototype%"]?).isSome = true)
+    -- (the new state is a Number)
+    (hvE : vE = .num xE)
+    -- (the realm's and the other modules' objects are not React's fiber, hook, or queue; the module scopes differ)
+    (dAP : AP ≠ C1 ∧ AP ≠ H0 ∧ AP ≠ Q)
+    (dfV : fV ≠ C1 ∧ fV ≠ H0 ∧ fV ≠ Q)
+    (dAIP : AIP ≠ C1 ∧ AIP ≠ H0 ∧ AIP ≠ Q)
+    (dfN : fN ≠ C1 ∧ fN ≠ H0 ∧ fN ≠ Q)
+    (dIP : IP ≠ C1 ∧ IP ≠ H0 ∧ IP ≠ Q)
+    (dOP : OP ≠ C1 ∧ OP ≠ H0 ∧ OP ≠ Q)
+    (dIJ : IJ ≠ C1 ∧ IJ ≠ H0 ∧ IJ ≠ Q)
+    (dfJ : fJ ≠ C1 ∧ fJ ≠ H0 ∧ fJ ≠ Q)
+    (hKd : dK.env ≠ d.env)
+    (hJd : dJ.env ≠ d.env)
+    (hcUS : ∀ w h1, Frame {} s w → 120 ≤ w.fuel →
+      WP eng answer (n + 4) h1 (callImpl eng (.obj fS) .undefined #[(.num (F64.fin false 0 (-1074)))]) w fun v w' h' =>
+        v = .obj (w.heap.size + 1) ∧ Frame (fpU d.env C1 w.heap.size H0 Q) w w' ∧ w.fuel ≤ w'.fuel + 120 ∧ h' = h1 ∧
+        ArrayObj (w.heap.size + 1) 2 (fun j => if j = 1 then dv else if j = 0 then vE else .undefined) w' ∧
+        (w'.objEntry (w.heap.size + 1)).proto = .obj w.realms[dR.realm]!.arrayProto ∧
+        (w'.objEntry (w.heap.size + 1)).props.get? (.sym WK.iterator) = none ∧
+        Scope.declLike? (w'.envEntry d.env) = some ((((bG.modify (JSStr.ofString "currentHook")
+          (fun bd => { bd with value := some (.obj H0) })).modify (JSStr.ofString "workInProgressHook")
+          (fun bd => { bd with value := some (.obj w.heap.size) })).modify (JSStr.ofString "didReceiveUpdate")
+          (fun bd => { bd with value := some (.bool true) })), oG) ∧
+        (w'.objEntry C1).props.get? (.str "memoizedState") = some (.data (.obj w.heap.size) true me mc) ∧
+        (w'.objEntry w.heap.size).kind.isPlain = true ∧
+        (w'.objEntry w.heap.size).props.get? (.str "memoizedState") = some (.data vE true true true) ∧
+        (w'.objEntry w.heap.size).props.get? (.str "baseState") = some (.data vE true true true) ∧
+        (w'.objEntry w.heap.size).props.get? (.str "baseQueue") = some (.data .null true true true) ∧
+        (w'.objEntry w.heap.size).props.get? (.str "queue") = some (.data (.obj Q) true true true) ∧
+        (w'.objEntry w.heap.size).props.get? (.str "next") = some (.data .null true true true) ∧
+        (w'.objEntry H0).props.get? (.str "baseQueue") = some (.data (.obj U) true e3 c3) ∧
+        (w'.objEntry Q).props.get? (.str "pending") = some (.data .null true qp.2.1 qp.2.2) ∧
+        (w'.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2) ∧
+        (w'.objEntry Q).props.get? (.str "lastRenderedState") = some (.data vE true ql.2.1 ql.2.2) ∧ w'.realm = w.realm) :
+    WP eng answer (n + 5) h (callImpl eng (.obj fK) tK argsK) s fun v w h' =>
+      ∃ E C F dF, v = .obj E ∧ E < w.heap.size ∧ C < w.heap.size ∧ F < w.heap.size ∧
+      s.heap.size < w.heap.size ∧ s.envs.size < w.envs.size ∧ s.heap.size ≤ E ∧ s.heap.size ≤ C ∧
+      Frame (fpU d.env C1 s.heap.size H0 Q) s w ∧ s.fuel ≤ w.fuel + 200 ∧ h' = h ∧
+      -- (the element: a `button` whose props' `children` is the new count, `onClick` the arrow over the new state)
+      (w.objEntry E).props.get? (.str "$$typeof") = some (.data vT true true true) ∧
+      (w.objEntry E).props.get? (.str "type") = some (.data (.str (JSStr.ofString "button")) true true true) ∧
+      (w.objEntry E).props.get? (.str "key") = some (.data .null true true true) ∧
+      (w.objEntry E).props.get? (.str "ref") = some (.data .null true true true) ∧
+      (w.objEntry E).props.get? (.str "props") = some (.data (.obj C) true true true) ∧
+      (w.objEntry C).props.get? (.str "children") =
+        some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
+      (w.objEntry C).props.get? (.str "onClick") = some (.data (.obj F) true true true) ∧
+      (w.objEntry E).kind = .ordinary ∧ (w.objEntry C).kind = .ordinary ∧ (w.objEntry C).proto = .obj OP ∧
+      (w.objEntry C).props.get? (.str "ref") = none ∧
+      (w.objEntry F).kind = .func dF ∧ dF.code = onClickFunc ∧ dF.env = s.envs.size ∧ dF.thisMode = .lexical ∧
+      Scope.declLike? (w.envEntry s.envs.size) = some (((((∅ : HashMap JSStr Binding).insert (JSStr.ofString "n")
+        { mutable := false, strict := true }).insert (JSStr.ofString "setN") { mutable := false, strict := true }).modify
+        (JSStr.ofString "n") (fun bd => { bd with value := some vE })).modify (JSStr.ofString "setN")
+        (fun bd => { bd with value := some dv }), some dK.env) ∧
+      -- (`useState`'s writes: the module's variables, the work in progress's new first hook, the queue)
+      Scope.declLike? (w.envEntry d.env) = some ((((bG.modify (JSStr.ofString "currentHook")
+        (fun bd => { bd with value := some (.obj H0) })).modify (JSStr.ofString "workInProgressHook")
+        (fun bd => { bd with value := some (.obj s.heap.size) })).modify (JSStr.ofString "didReceiveUpdate")
+        (fun bd => { bd with value := some (.bool true) })), oG) ∧
+      (w.objEntry C1).props.get? (.str "memoizedState") = some (.data (.obj s.heap.size) true me mc) ∧
+      (w.objEntry s.heap.size).props.get? (.str "memoizedState") = some (.data vE true true true) ∧
+      (w.objEntry s.heap.size).props.get? (.str "baseState") = some (.data vE true true true) ∧
+      (w.objEntry s.heap.size).props.get? (.str "baseQueue") = some (.data .null true true true) ∧
+      (w.objEntry s.heap.size).props.get? (.str "queue") = some (.data (.obj Q) true true true) ∧
+      (w.objEntry s.heap.size).props.get? (.str "next") = some (.data .null true true true) ∧
+      (w.objEntry H0).props.get? (.str "baseQueue") = some (.data (.obj U) true e3 c3) ∧
+      (w.objEntry Q).props.get? (.str "pending") = some (.data .null true qp.2.1 qp.2.2) ∧
+      (w.objEntry Q).props.get? (.str "lastRenderedReducer") = some (.data r true qr.2.1 qr.2.2) ∧
+      (w.objEntry Q).props.get? (.str "lastRenderedState") = some (.data vE true ql.2.1 ql.2.2) ∧
+      ReactNewProps.NewProps w C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") := by
+  subst hrBS
+  have hap : ∀ o, vE ≠ .obj o := by intro o ho; rw [hvE] at ho; cases ho
+  apply wp_callGen CounterGen.Counter_eq (by decide) hK hKk (by omega) hKcls hKmode
+    (by rw [hKcode]; rfl) (by rw [hKcode]; rfl) (simpleK dK hKcode) (by rw [hKcode]; rfl) (by rw [hKcode]; rfl)
+  have hpn : dK.code.info.fdi.paramNames = #[] := by rw [hKcode]; rfl
+  have hv : dK.code.info.fdi.varNames = #[] := by rw [hKcode]; rfl
+  have ha : dK.code.isAsync = false := by rw [hKcode]; rfl
+  have hpn' : CounterGen.Counter_func.info.fdi.paramNames = #[] := rfl
+  have hv' : CounterGen.Counter_func.info.fdi.varNames = #[] := rfl
+  have ha' : CounterGen.Counter_func.isAsync = false := rfl
+  have hl : FDI.lexDecls dK = #[LexScoped.binding .const (Pattern.arr #[some (PatElem.mk (Pattern.ident
+      (JSStr.ofString "n")) none), some (PatElem.mk (Pattern.ident (JSStr.ofString "setN")) none)] none)] := by
+    rw [FDI.lexDecls, hKcode]; first | rfl | simp [CounterGen.Counter_func, topLevelLexicallyScoped, stmtLexScoped, Func.info, Func.body, Array.foldl_toList]; decide
+  have hnames : (LexScoped.binding .const (Pattern.arr #[some (PatElem.mk (Pattern.ident (JSStr.ofString "n")) none),
+      some (PatElem.mk (Pattern.ident (JSStr.ofString "setN")) none)] none)).names =
+      #[JSStr.ofString "n", JSStr.ofString "setN"] := rfl
+  have hconst : (LexScoped.binding .const (Pattern.arr #[some (PatElem.mk (Pattern.ident (JSStr.ofString "n")) none),
+      some (PatElem.mk (Pattern.ident (JSStr.ofString "setN")) none)] none)).isConstant = true := rfl
+  have hneA : s.envs.size ≠ dK.env := Nat.ne_of_gt hAG
+  have hAG1 : dK.env < s.envs.size + 1 := Nat.lt_succ_of_lt hAG
+  simp only [CounterGen.Counter]
+  js [hpn, hv, hpn', hv', ha', hl, hnames, hconst, ha, hAG, hAG1, hneA, Ne.symm hneA, hAGe, hAR, hARv, hIR, hIRk, hIRu, FDI.fdiCtx, Sem.inner]
+  -- (`(0, import_react.useState)(0)`)
+  refine wp_callValueC ?_
+  js [hpn, hv, hpn', hv', ha', hl, hnames, hconst, ha, hAG, hAG1, hneA, Ne.symm hneA, hAGe, hAR, hARv, hIR, hIRk, hIRu, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hS, hSk], ?_⟩
+  -- (`useState(0)`: the click's update processed; the array `[state, dispatch]` at `s.heap.size + 1`)
+  refine wp_mono (hcUS _ _ (by frame_go' [hAG, hAG1, hneA, Ne.symm hneA, hAGe]) (by js_norm; omega)) ?post
+  intro v w h1 ⟨hv1, hF1, hfu1, hh1, hA1, hp1, hsym1, hdl1, hm1, hkk1, hkm1, hkb1, hkbq1, hkq1, hkn1, hH0b1, hQp1, hQr1,
+    hQl1, hr1⟩
+  subst v h1
+  have hbz : (bodyState s fK dK tK argsK).heap.size = s.heap.size := by js_norm
+  simp only [hbz] at hF1 hA1 hp1 hsym1
+  simp (config := { maxDischargeDepth := 6 }) only [js_simp, ↓reduceIte] at hfu1 hr1 hp1
+  -- (what `useState` left alone: its frame from the component's start)
+  have hFs := frame_trans (frame_bodyState (frame_refl ({} : Footprint) s) fK dK tK argsK) hF1
+  have hfo : ∀ o, o < s.heap.size → o ≠ C1 → o ≠ H0 → o ≠ Q → w.objEntry o = s.objEntry o := by
+    intro o ho h1 h2 h3
+    refine objEntry_frame hFs ho ?_
+    simp [fpU, ReactHooks.fpW, fpR, Footprint.union, Ne.symm h1, Ne.symm h2, Ne.symm h3, Nat.ne_of_gt ho]
+  have hfe : ∀ e, e < s.envs.size → e ≠ d.env → w.envEntry e = s.envEntry e := by
+    intro e he h1
+    refine envEntry_frame hFs he ?_
+    simp [fpU, ReactHooks.fpW, fpR, Footprint.union, Ne.symm h1]
+  have hEK : s.envs.size < w.envs.size := envs_frame hF1 (by js_norm)
+  have hEKe : w.envEntry s.envs.size = (bodyState s fK dK tK argsK).envEntry s.envs.size :=
+    envEntry_frame hF1 (by js_norm) (by simp [fpU, ReactHooks.fpW, fpR, Footprint.union, Nat.ne_of_gt hG, Ne.symm (Nat.ne_of_gt hG)])
+  have hzw : s.heap.size + 2 ≤ w.heap.size := Nat.succ_le_of_lt hA1.1
+  simp only [realm_bodyState, realms_bodyState] at hr1 hp1
+  -- (`const [n, setN] = …`: the array's iterator, two steps)
+  have hdK : Scope.declLike? (w.envEntry s.envs.size) = some (((∅ : HashMap JSStr Binding).insert
+      (JSStr.ofString "n") { mutable := false, strict := true }).insert (JSStr.ofString "setN")
+      { mutable := false, strict := true }, some dK.env) := by
+    rw [hEKe]; js_norm [hpn, hv, hpn', hv', ha', hl, hnames, hconst, ha]
+  have hcur : w.curRealm = s.realms[dK.realm]! := by simp only [State.curRealm, hr1, hFs.realms_eq]
+  have hw : ∀ o, o < s.heap.size → o < w.heap.size := fun o ho => heap_frame hFs ho
+  rw [hbz]
+  refine wp_mono (bindPair_spec (n := n + 4) (k := 999990) (A := s.heap.size + 1) (AP := AP) (fV := fV) (fN := fN)
+    (AIP := AIP) (IP := IP) (OP := OP) (v0 := vE) (v1 := dv) (L := Conv.ofSmallInt 2) (Q := fun _ _ _ => True)
+    hA1.1 hA1.2.1 hsym1 (by rw [hp1, hAP]) (hw AP hP) (by rw [hfo AP hP dAP.1 dAP.2.1 dAP.2.2]; exact hPk)
+    (by rw [hfo AP hP dAP.1 dAP.2.1 dAP.2.2]; exact hPv) (hw fV hV) (by rw [hfo fV hV dfV.1 dfV.2.1 dfV.2.2]; exact hVk)
+    hVfn (by rw [hr1]; exact hVr) (by rw [hcur]; exact hII) (hw AIP hAIP)
+    (by rw [hfo AIP hAIP dAIP.1 dAIP.2.1 dAIP.2.2]; exact hAIPk) (by rw [hfo AIP hAIP dAIP.1 dAIP.2.1 dAIP.2.2]; exact hAIPn)
+    (hw fN hN) (by rw [hfo fN hN dfN.1 dfN.2.1 dfN.2.2]; exact hNk) hNfn (by rw [hr1]; exact hNr)
+    (by have := hA1.2.2.2.1; simpa using this) (by decide)
+    (by have := hA1.2.2.2.2.1 0 (by decide); simpa using this) (by have := hA1.2.2.2.2.1 1 (by decide); simpa using this)
+    (by rw [hfo AIP hAIP dAIP.1 dAIP.2.1 dAIP.2.2]; exact hAIPp) (by rw [hfo AIP hAIP dAIP.1 dAIP.2.1 dAIP.2.2]; exact hAIPr)
+    (hw IP hIP) (by rw [hfo IP hIP dIP.1 dIP.2.1 dIP.2.2]; exact hIPk) (by rw [hfo IP hIP dIP.1 dIP.2.1 dIP.2.2]; exact hIPr)
+    (by rw [hfo IP hIP dIP.1 dIP.2.1 dIP.2.2]; exact hIPp) (hw OP hOP)
+    (by rw [hfo OP hOP dOP.1 dOP.2.1 dOP.2.2]; exact Kind.isReadPlain_of_isPlain hOPk) (by rw [hfo OP hOP dOP.1 dOP.2.1 dOP.2.2]; exact hOPr)
+    (by rw [hfo OP hOP dOP.1 dOP.2.1 dOP.2.2]; exact hOPp) hEK hdK (by simp) (by simp) (by omega)) ?post2
+  intro _ W h2 ⟨hW, hh2⟩
+  subst h2
+  -- (what the destructuring changed: the component's `n` and `setN`; the iterator and its two results are new)
+  have hIt : w.heap.size < ({ w with fuel := w.fuel - 1, heap := w.heap.push (iterObj AIP (s.heap.size + 1)) } : State).heap.size := by simp
+  have hWo : ∀ o, o < w.heap.size → W.objEntry o = w.objEntry o := by
+    intro o ho
+    have h1 : o < (elemState { w with fuel := w.fuel - 1, heap := w.heap.push (iterObj AIP (s.heap.size + 1)) }
+        w.heap.size (s.heap.size + 1) 0 vE s.envs.size (JSStr.ofString "n")).heap.size := by
+      rw [elemState_size]; simp only [Array.size_push]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt ho)
+    rw [hW, elemState_old _ _ _ _ _ _ _ h1 (Nat.ne_of_lt ho)
+        (by rw [elemState_size]; simp only [Array.size_push]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)),
+      elemState_old _ _ _ _ _ _ _ (by simp only [Array.size_push]; exact Nat.lt_succ_of_lt ho) (Nat.ne_of_lt ho) hIt,
+      push_old _ _ _ ho]
+  have hWe : ∀ e, e ≠ s.envs.size → W.envEntry e = w.envEntry e := by
+    intro e he
+    rw [hW, elemState_envEntry_ne _ _ _ _ _ _ _ he, elemState_envEntry_ne _ _ _ _ _ _ _ he]; rfl
+  have hWd := elemState_declLike (elemState { w with fuel := w.fuel - 1, heap := w.heap.push (iterObj AIP (s.heap.size + 1)) }
+      w.heap.size (s.heap.size + 1) 0 vE s.envs.size (JSStr.ofString "n")) w.heap.size (s.heap.size + 1) 1 dv
+      s.envs.size (JSStr.ofString "setN") (by rw [elemState_envs_size]; exact hEK)
+      (elemState_declLike _ _ _ _ _ _ _ hEK hdK)
+  rw [← hW] at hWd
+  have hWz : W.heap.size = w.heap.size + 3 := by rw [hW, elemState_size, elemState_size]; simp
+  have hWr : W.realm = dK.realm := by rw [hW, elemState_realm, elemState_realm]; exact hr1
+  have hWrs : W.realms = s.realms := by rw [hW, elemState_realms, elemState_realms]; exact hFs.realms_eq
+  have hWf : W.fuel = w.fuel - 1 - 1 - 1 := by rw [hW, elemState_fuel, elemState_fuel]
+  have hWE : W.envs.size = w.envs.size := by rw [hW, elemState_envs_size, elemState_envs_size]
+  have hWj : W.jobs = w.jobs := by rw [hW]; simp [elemState, nextState, State.withEnvs, State.withHeap]
+  clear hW
+  have hWK : W.envEntry dK.env = s.envEntry dK.env := by
+    rw [hWe _ (Ne.symm hneA), hfe dK.env hAG hKd]
+  have hWIJ : W.objEntry IJ = s.objEntry IJ := by
+    rw [hWo IJ (hw IJ hIJ), hfo IJ hIJ dIJ.1 dIJ.2.1 dIJ.2.2]
+  have hWcur : W.curRealm = s.realms[dK.realm]! := by simp only [State.curRealm, hWr, hWrs]
+  have hIJW : IJ < W.heap.size := by rw [hWz]; exact Nat.lt_of_lt_of_le (hw IJ hIJ) (Nat.le_add_right _ _)
+  have hEKW : s.envs.size < W.envs.size := by rw [hWE]; exact hEK
+  have hAGW : dK.env < W.envs.size := by rw [hWE]; exact envs_frame hFs hAG
+  have hAGw : dK.env < w.envs.size := envs_frame hFs hAG
+  have hIJw3 : IJ < w.heap.size + 3 := Nat.lt_of_lt_of_le (hw IJ hIJ) (Nat.le_add_right _ _)
+  -- (`return (0, import_jsx_runtime.jsx)("button", { … })`)
+  js [hWd, hEKW, hAGW, hAGw, hIJw3, hEK, hWE, hWz, hWK, hAGe, hAJ, hAJv, hWIJ, hIJW, hIJk, hIJj, hneA, Ne.symm hneA, FDI.fdiCtx, Sem.inner]
+  refine wp_callValueC ?_
+  js [hWd, hEKW, hAGW, hAGw, hIJw3, hEK, hWE, hWz, hWK, hAGe, hAJ, hAJv, hWIJ, hIJW, hIJk, hIJj, hneA, Ne.symm hneA, FDI.fdiCtx, Sem.inner]
+  -- (`onClick: () => setN(n + 1)`: the arrow function, named `onClick`)
+  refine wp_namedArrow ⟨rfl, rfl, rfl, rfl, rfl⟩ (by show (W.curRealm.intrinsics["%Function.prototype%"]?).isSome = true; rw [hWcur]; exact hFP) ?_
+  js [hWd, hEKW, hAGW, hAGw, hIJw3, hEK, hWE, hWz, hWK, hAGe, hAJ, hAJv, hWIJ, hIJW, hIJk, hIJj, hneA, Ne.symm hneA, FDI.fdiCtx, Sem.inner]
+  -- (`children: `Count: ${n}``)
+  refine wp_template1 ?_
+  js [hWd, hEKW, hAGW, hAGw, hIJw3, hEK, hWE, hWz, hWK, hAGe, hAJ, hAJv, hWIJ, hIJW, hIJk, hIJj, hneA, Ne.symm hneA, FDI.fdiCtx, Sem.inner, hvE]
+  rw [toStr_num]
+  refine wp_of_eq rfl ?_
+  js [hWd, hEKW, hAGW, hAGw, hIJw3, hEK, hWE, hWz, hWK, hAGe, hAJ, hAJv, hWIJ, hIJW, hIJk, hIJj, hneA, Ne.symm hneA, FDI.fdiCtx, Sem.inner, hvE]
+  -- (`jsx("button", props)`: the element)
+  have hWfJ : W.objEntry fJ = s.objEntry fJ := by rw [hWo fJ (hw fJ hJ), hfo fJ hJ dfJ.1 dfJ.2.1 dfJ.2.2]
+  have hWOP : W.objEntry OP = s.objEntry OP := by rw [hWo OP (hw OP hOP), hfo OP hOP dOP.1 dOP.2.1 dOP.2.2]
+  have hfJw3 : fJ < w.heap.size + 3 := Nat.lt_of_lt_of_le (hw fJ hJ) (Nat.le_add_right _ _)
+  have hOPw3 : OP < w.heap.size + 3 := Nat.lt_of_lt_of_le (hw OP hOP) (Nat.le_add_right _ _)
+  have hfJw4 : fJ < w.heap.size + 3 + 1 := Nat.lt_succ_of_lt hfJw3
+  have hfJw5 : fJ < w.heap.size + 3 + 1 + 1 := Nat.lt_succ_of_lt hfJw4
+  have hOPw4 : OP < w.heap.size + 3 + 1 := Nat.lt_succ_of_lt hOPw3
+  have hOPw5 : OP < w.heap.size + 3 + 1 + 1 := Nat.lt_succ_of_lt hOPw4
+  have hJGw : dJ.env < w.envs.size := envs_frame hFs hJG
+  have hWJ : W.envEntry dJ.env = s.envEntry dJ.env := by
+    rw [hWe _ (Nat.ne_of_lt hJG), hfe dJ.env hJG hJd]
+  refine ⟨by js_norm [CallableC, hWd, hEKW, hAGW, hAGw, hIJw3, hEK, hWE, hWz, hWK, hAGe, hAJ, hAJv, hWIJ, hIJW, hIJk, hIJj, hneA, Ne.symm hneA, FDI.fdiCtx, Sem.inner, hWfJ, hWOP, hfJw3, hOPw3, hfJw4, hfJw5, hOPw4, hOPw5, Nat.ne_of_lt hfJw4, Nat.ne_of_gt hfJw4, Nat.ne_of_lt hOPw4, Nat.ne_of_gt hOPw4, hJGw, hWJ, hJGe, hJT, hJTv, hJk, hOPk, hOPp, hOPkey, hOPref, Nat.ne_of_lt hfJw3, Nat.ne_of_gt hfJw3, Nat.ne_of_lt hOPw3, Nat.ne_of_gt hOPw3], ?_⟩
+  refine wp_mono (ReactJsx.spec (bG := bJ) (oG := oJ) (bdT := bdT) (C := w.heap.size + 3) (OP := OP)
+    (ty := .str (JSStr.ofString "button")) (vT := vT) ?_ ?_ ?_ hJcode hJcls hJmode ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_) ?post3
+  all_goals first
+    | (rw [ES.setProp_proto, ES.setProp_proto, arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]; done)
+    | (js_norm [hWd, hEKW, hAGW, hAGw, hIJw3, hEK, hWE, hWz, hWK, hAGe, hAJ, hAJv, hWIJ, hIJW, hIJk, hIJj, hneA, Ne.symm hneA, FDI.fdiCtx, Sem.inner, hWfJ, hWOP, hfJw3, hOPw3, hfJw4, hfJw5, hOPw4, hOPw5, Nat.ne_of_lt hfJw4, Nat.ne_of_gt hfJw4, Nat.ne_of_lt hOPw4, Nat.ne_of_gt hOPw4, hJGw, hWJ, hJGe, hJT, hJTv, hJk, hOPk, hOPp, hOPkey, hOPref, Nat.ne_of_lt hfJw3, Nat.ne_of_gt hfJw3, Nat.ne_of_lt hOPw3, Nat.ne_of_gt hOPw3]; done)
+    | (js_norm [hWd, hEKW, hAGW, hAGw, hIJw3, hEK, hWE, hWz, hWK, hAGe, hAJ, hAJv, hWIJ, hIJW, hIJk, hIJj, hneA, Ne.symm hneA, FDI.fdiCtx, Sem.inner, hWfJ, hWOP, hfJw3, hOPw3, hfJw4, hfJw5, hOPw4, hOPw5, Nat.ne_of_lt hfJw4, Nat.ne_of_gt hfJw4, Nat.ne_of_lt hOPw4, Nat.ne_of_gt hOPw4, hJGw, hWJ, hJGe, hJT, hJTv, hJk, hOPk, hOPp, hOPkey, hOPref, Nat.ne_of_lt hfJw3, Nat.ne_of_gt hfJw3, Nat.ne_of_lt hOPw3, Nat.ne_of_gt hOPw3]; omega)
+    | skip
+  case post3 =>
+  intro v3 w3 h3 ⟨hv3, hF3, hfu3, hh3, hz3, hEk, hEp, hEt, hEty, hEkey, hEref, hEpr, hr3⟩
+  subst hvE
+  simp only [hbz] at hkm1 hkb1 hkbq1 hkq1 hkn1 hkk1 hm1
+  have hWzC : w.heap.size + 3 = W.heap.size := hWz.symm
+  -- (from the final state back to `W`: `jsx` made a new object; the props object and the arrow are new)
+  have hSo : ∀ o, o < W.heap.size → w3.objEntry o = W.objEntry o := by
+    intro o ho
+    have hne : w.heap.size + 3 ≠ o := by rw [hWzC]; exact Nat.ne_of_gt ho
+    have hne1 : w.heap.size + 3 + 1 ≠ o := by rw [hWzC]; exact Nat.ne_of_gt (Nat.lt_succ_of_lt ho)
+    rw [objEntry_frame0 hF3 (by simp only [js_simp]; exact Nat.lt_succ_of_lt (Nat.lt_succ_of_lt ho))]
+    rw [State.setProp_entry_ne _ _ _ _ _ hne, State.setProp_entry_ne _ _ _ _ _ hne,
+      arrowState_objEntry_lt _ _ _ _ _ (by simp only [State.allocObj, State.withHeap, Array.size_push]; exact Nat.lt_succ_of_lt ho),
+      State.allocObj_entry_lt _ _ _ ho]
+  have hSe : ∀ e, e < W.envs.size → w3.envEntry e = W.envEntry e := by
+    intro e he
+    rw [envEntry_frame0 hF3 (by simp only [js_simp]; exact he)]
+    simp only [js_simp]
+  have hfin : ∀ o, o < w.heap.size → w3.objEntry o = w.objEntry o := fun o ho =>
+    (hSo o (by rw [hWz]; exact Nat.lt_of_lt_of_le ho (Nat.le_add_right _ _))).trans (hWo o ho)
+  have hfinE : ∀ e, e < w.envs.size → e ≠ s.envs.size → w3.envEntry e = w.envEntry e := fun e he hne =>
+    (hSe e (by rw [hWE]; exact he)).trans (hWe e hne)
+  have hCC : w.heap.size + 3 < (W.allocObj { proto := .obj OP }).heap.size := by
+    simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _
+  have hCC2 : w.heap.size + 3 < W.heap.size + 1 + 1 := by rw [hWz]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)
+  have hSz : W.heap.size ≤ w3.heap.size := by
+    have h := hF3.heap_le; simp only [js_simp] at h; exact Nat.le_trans (Nat.le_succ _) (Nat.le_trans (Nat.le_succ _) h)
+  have hSE : W.envs.size ≤ w3.envs.size := by
+    have h := hF3.envs_le; simp only [js_simp] at h; exact h
+  have hCne : w.heap.size + 3 ≠ w.heap.size + 3 + 1 := Nat.ne_of_lt (Nat.lt_succ_self _)
+  have hC3 : w3.objEntry (w.heap.size + 3) = _ := objEntry_frame0 hF3 (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _))
+  have hF3e : w3.objEntry (w.heap.size + 3 + 1) = _ := objEntry_frame0 hF3 (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_self _)
+  rw [State.setProp_entry_ne _ _ _ _ _ hCne, State.setProp_entry_ne _ _ _ _ _ hCne] at hF3e
+  have hAz : (W.allocObj { proto := .obj OP }).heap.size = w.heap.size + 3 + 1 := by
+    simp only [State.allocObj, State.withHeap, Array.size_push, hWz]
+  have hFnew := arrowState_new (W.allocObj { proto := .obj OP }) onClickFunc
+    { lex := s.envs.size, var := s.envs.size, priv := dK.privEnv, strict := true, fn := some fK, realm := dK.realm,
+      script := dK.script, annexB := funcIds #[] } (funcProto (W.allocObj { proto := .obj OP })) (JSStr.ofString "onClick")
+  rw [hAz] at hFnew
+  have hSt2 : W.heap.size + 1 + 1 ≤ w3.heap.size := by have h := hF3.heap_le; simp only [js_simp] at h; exact h
+  refine ⟨_, w.heap.size + 3, w.heap.size + 3 + 1, _, hv3, by rw [hz3]; exact Nat.lt_succ_self _,
+    by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_of_lt (Nat.lt_succ_self _)) hSt2,
+    by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hSt2,
+    Nat.lt_of_lt_of_le (Nat.lt_of_succ_lt hA1.1) (Nat.le_trans (by rw [hWz]; exact Nat.le_add_right _ _) hSz),
+    Nat.lt_of_lt_of_le hEK (by rw [← hWE]; exact hSE), ?Eb, Nat.le_trans (Nat.le_of_lt (Nat.lt_of_succ_lt hA1.1))
+    (Nat.le_add_right _ _), ?fr, ?fu, hh3, hEt, hEty, hEkey, hEref, hEpr, ?ch, ?oc, hEk, ?Ck, ?Cp, ?Cr,
+    by rw [hF3e]; exact hFnew.1, rfl, rfl, rfl, ?dK, ?dG, ?c1, ?k1, ?k2, ?k3, ?k4, ?k5, ?h0, ?q1, ?q2, ?q3, ?np⟩
+  case ch => rw [hC3]; js_norm [hCC, hCC2]
+  case oc => rw [hC3]; js_norm [hCC, hCC2]
+  case Eb =>
+    have h1 : s.heap.size ≤ W.heap.size :=
+      Nat.le_trans (Nat.le_of_lt (Nat.lt_of_succ_lt hA1.1)) (by rw [hWz]; exact Nat.le_add_right _ _)
+    simp only [js_simp]
+    exact Nat.le_trans h1 (Nat.le_trans (Nat.le_succ _) (Nat.le_succ _))
+  case Ck =>
+    rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_kind, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)),
+      Obj.withProps_kind, arrowState_objEntry_lt _ _ _ _ _
+      (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+      State.allocObj_entry_new]
+  case Cr =>
+    rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide),
+      State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide),
+      arrowState_objEntry_lt _ _ _ _ _
+      (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+      State.allocObj_entry_new]
+    simp [PropMap.get?_empty]
+  case Cp =>
+    rw [hC3, ES.setProp_proto, ES.setProp_proto, arrowState_objEntry_lt _ _ _ _ _
+      (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+      State.allocObj_entry_new]
+  case np =>
+    refine ⟨by rw [hWzC]; exact Nat.lt_of_lt_of_le (Nat.lt_succ_of_lt (Nat.lt_succ_self _)) hSt2, ?_, ?_, ?_, ?_, ?_, ?_, ?_, Nat.lt_succ_self _⟩
+    · simp only [restore_objEntry]; rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_kind, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)),
+        Obj.withProps_kind, arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]
+    · simp only [restore_objEntry]; rw [hC3, ES.setProp_proto, ES.setProp_proto, arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]
+    · simp only [restore_objEntry]; rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props,
+        State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]
+      exact ReactNewProps.keys_two _ _ _ _ (by decide)
+    · simp only [restore_objEntry]; rw [hC3]; js_norm [hCC, hCC2]
+    · simp only [restore_objEntry]; rw [hC3]; js_norm [hCC, hCC2]
+    · simp only [restore_objEntry]; rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide),
+        State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide), arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]
+      simp [PropMap.get?_empty]
+    · simp only [restore_objEntry]; rw [hC3, State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide),
+        State.setProp_entry_self _ _ _ _ (by simp only [js_simp]; rw [hWzC]; exact Nat.lt_succ_of_lt (Nat.lt_succ_self _)), Obj.withProps_props, PropMap.get?_insert_ne _ _ _ _ (by decide), arrowState_objEntry_lt _ _ _ _ _
+        (by simp only [State.allocObj, State.withHeap, Array.size_push, hWz]; exact Nat.lt_succ_self _), ← hWz,
+        State.allocObj_entry_new]
+      simp [PropMap.get?_empty]
+  case dK => rw [hSe _ hEKW]; exact hWd
+  case dG => rw [hfinE _ (envs_frame hFs hG) (Nat.ne_of_lt hG)]; exact hdl1
+  case c1 => rw [hfin _ (hw C1 hC1)]; exact hm1
+  case k1 => rw [hfin _ (by have := hA1.1; exact Nat.lt_of_succ_lt this)]; exact hkm1
+  case k2 => rw [hfin _ (by have := hA1.1; exact Nat.lt_of_succ_lt this)]; exact hkb1
+  case k3 => rw [hfin _ (by have := hA1.1; exact Nat.lt_of_succ_lt this)]; exact hkbq1
+  case k4 => rw [hfin _ (by have := hA1.1; exact Nat.lt_of_succ_lt this)]; exact hkq1
+  case k5 => rw [hfin _ (by have := hA1.1; exact Nat.lt_of_succ_lt this)]; exact hkn1
+  case h0 => rw [hfin _ (hw H0 hH0)]; exact hH0b1
+  case q1 => rw [hfin _ (hw Q hQ)]; exact hQp1
+  case q2 => rw [hfin _ (hw Q hQ)]; exact hQr1
+  case q3 => rw [hfin _ (hw Q hQ)]; exact hQl1
+  case fu =>
+    simp only [js_simp] at hfu3
+    rw [hWf] at hfu3
+    omega
+  case fr =>
+    refine frame_restore (frame_mono (frame_of_agree hFs (fun e he => hfinE e (envs_frame hFs he) (Nat.ne_of_lt he))
+      (fun o ho => hfin o (hw o ho)) ?_ ?_ ?_ ?_) (fun p hp => by simpa [Footprint.union] using hp)
+      (fun p hp => by simpa [Footprint.union] using hp) (fun _ => rfl)) s
+    · rw [← hWE]; exact hSE
+    · exact Nat.le_trans (by rw [hWz]; exact Nat.le_add_right _ _) hSz
+    · rw [hF3.realms_eq]; show W.realms = w.realms; rw [hWrs, hFs.realms_eq]
+    · rw [hF3.jobs_eq rfl]; show W.jobs = w.jobs; exact hWj
+
 end
 
 end ReactCounter
