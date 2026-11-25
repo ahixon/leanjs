@@ -47,6 +47,8 @@ inductive Loc where
   | record (e : EnvId)
   /-- All of a record. -/
   | recordAll (e : EnvId)
+  /-- All of an object's own properties (its keys, …). -/
+  | objAll (o : ObjId)
   /-- Every state a frame through `f` reaches. -/
   | closed (f : Footprint)
 
@@ -56,6 +58,7 @@ def Loc.Apart (fp : Footprint) : Loc → Prop
   | .prop o k => fp.props.contains (o, k) = false
   | .bind e x => (e, x) ∉ fp.binds
   | .recordAll e => fp.binds.all (fun p => p.1 != e) = true
+  | .objAll o => fp.props.all (fun p => p.1 != o) = true
   | .closed g => fp.Sub g
 
 /-- **A fact**: a statement about a state, the place it reads, and that a frame missing that place keeps it. -/
@@ -83,6 +86,20 @@ def proto (o : ObjId) (p : Value) : Fact :=
 def prop (o : ObjId) (k : PropKey) (r : Option Property) : Fact :=
   ⟨.prop o k, fun s => o < s.heap.size ∧ (s.objEntry o).props.get? k = r,
     fun _ _ _ hF hap ⟨hl, hk⟩ => ⟨heap_frame hF hl, by rw [props_frame hF hl hap]; exact hk⟩⟩
+
+/-- Object `o` exists and its own property `k` satisfies `P` (`∃ e c, r = some (.data v true e c)`, …). -/
+def propP (o : ObjId) (k : PropKey) (P : Option Property → Prop) : Fact :=
+  ⟨.prop o k, fun s => o < s.heap.size ∧ P ((s.objEntry o).props.get? k),
+    fun _ _ _ hF hap ⟨hl, hk⟩ => ⟨heap_frame hF hl, by rw [props_frame hF hl hap]; exact hk⟩⟩
+
+/-- Object `o` exists and its entry satisfies `P` (its keys, …: what reads all its own properties). -/
+def objP (o : ObjId) (P : Obj → Prop) : Fact :=
+  ⟨.objAll o, fun s => o < s.heap.size ∧ P (s.objEntry o),
+    fun _ _ _ hF hap ⟨hl, hk⟩ => ⟨heap_frame hF hl, by
+      have hn : ∀ k, (o, k) ∉ _ := fun k hm => by
+        have := List.all_eq_true.mp hap _ hm
+        simp at this
+      rw [hF.obj_eq o hl hn]; exact hk⟩⟩
 
 /-- Record `e` is a declarative or function record (outer `oG`) whose binding `x` satisfies `P`. -/
 def bind (e : EnvId) (oG : Option EnvId) (x : JSStr) (P : Option Binding → Prop) : Fact :=
@@ -126,6 +143,50 @@ end Fact
 
 /-- Every fact of the list holds. -/
 def Facts.holds (l : List Fact) (s : State) : Prop := ∀ x ∈ l, x.holds s
+
+theorem Facts.holds_nil {s : State} : Facts.holds [] s := fun _ h => nomatch h
+
+theorem Facts.holds_cons {f : Fact} {l : List Fact} {s : State} (hf : f.holds s) (hl : Facts.holds l s) :
+    Facts.holds (f :: l) s := by
+  intro x hx
+  cases List.mem_cons.mp hx with
+  | inl h => exact h ▸ hf
+  | inr h => exact hl x h
+
+/-- An object with a property exists (a missing object's entry has none). -/
+theorem lt_of_props_ne_none {s : State} {o : ObjId} {k : PropKey} (h : (s.objEntry o).props.get? k ≠ none) :
+    o < s.heap.size := by
+  apply Classical.byContradiction
+  intro hn
+  apply h
+  have : s.heap[o]? = none := Array.getElem?_eq_none (Nat.le_of_not_lt hn)
+  simp only [State.objEntry, this, Option.getD_none]
+  first
+  | (simp [PropMap.get?]; done)
+  | (show ((default : PropMap).map.get? k).map (·.2) = none; rw [show (default : PropMap).map = ∅ from rfl]; simp)
+
+/-- A record with a binding exists (a missing record's entry has none). -/
+theorem lt_of_bind_ne_none {s : State} {e : EnvId} {bs : HashMap JSStr Binding} {oG : Option EnvId} {x : JSStr}
+    (hd : Scope.declLike? (s.envEntry e) = some (bs, oG)) (h : bs[x]? ≠ none) : e < s.envs.size := by
+  apply Classical.byContradiction
+  intro hn
+  apply h
+  have : s.envs[e]? = none := Array.getElem?_eq_none (Nat.le_of_not_lt hn)
+  simp only [State.envEntry, this, Option.getD_none] at hd
+  have hdef : (default : Env) = .decl ∅ none := rfl
+  rw [hdef] at hd
+  simp only [Scope.declLike?, Option.some.injEq, Prod.mk.injEq] at hd
+  obtain ⟨rfl, -⟩ := hd
+  simp
+
+theorem lt_of_props_P {s : State} {o : ObjId} {k : PropKey} {P : Option Property → Prop}
+    (hp : P ((s.objEntry o).props.get? k)) (hn : ¬ P none) : o < s.heap.size :=
+  lt_of_props_ne_none fun h => hn (h ▸ hp)
+
+theorem lt_of_bind_P {s : State} {e : EnvId} {bs : HashMap JSStr Binding} {oG : Option EnvId} {x : JSStr}
+    {P : Option Binding → Prop} (hd : Scope.declLike? (s.envEntry e) = some (bs, oG)) (hp : P bs[x]?) (hn : ¬ P none) :
+    e < s.envs.size :=
+  lt_of_bind_ne_none hd fun h => hn (h ▸ hp)
 
 /-- Every fact of the list lies outside the footprint. -/
 def Facts.Apart (fp : Footprint) (l : List Fact) : Prop := ∀ x ∈ l, x.loc.Apart fp
@@ -223,6 +284,7 @@ inductive RLoc where
   /-- (kept by every frame: the record itself, not an atom) -/
   | record (e : EnvId)
   | recordAll (e : Nat)
+  | objAll (o : Nat)
   | closed (f : SFoot)
 
 def RLoc.eval (a : Atoms) : RLoc → Loc
@@ -232,6 +294,7 @@ def RLoc.eval (a : Atoms) : RLoc → Loc
   | .bind e x => .bind (a.env e) x
   | .record e => .record e
   | .recordAll e => .recordAll (a.env e)
+  | .objAll o => .objAll (a.obj o)
   | .closed f => .closed (f.eval a)
 
 /-- The place lies outside the footprint, decided on indices. -/
@@ -240,6 +303,7 @@ def RLoc.apart (a : Atoms) (f : SFoot) : RLoc → Bool
   | .prop o k => f.inRange a && decide (o < a.objs.length) && !f.props.contains (o, k)
   | .bind e x => f.inRange a && decide (e < a.envs.length) && !f.binds.contains (e, x)
   | .recordAll e => f.inRange a && decide (e < a.envs.length) && f.binds.all (fun p => p.1 != e)
+  | .objAll o => f.inRange a && decide (o < a.objs.length) && f.props.all (fun p => p.1 != o)
   | .closed g => f.sub g
 
 theorem RLoc.apart_sound {a : Atoms} (hw : a.Wf) {f : SFoot} (r : RLoc) (h : r.apart a f = true) :
@@ -281,6 +345,14 @@ theorem RLoc.apart_sound {a : Atoms} (hw : a.Wf) {f : SFoot} (r : RLoc) (h : r.a
     simp only [SFoot.eval, List.all_eq_true, List.mem_map, bne_iff_ne, ne_eq]
     rintro _ ⟨p, hp, rfl⟩ hq
     exact hn p hp (Atoms.getD_inj hw.envs (hr.1 p hp) he hq)
+  | objAll o =>
+    simp only [RLoc.apart, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true, bne_iff_ne, ne_eq] at h
+    obtain ⟨⟨hr, ho⟩, hn⟩ := h
+    simp only [SFoot.inRange, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at hr
+    show (f.eval a).props.all (fun p => p.1 != a.obj o) = true
+    simp only [SFoot.eval, List.all_eq_true, List.mem_map, bne_iff_ne, ne_eq]
+    rintro _ ⟨p, hp, rfl⟩ hq
+    exact hn p hp (Atoms.getD_inj hw.objs (hr.2 p hp) ho hq)
   | closed g => exact SFoot.sub_sound h
 
 /-- **`Apart` by reflection**: the facts' places written over distinct atoms (`hl`, by `rfl`), the footprint too, and

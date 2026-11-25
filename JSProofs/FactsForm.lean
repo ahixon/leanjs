@@ -412,6 +412,8 @@ def reflectLoc (A : AtomsB) (loc : Expr) : MetaM (Option (AtomsB × Expr)) := do
   | some ``Logic.Loc.record => return some (A, mkApp (mkConst ``RLoc.record) args[0]!)
   | some ``Logic.Loc.recordAll =>
     let (A, i) := A.env args[0]!; return some (A, mkApp (mkConst ``RLoc.recordAll) (mkNatLit i))
+  | some ``Logic.Loc.objAll =>
+    let (A, i) := A.obj args[0]!; return some (A, mkApp (mkConst ``RLoc.objAll) (mkNatLit i))
   | some ``Logic.Loc.closed =>
     let some (A, f) ← reflectFoot A args[0]! 64 | return none
     return some (A, mkApp (mkConst ``RLoc.closed) f)
@@ -451,5 +453,266 @@ elab "facts_apart" : tactic => Tactic.withMainContext do
 elab "facts_form " id:ident : command => do
   let n ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
   liftTermElabM (factsForm n)
+
+/-! ## A spec's postcondition as facts
+
+`facts_post T` (`T.ofPre` declared: by `facts_form` or `facts_compose`) declares `T.PL vars`, the conjuncts of `T`'s
+postcondition `fun v w h' => …` that are facts about `w` (an object's property read as `= some p` or under
+existentials; a record with lookups of its bindings, `∃ bm, Scope.declLike? (w.envEntry E) = some (bm, oG) ∧ …`),
+`T.post_facts : post v w h' → Facts.holds (T.PL vars) w ∧ (the other conjuncts)`, and `T.PLex objs w`: the facts with
+every variable but the objects, records and functions existential (what a later step can be told about this one's
+result). An existence the post does not state (`o < w.heap.size`) follows from the read (a missing object has no
+properties, a missing record no bindings). -/
+
+/-- `∃ xs, b`. -/
+def existsFVars (xs : Array Expr) (b : Expr) : MetaM Expr :=
+  xs.foldrM (fun x acc => do mkAppM ``Exists #[← mkLambdaFVars #[x] acc]) b
+
+/-- The conjuncts of a right-nested `∧`. -/
+partial def conjuncts (e : Expr) : Array Expr :=
+  if e.isAppOfArity ``And 2 then #[e.appFn!.appArg!] ++ conjuncts e.appArg! else #[e]
+
+/-- `(w.objEntry o).props.get? k` in `t`: `(o, k, the read)`. -/
+def propRead? (w t : Expr) : Option (Expr × Expr × Expr) :=
+  (t.find? fun e => e.isAppOfArity ``ES.PropMap.get? 2 && e.appFn!.appArg!.isAppOfArity ``ES.Obj.props 1 &&
+    (objEntryOf? w e.appFn!.appArg!.appArg!).isSome).bind fun e => do
+      let o ← objEntryOf? w e.appFn!.appArg!.appArg!
+      return (o, e.appArg!, e)
+
+/-- `bm[x]?` in `t`: `(x, the lookup)`. -/
+def lookupRead? (bm t : Expr) : Option (Expr × Expr) :=
+  (t.find? fun e => e.isAppOf ``GetElem?.getElem? && e.getAppNumArgs ≥ 2 &&
+    e.getAppArgs[e.getAppNumArgs - 2]! == bm).map fun e => (e.getAppArgs[e.getAppNumArgs - 1]!, e)
+
+/-- Every conjunct of nested `∧`s with its projections (`false`: `.1`, `true`: `.2`, outermost first). -/
+partial def flatConj (e : Expr) (path : Array Bool := #[]) : Array (Expr × Array Bool) :=
+  if e.isAppOfArity ``And 2 then flatConj e.appFn!.appArg! (path.push false) ++ flatConj e.appArg! (path.push true)
+  else #[(e, path)]
+
+def projPath (h : Expr) (path : Array Bool) : Expr :=
+  path.foldl (fun acc b => mkProj ``And (if b then 1 else 0) acc) h
+
+/-- A proof of `¬ P none` for a read's predicate (`none = some …`, possibly under `∃` and `∧`). -/
+def bySimp (t : Expr) : TermElabM (Option Expr) := do
+  let mv ← mkFreshExprSyntheticOpaqueMVar t
+  let saved ← saveState
+  try
+    let tac ← `(tactic| simp only [reduceCtorEq, false_and, and_false, exists_false, exists_const, not_false_eq_true, Option.some_ne_none, Option.noConfusion])
+    let rem ← Term.withoutErrToSorry <| Tactic.run mv.mvarId! (Tactic.withoutRecover (Tactic.evalTactic tac))
+    if rem.isEmpty then return some (← instantiateMVars mv) else saved.restore; return none
+  catch _ => saved.restore; return none
+
+/-- `fun x => body` with `pat` abstracted, when nothing of `avoid` is left. -/
+def abstractOut (pat t : Expr) (ty : Expr) (avoid : Array Expr) : MetaM (Option Expr) := do
+  let b ← kabstract t pat
+  let P := mkLambda `r .default ty b
+  if avoid.any (fun a => P.containsFVar a.fvarId!) then return none
+  return some P
+
+/-- The conjuncts with their proofs, `∧` split and `∃ x, …` (of a value, mentioning `w`) opened: `k` gets them, the
+variables opened, and the openings `(proof of ∃, its predicate, x, hx)` to close the final proof with. -/
+partial def openConj {α} (w : Expr) (items : List (Expr × Expr)) (acc : Array (Expr × Expr)) (bound : Array Expr)
+    (opened : Array (Expr × Expr × Expr × Expr))
+    (k : Array (Expr × Expr) → Array Expr → Array (Expr × Expr × Expr × Expr) → TermElabM α) : TermElabM α := do
+  match items with
+  | [] => k acc bound opened
+  | (c, p) :: rest =>
+    if c.isAppOfArity ``And 2 then
+      openConj w ((c.appFn!.appArg!, mkProj ``And 0 p) :: (c.appArg!, mkProj ``And 1 p) :: rest) acc bound opened k
+    else if c.isAppOfArity ``Exists 2 && c.appArg!.isLambda && c.containsFVar w.fvarId! &&
+        !(← isProp c.appFn!.appArg!) then
+      let lam := c.appArg!
+      -- only an `∃` whose body is a conjunction (a record's `∃ bm, …` is a fact, not opened)
+      let body0 := lam.bindingBody!
+      let rec underEx (e : Expr) (fuel : Nat) : Expr :=
+        match fuel with
+        | 0 => e
+        | f + 1 => if e.isAppOfArity ``Exists 2 && e.appArg!.isLambda then underEx e.appArg!.bindingBody! f else e
+      let inner0 := underEx body0 16
+      if !inner0.isAppOfArity ``And 2 ||
+          (inner0.isAppOfArity ``And 2 && (inner0.appFn!.appArg!.isAppOfArity ``Eq 3 &&
+            inner0.appFn!.appArg!.appFn!.appArg!.isAppOf ``Scope.declLike?)) ||
+          (body0.isAppOfArity ``And 2 && (declLikeOf? w (body0.appFn!.appArg!)).isSome) ||
+          (body0.isAppOfArity ``And 2 && body0.appFn!.appArg!.isAppOfArity ``Eq 3 &&
+            (body0.appFn!.appArg!.appFn!.appArg!.isAppOf ``Scope.declLike?)) then
+        openConj w rest (acc.push (c, p)) bound opened k
+      else
+        withLocalDeclD lam.bindingName! lam.bindingDomain! fun x => do
+          let b := lam.bindingBody!.instantiate1 x
+          withLocalDeclD `hx b fun hx => do
+            openConj w ((b, hx) :: rest) acc (bound.push x) (opened.push (p, lam, x, hx)) k
+    else if c.getAppFn.isConst && !c.isAppOf ``Eq && !c.isAppOf ``Exists && c.containsFVar w.fvarId! then
+      -- a definition that is a conjunction (`NewProps`): its conjuncts
+      match ← unfoldDefinition? c with
+      | some u =>
+        let u ← whnfCore u
+        if u.isAppOfArity ``And 2 then openConj w ((u, p) :: rest) acc bound opened k
+        else openConj w rest (acc.push (c, p)) bound opened k
+      | none => openConj w rest (acc.push (c, p)) bound opened k
+    else openConj w rest (acc.push (c, p)) bound opened k
+
+/-- `∃ xs, t` proved from the witnesses `xs` (locals) and `pf : t`. -/
+def existsIntro (xs : Array Expr) (t pf : Expr) : MetaM Expr := do
+  let mut ty := t
+  let mut pr := pf
+  for x in xs.reverse do
+    let lam ← mkLambdaFVars #[x] ty
+    pr ← mkAppOptM ``Exists.intro #[← inferType x, lam, x, pr]
+    ty ← mkAppM ``Exists #[lam]
+  return pr
+
+/-- Declares `T.PL`, `T.post_facts`, `T.PLex`. -/
+def factsPost (n : Name) : TermElabM Unit := do
+  let ci ← getConstInfo n
+  forallTelescope ci.type fun xs concl => do
+    unless concl.isAppOf ``Logic.WP do throwError "facts_post: {n} does not conclude WP"
+    let Q := concl.appArg!
+    let vars ← xs.filterM fun x => return !(← isProp (← inferType x))
+    lambdaTelescope Q fun vwh body => do
+      unless vwh.size == 3 do throwError "facts_post: the postcondition is not `fun v w h' => …`"
+      let v := vwh[0]!; let w := vwh[1]!; let hh := vwh[2]!
+      withLocalDeclD `hq body fun hq => do
+      openConj w [(body, hq)] #[] #[] #[] fun items bound opened => do
+      let mut facts : Array Expr := #[]
+      let mut prfs : Array Expr := #[]
+      let mut rest : Array (Expr × Expr) := #[]
+      let optProp ← mkAppM ``Option #[mkConst ``ES.Property]
+      let optBind ← mkAppM ``Option #[mkConst ``ES.Binding]
+      let noneP ← mkAppOptM ``Option.none #[mkConst ``ES.Property]
+      let noneB ← mkAppOptM ``Option.none #[mkConst ``ES.Binding]
+      -- the objects whose existence is stated
+      let mut exist : Array (Expr × Expr) := #[]
+      for (c, hc) in items do
+        if let some o := sizeLtOf? w c ``ES.State.heap then exist := exist.push (o, hc)
+      for (c, hc) in items do
+        if c.containsFVar v.fvarId! || c.containsFVar hh.fvarId! || !c.containsFVar w.fvarId! then
+          rest := rest.push (c, hc); continue
+        -- an existence
+        if let some o := sizeLtOf? w c ``ES.State.heap then
+          facts := facts.push (mkApp2 (mkConst ``Logic.Fact.kindP) o (mkLambda `K .default (mkConst ``ES.Kind) (mkConst ``True)))
+          prfs := prfs.push (← mkAppM ``And.intro #[hc, mkConst ``True.intro])
+          continue
+        -- a property
+        if let some (o, k, rd) := propRead? w c then
+          if !o.containsFVar w.fvarId! && !k.containsFVar w.fvarId! then
+            if let some P ← abstractOut rd c optProp #[w] then
+              if let some hn ← bySimp (mkNot (P.beta #[noneP])) then
+                let ex ← mkAppOptM ``Logic.lt_of_props_P #[w, o, k, P, hc, hn]
+                let exact? : Option Expr := match c.eq? with
+                  | some (_, l, r) => if l == rd && !r.containsFVar w.fvarId! then some r else none
+                  | none => none
+                match exact? with
+                | some r => facts := facts.push (mkApp3 (mkConst ``Logic.Fact.prop) o k r)
+                | none => facts := facts.push (mkApp3 (mkConst ``Logic.Fact.propP) o k P)
+                prfs := prfs.push (← mkAppM ``And.intro #[ex, hc])
+                continue
+        -- an object whose existence is stated: its kind, prototype, a property read as anything, all of it
+        if let some o := (c.find? fun e => (objEntryOf? w e).isSome).bind (objEntryOf? w ·) then
+          if let some (_, he) := exist.find? (·.1 == o) then
+            let pat := mkApp2 (mkConst ``ES.State.objEntry) w o
+            let b ← kabstract c pat
+            if !b.containsFVar w.fvarId! then
+              let kindPat := mkApp (mkConst ``ES.Obj.kind) (.bvar 0)
+              let _ := kindPat
+              let P := mkLambda `ob .default (mkConst ``ES.Obj) b
+              -- the whole entry (keys, kind, prototype, a read): `objP`, read through every property
+              facts := facts.push (mkApp2 (mkConst ``Logic.Fact.objP) o P)
+              prfs := prfs.push (← mkAppM ``And.intro #[he, hc])
+              continue
+        -- a record with lookups
+        if c.isAppOfArity ``Exists 2 && c.appArg!.isLambda then
+          let lam := c.appArg!
+          let ok ← withLocalDeclD lam.bindingName! lam.bindingDomain! fun bm => do
+            let b := lam.bindingBody!.instantiate1 bm
+            let fl := flatConj b
+            let ls := fl.map (·.1)
+            let some (E, bm', oG) := declLikeOf? w ls[0]! | return none
+            unless bm' == bm && !E.containsFVar w.fvarId! && !oG.containsFVar w.fvarId! && ls.size ≥ 2 do return none
+            let mut bfs : Array (Expr × Expr) := #[]
+            for j in [1:ls.size] do
+              let some (x, lk) := lookupRead? bm ls[j]! | return none
+              if x.containsFVar bm.fvarId! || x.containsFVar w.fvarId! then return none
+              let some P ← abstractOut lk ls[j]! optBind #[w, bm] | return none
+              bfs := bfs.push (x, P)
+            let mut ex? : Option (Nat × Expr) := none
+            for j in [:bfs.size] do
+              if ex?.isNone then
+                if let some hn ← bySimp (mkNot (bfs[j]!.2.beta #[noneB])) then ex? := some (j, hn)
+            let some (j0, hn0) := ex? | return none
+            let mkProof (fact : Expr) (k : Expr → Expr → MetaM Expr) : MetaM Expr := do
+              let hty ← whnfR (mkApp (mkProj ``Logic.Fact 1 fact) w)
+              withLocalDeclD `hb b fun hb => do
+                let inner ← k bm hb
+                mkAppOptM ``Exists.elim #[none, lam, hty, hc, ← mkLambdaFVars #[bm, hb] inner]
+            let exOf (bm hb : Expr) : MetaM Expr := do
+              let (x0, P0) := bfs[j0]!
+              mkAppOptM ``Logic.lt_of_bind_P #[w, E, bm, oG, x0, P0, projPath hb fl[0]!.2, projPath hb fl[j0 + 1]!.2, hn0]
+            let recF := mkApp2 (mkConst ``Logic.Fact.record) E oG
+            let bsTy ← inferType bm
+            let rp ← mkProof recF fun bm hb => do
+              let pred ← withLocalDeclD `bs bsTy fun bs => do mkLambdaFVars #[bs] (← declLikeEq w E bs oG)
+              mkAppM ``And.intro #[← exOf bm hb, ← mkAppOptM ``Exists.intro #[none, pred, bm, projPath hb fl[0]!.2]]
+            let mut out : Array (Expr × Expr) := #[(recF, rp)]
+            for j in [:bfs.size] do
+              let (x, P) := bfs[j]!
+              let f := mkApp4 (mkConst ``Logic.Fact.bind) E oG x P
+              let pf ← mkProof f fun bm hb => do
+                let pred ← withLocalDeclD `bs bsTy fun bs => do
+                  mkLambdaFVars #[bs] (mkAnd (← declLikeEq w E bs oG) (P.beta #[← mkAppM ``GetElem?.getElem? #[bs, x]]))
+                mkAppM ``And.intro #[← exOf bm hb, ← mkAppOptM ``Exists.intro #[none, pred, bm,
+                  ← mkAppM ``And.intro #[projPath hb fl[0]!.2, projPath hb fl[j + 1]!.2]]]
+              out := out.push (f, pf)
+            return some out
+          if let some out := ok then
+            for (f, pf) in out do facts := facts.push f; prfs := prfs.push pf
+            continue
+        rest := rest.push (c, hc)
+      if facts.isEmpty then throwError "facts_post: no fact in {n}'s postcondition"
+      let L ← mkListLit (mkConst ``Logic.Fact) facts.toList
+      let params := (vars ++ bound).filter fun x => L.containsFVar x.fvarId!
+      let lps := ci.levelParams.map mkLevelParam
+      let plName := Name.mkStr n "PL"
+      let plT ← instantiateMVars (← mkForallFVars params (mkApp (mkConst ``List [Level.zero]) (mkConst ``Logic.Fact)))
+      let plV ← instantiateMVars (← mkLambdaFVars params L)
+      addDecl (Declaration.defnDecl (mkDefinitionValEx plName ci.levelParams plT plV .abbrev .safe []))
+      let PLc := mkAppN (mkConst plName lps) params
+      let holdsW := mkApp2 (mkConst ``Logic.Facts.holds) PLc w
+      let mut hl ← mkAppOptM ``Logic.Facts.holds_nil #[w]
+      let mut tl := mkApp (mkConst ``List.nil [Level.zero]) (mkConst ``Logic.Fact)
+      for k in (List.range facts.size).reverse do
+        hl ← mkAppOptM ``Logic.Facts.holds_cons #[facts[k]!, tl, w, prfs[k]!, hl]
+        tl := mkApp3 (mkConst ``List.cons [Level.zero]) (mkConst ``Logic.Fact) facts[k]! tl
+      let hlT ← mkExpectedTypeHint hl holdsW
+      let restTy := if rest.isEmpty then mkConst ``True else rest.pop.foldr (fun t acc => mkAnd t.1 acc) rest.back!.1
+      let mut rp : Expr := mkConst ``True.intro
+      if !rest.isEmpty then
+        rp := rest.back!.2
+        for k in (List.range (rest.size - 1)).reverse do
+          rp ← mkAppM ``And.intro #[rest[k]!.2, rp]
+      let inner := mkAnd holdsW restTy
+      let mut prf ← existsIntro bound inner (← mkAppM ``And.intro #[hlT, rp])
+      let S ← existsFVars bound inner
+      for (pe, lam, x, hx) in opened.reverse do
+        prf ← mkAppOptM ``Exists.elim #[← inferType x, lam, S, pe, ← mkLambdaFVars #[x, hx] prf]
+      let tyI ← instantiateMVars (← mkForallFVars (vars ++ #[v, w, hh, hq]) S)
+      let valI ← instantiateMVars (← mkLambdaFVars (vars ++ #[v, w, hh, hq]) prf)
+      addDecl (Declaration.thmDecl { name := Name.mkStr n "post_facts", levelParams := ci.levelParams, type := tyI, value := valI })
+      -- the theorem's objects, records and functions kept, the rest existential
+      let keepTy (t : Expr) : Bool := t.isConstOf ``ES.ObjId || t.isConstOf ``ES.EnvId || t.isConstOf ``ES.FuncData ||
+        t.isConstOf ``ES.State || (t.isAppOfArity ``Option 1 && t.appArg!.isConstOf ``ES.EnvId)
+      let keep ← params.filterM fun x => return !bound.contains x && keepTy (← instantiateMVars (← inferType x))
+      let exs := params.filter (!keep.contains ·)
+      let exTy ← existsFVars exs holdsW
+      let exName := Name.mkStr n "PLex"
+      let exT ← instantiateMVars (← mkForallFVars (keep.push w) (mkSort .zero))
+      let exV ← instantiateMVars (← mkLambdaFVars (keep.push w) exTy)
+      addDecl (Declaration.defnDecl (mkDefinitionValEx exName ci.levelParams exT exV .abbrev .safe []))
+      if (← getOptions).getBool `diagnostics false then
+        for (c, _) in rest do logInfo m!"rest: {(← ppExpr c).pretty.take 300}"
+      logInfo m!"{n}: {facts.size} post facts over {params.size} variables ({keep.size} kept in PLex, {bound.size} opened), {rest.size} other conjuncts"
+
+elab "facts_post " id:ident : command => do
+  let n ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
+  liftTermElabM (factsPost n)
 
 end Logic.FactsForm
