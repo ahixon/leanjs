@@ -6,13 +6,15 @@ import JSProofs.ReactReconcileChildren
 import JSProofs.ReactCounter
 import JSProofs.ReactRenderHooks
 import JSProofs.ReactUpdateFunction
+import JSProofs.ReactBeginCounter
 
 /-! The render's callees composed in Lean (contract-style specs and `facts_compose`, replacing
 `tools/gen_react_*.py`): `useFiber` with `createWorkInProgress`; `reconcileChildFibersImpl` with `useFiber`;
 `reconcileChildFibers` with `reconcileChildFibersImpl`;
 `reconcileChildren` with `reconcileChildFibers`;
 the counter component with `useState`; `renderWithHooks` with the counter component;
-`updateFunctionComponent` with `renderWithHooks` and `reconcileChildren`. -/
+`updateFunctionComponent` with `renderWithHooks` and `reconcileChildren`; the counter's `beginWork` with
+`updateFunctionComponent`. -/
 
 facts_form ReactCreateWIP.reuse_spec
 facts_form ReactUseFiber.spec_c
@@ -97,3 +99,15 @@ facts_compose click_comp := click_spec_c
       (e1 := r_e1) (c1 := r_c1) (e2 := r_e2) (c2 := r_c2) (e3 := r_e3) (c3 := r_c3) (e4 := r_e4) (c4 := r_c4) (oG := oG) same
 
 end ReactUpdateFunction
+
+facts_form ReactBeginCounter.click_spec_c
+
+namespace ReactBeginCounter
+open ES Logic ReactReducer
+
+set_option maxHeartbeats 2000000 in
+facts_compose click_comp := click_spec_c
+  | hcUF => ReactUpdateFunction.click_comp (d := d)
+      (oG := oG) (bdDR := ({ bdDR with value := some (.bool false) })) (ln := (.num (F64.fin false 0 (-1074)))) (tUF := .undefined) (ec := false) (ee := false) (ew := false) (fw := false) (kc := false) (ke := false) (kw := false) (le := false) (r_pc := false) (r_pe := false) (r_pw := false) (rw := false) (tRW := .undefined) (ue := false) (yc := false) (ye := false) (yw := false) (uw := uw) (uc := uc) same
+
+end ReactBeginCounter

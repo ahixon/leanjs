@@ -654,6 +654,450 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {s : State}
   exact ⟨C, rfl, frame_restore FW s, hfw, rfl, rfl, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15,
     xret, hch, hCch, hC1l2, hC1f2, hCk2, hCb2, Nat.le_trans gSz hCge2, hNP2, hB2⟩
 
+
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 8000000 in
+set_option maxRecDepth 20000 in
+/-- `click_spec` with its callee as a contract (`facts_compose` composes it). -/
+theorem click_spec_c {n : Nat}
+    {h : σ}
+    {fo : ObjId}
+    {d : FuncData}
+    {s : State}
+    {bG : HashMap JSStr Binding}
+    {oG : Option EnvId}
+    {fD : ObjId}
+    {dD : FuncData}
+    {fS RSI HD : ObjId}
+    {dS : FuncData}
+    {bR : HashMap JSStr Binding}
+    {oR : Option EnvId}
+    {fK IR IJ fJ AP fV fN AIP IP OP : ObjId}
+    {dK dJ : FuncData}
+    {vT P ms1 vH0 vCO uq ln tRW : Value}
+    {fF fRW : ObjId}
+    {dF dRW : FuncData}
+    {bdHU bdRSd bdDP bdFR bdCO bdDS bdTI bdTS : Binding}
+    {uw ue uc lw le lc nw' ne' nc' : Bool}
+    {bA bJ : HashMap JSStr Binding}
+    {oA oJ : Option EnvId}
+    {bdIR bdIJ bdT : Binding}
+    {bdV bdN : BuiltinData}
+    {xE : F64}
+    {irw ire irc ijw ije ijc pw pe pc nnw nne nnc : Bool}
+    {bdRSI : Binding}
+    {rw re rc uw ue' uc : Bool}
+    {bdU bdB : Binding}
+    {bdC bdW bdF bdUW bdUR bdRL bdCE bdSD bdDR bdIs : Binding}
+    {bdIsb : BuiltinData}
+    {fW fR fIs C1 C0 H0 Q U fBS : ObjId}
+    {dW dR dBS : FuncData}
+    {r ms bs vE a dv : Value}
+    {aw ae ac me mc nw ne nc w1 e1 c1 w2 e2 c2 e3 c3 w4 e4 c4 : Bool}
+    {qp qr ql qd ul ur ua ue uv un : Bool × Bool × Bool}
+    -- (`react`'s module scope: `ReactSharedInternals`, whose `H` is the update dispatcher `HD`)
+    (hk : (s.objEntry fo).kind = .func d)
+    (hf : 520 ≤ s.fuel)
+    (hG : d.env < s.envs.size)
+    (hGe : Scope.declLike? (s.envEntry d.env) = some (bG, oG))
+    -- (`updateWorkInProgressHook`'s module variables)
+    -- (the two callees, functions of the same module)
+    -- (`updateReducerImpl`'s module variables)
+    (hGDR : bG[JSStr.ofString "didReceiveUpdate"]? = some bdDR)
+    (hGDRm : bdDR.mutable = true)
+    (hGDRi : bdDR.value.isSome = true)
+    -- (the work in progress `C1`, its current `C0`, the current first hook `H0`, its queue `Q`, the update `U`)
+    (hC1 : C1 < s.heap.size)
+    (hC1k : (s.objEntry C1).kind.isPlain = true)
+    (hC0 : C0 < s.heap.size)
+    (hC0k : (s.objEntry C0).kind.isPlain = true)
+    (hrBS : r = .obj fBS)
+    (dBS1 : C1 ≠ fBS)
+    (dBS2 : fBS ≠ H0)
+    (dBS3 : fBS ≠ Q)
+    (dBS4 : fBS ≠ U)
+    (d1 : C1 ≠ C0)
+    (d2 : C1 ≠ H0)
+    (d3 : C1 ≠ Q)
+    (d4 : C1 ≠ U)
+    (d5 : C1 ≠ fIs)
+    (d6 : C1 ≠ fR)
+    (d7 : H0 ≠ Q)
+    (d8 : H0 ≠ U)
+    (d9 : Q ≠ U)
+    (d10 : fIs ≠ H0)
+    (d11 : fIs ≠ Q)
+    (d12 : fIs ≠ U)
+    -- (the component and its module scope: `import_react`, `import_jsx_runtime`)
+    -- (`jsxProd` and its module's `REACT_ELEMENT_TYPE`)
+    -- (the realm's built-ins the destructuring and the object literal use)
+    -- (the new state is a Number)
+    -- (the realm's and the other modules' objects are not React's fiber, hook, or queue; the module scopes differ)
+    (dAP : AP ≠ C1 ∧ AP ≠ H0 ∧ AP ≠ Q)
+    (dfV : fV ≠ C1 ∧ fV ≠ H0 ∧ fV ≠ Q)
+    (dAIP : AIP ≠ C1 ∧ AIP ≠ H0 ∧ AIP ≠ Q)
+    (dfN : fN ≠ C1 ∧ fN ≠ H0 ∧ fN ≠ Q)
+    (dIP : IP ≠ C1 ∧ IP ≠ H0 ∧ IP ≠ Q)
+    (dOP : OP ≠ C1 ∧ OP ≠ H0 ∧ OP ≠ Q)
+    (dIJ : IJ ≠ C1 ∧ IJ ≠ H0 ∧ IJ ≠ Q)
+    (dfJ : fJ ≠ C1 ∧ fJ ≠ H0 ∧ fJ ≠ Q)
+    (hKd : dK.env ≠ d.env)
+    (hJd : dJ.env ≠ d.env)
+    -- (renderWithHooks: the update dispatcher, react-dom's `ReactSharedInternals`, no render-phase update scheduled;
+    -- finishRenderingHooks and its variables)
+    -- (the work in progress's fields renderWithHooks resets; the current hook is the only one)
+    (hC1l : (s.objEntry C1).props.get? (.str "lanes") = some (.data ln true lw lc))
+    -- (the objects the component reads are neither the work in progress nor ReactSharedInternals; react's module
+    -- scope is not react-dom's)
+    (hdist : ∀ X ∈ [fo, fW, fR, fIs, fBS, C0, H0, Q, U, fD, HD, fS, IR, IJ, fJ, AP, fV, AIP, fN, IP, OP, fK, fF],
+      X ≠ C1 ∧ X ≠ RSI)
+    (dRC : RSI ≠ C1)
+    (hSd : dS.env ≠ d.env)
+    -- (renderWithHooks itself, a function of react-dom's module)
+    (dFH : fF ≠ H0 ∧ fF ≠ Q)
+    (dRQ : RSI ≠ Q)
+    -- (reconcileChildren's premises, its objects renamed)
+    {r_fo : ObjId}
+    {r_d : FuncData}
+    {fU : ObjId}
+    {dU : FuncData}
+    {r_bR : HashMap JSStr Binding}
+    {bdCW : Binding}
+    {H X : ObjId}
+    {fl : F64}
+    {vHT vCL vL vC vMP vMS vUQ vI vR vRC o0 o1 o2 o3 o4 o5 o6 o7 o8 o9 o10 o11 o12 o13 o14 o15 : Value}
+    {r0w r0e r0c r1w r1e r1c r2w r2e r2c r3w r3e r3c r4w r4e r4c r5w r5e r5c r6w r6e r6c r7w r7e r7c r8w r8e r8c r9w r9e r9c r10w r10e r10c r11w r11e r11c r12w r12e r12c r13w r13e r13c e0 c0 r_e1 r_c1 r_e2 r_c2 r_e3 r_c3 r_e4 r_c4 e5 c5 e6 c6 e7 c7 e8 c8 e9 c9 e10 c10 e11 c11 e12 c12 e13 c13 e14 c14 e15 c15 : Bool}
+    {fI fDel fPl fCR : ObjId}
+    {dI dDel dPl dCR : FuncData}
+    {vFr : Value}
+    {bdDel bdUF bdPl bdST bdFr bdEl bdCR : Binding}
+    {ew ee ec kw ke kc yw ye yc r_pw r_pe r_pc bkw bke bkc bew bee bec r_aw r_ae r_ac rew rec : Bool}
+    {rv0 : Value}
+    {r_fR : ObjId}
+    {r_dR : FuncData}
+    {bdRI r_bdT r_bdTS : Binding}
+    {fC : ObjId}
+    {dC : FuncData}
+    {bdRCF : Binding}
+    {c0w c0e c0c cw cc : Bool}
+    {ch0 : Value}
+    (rhU : fU < s.heap.size)
+    (rhUk : (s.objEntry fU).kind = .func dU)
+    (rhUcode : dU.code = CCRGen.useFiber_func)
+    (rhUcls : dU.isClassCtor = false)
+    (rhUmode : dU.thisMode = .strict)
+    (rhE : dU.env < s.envs.size)
+    (rhEe : Scope.declLike? (s.envEntry dU.env) = some (r_bR, some d.env))
+    (rhEn : r_bR[JSStr.ofString "createWorkInProgress"]? = none)
+    (rhGC : bG[JSStr.ofString "createWorkInProgress"]? = some bdCW)
+    (rhGCv : bdCW.value = some (.obj r_fo))
+    (rhlt : r_fo < s.heap.size)
+    (rhk : (s.objEntry r_fo).kind = .func r_d)
+    (rhf : 170 ≤ s.fuel)
+    (rhcode : r_d.code = CWIPGen.createWorkInProgress_func)
+    (rhcls : r_d.isClassCtor = false)
+    (rhmode : r_d.thisMode = .strict)
+    (rhH : H < s.heap.size)
+    (rhHk : (s.objEntry H).kind.isPlain = true)
+    (rhX : X < s.heap.size)
+    (rhXk : (s.objEntry X).kind.isPlain = true)
+    (rhHX : H ≠ X)
+    (rhHa : (s.objEntry H).props.get? (.str "alternate") = some (.data (.obj X) r11w r11e r11c))
+    (rhHf : (s.objEntry H).props.get? (.str "flags") = some (.data (.num fl) r12w r12e r12c))
+    (rhHd : (s.objEntry H).props.get? (.str "dependencies") = some (.data .null r13w r13e r13c))
+    (rhH_type : (s.objEntry H).props.get? (.str "type") = some (.data vHT r0w r0e r0c))
+    (rhH_childLanes : (s.objEntry H).props.get? (.str "childLanes") = some (.data vCL r1w r1e r1c))
+    (rhH_lanes : (s.objEntry H).props.get? (.str "lanes") = some (.data vL r2w r2e r2c))
+    (rhH_child : (s.objEntry H).props.get? (.str "child") = some (.data vC r3w r3e r3c))
+    (rhH_memoizedProps : (s.objEntry H).props.get? (.str "memoizedProps") = some (.data vMP r4w r4e r4c))
+    (rhH_memoizedState : (s.objEntry H).props.get? (.str "memoizedState") = some (.data vMS r5w r5e r5c))
+    (rhH_updateQueue : (s.objEntry H).props.get? (.str "updateQueue") = some (.data vUQ r6w r6e r6c))
+    (rhH_sibling : (s.objEntry H).props.get? (.str "sibling") = some (.data .null r7w r7e r7c))
+    (rhH_index : (s.objEntry H).props.get? (.str "index") = some (.data vI r8w r8e r8c))
+    (rhH_ref : (s.objEntry H).props.get? (.str "ref") = some (.data vR r9w r9e r9c))
+    (rhH_refCleanup : (s.objEntry H).props.get? (.str "refCleanup") = some (.data vRC r10w r10e r10c))
+    (rhX_pendingProps : (s.objEntry X).props.get? (.str "pendingProps") = some (.data o0 true e0 c0))
+    (rhX_type : (s.objEntry X).props.get? (.str "type") = some (.data o1 true r_e1 r_c1))
+    (rhX_flags : (s.objEntry X).props.get? (.str "flags") = some (.data o2 true r_e2 r_c2))
+    (rhX_subtreeFlags : (s.objEntry X).props.get? (.str "subtreeFlags") = some (.data o3 true r_e3 r_c3))
+    (rhX_deletions : (s.objEntry X).props.get? (.str "deletions") = some (.data o4 true r_e4 r_c4))
+    (rhX_childLanes : (s.objEntry X).props.get? (.str "childLanes") = some (.data o5 true e5 c5))
+    (rhX_lanes : (s.objEntry X).props.get? (.str "lanes") = some (.data o6 true e6 c6))
+    (rhX_child : (s.objEntry X).props.get? (.str "child") = some (.data o7 true e7 c7))
+    (rhX_memoizedProps : (s.objEntry X).props.get? (.str "memoizedProps") = some (.data o8 true e8 c8))
+    (rhX_memoizedState : (s.objEntry X).props.get? (.str "memoizedState") = some (.data o9 true e9 c9))
+    (rhX_updateQueue : (s.objEntry X).props.get? (.str "updateQueue") = some (.data o10 true e10 c10))
+    (rhX_dependencies : (s.objEntry X).props.get? (.str "dependencies") = some (.data o11 true e11 c11))
+    (rhX_sibling : (s.objEntry X).props.get? (.str "sibling") = some (.data o12 true e12 c12))
+    (rhX_index : (s.objEntry X).props.get? (.str "index") = some (.data o13 true e13 c13))
+    (rhX_ref : (s.objEntry X).props.get? (.str "ref") = some (.data o14 true e14 c14))
+    (rhX_refCleanup : (s.objEntry X).props.get? (.str "refCleanup") = some (.data o15 true e15 c15))
+    (rhI : fI < s.heap.size)
+    (rhIk : (s.objEntry fI).kind = .func dI)
+    (rhIcode : dI.code = CCRGen.reconcileChildFibersImpl_func)
+    (rhIcls : dI.isClassCtor = false)
+    (rhImode : dI.thisMode = .strict)
+    (rhIenv : dI.env = dU.env)
+    (rhRDel : r_bR[JSStr.ofString "deleteRemainingChildren"]? = some bdDel)
+    (rhRDelv : bdDel.value = some (.obj fDel))
+    (rhDel : fDel < s.heap.size)
+    (rhDelk : (s.objEntry fDel).kind = .func dDel)
+    (rhDelcode : dDel.code = CCRGen.deleteRemainingChildren_func)
+    (rhDelcls : dDel.isClassCtor = false)
+    (rhDelmode : dDel.thisMode = .strict)
+    (rhDelenv : dDel.env = dU.env)
+    (rhRUF : r_bR[JSStr.ofString "useFiber"]? = some bdUF)
+    (rhRUFv : bdUF.value = some (.obj fU))
+    (rhRPl : r_bR[JSStr.ofString "placeSingleChild"]? = some bdPl)
+    (rhRPlv : bdPl.value = some (.obj fPl))
+    (rhPl : fPl < s.heap.size)
+    (rhPlk : (s.objEntry fPl).kind = .func dPl)
+    (rhPlcode : dPl.code = CCRGen.placeSingleChild_func)
+    (rhPlcls : dPl.isClassCtor = false)
+    (rhPlmode : dPl.thisMode = .strict)
+    (rhPlenv : dPl.env = dU.env)
+    (rhRST : r_bR[JSStr.ofString "shouldTrackSideEffects"]? = some bdST)
+    (rhRSTv : bdST.value = some (.bool true))
+    (rhRnF : r_bR[JSStr.ofString "REACT_FRAGMENT_TYPE"]? = none)
+    (rhRnE : r_bR[JSStr.ofString "REACT_ELEMENT_TYPE"]? = none)
+    (rhRnC : r_bR[JSStr.ofString "coerceRef"]? = none)
+    (rhGFr : bG[JSStr.ofString "REACT_FRAGMENT_TYPE"]? = some bdFr)
+    (rhGFrv : bdFr.value = some vFr)
+    (rhGEl : bG[JSStr.ofString "REACT_ELEMENT_TYPE"]? = some bdEl)
+    (rhGElv : bdEl.value = some vT)
+    (rhFrs : ∃ i, vFr = .sym i)
+    (rhEls : ∃ i, vT = .sym i)
+    (rhFrEl : vFr ≠ vT)
+    (rhGCR : bG[JSStr.ofString "coerceRef"]? = some bdCR)
+    (rhGCRv : bdCR.value = some (.obj fCR))
+    (rhCR : fCR < s.heap.size)
+    (rhCRk : (s.objEntry fCR).kind = .func dCR)
+    (rhCRcode : dCR.code = CRGen.coerceRef_func)
+    (rhCRcls : dCR.isClassCtor = false)
+    (rhCRmode : dCR.thisMode = .strict)
+    (rhHkey : (s.objEntry H).props.get? (.str "key") = some (.data .null bkw bke bkc))
+    (rhHet : (s.objEntry H).props.get? (.str "elementType") = some (.data (.str (JSStr.ofString "button")) bew bee bec))
+    (rhXa : (s.objEntry X).props.get? (.str "alternate") = some (.data (.obj H) r_aw r_ae r_ac))
+    (rhXret : (s.objEntry X).props.get? (.str "return") = some (.data rv0 true rew rec))
+    (rhdX : ∀ Y ∈ [fCR, fPl, OP], Y ≠ X)
+    (rhR : r_fR < s.heap.size)
+    (rhRk : (s.objEntry r_fR).kind = .func r_dR)
+    (rhRcode : r_dR.code = CCRGen.fn34_func)
+    (rhRcls : r_dR.isClassCtor = false)
+    (rhRmode : r_dR.thisMode = .strict)
+    (rhRenv : r_dR.env = dU.env)
+    (rhRRI : r_bR[JSStr.ofString "reconcileChildFibersImpl"]? = some bdRI)
+    (rhRRIv : bdRI.value = some (.obj fI))
+    (rhRnT : r_bR[JSStr.ofString "thenableIndexCounter$1"]? = none)
+    (rhRnS : r_bR[JSStr.ofString "thenableState$1"]? = none)
+    (rhGT : bG[JSStr.ofString "thenableIndexCounter$1"]? = some r_bdT)
+    (rhGTm : r_bdT.mutable = true)
+    (rhGTi : r_bdT.value.isSome = true)
+    (rhGS : bG[JSStr.ofString "thenableState$1"]? = some r_bdTS)
+    (rhGSm : r_bdTS.mutable = true)
+    (rhGSi : r_bdTS.value.isSome = true)
+    (rhgU : d.env ≠ dU.env)
+    (rhRC : fC < s.heap.size)
+    (rhRCk : (s.objEntry fC).kind = .func dC)
+    (rhRCcode : dC.code = RChGen.reconcileChildren_func)
+    (rhRCcls : dC.isClassCtor = false)
+    (rhRCmode : dC.thisMode = .strict)
+    (rhRCenv : dC.env = d.env)
+    (rhGRCF : bG[JSStr.ofString "reconcileChildFibers"]? = some bdRCF)
+    (rhGRCFv : bdRCF.value = some (.obj r_fR))
+    (rhC0c : (s.objEntry C0).props.get? (.str "child") = some (.data (.obj H) c0w c0e c0c))
+    (rhRFc : (s.objEntry C1).props.get? (.str "child") = some (.data ch0 true cw cc))
+    (rhRFX : C1 ≠ X)
+    {fUF fP fCD : ObjId}
+    {dUF dP dCD : FuncData}
+    {fl1 : F64}
+    {bdP bdRWb bdCD bdRCb bdHy bdF1 bdL1 bdLI : Binding}
+    {dpw dpe dpc fw fe fc : Bool}
+    -- (updateFunctionComponent and its callees, functions of react-dom's module)
+    (hUF : fUF < s.heap.size)
+    (hUFk : (s.objEntry fUF).kind = .func dUF)
+    -- (the work in progress: no context dependencies; its flags)
+    -- (reconcileChildren's objects are not what renderWithHooks writes; its closure record is not the module's)
+    (hdW : ∀ Y ∈ [r_fo, fU, fI, fDel, fPl, fCR, r_fR, fC, H, X, fCD, C0], Y ≠ C1 ∧ Y ≠ H0 ∧ Y ≠ Q ∧ Y ≠ RSI)
+    (hdUe : dU.env ≠ d.env)
+    {fB fCS : ObjId}
+    {dB dCS : FuncData}
+    {tB : Value}
+    {bdCS bdUFb : Binding}
+    {Pp : ObjId}
+    {f0 : F64}
+    {mpw mpe mpc ppw ppe ppc c0lw c0le c0lc c0fw c0fe c0fc tgw tge tgc tyw tye tyc : Bool}
+    -- (beginWork and checkScheduledUpdateOrContext, functions of react-dom's module)
+    (hBW : fB < s.heap.size)
+    (hBWk : (s.objEntry fB).kind = .func dB)
+    (hBWcode : dB.code = BWGen.beginWork_func)
+    (hBWcls : dB.isClassCtor = false)
+    (hBWmode : dB.thisMode = .strict)
+    (hBWenv : dB.env = d.env)
+    (hGCS : bG[JSStr.ofString "checkScheduledUpdateOrContext"]? = some bdCS)
+    (hGCSv : bdCS.value = some (.obj fCS))
+    (hCS : fCS < s.heap.size)
+    (hCSk : (s.objEntry fCS).kind = .func dCS)
+    (hCScode : dCS.code = CSUGen.checkScheduledUpdateOrContext_func)
+    (hCScls : dCS.isClassCtor = false)
+    (hCSmode : dCS.thisMode = .strict)
+    (hGUFb : bG[JSStr.ofString "updateFunctionComponent"]? = some bdUFb)
+    (hGUFbv : bdUFb.value = some (.obj fUF))
+    -- (the current counter fiber: its props are the work in progress's (cloned by the root's bailout), an update in
+    -- lane 2, no forced re-render flag; the work in progress: a function component (tag 0) of the counter)
+    (hPp : P = .obj Pp)
+    (hC0mp : (s.objEntry C0).props.get? (.str "memoizedProps") = some (.data (.obj Pp) mpw mpe mpc))
+    (hC1pp : (s.objEntry C1).props.get? (.str "pendingProps") = some (.data (.obj Pp) ppw ppe ppc))
+    (hC0l : (s.objEntry C0).props.get? (.str "lanes") = some (.data two c0lw c0le c0lc))
+    (hC0f : (s.objEntry C0).props.get? (.str "flags") = some (.data (.num f0) c0fw c0fe c0fc))
+    (hf0 : numberBinOp .bitAnd f0 (F64.fin false 4503599627370496 (-35)) = F64.fin false 0 (-1074))
+    (hC1tag : (s.objEntry C1).props.get? (.str "tag") = some (.data (.num (F64.fin false 0 (-1074))) tgw tge tgc))
+    (hC1ty : (s.objEntry C1).props.get? (.str "type") = some (.data (.obj fK) tyw tye tyc))
+    (dUFC1 : fUF ≠ C1)
+    (hcUF : ∀ w h1, Frame ⟨[(d.env, JSStr.ofString "didReceiveUpdate")], [(C1, .str "lanes")], false⟩ s w → 500 ≤ w.fuel →
+      WP eng answer (n + 7) h1 (callImpl eng (.obj fUF) .undefined #[.obj C0, .obj C1, .obj fK, P, two]) w fun v w' h' =>
+        ∃ C : ObjId, v = .obj X ∧ Frame (fpUF d.env C1 H0 Q RSI X) w w' ∧ w.fuel ≤ w'.fuel + 500 ∧ h' = h1 ∧ w'.realm = w.realm ∧ (w'.objEntry X).props.get? (.str "pendingProps") = some (.data (.obj C) true e0 c0) ∧ (w'.objEntry X).props.get? (.str "type") = some (.data (vHT) true r_e1 r_c1) ∧ (w'.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true r_e2 r_c2) ∧ (w'.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true r_e3 r_c3) ∧ (w'.objEntry X).props.get? (.str "deletions") = some (.data (.null) true r_e4 r_c4) ∧ (w'.objEntry X).props.get? (.str "childLanes") = some (.data (vCL) true e5 c5) ∧ (w'.objEntry X).props.get? (.str "lanes") = some (.data (vL) true e6 c6) ∧ (w'.objEntry X).props.get? (.str "child") = some (.data (vC) true e7 c7) ∧ (w'.objEntry X).props.get? (.str "memoizedProps") = some (.data (vMP) true e8 c8) ∧ (w'.objEntry X).props.get? (.str "memoizedState") = some (.data (vMS) true e9 c9) ∧ (w'.objEntry X).props.get? (.str "updateQueue") = some (.data (vUQ) true e10 c10) ∧ (w'.objEntry X).props.get? (.str "dependencies") = some (.data (.null) true e11 c11) ∧ (w'.objEntry X).props.get? (.str "sibling") = some (.data .null true e12 c12) ∧ (w'.objEntry X).props.get? (.str "index") = some (.data (.num (F64.fin false 0 (-1074))) true e13 c13) ∧ (w'.objEntry X).props.get? (.str "ref") = some (.data .null true e14 c14) ∧ (w'.objEntry X).props.get? (.str "refCleanup") = some (.data (vRC) true e15 c15) ∧ (w'.objEntry X).props.get? (.str "return") = some (.data (.obj C1) true rew rec) ∧ (w'.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true cw cc) ∧ (w'.objEntry C).props.get? (.str "children") = some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧ (w'.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) ∧ (w'.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitOr fl1 (F64.fin false 4503599627370496 (-52)))) true fe fc) ∧ (w'.objEntry C).kind.isPlain = true ∧ C < w'.heap.size ∧ w.heap.size ≤ C ∧ (∃ F, ReactNewProps.NewProps w' C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true ∧ (∃ bd, bm[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)) :
+    WP eng answer (n + 8) h (callImpl eng (.obj fB) tB #[.obj C0, .obj C1, two]) s fun v w h' =>
+      ∃ C : ObjId, v = .obj X ∧ Frame (fpB d.env C1 H0 Q RSI X) s w ∧ s.fuel ≤ w.fuel + 530 ∧ h' = h ∧ w.realm = s.realm ∧
+      (w.objEntry X).props.get? (.str "pendingProps") = some (.data (.obj C) true e0 c0) ∧
+      (w.objEntry X).props.get? (.str "type") = some (.data (vHT) true r_e1 r_c1) ∧
+      (w.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true r_e2 r_c2) ∧
+      (w.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true r_e3 r_c3) ∧
+      (w.objEntry X).props.get? (.str "deletions") = some (.data (.null) true r_e4 r_c4) ∧
+      (w.objEntry X).props.get? (.str "childLanes") = some (.data (vCL) true e5 c5) ∧
+      (w.objEntry X).props.get? (.str "lanes") = some (.data (vL) true e6 c6) ∧
+      (w.objEntry X).props.get? (.str "child") = some (.data (vC) true e7 c7) ∧
+      (w.objEntry X).props.get? (.str "memoizedProps") = some (.data (vMP) true e8 c8) ∧
+      (w.objEntry X).props.get? (.str "memoizedState") = some (.data (vMS) true e9 c9) ∧
+      (w.objEntry X).props.get? (.str "updateQueue") = some (.data (vUQ) true e10 c10) ∧
+      (w.objEntry X).props.get? (.str "dependencies") = some (.data (.null) true e11 c11) ∧
+      (w.objEntry X).props.get? (.str "sibling") = some (.data .null true e12 c12) ∧
+      (w.objEntry X).props.get? (.str "index") = some (.data (.num (F64.fin false 0 (-1074))) true e13 c13) ∧
+      (w.objEntry X).props.get? (.str "ref") = some (.data .null true e14 c14) ∧
+      (w.objEntry X).props.get? (.str "refCleanup") = some (.data (vRC) true e15 c15) ∧
+      (w.objEntry X).props.get? (.str "return") = some (.data (.obj C1) true rew rec) ∧
+      (w.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true cw cc) ∧
+      (w.objEntry C).props.get? (.str "children") =
+        some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
+      (w.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) ∧
+      (w.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitOr fl1 (F64.fin false 4503599627370496 (-52)))) true fe fc) ∧
+      (w.objEntry C).kind.isPlain = true ∧ C < w.heap.size ∧ s.heap.size ≤ C ∧
+      (∃ F, ReactNewProps.NewProps w C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) ∧
+      ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
+        (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true ∧
+        (∃ bd, bm[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+        (∃ bd, bm[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) := by
+  subst hrBS
+  apply wp_callGen BWGen.beginWork_eq (by decide) hBW hBWk (by omega) hBWcls hBWmode
+    (by rw [hBWcode]; rfl) (by rw [hBWcode]; rfl) (simpleB dB hBWcode) (by rw [hBWcode]; rfl) (by rw [hBWcode]; rfl)
+  have hpn : dB.code.info.fdi.paramNames = #[JSStr.ofString "current", JSStr.ofString "workInProgress",
+      JSStr.ofString "renderLanes"] := by rw [hBWcode]; rfl
+  have hv : dB.code.info.fdi.varNames = #[JSStr.ofString "props", JSStr.ofString "$$typeof", JSStr.ofString "prevState",
+    JSStr.ofString "nextState"] := by rw [hBWcode]; rfl
+  have hl : FDI.lexDecls dB = #[] := by simp [FDI.lexDecls, hBWcode, BWGen.beginWork_func, Func.info]
+  have ha : dB.code.isAsync = false := by rw [hBWcode]; rfl
+  have hne : s.envs.size ≠ d.env := Nat.ne_of_gt hG
+  have hG1 : d.env < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  subst hPp
+  clear hBWcode
+  simp only [BWGen.beginWork]
+  js [hpn, hv, hl, ha, hBWenv, hG, hG1, hne, Ne.symm hne, hGe, hC0, hC0k, hC0mp, hC1, hC1k, hC1pp, beq_self_eq_true, hGCS, hGCSv, hCS,
+    hCSk, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hCS, hCSk], ?_⟩
+  refine wp_mono (check_lane hCS hCSk (by js_norm; omega) hCScode hCScls hCSmode hC0 hC0k hC0l (by js_norm)) ?postC
+  intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, hr1⟩
+  subst v1 h1
+  have hw1K := envEntry_frame0 hF1 (e := s.envs.size) (by js_norm)
+  have hw1G := envEntry_frame0 hF1 (e := d.env) (by js_norm [hG1])
+  simp only [js_simp, ↓reduceIte, hne, Ne.symm hne] at hw1K hw1G
+  have hw1o : ∀ o, o < s.heap.size → w1.objEntry o = s.objEntry o := fun o ho =>
+    (objEntry_frame0 hF1 (by js_norm [ho])).trans rfl
+  have hw1E : s.envs.size + 1 ≤ w1.envs.size := by have := hF1.envs_le; simp only [js_simp] at this; exact this
+  have hw1z : s.heap.size ≤ w1.heap.size := by have := hF1.heap_le; simp only [js_simp] at this; exact this
+  have hw1f : 509 ≤ w1.fuel := by simp only [js_simp] at hfu1; omega
+  have hEw1' : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hw1E
+  have hGw1' : d.env < w1.envs.size := Nat.lt_of_lt_of_le hG1 hw1E
+  have hnw1 : w1.envs.size ≠ s.envs.size := Nat.ne_of_gt hEw1'
+  have hnw1G : w1.envs.size ≠ d.env := Nat.ne_of_gt hGw1'
+  have hz00 : isStrictlyEqual (.num (F64.fin false 0 (-1074))) (.num (F64.fin false 0 (-1074))) = true := by decide
+  iterate 32 (first | js_go | js_norm [hpn, hv, hl, ha, hBWenv, hw1K, hw1G, hGe, hne, Ne.symm hne, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hw1E, Nat.lt_of_lt_of_le hG1 hw1E, hw1o, hC0, hC0k, hC1, hC0f, hf0, hz00, hEw1', hGw1', Nat.lt_succ_of_lt hEw1', Nat.lt_succ_of_lt hGw1', hnw1, hnw1G, Ne.symm hnw1, Ne.symm hnw1G, hC1, hC1k, hC1l, hC1tag, hC1ty, hC1pp, hGDR, hGDRm, hGDRi, hGUFb, hGUFbv, hUF, hUFk, Nat.lt_of_lt_of_le hC1 hw1z, Nat.lt_of_lt_of_le hUF hw1z, Nat.lt_of_lt_of_le hC0 hw1z, hw1f, FDI.fdiCtx, Sem.inner] | js_split)
+  refine wp_switchC BWSwitch.lex ?_
+  js [hpn, hv, hl, ha, hBWenv, hw1K, hw1G, hGe, hne, Ne.symm hne, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) hw1E, Nat.lt_of_lt_of_le hG1 hw1E, hw1o, hC0, hC0k, hC1, hC0f, hf0, hz00, hEw1', hGw1', Nat.lt_succ_of_lt hEw1', Nat.lt_succ_of_lt hGw1', hnw1, hnw1G, Ne.symm hnw1, Ne.symm hnw1G, hC1, hC1k, hC1l, hC1tag, hC1ty, hC1pp, hGDR, hGDRm, hGDRi, hGUFb, hGUFbv, hUF, hUFk, Nat.lt_of_lt_of_le hC1 hw1z, Nat.lt_of_lt_of_le hUF hw1z, Nat.lt_of_lt_of_le hC0 hw1z, hw1f, FDI.fdiCtx, Sem.inner]
+  -- (`return updateFunctionComponent(current, workInProgress, workInProgress.type, workInProgress.pendingProps, 2)`)
+  refine ⟨by js_norm [CallableC, hw1o, hUF, hUFk, Nat.lt_of_lt_of_le hUF hw1z, dUFC1, Ne.symm dUFC1], ?_⟩
+  refine wp_gen_state fun St hSt => ?_
+  have gSp : ∀ o k, o < s.heap.size → (o = C1 → k ≠ PropKey.str (JSStr.ofString "lanes")) →
+      (St.objEntry o).props.get? k = (s.objEntry o).props.get? k := by
+    intro o k ho hk
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le ho hw1z, Nat.lt_of_lt_of_le hC1 hw1z]
+    by_cases hoc : C1 = o
+    · subst hoc; simp [PropMap.get?_insert_ne _ _ _ _ (Ne.symm (hk rfl)), hw1o C1 hC1]
+    · simp [hoc, hw1o o ho]
+  have gSk : ∀ o, o < s.heap.size → (St.objEntry o).kind = (s.objEntry o).kind := by
+    intro o ho
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le ho hw1z, Nat.lt_of_lt_of_le hC1 hw1z]
+    by_cases hoc : C1 = o
+    · subst hoc; simp [hw1o C1 hC1]
+    · simp [hoc, hw1o o ho]
+  have gSpr : ∀ o, o < s.heap.size → (St.objEntry o).proto = (s.objEntry o).proto := by
+    intro o ho
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le ho hw1z, Nat.lt_of_lt_of_le hC1 hw1z]
+    by_cases hoc : C1 = o
+    · subst hoc; simp [hw1o C1 hC1]
+    · simp [hoc, hw1o o ho]
+  have gSC1l : (St.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) := by
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le hC1 hw1z]
+  have gSz : s.heap.size ≤ St.heap.size := by rw [hSt]; simp only [js_simp]; exact hw1z
+  have gSE : s.envs.size ≤ St.envs.size := by rw [hSt]; simp only [js_simp]; omega
+  have gSe : ∀ e, e < s.envs.size → e ≠ d.env → St.envEntry e = s.envEntry e := by
+    intro e he hne'
+    rw [hSt]; js_norm [he, hne', Ne.symm hne', Nat.ne_of_lt he, Nat.ne_of_gt he, Nat.lt_of_lt_of_le he (Nat.le_of_lt hEw1'),
+      Nat.ne_of_lt (Nat.lt_trans he hEw1'), Nat.ne_of_gt (Nat.lt_trans he hEw1')]
+    rw [envEntry_frame0 hF1 (by js_norm [Nat.lt_succ_of_lt he])]; js_norm [Nat.ne_of_lt he, Nat.ne_of_gt he]
+  have gSd : Scope.declLike? (St.envEntry d.env) = some (bG.modify (JSStr.ofString "didReceiveUpdate")
+      (fun bd => { bd with value := some (.bool false) }), oG) := by
+    rw [hSt]; js_norm [hGw1', hnw1G, Ne.symm hnw1G, hw1G, hGe, hne, Ne.symm hne]
+  have gSR : St.realms = s.realms := by rw [hSt]; show w1.realms = s.realms; rw [hF1.realms_eq]; rfl
+  have gSF : 505 ≤ St.fuel := by rw [hSt]; simp only [js_simp]; omega
+  have gF1 : Frame (fpB d.env C1 H0 Q RSI X) s w1 := frame_mono (frame_trans (frame_bodyState
+    (frame_refl ({} : Footprint) s) fB dB tB #[.obj C0, .obj C1, two]) hF1) (by simp) (by simp) (fun _ => rfl)
+  have gFSt : Frame (fpB d.env C1 H0 Q RSI X) s St := by
+    rw [hSt, ← hw1G]
+    refine frame_pushEnv (frame_mono (fp' := fpB d.env C1 H0 Q RSI X) (frame_setProp_prop (frame_mono (fp' := fpB d.env C1 H0 Q RSI X) (frame_setEnv_bind gF1 hG (by rw [hw1G]; exact hGe)
+      _ _) ?_ ?_ ?_) hC1 _ _) ?_ ?_ ?_) _
+    · intro p hp; simp only [List.mem_cons] at hp; rcases hp with rfl | hp
+      · simp [fpB, fpUF]
+      · exact hp
+    · intro p hp; exact hp
+    · intro h; exact h
+    · intro p hp; exact hp
+    · intro p hp; simp only [List.mem_cons] at hp; rcases hp with rfl | hp
+      · simp [fpB, fpUF]
+      · exact hp
+    · intro h; exact h
+  have gF1t : Frame ⟨[(d.env, JSStr.ofString "didReceiveUpdate")], [(C1, .str "lanes")], false⟩ s w1 := frame_mono (frame_trans (frame_bodyState
+    (frame_refl ({} : Footprint) s) fB dB tB #[.obj C0, .obj C1, two]) hF1) (by simp) (by simp) (fun _ => rfl)
+  have gFStt : Frame ⟨[(d.env, JSStr.ofString "didReceiveUpdate")], [(C1, .str "lanes")], false⟩ s St := by
+    rw [hSt, ← hw1G]
+    refine frame_pushEnv (frame_mono (fp' := ⟨[(d.env, JSStr.ofString "didReceiveUpdate")], [(C1, .str "lanes")], false⟩) (frame_setProp_prop (frame_mono (fp' := ⟨[(d.env, JSStr.ofString "didReceiveUpdate")], [(C1, .str "lanes")], false⟩) (frame_setEnv_bind gF1t hG (by rw [hw1G]; exact hGe)
+      _ _) ?_ ?_ ?_) hC1 _ _) ?_ ?_ ?_) _
+    all_goals first | (intro h; exact h) | (intro p hp; simpa using hp)
+  have gSFe : St.fuel = w1.fuel := by rw [hSt]; simp only [js_simp]
+  have gStK : St.envEntry s.envs.size = w1.envEntry s.envs.size := by
+    rw [hSt]; js_norm [hEw1', hnw1, Ne.symm hnw1, hne, Ne.symm hne]
+  clear hSt
+  refine wp_mono (hcUF St _  gFStt (Nat.le_trans (by decide) gSF) ) ?postU
+  clear hcUF
+  intro v2 w2 h2 ⟨C, hv2, hF2, hfu2, hh2, hr2, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, xret,
+    hch, hCch, hC1l2, hC1f2, hCk2, hCb2, hCge2, hNP2, hB2⟩
+  subst v2 h2
+  have FW := frame_extend' gFSt hF2 (fun q hq _ => hq) (fun q hq _ => hq) (fun _ => rfl)
+  have hfw : s.fuel ≤ w2.fuel + 530 := by simp only [js_simp] at hfu1; omega
+  exact ⟨C, rfl, frame_restore FW s, hfw, rfl, rfl, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15,
+    xret, hch, hCch, hC1l2, hC1f2, hCk2, hCb2, Nat.le_trans gSz hCge2, hNP2, hB2⟩
+
 end
 
 end ReactBeginCounter
