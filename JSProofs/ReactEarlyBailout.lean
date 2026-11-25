@@ -1053,7 +1053,7 @@ theorem root_spec_c {n : Nat}
       dPHC.thisMode = .strict →
       dPHC.env < w.envs.size →
       Scope.declLike? (w.envEntry dPHC.env) = some (bG, oG) →
-      HI h →
+      HI h1 →
       WP eng answer (n + 1) h1 (callImpl eng (.obj fPHC) .undefined #[.obj X, .obj C]) w fun v w' h' =>
         v = .undefined ∧ Frame (ReactHostContainer.fp dPHC.env VS a_RI a_CF a_CS) w w' ∧ w.fuel ≤ w'.fuel + 200 ∧ h' = h1 ∧ (∃ bm, Scope.declLike? (w'.envEntry dPHC.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "index"]? = some bd ∧ bd.value = some (.num (F64.fin false 4503599627370496 (-51))) ∧ bd.mutable = true) ∧ ∀ x, x ≠ JSStr.ofString "index" → bm[x]? = bG[x]?) ∧ (w'.objEntry VS).props.get? (.str "0") = some (.data a_vr true a_e0 a_c0) ∧ (w'.objEntry VS).props.get? (.str "1") = some (.data a_vf true a_e1 a_c1) ∧ (w'.objEntry VS).props.get? (.str "2") = some (.data a_vc true a_e2 a_c2) ∧ (w'.objEntry a_RI).props.get? (.str "current") = some (.data (.obj C) true a_re a_rc) ∧ (w'.objEntry a_CF).props.get? (.str "current") = some (.data (.obj X) true a_fe a_fc) ∧ (w'.objEntry a_CS).props.get? (.str "current") = some (.data (.num (F64.fin false 0 (-1074))) true a_ce a_cc)))
     (hcPPR : Hide (∀ w h1 (bG : HashMap JSStr Binding) (bdI : Binding), Frame (ReactHostContainer.fp d.env VS a_RI a_CF a_CS) s w → 40 ≤ w.fuel →

@@ -97,6 +97,10 @@ def proveFacts (g : MVarId) : TermElabM (List MVarId × Array String × Nat) := 
       if fits.size == 1 || (ground && fits.size ≥ 1) then
         let (h, Ls, i, e) := fits[0]!
         let _ ← withReducible (isDefEq e f)
+        if !ground then
+          let f' ← instantiateMVars f
+          if (toString (← ppExpr f')).contains "false false false" then
+            logInfo m!"proveFacts fixed false flags: {← ppExpr f'}\n  from {← ppExpr (← instantiateMVars e)} ({fits.size} fit)"
         let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit i, ← mkAppM ``List.length #[Ls]])
         let gi ← mkAppOptM ``Logic.Facts.get #[Ls, w, h, mkNatLit i, hm]
         proofs := proofs.set! j (some gi)
@@ -438,8 +442,115 @@ def collectFacts (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.Ref Coll
   st.modify fun c => { c with matched := c.matched + found }
   pendingFacts.modify (· ++ left.toArray)
 
+/-- A pure goal that is a fact in disguise, made a fact goal (proved back from it): a lookup `bs[x]? = r` in a record
+map a hypothesis gives (a binding fact), a prototype (a prototype fact), a record's existence `e < w.envs.size` (a
+record fact). The new goal, or `none`. -/
+def toFactGoal (g : MVarId) : MetaM (Option MVarId) := g.withContext do
+  let goal ← instantiateMVars (← g.getType)
+  let mkGoal (f w : Expr) : MetaM Expr := mkFreshExprSyntheticOpaqueMVar (mkApp2 (mkConst ``Logic.Fact.holds) f w) `fact
+  if let some (_, lhs, rhs) := goal.eq? then
+    -- a lookup in a record's map
+    if lhs.isAppOf ``GetElem?.getElem? && lhs.getAppNumArgs ≥ 2 then
+      let bs := lhs.getAppArgs[lhs.getAppNumArgs - 2]!
+      let x := lhs.getAppArgs[lhs.getAppNumArgs - 1]!
+      for d in ← getLCtx do
+        if d.isImplementationDetail then continue
+        let t ← instantiateMVars d.type
+        if let some (_, l2, r2) := t.eq? then
+          if l2.isAppOfArity ``Scope.declLike? 1 && r2.isAppOfArity ``Option.some 2 then
+            let pr := r2.appArg!
+            if pr.isAppOfArity ``Prod.mk 4 && pr.appFn!.appArg! == bs && l2.appArg!.isAppOfArity ``ES.State.envEntry 2 then
+              let w := l2.appArg!.appFn!.appArg!
+              let e := l2.appArg!.appArg!
+              let oG := pr.appArg!
+              let pred ← withLocalDeclD `b (← mkAppM ``Option #[mkConst ``ES.Binding]) fun b => do
+                mkLambdaFVars #[b] (← mkEq b rhs)
+              let f := mkApp4 (mkConst ``Logic.Fact.bind) e oG x pred
+              let F ← mkGoal f w
+              let pf ← mkAppOptM ``Logic.Fact.bind_get #[e, oG, x, pred, w, bs, d.toExpr, F]
+              g.assign (← mkExpectedTypeHint pf goal)
+              return some F.mvarId!
+    -- a prototype
+    if lhs.isAppOfArity ``ES.Obj.proto 1 && lhs.appArg!.isAppOfArity ``ES.State.objEntry 2 then
+      let w := lhs.appArg!.appFn!.appArg!
+      let o := lhs.appArg!.appArg!
+      let F ← mkGoal (mkApp2 (mkConst ``Logic.Fact.proto) o rhs) w
+      g.assign (← mkExpectedTypeHint (mkProj ``And 1 F) goal)
+      return some F.mvarId!
+  -- a record's existence
+  if goal.isAppOfArity ``LT.lt 4 then
+    let sz := goal.appArg!
+    if sz.isAppOfArity ``Array.size 2 && sz.appArg!.isAppOfArity ``ES.State.envs 1 then
+      let w := sz.appArg!.appArg!
+      let e := goal.appFn!.appArg!
+      let oG ← mkFreshExprMVar (← mkAppM ``Option #[mkConst ``ES.EnvId])
+      let F ← mkGoal (mkApp2 (mkConst ``Logic.Fact.record) e oG) w
+      g.assign (← mkExpectedTypeHint (mkProj ``And 0 F) goal)
+      return some F.mvarId!
+  return none
+
 /-- The hypotheses already normalized. -/
 initialize normalized : IO.Ref (Array FVarId) ← IO.mkRef #[]
+
+/-- A goal `Fact.holds f w`: matched against the fact lists at `w` in its context (one candidate fits, or `f` has no
+unknowns and one does). -/
+def matchOne (g : MVarId) : MetaM Bool := g.withContext do
+  if ← g.isAssigned then return true
+  let t ← instantiateMVars (← g.getType)
+  unless t.isAppOfArity ``Logic.Fact.holds 2 do return false
+  let f := t.appFn!.appArg!
+  let w := t.appArg!
+  let (c, k) ← factKey f
+  let ground := !f.hasExprMVar
+  let mut fits : Array (Expr × Expr × Nat × Expr) := #[]
+  for (h, Ls, keyed) in ← sourcesAt w do
+    for i in [:keyed.size] do
+      let (e, c', k') := keyed[i]!
+      unless c' == c && (k == k' || k == "?" || k' == "?") do continue
+      let saved ← saveState
+      let ok ← try withReducible (isDefEq e f) catch _ => pure false
+      saved.restore
+      if ok then
+        fits := fits.push (h, Ls, i, e)
+        if ground then break
+    if ground && fits.size ≥ 1 then break
+  unless fits.size == 1 || (ground && fits.size ≥ 1) do return false
+  let (h, Ls, i, e) := fits[0]!
+  let before := f.hasExprMVar
+  let _ ← withReducible (isDefEq e f)
+  -- diagnosis: a match that fixes flags to `false`
+  if before then
+    let f' ← instantiateMVars f
+    if (toString (← ppExpr f')).contains "false false false" then
+      logInfo m!"matched (fixing false flags): {← ppExpr f'}\n  from {← ppExpr (← instantiateMVars e)} ({fits.size} fit)"
+  let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit i, ← mkAppM ``List.length #[Ls]])
+  let gi ← mkAppOptM ``Logic.Facts.get #[Ls, w, h, mkNatLit i, hm]
+  g.assign (← mkExpectedTypeHint gi t)
+  return true
+
+/-- A pure goal closed by a hypothesis with its head, matched reducibly. -/
+def assumeOne (g : MVarId) : MetaM Bool := g.withContext do
+  if ← g.isAssigned then return true
+  let goal ← instantiateMVars (← g.getType)
+  let hd := goal.getAppFn
+  let ground := !goal.hasExprMVar
+  -- a pure goal never assigns unknowns (a hypothesis that fits may be unrelated): it waits until facts have
+  unless ground do return false
+  let mut fits : Array LocalDecl := #[]
+  for d in ← getLCtx do
+    if d.isImplementationDetail then continue
+    let ty ← instantiateMVars d.type
+    unless ty.getAppFn == hd do continue
+    let saved ← saveState
+    let ok ← try withReducible (isDefEq ty goal) catch _ => pure false
+    saved.restore
+    if ok then
+      fits := fits.push d
+      if ground || fits.size > 1 then break
+  unless fits.size == 1 || (ground && fits.size ≥ 1) do return false
+  let _ ← withReducible (isDefEq (← instantiateMVars fits[0]!.type) goal)
+  g.assign fits[0]!.toExpr
+  return true
 
 /-- Walks an obligation: introduces (taking apart conjunctions and existentials), opens `∃`s with unknowns, splits
 `∧`s, matches fact lists; the rest is closed by an assumption or counted (a premise the top can state, or stuck). -/
@@ -495,77 +606,134 @@ partial def collectGoal (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.R
         if u.isForall || u.isAppOfArity ``And 2 || u.isAppOfArity ``Exists 2 || u.isAppOfArity ``Logic.Facts.holds 2 then
           return ← collectGoal (← g.replaceTargetDefEq u) top s0 st (fuel - 1)
   -- the rest: an assumption, or counted
-  -- an assumption with the same head, matched reducibly (an unrestricted `assumption` unfolds definitions)
-  let ok ← g.withContext do
-    let goal ← instantiateMVars (← g.getType)
-    let hd := goal.getAppFn
-    let mut found := false
-    for d in ← getLCtx do
-      if found || d.isImplementationDetail then continue
-      let ty ← instantiateMVars d.type
-      unless ty.getAppFn == hd do continue
-      let saved ← saveState
-      if ← (try withReducible (isDefEq ty goal) catch _ => pure false) then
-        g.assign d.toExpr; found := true
-      else saved.restore
-    pure found
+  -- an assumption with the same head, matched reducibly, alone when the goal has unknowns
+  let ok ← assumeOne g
   if ok then st.modify fun c => { c with closed := c.closed + 1 }; return
+  -- a fact in disguise: a fact goal
+  if let some F ← toFactGoal g then pendingFacts.modify (·.push F); return
   pendingPures.modify (·.push g)
 
-/-- A goal `Fact.holds f w`: matched against the fact lists at `w` in its context (one candidate fits, or `f` has no
-unknowns and one does). -/
-def matchOne (g : MVarId) : MetaM Bool := g.withContext do
-  if ← g.isAssigned then return true
-  let t ← instantiateMVars (← g.getType)
-  unless t.isAppOfArity ``Logic.Fact.holds 2 do return false
-  let f := t.appFn!.appArg!
-  let w := t.appArg!
-  let (c, k) ← factKey f
-  let ground := !f.hasExprMVar
-  let mut fits : Array (Expr × Expr × Nat × Expr) := #[]
-  for (h, Ls, keyed) in ← sourcesAt w do
-    for i in [:keyed.size] do
-      let (e, c', k') := keyed[i]!
-      unless c' == c && (k == k' || k == "?" || k' == "?") do continue
-      let saved ← saveState
-      let ok ← try withReducible (isDefEq e f) catch _ => pure false
-      saved.restore
-      if ok then
-        fits := fits.push (h, Ls, i, e)
-        if ground then break
-    if ground && fits.size ≥ 1 then break
-  unless fits.size == 1 || (ground && fits.size ≥ 1) do return false
-  let (h, Ls, i, e) := fits[0]!
-  let _ ← withReducible (isDefEq e f)
-  let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit i, ← mkAppM ``List.length #[Ls]])
-  let gi ← mkAppOptM ``Logic.Facts.get #[Ls, w, h, mkNatLit i, hm]
-  g.assign (← mkExpectedTypeHint gi t)
-  return true
-
-/-- A pure goal closed by a hypothesis with its head, matched reducibly. -/
-def assumeOne (g : MVarId) : MetaM Bool := g.withContext do
+/-- A fuel bound (`k ≤ w.fuel`, `s.fuel ≤ w.fuel + k`, …) by `omega` over the fuel hypotheses alone: each `x.fuel` made
+a fresh number in a small context (the context's other hypotheses are not scanned), the proof put back. -/
+def fuelOne (g : MVarId) : TermElabM Bool := g.withContext do
   if ← g.isAssigned then return true
   let goal ← instantiateMVars (← g.getType)
-  let hd := goal.getAppFn
+  if goal.hasExprMVar then return false
+  let isArith (t : Expr) : Bool := t.isAppOfArity ``LE.le 4 || t.isAppOfArity ``LT.lt 4
+  let hasFuel (t : Expr) : Bool := (t.find? fun e => e.isAppOfArity ``ES.State.fuel 1).isSome
+  unless isArith goal && hasFuel goal do return false
+  -- the atoms `x.fuel` of the goal and the fuel hypotheses
+  let mut cand : Array (Expr × Expr) := #[]
   for d in ← getLCtx do
     if d.isImplementationDetail then continue
-    let ty ← instantiateMVars d.type
-    unless ty.getAppFn == hd do continue
-    let saved ← saveState
-    if ← (try withReducible (isDefEq ty goal) catch _ => pure false) then
-      g.assign d.toExpr; return true
-    saved.restore
+    let t ← instantiateMVars d.type
+    if isArith t && hasFuel t && !t.hasExprMVar then cand := cand.push (d.toExpr, t)
+  let mut atoms : Array Expr := #[]
+  for t in #[goal] ++ cand.map (·.2) do
+    let es : Array Expr := Id.run <| Expr.foldlM (fun (acc : Array Expr) e => pure (if e.isAppOfArity ``ES.State.fuel 1 then acc.push e else acc)) #[] t
+    for e in es do
+      if !atoms.contains e then atoms := atoms.push e
+  let abstract (t : Expr) (vals : Array Expr) : Expr :=
+    t.replace fun e => match atoms.findIdx? (· == e) with
+      | some i => some vals[i]!
+      | none => none
+  -- only what mentions nothing but the atoms
+  let pure0 (t : Expr) : Bool := !(abstract t (atoms.map fun _ => mkNatLit 0)).hasFVar
+  unless pure0 goal do return false
+  let hs := cand.filter fun (_, t) => pure0 t
+  let natTy := mkConst ``Nat
+  let r ← withLCtx {} #[] do
+    withLocalDecls (atoms.mapIdx fun i _ => (Name.mkSimple s!"f{i}", .default, fun _ => pure natTy)) fun fvs => do
+      let hTys := hs.map fun (_, t) => abstract t fvs
+      withLocalDecls (hTys.mapIdx fun i t => (Name.mkSimple s!"h{i}", .default, fun _ => pure t)) fun hfs => do
+        let mv ← mkFreshExprSyntheticOpaqueMVar (abstract goal fvs)
+        let saved ← saveState
+        try
+          let rem ← Tactic.run mv.mvarId! (Tactic.evalTactic (← `(tactic| omega)))
+          unless rem.isEmpty do saved.restore; return none
+          return some (← instantiateMVars (← mkLambdaFVars (fvs ++ hfs) (← instantiateMVars mv)))
+        catch _ => saved.restore; return none
+  let some lam := r | return false
+  let pf := mkAppN lam (atoms ++ hs.map (·.1))
+  g.assign (← mkExpectedTypeHint pf goal)
+  return true
+
+/-- A lookup `bs[x]? = r` in a record whose map `bs` a hypothesis gives: from a binding fact at that state. -/
+def lookupOne (g : MVarId) : MetaM Bool := g.withContext do
+  if ← g.isAssigned then return true
+  let goal ← instantiateMVars (← g.getType)
+  let some (_, lhs, _) := goal.eq? | return false
+  unless lhs.isAppOf ``GetElem?.getElem? && lhs.getAppNumArgs ≥ 2 do return false
+  let bs := lhs.getAppArgs[lhs.getAppNumArgs - 2]!
+  let x := lhs.getAppArgs[lhs.getAppNumArgs - 1]!
+  -- the record's hypothesis: its state
+  let mut found : Option (Expr × Expr) := none
+  for d in ← getLCtx do
+    if found.isSome || d.isImplementationDetail then continue
+    let t ← instantiateMVars d.type
+    if let some (_, l2, r2) := t.eq? then
+      if l2.isAppOfArity ``Scope.declLike? 1 && r2.isAppOfArity ``Option.some 2 then
+        let pr := r2.appArg!
+        if pr.isAppOfArity ``Prod.mk 4 && pr.appFn!.appArg! == bs && l2.appArg!.isAppOfArity ``ES.State.envEntry 2 then
+          found := some (d.toExpr, l2.appArg!.appFn!.appArg!)
+  let some (hd, w) := found | return false
+  for (h, Ls, keyed) in ← sourcesAt w do
+    for i in [:keyed.size] do
+      let (e, c, k) := keyed[i]!
+      unless c == ``Logic.Fact.bind && (k == (strLit? x).getD "?" || k == "?") do continue
+      let saved ← saveState
+      try
+        let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit i, ← mkAppM ``List.length #[Ls]])
+        let gi ← mkAppOptM ``Logic.Facts.get #[Ls, w, h, mkNatLit i, hm]
+        let gi ← mkExpectedTypeHint gi (mkApp2 (mkConst ``Logic.Fact.holds) e w)
+        let pf ← mkAppOptM ``Logic.Fact.bind_get #[none, none, none, none, w, bs, hd, gi]
+        if ← withReducible (isDefEq (← whnfR (← inferType pf)) goal) then
+          g.assign (← mkExpectedTypeHint pf goal); return true
+        saved.restore
+      catch _ => saved.restore
+  return false
+
+/-- A prototype `(w.objEntry o).proto = p` from one stated at a state framed to `w` (frames keep prototypes). -/
+def protoOne (g : MVarId) : MetaM Bool := g.withContext do
+  if ← g.isAssigned then return true
+  let goal ← instantiateMVars (← g.getType)
+  let some (_, lhs, _) := goal.eq? | return false
+  unless lhs.isAppOfArity ``ES.Obj.proto 1 && lhs.appArg!.isAppOfArity ``ES.State.objEntry 2 do return false
+  let w := lhs.appArg!.appFn!.appArg!
+  let o := lhs.appArg!.appArg!
+  for d in ← getLCtx do
+    if d.isImplementationDetail then continue
+    let t ← instantiateMVars d.type
+    let some (_, l2, _) := t.eq? | continue
+    unless l2.isAppOfArity ``ES.Obj.proto 1 && l2.appArg!.isAppOfArity ``ES.State.objEntry 2 do continue
+    unless l2.appArg!.appArg! == o do continue
+    let w' := l2.appArg!.appFn!.appArg!
+    if w' == w then
+      if ← withReducible (isDefEq t goal) then g.assign d.toExpr; return true
+      continue
+    let some pf ← framePath w' w | continue
+    -- the object's existence at `w'`
+    for e in ← getLCtx do
+      let et ← instantiateMVars e.type
+      if let some o' := sizeLtOf? w' et ``ES.State.heap then
+        if o' == o then
+          let saved ← saveState
+          try
+            let r ← mkAppOptM ``Logic.proto_frame #[none, w', w, o, none, pf, e.toExpr, d.toExpr]
+            if ← withReducible (isDefEq (← inferType r) goal) then g.assign r; return true
+            saved.restore
+          catch _ => saved.restore
   return false
 
 /-- Pure goals and fact goals retried in turn (the pure ones assign what the facts' objects are) until nothing
 changes: the rounds taken. -/
-def fixedPoint (st : IO.Ref Collected) (rounds : Nat := 64) : MetaM Nat := do
+def fixedPoint (st : IO.Ref Collected) (rounds : Nat := 64) : TermElabM Nat := do
   for r in [:rounds] do
     let mut progress := false
     let ps ← pendingPures.get
     let mut ps' := #[]
     for g in ps do
-      if ← assumeOne g then
+      if (← assumeOne g) || (← fuelOne g) || (← lookupOne g) || (← protoOne g) then
         progress := true; st.modify fun c => { c with closed := c.closed + 1 }
       else ps' := ps'.push g
     pendingPures.set ps'
@@ -617,11 +785,20 @@ def classifyLeft (top : Array FVarId) (s0 : Expr) (st : IO.Ref Collected) : Meta
       let path := (← framePath s0 t.appArg!).isSome
       st.modify fun cl => if path then { cl with startFacts := cl.startFacts.push item }
         else { cl with noPath := cl.noPath.push item }
+  let mut shownStuck := 0
   for g in ← pendingPures.get do
-    g.withContext do
+    let isLocal ← g.withContext do
       let t ← instantiateMVars (← g.getType)
       let isLocal := t.hasAnyFVar fun f => !top.contains f
       st.modify fun c => if isLocal then { c with stuck := c.stuck.push t } else { c with pures := c.pures.push t }
+      pure isLocal
+    if isLocal && shownStuck < 12 then
+      shownStuck := shownStuck + 1
+      g.withContext do
+        let t ← instantiateMVars (← g.getType)
+        let locals := (← getLCtx).foldl (init := #[]) fun acc d =>
+          if !top.contains d.fvarId && t.containsFVar d.fvarId then acc.push d.userName else acc
+        logInfo m!"stuck: {((toString (← ppExpr t)).take 260).toString}\n  locals: {locals}"
 
 /-- `facts_collect s`: walks the goal (an obligation) as `collectGoal` does from start state `s`, and reports. -/
 elab "facts_collect " s:term : tactic => Tactic.withMainContext do

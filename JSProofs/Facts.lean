@@ -203,6 +203,11 @@ theorem bind_fact_of {s : State} {e : EnvId} {bs : HashMap JSStr Binding} {oG : 
 theorem kind_fact_of {s : State} {o : ObjId} {K : Kind} (hl : o < s.heap.size) (h : (s.objEntry o).kind = K) :
     (Fact.kindP o (· = K)).holds s := ⟨hl, h⟩
 
+/-- A frame keeps an existing object's prototype. -/
+theorem proto_frame {fp : Footprint} {s w : State} {o : ObjId} {p : Value} (hF : Frame fp s w) (hl : o < s.heap.size)
+    (h : (s.objEntry o).proto = p) : (w.objEntry o).proto = p := by
+  rw [(hF.obj_agree o hl).2.1]; exact h
+
 /-- Every fact of the list lies outside the footprint. -/
 def Facts.Apart (fp : Footprint) (l : List Fact) : Prop := ∀ x ∈ l, x.loc.Apart fp
 
