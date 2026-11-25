@@ -51,7 +51,8 @@ def mkExistsFVars (xs : Array Expr) (b : Expr) : MetaM Expr :=
 /-- A contract `x` discharged by spec `U`: with `ob? = none` the obligation's type; with `some ob` (a local of that
 type) the contract's proof. -/
 def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Array (Name × Expr))
-    (cstr : Option Syntax) (uinsts : Array (Name × Syntax) := #[]) : TermElabM Expr := do
+    (cstr : Option Syntax) (uinsts : Array (Name × Syntax) := #[]) (same : Bool := false)
+    (callerVars : Array Expr := #[]) : TermElabM Expr := do
   let ct ← inferType x
   forallTelescope ct fun bs body => do
     unless body.isAppOf ``Logic.WP do throwError "facts_compose: {x} is not a contract (∀ …, WP …): {body}"
@@ -73,6 +74,14 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
       let e ← Term.elabTermEnsuringType stx (← instantiateMVars (← inferType ms[k]!))
       Term.synthesizeSyntheticMVarsNoPostponing
       unless ← isDefEq ms[k]! e do throwError "facts_compose: {U}'s {nm} cannot be {e}"
+    -- `same`: the callee's variables still open take the caller's of the same name and type (never `d`)
+    if same then
+      for k in [:ip] do
+        if names[k]! != `d && (← instantiateMVars ms[k]!).isMVar then
+          for c in callerVars do
+            if (← c.fvarId!.getUserName) == names[k]! then
+              let saved ← saveState
+              unless ← isDefEq ms[k]! c do saved.restore
     -- the context's parameters (engine, host, its invariant) are the caller's
     for k in [:ip] do
       if let some (_, c) := ctx.find? (·.1 == names[k]!) then
@@ -154,7 +163,7 @@ where
       mkForallFVars ys (← mkArrow (Expr.headBeta (mkAppN qU ys)) (Expr.headBeta (mkAppN qC ys)))
 
 syntax compInst := " (" ident " := " term ")"
-syntax compArm := " | " ident " => " ident (compInst)* (" with " term)? (" by " tacticSeq)?
+syntax compArm := " | " ident " => " ident (compInst)* (&" same")? (" with " term)? (" by " tacticSeq)?
 /-- A premise of `T` proved in place. -/
 syntax compProof := " | " ident " := " term
 
@@ -194,11 +203,12 @@ partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (arg
     let c := a[1].getId
     let U ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo a[3]
     let ui := a[4].getArgs.map fun i => (i[1].getId, i[3])
-    let cstr : Option Syntax := if a[5].isNone then none else some a[5][1]
-    let tac : Syntax ← if a[6].isNone then
+    let same := !a[5].isNone
+    let cstr : Option Syntax := if a[6].isNone then none else some a[6][1]
+    let tac : Syntax ← if a[7].isNone then
         `(tacticSeq| intro b w' h' hq; first | exact hq | simp_all | omega)
-      else pure a[6][1]
-    return (c, U, tac, cstr, ui)
+      else pure a[7][1]
+    return (c, U, tac, cstr, ui, same)
   liftTermElabM do
     let tOf := Name.mkStr T "ofPre"
     let ci ← getConstInfo tOf
@@ -214,12 +224,12 @@ partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (arg
         let nm ← x.fvarId!.getUserName
         match arms.findIdx? (·.1 == nm) with
         | some a =>
-          let (_, U, tac, cstr, ui) := arms[a]!
-          let t ← armWork x U (← `(tactic| ($(⟨tac⟩)))) none ctx cstr ui
+          let (_, U, tac, cstr, ui, same) := arms[a]!
+          let t ← armWork x U (← `(tactic| ($(⟨tac⟩)))) none ctx cstr ui same xs
           which := which.push (some obls.size)
           obls := obls.push (Name.mkSimple s!"ob_{nm}", t)
         | none => which := which.push none
-      for (c, _, _, _, _) in arms do
+      for (c, _, _, _, _, _) in arms do
         unless obls.any (·.1 == Name.mkSimple s!"ob_{c}") do throwError "facts_compose: {T}.ofPre has no premise {c}"
       withLocalDeclsDND obls fun obs => do
         let mut args := args0
@@ -229,8 +239,8 @@ partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (arg
           | some j =>
             let nm ← x.fvarId!.getUserName
             let some a := arms.findIdx? (·.1 == nm) | unreachable!
-            let (_, U, tac, cstr, ui) := arms[a]!
-            let d ← armWork x U (← `(tactic| ($(⟨tac⟩)))) (some obs[j]!) ctx cstr ui
+            let (_, U, tac, cstr, ui, same) := arms[a]!
+            let d ← armWork x U (← `(tactic| ($(⟨tac⟩)))) (some obs[j]!) ctx cstr ui same xs
             args := args.map fun y => if y == x then d else y
             bs := bs.push obs[j]!
           | none => bs := bs.push x

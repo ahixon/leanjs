@@ -135,6 +135,100 @@ theorem spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {pp : Value} {s : St
   simp only [ReactCreateWIP.fp] at hFs ⊢
   frame_go' [hFs, hX, hX1]
 
+
+set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 2000000 in
+set_option maxRecDepth 20000 in
+/-- **`useFiber(H, pp)`**, `createWorkInProgress` a contract (`hCW`, at the call's state): its result `X`, at index 0,
+no sibling. Composed with `ReactCreateWIP.reuse_spec` by `facts_compose` (`ReactCompose.useFiber_comp`). -/
+theorem spec_c {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {pp : Value} {s : State} {fU : ObjId} {dU : FuncData} {tU : Value}
+    {bR bG : HashMap JSStr Binding} {g : EnvId} {bdCW : Binding}
+    {H X : ObjId} {vT vCL vL vC vMP vMS vUQ vS vI vR vRC : Value} {fl : F64}
+    {e0 c0 e1 c1 e2 c2 e3 c3 e4 c4 e5 c5 e6 c6 e7 c7 e8 c8 e9 c9 e10 c10 e11 c11 e12 c12 e13 c13 e14 c14 e15 c15 : Bool}
+    {oG : Option EnvId}
+    (hU : fU < s.heap.size) (hUk : (s.objEntry fU).kind = .func dU) (hUcode : dU.code = CCRGen.useFiber_func)
+    (hUcls : dU.isClassCtor = false) (hUmode : dU.thisMode = .strict)
+    -- (useFiber's record: the reconciler's closure, whose outer record is the module's)
+    (hE : dU.env < s.envs.size) (hEe : Scope.declLike? (s.envEntry dU.env) = some (bR, some g))
+    (hEn : bR[JSStr.ofString "createWorkInProgress"]? = none)
+    (hG : g < s.envs.size) (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
+    (hGC : bG[JSStr.ofString "createWorkInProgress"]? = some bdCW) (hGCv : bdCW.value = some (.obj fo))
+    (hlt : fo < s.heap.size) (hk : (s.objEntry fo).kind = .func d) (hf : 40 ≤ s.fuel)
+    (hX : X < s.heap.size) (hXk : (s.objEntry X).kind.isPlain = true)
+    (hCW : ∀ w h1, Frame {} s w → 20 ≤ w.fuel →
+      WP eng answer n h1 (callImpl eng (.obj fo) .undefined #[.obj H, pp]) w fun v w' h' =>
+        v = .obj X ∧ Logic.Frame (ReactCreateWIP.fp X) w w' ∧ w.fuel ≤ w'.fuel + 20 ∧ h' = h1 ∧
+        (w'.objEntry X).props.get? (.str "pendingProps") = some (.data (pp) true e0 c0) ∧
+      (w'.objEntry X).props.get? (.str "type") = some (.data (vT) true e1 c1) ∧
+      (w'.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true e2 c2) ∧
+      (w'.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true e3 c3) ∧
+      (w'.objEntry X).props.get? (.str "deletions") = some (.data (.null) true e4 c4) ∧
+      (w'.objEntry X).props.get? (.str "childLanes") = some (.data (vCL) true e5 c5) ∧
+      (w'.objEntry X).props.get? (.str "lanes") = some (.data (vL) true e6 c6) ∧
+      (w'.objEntry X).props.get? (.str "child") = some (.data (vC) true e7 c7) ∧
+      (w'.objEntry X).props.get? (.str "memoizedProps") = some (.data (vMP) true e8 c8) ∧
+      (w'.objEntry X).props.get? (.str "memoizedState") = some (.data (vMS) true e9 c9) ∧
+      (w'.objEntry X).props.get? (.str "updateQueue") = some (.data (vUQ) true e10 c10) ∧
+      (w'.objEntry X).props.get? (.str "dependencies") = some (.data (.null) true e11 c11) ∧
+      (w'.objEntry X).props.get? (.str "sibling") = some (.data (vS) true e12 c12) ∧
+      (w'.objEntry X).props.get? (.str "index") = some (.data (vI) true e13 c13) ∧
+      (w'.objEntry X).props.get? (.str "ref") = some (.data (vR) true e14 c14) ∧
+      (w'.objEntry X).props.get? (.str "refCleanup") = some (.data (vRC) true e15 c15)) :
+    WP eng answer (n + 1) h (callImpl eng (.obj fU) tU #[.obj H, pp]) s fun v w h' =>
+      v = .obj X ∧ Logic.Frame (ReactCreateWIP.fp X) s w ∧ s.fuel ≤ w.fuel + 40 ∧ h' = h ∧
+      (w.objEntry X).props.get? (.str "pendingProps") = some (.data (pp) true e0 c0) ∧
+      (w.objEntry X).props.get? (.str "type") = some (.data (vT) true e1 c1) ∧
+      (w.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true e2 c2) ∧
+      (w.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true e3 c3) ∧
+      (w.objEntry X).props.get? (.str "deletions") = some (.data (.null) true e4 c4) ∧
+      (w.objEntry X).props.get? (.str "childLanes") = some (.data (vCL) true e5 c5) ∧
+      (w.objEntry X).props.get? (.str "lanes") = some (.data (vL) true e6 c6) ∧
+      (w.objEntry X).props.get? (.str "child") = some (.data (vC) true e7 c7) ∧
+      (w.objEntry X).props.get? (.str "memoizedProps") = some (.data (vMP) true e8 c8) ∧
+      (w.objEntry X).props.get? (.str "memoizedState") = some (.data (vMS) true e9 c9) ∧
+      (w.objEntry X).props.get? (.str "updateQueue") = some (.data (vUQ) true e10 c10) ∧
+      (w.objEntry X).props.get? (.str "dependencies") = some (.data (.null) true e11 c11) ∧
+      (w.objEntry X).props.get? (.str "sibling") = some (.data .null true e12 c12) ∧
+      (w.objEntry X).props.get? (.str "index") = some (.data (.num (F64.fin false 0 (-1074))) true e13 c13) ∧
+      (w.objEntry X).props.get? (.str "ref") = some (.data (vR) true e14 c14) ∧
+      (w.objEntry X).props.get? (.str "refCleanup") = some (.data (vRC) true e15 c15) := by
+  apply wp_callGen CCRGen.useFiber_eq (by decide) hU hUk (by omega) hUcls hUmode
+    (by rw [hUcode]; rfl) (by rw [hUcode]; rfl) (simpleU dU hUcode) (by rw [hUcode]; rfl) (by rw [hUcode]; rfl)
+  have hpn : dU.code.info.fdi.paramNames = #[JSStr.ofString "fiber", JSStr.ofString "pendingProps"] := by
+    rw [hUcode]; rfl
+  have hv : dU.code.info.fdi.varNames = #[] := by rw [hUcode]; rfl
+  have hl : FDI.lexDecls dU = #[] := by simp [FDI.lexDecls, hUcode, CCRGen.useFiber_func, Func.info]
+  have ha : dU.code.isAsync = false := by rw [hUcode]; rfl
+  have hne : s.envs.size ≠ dU.env := Nat.ne_of_gt hE
+  have hE1 : dU.env < s.envs.size + 1 := Nat.lt_succ_of_lt hE
+  have hneG : s.envs.size ≠ g := Nat.ne_of_gt hG
+  have hG1 : g < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  clear hUcode
+  simp only [CCRGen.useFiber]
+  js [hpn, hv, hl, ha, hE, hE1, hne, Ne.symm hne, hEe, hEn, hG, hG1, hneG, Ne.symm hneG, hGe, hGC, hGCv, hlt, hk,
+    FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hlt, hk], ?_⟩
+  refine wp_mono (hCW _ h (frame_bodyState (frame_refl ({} : Footprint) s) fU dU tU #[.obj H, pp])
+    (by js_norm; omega)) ?post
+  intro v w h1 ⟨hv, hF, hfu, hh, hpp, hty, hfl, hsf, hdel, hcl, hln, hch, hmp, hms, huq, hdep, hsib, hidx, href, hrc⟩
+  subst v h1
+  have hX1 : X < w.heap.size := heap_frame hF (by js_norm [hX])
+  have hXw : (w.objEntry X).kind.isPlain = true := by rw [kind_frame hF (by js_norm [hX])]; js_norm [hXk]
+  have hEw : s.envs.size < w.envs.size := envs_frame hF (by js_norm)
+  have hEwe : w.envEntry s.envs.size = (bodyState s fU dU tU #[.obj H, pp]).envEntry s.envs.size :=
+    envEntry_frame hF (by js_norm) (by simp [ReactCreateWIP.fp])
+  have hfw : 15 ≤ w.fuel := by simp only [js_simp] at hfu; omega
+  js [hpn, hv, hl, ha, hEw, hEwe, hX1, hXw, hsib, hidx, hfw, FDI.fdiCtx, Sem.inner]
+  refine ⟨?_, by simp only [js_simp] at hfu; omega⟩
+  have hFs : Frame (ReactCreateWIP.fp X) s w := frame_mono (frame_trans (frame_bodyState (frame_refl ({} : Footprint) s)
+    fU dU tU #[.obj H, pp]) hF) (fun p hp => by simpa [Footprint.union] using hp)
+    (fun p hp => by simpa [Footprint.union] using hp) (fun _ => rfl)
+  clear hF
+  refine frame_restore ?_ s
+  simp only [ReactCreateWIP.fp] at hFs ⊢
+  frame_go' [hFs, hX, hX1]
+
 end
 
 end ReactUseFiber
