@@ -11,6 +11,7 @@ import JSProofs.ReactUnitCounter
 import JSProofs.ReactUnitButton
 import JSProofs.ReactEarlyBailout
 import JSProofs.ReactBeginRoot
+import JSProofs.ReactUnitRoot
 
 /-! The render's callees composed in Lean (contract-style specs and `facts_compose`, replacing
 `tools/gen_react_*.py`): `useFiber` with `createWorkInProgress`; `reconcileChildFibersImpl` with `useFiber`;
@@ -20,7 +21,7 @@ the counter component with `useState`; `renderWithHooks` with the counter compon
 `updateFunctionComponent` with `renderWithHooks` and `reconcileChildren`; the counter's `beginWork` with
 `updateFunctionComponent`; `performUnitOfWork` on the counter with its `beginWork`; on the button with its `beginWork` and
 `completeUnitOfWork`; the root's early bailout with its four callees; the root's `beginWork` with
-the early bailout. -/
+the early bailout; the root's `performUnitOfWork` with its `beginWork`. -/
 
 facts_form ReactCreateWIP.reuse_spec
 facts_form ReactUseFiber.spec_c
@@ -171,3 +172,14 @@ facts_compose root_comp := root_spec_c
   | hcAEB => ReactEarlyBailout.root_comp (fo := fAEB) (d := dAEB) (t := .undefined) same
 
 end ReactBeginRoot
+
+facts_form ReactUnitRoot.root_spec_c
+
+namespace ReactUnitRoot
+open ES Logic
+
+set_option maxHeartbeats 4000000 in
+facts_compose root_comp := root_spec_c
+  | hcBW => ReactBeginRoot.root_comp (fo := fBW) (d := dBW) (t := .undefined) same
+
+end ReactUnitRoot
