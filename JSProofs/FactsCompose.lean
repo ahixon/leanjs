@@ -178,7 +178,7 @@ partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (arg
         let e ← instantiateMVars (← Term.elabTermEnsuringType stx d)
         Term.synthesizeSyntheticMVarsNoPostponing
         let locals := if e.containsFVar x0.fvarId! then locals.push x0 else locals
-        telescopeInst (b.instantiate1 e) insts (args.push e) locals k extras
+        telescopeInst (← Core.betaReduce (b.instantiate1 e)) insts (args.push e) locals k extras
     else
       withLocalDecl n bi d fun x => telescopeInst (b.instantiate1 x) insts (args.push x) (locals.push x) k extras
   | _ => k args locals ty
