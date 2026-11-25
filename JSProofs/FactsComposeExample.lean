@@ -10,7 +10,7 @@ open Logic in
 facts_compose cbm_comp := cbm_spec
   | hHSC => ReactSelection.hsc_spec
   | hCCC => cbmc_root with u_d.env = d.env by
-      have he := hob.2
+      have he := hob.get.2
       rintro v w' h' ⟨rfl, hfu, rfl, hF, bm, hd', ⟨bd', hb', hv'⟩, -⟩
       rw [he] at hF hd'
       refine ⟨rfl, hfu, rfl, hF, frame_then_sub ‹Frame (FB _) _ _› hF (fun p hp => by simp at hp; simp [hp, FB]) rfl rfl, ?_⟩

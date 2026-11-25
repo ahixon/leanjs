@@ -17,6 +17,11 @@ open Lean Meta Elab Command Term
 
 namespace Logic.FactsCompose
 
+/-- The opened obligation, as post tactics see it (`hob.get`): wrapped so `omega`/`simp_all` leave it alone (it holds
+every callee premise; unwrapped, they decompose it, and that does not fit in memory). -/
+structure Ob (P : Prop) : Prop where
+  get : P
+
 /-- The binder names of a `∀` telescope. -/
 def binderNames (t : Expr) : Array Name := Id.run do
   let mut t := t
@@ -84,13 +89,15 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
       -- the other premises: closed by the contract's hypotheses where `assumption`/`omega` can, the rest obligations
       let auto ← `(tactic| first | assumption | omega)
       let mut closed : Array (Option Expr) := #[]
-      -- the arm's constraint first (outermost: `hob.2`), then `U`'s premises left
+      -- the arm's constraint first (outermost: `hob.get.2`), then `U`'s premises left
       let mut rest : Array Expr := #[]
       if let some c := cstr then
         rest := rest.push (← instantiateMVars (← Term.elabTermEnsuringType c (mkSort .zero)))
       for k in [ip + 1:ms.size] do
         let t ← instantiateMVars (← inferType ms[k]!)
-        let p? ← if exs.any (t.containsFVar ·.fvarId!) then pure none else tryTac t auto
+        -- only fuel bounds (`k ≤ w.fuel`) and the host invariant are closed here; omega on anything else is costly
+        let simple := t.isAppOfArity ``LE.le 4 || t.isAppOfArity ``LT.lt 4 || (ctx.any fun (nm, c) => nm == `HI && t.getAppFn == c)
+        let p? ← if exs.any (t.containsFVar ·.fvarId!) || !simple then pure none else tryTac t auto
         closed := closed.push p?
         if p?.isNone then rest := rest.push t
       let conj := rest.foldr (fun t acc => mkAnd acc t) preTy
@@ -129,8 +136,9 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
             let qU := (← instantiateMVars (← inferType hw)).appArg!
             let qC := body.appArg!
             let pt ← mkPostGoal qU qC
-            -- the post tactic sees the opened obligation as `hob`
-            withLetDecl `hob (← inferType hob) hob fun hobv => do
+            -- the post tactic sees the opened obligation as `hob.get`
+            let obTy := mkApp (mkConst ``Ob) (← inferType hob)
+            withLetDecl `hob obTy (mkApp2 (mkConst ``Ob.mk) (← inferType hob) hob) fun hobv => do
               let mv ← mkFreshExprSyntheticOpaqueMVar pt
               let rem ← try Term.withoutErrToSorry (Tactic.run mv.mvarId! (Tactic.evalTactic post))
                 catch e => throwError "facts_compose: the postcondition of {U} does not give {x}'s:{indentExpr pt}\n{e.toMessageData}"
@@ -147,34 +155,42 @@ where
 
 syntax compInst := " (" ident " := " term ")"
 syntax compArm := " | " ident " => " ident (compInst)* (" with " term)? (" by " tacticSeq)?
+/-- A premise of `T` proved in place. -/
+syntax compProof := " | " ident " := " term
 
 /-- `facts_compose X := T | hC => U by tac …`: see the module docstring. -/
-syntax (name := factsCompose) "facts_compose " ident " := " ident (compInst)* (compArm)+ : command
+syntax (name := factsCompose) "facts_compose " ident (ppSpace bracketedBinder)* " := " ident (compInst)*
+  (atomic(compProof) <|> compArm)+ : command
 
 /-- `T.ofPre`'s binders, those named in `insts` instantiated (elaborated after the binders before them): the
 arguments for `T.ofPre`, the binders left, the conclusion. -/
 partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (args locals : Array Expr)
-    (k : Array Expr → Array Expr → Expr → TermElabM α) : TermElabM α := do
+    (k : Array Expr → Array Expr → Expr → TermElabM α) (extras : Array Syntax := #[]) : TermElabM α := do
   let ty ← whnfR ty
   match ty with
   | .forallE n d b bi =>
+    -- the composite's own binders, after the context's parameters (they may mention `σ`, `HI`)
+    if !extras.isEmpty && ![`eng, `σ, `answer, `HI].contains n then
+      return ← Term.elabBinders extras fun ex => telescopeInst ty insts args (locals ++ ex) k
     if let some (_, stx) := insts.find? (·.1 == n) then
       -- `e` may use a new binder of the same name (`(n := n + 2)`): kept when it does
       withLocalDecl n bi d fun x0 => do
         let e ← instantiateMVars (← Term.elabTermEnsuringType stx d)
         Term.synthesizeSyntheticMVarsNoPostponing
         let locals := if e.containsFVar x0.fvarId! then locals.push x0 else locals
-        telescopeInst (b.instantiate1 e) insts (args.push e) locals k
+        telescopeInst (b.instantiate1 e) insts (args.push e) locals k extras
     else
-      withLocalDecl n bi d fun x => telescopeInst (b.instantiate1 x) insts (args.push x) (locals.push x) k
+      withLocalDecl n bi d fun x => telescopeInst (b.instantiate1 x) insts (args.push x) (locals.push x) k extras
   | _ => k args locals ty
 
 @[command_elab factsCompose] def elabFactsCompose : CommandElab := fun stx => do
   let newName := stx[1].getId
-  let T ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo stx[3]
+  let extraBs := stx[2].getArgs
+  let T ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo stx[4]
   let ns ← getCurrNamespace
-  let insts := stx[4].getArgs.map fun a => (a[1].getId, a[3])
-  let arms ← stx[5].getArgs.mapM fun a => do
+  let insts := stx[5].getArgs.map fun a => (a[1].getId, a[3])
+  let proofs := stx[6].getArgs.filter (·.getKind == ``compProof) |>.map fun a => (a[1].getId, a[3])
+  let arms ← (stx[6].getArgs.filter (·.getKind == ``compArm)).mapM fun a => do
     let c := a[1].getId
     let U ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo a[3]
     let ui := a[4].getArgs.map fun i => (i[1].getId, i[3])
@@ -186,7 +202,8 @@ partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (arg
   liftTermElabM do
     let tOf := Name.mkStr T "ofPre"
     let ci ← getConstInfo tOf
-    telescopeInst ci.type insts #[] #[] fun args0 xs concl => do
+    -- the premises proved in place are instantiated like variables
+    telescopeInst (extras := extraBs) ci.type (insts ++ proofs) #[] #[] fun args0 xs concl => do
       let mut ctx : Array (Name × Expr) := #[]
       for x in xs do
         let nm ← x.fvarId!.getUserName

@@ -35,7 +35,7 @@ facts_compose fsp_comp := fsp_spec (n := n + 2) (K := 60) (fpE := ReactEnsureCal
       rintro v w' h' ⟨hF, hfu, rfl⟩
       exact ⟨hF, by omega, rfl⟩
   | hEn => ReactEnsureCall.en_call (oG := oG) with u_d.env = d.env by
-      have he := hob.2
+      have he := hob.get.2
       rintro v w' h' ⟨-, hF, hfu, rfl, hSc⟩
       rw [he] at hF hSc
       exact ⟨hF, frame_trans ‹Frame (FPA _ _ _) _ _› hF, by omega, rfl, hSc⟩
