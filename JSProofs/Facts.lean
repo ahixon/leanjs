@@ -188,6 +188,21 @@ theorem lt_of_bind_P {s : State} {e : EnvId} {bs : HashMap JSStr Binding} {oG : 
     e < s.envs.size :=
   lt_of_bind_ne_none hd fun h => hn (h ▸ hp)
 
+/-- A present property read is a property fact. -/
+theorem prop_fact_of {s : State} {o : ObjId} {k : PropKey} {p : Property}
+    (h : (s.objEntry o).props.get? k = some p) : (Fact.prop o k (some p)).holds s :=
+  ⟨lt_of_props_P (P := (· = some p)) h (by simp), h⟩
+
+/-- A record with a present lookup is a binding fact. -/
+theorem bind_fact_of {s : State} {e : EnvId} {bs : HashMap JSStr Binding} {oG : Option EnvId} {x : JSStr} {b : Binding}
+    (hd : Scope.declLike? (s.envEntry e) = some (bs, oG)) (h : bs[x]? = some b) :
+    (Fact.bind e oG x (· = some b)).holds s :=
+  ⟨lt_of_bind_P (P := (· = some b)) hd h (by simp), bs, hd, h⟩
+
+/-- An existing object's kind is a kind fact. -/
+theorem kind_fact_of {s : State} {o : ObjId} {K : Kind} (hl : o < s.heap.size) (h : (s.objEntry o).kind = K) :
+    (Fact.kindP o (· = K)).holds s := ⟨hl, h⟩
+
 /-- Every fact of the list lies outside the footprint. -/
 def Facts.Apart (fp : Footprint) (l : List Fact) : Prop := ∀ x ∈ l, x.loc.Apart fp
 

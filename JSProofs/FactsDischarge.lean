@@ -21,14 +21,23 @@ open Logic Logic.FactsForm
 
 namespace Logic.FactsDischarge
 
+/-- Fact goals and pure goals left for the fixed point. -/
+initialize pendingFacts : IO.Ref (Array MVarId) ← IO.mkRef #[]
+initialize pendingPures : IO.Ref (Array MVarId) ← IO.mkRef #[]
+
+
 /-- A fact's kind and key: what candidates must share. -/
 def factKey (f : Expr) : MetaM (Name × String) := do
   let f ← whnfR (← instantiateMVars f)
   let c := f.getAppFn.constName?.getD .anonymous
   let args := f.getAppArgs
+  -- objects and records name the key where nothing else does (unknown ones match anything: `?`)
+  let atom (e : Expr) : String := if e.hasExprMVar then "?" else toString e
   let key : String :=
     if c == ``Logic.Fact.prop || c == ``Logic.Fact.propP then (keyLit? args[1]!).getD "?"
     else if c == ``Logic.Fact.bind then (strLit? args[2]!).getD "?"
+    else if c == ``Logic.Fact.kindP || c == ``Logic.Fact.objP || c == ``Logic.Fact.proto then atom args[0]!
+    else if c == ``Logic.Fact.record || c == ``Logic.Fact.recordIs then atom args[0]!
     else ""
   return (c, key)
 
@@ -47,6 +56,9 @@ def sourcesAt (w : Expr) : MetaM (Array (Expr × Expr × Array (Expr × Name × 
       return (e, c, k)
     out := out.push (d.toExpr, L, keyed)
   return out
+
+/-- Unmatched facts that had candidates of the same kind and key: (goal fact, a candidate), for diagnosis. -/
+initialize nearMisses : IO.Ref (Array (Format × Format)) ← IO.mkRef #[]
 
 /-- Proves goal `g : Facts.holds L w` from the fact lists at `w` in its context: the goals left (facts not found)
 and their kinds and keys. -/
@@ -103,6 +115,11 @@ def proveFacts (g : MVarId) : TermElabM (List MVarId × Array String × Nat) := 
         left := left.push mv.mvarId!
         let (c, key) ← factKey f
         miss := miss.push s!"{c.componentsRev.head!}:{key}"
+        if let some (_, _, _, e) := cands[k]![0]? then
+          if (← nearMisses.get).size < 400 && !f.hasExprMVar then
+            let fe ← ppExpr f
+            let ee ← ppExpr (← instantiateMVars e)
+            nearMisses.modify (·.push (fe, ee))
         pure mv
     hl ← mkAppOptM ``Logic.Facts.holds_cons #[f, tl, w, p, hl]
     tl := mkApp3 (mkConst ``List.cons [Level.zero]) (mkConst ``Logic.Fact) f tl
@@ -190,12 +207,173 @@ structure Collected where
 partial def destructure (g : MVarId) (h : FVarId) (fuel : Nat := 64) : MetaM MVarId := do
   if fuel == 0 then return g
   let ty ← g.withContext do whnfR (← instantiateMVars (← h.getType))
+  -- a definition (`PLex`, `PreEx`, `Post`) whose unfolding is a conjunction or an existential: unfolded first
+  let (g, ty) ← if ty.isAppOfArity ``And 2 || ty.isAppOfArity ``Exists 2 then pure (g, ty) else g.withContext do
+      match ← unfoldDefinition? ty with
+      | some u =>
+        let u ← whnfR u
+        if u.isAppOfArity ``And 2 || u.isAppOfArity ``Exists 2 then
+          pure (← g.replaceLocalDeclDefEq h u, u)
+        else pure (g, ty)
+      | none => pure (g, ty)
   unless ty.isAppOfArity ``And 2 || ty.isAppOfArity ``Exists 2 do return g
   let subs ← g.cases h
   let some sg := subs[0]? | return g
   let mut g := sg.mvarId
   for f in sg.fields do
     if f.isFVar then g ← destructure g f.fvarId! (fuel - 1)
+  return g
+
+/-- A fact list's existential facts made exact (opened into the context): a property read under `∃ a b, …` becomes
+`Fact.prop o k r`; a binding `∃ bd, b = some bd ∧ Q bd` becomes `Fact.bind e oG x (· = some bd)`, `Q bd` hypotheses.
+The new facts are a new hypothesis. -/
+partial def normalizeFacts (g : MVarId) (h : Expr) : MetaM MVarId := do
+  let some (L, w) ← g.withContext do
+      let ty ← whnfR (← instantiateMVars (← inferType h))
+      if ty.isAppOfArity ``Logic.Facts.holds 2 then pure (some (ty.appFn!.appArg!, ty.appArg!)) else pure none
+    | return g
+  let some elems ← g.withContext (listElems L 4096) | return g
+  let mut g := g
+  let mut newFacts : Array (Expr × Expr) := #[]
+  for i in [:elems.size] do
+    let f ← whnfR elems[i]!
+    let c := f.getAppFn.constName?.getD .anonymous
+    unless c == ``Logic.Fact.propP || c == ``Logic.Fact.bind do continue
+    let args := f.getAppArgs
+    let P := if c == ``Logic.Fact.propP then args[2]! else args[3]!
+    let body := if P.isLambda then P.bindingBody! else P
+    unless body.isAppOfArity ``Exists 2 do continue
+    let (gi, hty) ← g.withContext do
+      let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit i, ← mkAppM ``List.length #[L]])
+      let gi ← mkAppOptM ``Logic.Facts.get #[L, w, h, mkNatLit i, hm]
+      let hty ← whnf (mkApp2 (mkConst ``Logic.Fact.holds) elems[i]! w)
+      pure (← mkExpectedTypeHint gi hty, hty)
+    let (fv, g1) ← (← g.assert `nf hty gi).intro1P
+    let (pieces, g2) ← openAll g1 fv
+    g := g2
+    let fact? ← g.withContext do
+      let tys ← pieces.mapM fun x => do instantiateMVars (← inferType x)
+      let some ilt := tys.findIdx? (·.isAppOfArity ``LT.lt 4) | return none
+      if c == ``Logic.Fact.propP then
+        let some ieq := tys.findIdx? fun t => t.isAppOfArity ``Eq 3 && t.appFn!.appArg!.isAppOfArity ``ES.PropMap.get? 2 | return none
+        let r := tys[ieq]!.appArg!
+        let nf := mkApp3 (mkConst ``Logic.Fact.prop) args[0]! args[1]! r
+        return some (nf, ← mkAppM ``And.intro #[pieces[ilt]!, pieces[ieq]!])
+      else
+        let some idl := tys.findIdx? fun t => (declLikeOf? w t).isSome | return none
+        let some ieq := tys.findIdx? fun t => t.isAppOfArity ``Eq 3 && t.appFn!.appArg!.isAppOf ``GetElem?.getElem? | return none
+        let r := tys[ieq]!.appArg!
+        let some (_, bs, _) := declLikeOf? w tys[idl]! | return none
+        let pred ← withLocalDeclD `b (← mkAppM ``Option #[mkConst ``ES.Binding]) fun b => do mkLambdaFVars #[b] (← mkEq b r)
+        let nf := mkApp4 (mkConst ``Logic.Fact.bind) args[0]! args[1]! args[2]! pred
+        let exPred ← withLocalDeclD `bs' (← inferType bs) fun bs' => do
+          mkLambdaFVars #[bs'] (mkAnd (← declLikeEq w args[0]! bs' args[1]!) (pred.beta #[← mkAppM ``GetElem?.getElem? #[bs', args[2]!]]))
+        return some (nf, ← mkAppM ``And.intro #[pieces[ilt]!, ← mkAppOptM ``Exists.intro #[none, exPred, bs,
+          ← mkAppM ``And.intro #[pieces[idl]!, pieces[ieq]!]]])
+    if let some p := fact? then newFacts := newFacts.push p
+  if newFacts.isEmpty then return g
+  g.withContext do
+    let mut hl ← mkAppOptM ``Logic.Facts.holds_nil #[w]
+    let mut tl := mkApp (mkConst ``List.nil [Level.zero]) (mkConst ``Logic.Fact)
+    for (f, pf) in newFacts.reverse do
+      let fh ← whnf (mkApp2 (mkConst ``Logic.Fact.holds) f w)
+      hl ← mkAppOptM ``Logic.Facts.holds_cons #[f, tl, w, ← mkExpectedTypeHint pf fh, hl]
+      tl := mkApp3 (mkConst ``List.cons [Level.zero]) (mkConst ``Logic.Fact) f tl
+    let (_, gE) ← (← g.assert `exact (mkApp2 (mkConst ``Logic.Facts.holds) tl w) hl).intro1P
+    return gE
+where
+  /-- A hypothesis taken apart through `∧` and `∃`: its pieces, the goal. -/
+  openAll (g : MVarId) (fv : FVarId) : MetaM (Array Expr × MVarId) := do
+    let ty ← g.withContext do whnfR (← instantiateMVars (← fv.getType))
+    unless ty.isAppOfArity ``And 2 || ty.isAppOfArity ``Exists 2 do return (#[mkFVar fv], g)
+    let subs ← g.cases fv
+    let some sg := subs[0]? | return (#[], g)
+    let mut g := sg.mvarId
+    let mut out := #[]
+    for f in sg.fields do
+      if f.isFVar then
+        let (ps, g') ← openAll g f.fvarId!
+        out := out ++ ps; g := g'
+    return (out, g)
+
+/-- The hypotheses that state single facts (a property read as `some p`, an object's existence or kind, a record's
+lookup `bs[x]? = some b` with its record in the context), as a fact list per state (new hypotheses). -/
+def rawFacts (g : MVarId) (decls : Array LocalDecl) : MetaM MVarId := g.withContext do
+  let mut byState : Array (Expr × Array (Expr × Expr)) := #[]
+  let push (acc : Array (Expr × Array (Expr × Expr))) (w f p : Expr) : Array (Expr × Array (Expr × Expr)) :=
+    match acc.findIdx? (·.1 == w) with
+    | some i => acc.modify i fun (w', l) => (w', l.push (f, p))
+    | none => acc.push (w, #[(f, p)])
+  -- existence and record hypotheses in the whole context (for kinds and lookups)
+  let ctx := (← getLCtx).foldl (init := #[]) fun acc d => if d.isImplementationDetail then acc else acc.push d
+  for d in decls do
+    let t ← instantiateMVars d.type
+    -- a property read `(w.objEntry o).props.get? k = some p`
+    if let some (_, lhs, rhs) := t.eq? then
+      if lhs.isAppOfArity ``ES.PropMap.get? 2 && rhs.isAppOfArity ``Option.some 2 then
+        let pm := lhs.appFn!.appArg!
+        if pm.isAppOfArity ``ES.Obj.props 1 && pm.appArg!.isAppOfArity ``ES.State.objEntry 2 then
+          let w := pm.appArg!.appFn!.appArg!
+          let o := pm.appArg!.appArg!
+          let f := mkApp3 (mkConst ``Logic.Fact.prop) o lhs.appArg! rhs
+          let pf ← mkAppOptM ``Logic.prop_fact_of #[w, o, lhs.appArg!, rhs.appArg!, d.toExpr]
+          byState := push byState w f pf
+          continue
+      -- a kind `(w.objEntry o).kind = K`, the object's existence in the context
+      if lhs.isAppOfArity ``ES.Obj.kind 1 && lhs.appArg!.isAppOfArity ``ES.State.objEntry 2 then
+        let w := lhs.appArg!.appFn!.appArg!
+        let o := lhs.appArg!.appArg!
+        for e in ctx do
+          let et ← instantiateMVars e.type
+          if let some o' := sizeLtOf? w et ``ES.State.heap then
+            if o' == o then
+              let P ← withLocalDeclD `K (mkConst ``ES.Kind) fun K => do mkLambdaFVars #[K] (← mkEq K rhs)
+              let f := mkApp2 (mkConst ``Logic.Fact.kindP) o P
+              let pf ← mkAppOptM ``Logic.kind_fact_of #[w, o, rhs, e.toExpr, d.toExpr]
+              byState := push byState w f pf
+              break
+        continue
+      -- a lookup `bs[x]? = some b`, its record in the context
+      if lhs.isAppOf ``GetElem?.getElem? && rhs.isAppOfArity ``Option.some 2 && lhs.getAppNumArgs ≥ 2 then
+        let bs := lhs.getAppArgs[lhs.getAppNumArgs - 2]!
+        let x := lhs.getAppArgs[lhs.getAppNumArgs - 1]!
+        for e in ctx do
+          let et ← instantiateMVars e.type
+          if let some (_, lhs2, rhs2) := et.eq? then
+            if lhs2.isAppOfArity ``Scope.declLike? 1 && rhs2.isAppOfArity ``Option.some 2 then
+              let pr := rhs2.appArg!
+              if pr.isAppOfArity ``Prod.mk 4 && pr.appFn!.appArg! == bs then
+                let ee := lhs2.appArg!
+                if ee.isAppOfArity ``ES.State.envEntry 2 then
+                  let w := ee.appFn!.appArg!
+                  let env := ee.appArg!
+                  let oG := pr.appArg!
+                  let pred ← withLocalDeclD `b (← mkAppM ``Option #[mkConst ``ES.Binding]) fun b => do
+                    mkLambdaFVars #[b] (← mkEq b rhs)
+                  let f := mkApp4 (mkConst ``Logic.Fact.bind) env oG x pred
+                  let pf ← mkAppOptM ``Logic.bind_fact_of #[w, env, bs, oG, x, rhs.appArg!, e.toExpr, d.toExpr]
+                  byState := push byState w f pf
+                  break
+        continue
+    -- an existence `o < w.heap.size`
+    if t.isAppOfArity ``LT.lt 4 then
+      let sz := t.appArg!
+      if sz.isAppOfArity ``Array.size 2 && sz.appArg!.isAppOfArity ``ES.State.heap 1 then
+        let w := sz.appArg!.appArg!
+        let o := t.appFn!.appArg!
+        let f := mkApp2 (mkConst ``Logic.Fact.kindP) o (mkLambda `K .default (mkConst ``ES.Kind) (mkConst ``True))
+        let pf ← mkAppM ``And.intro #[d.toExpr, mkConst ``True.intro]
+        byState := push byState w f pf
+  let mut g := g
+  for (w, items) in byState do
+    let mut hl ← mkAppOptM ``Logic.Facts.holds_nil #[w]
+    let mut tl := mkApp (mkConst ``List.nil [Level.zero]) (mkConst ``Logic.Fact)
+    for (f, pf) in items.reverse do
+      let fh ← whnf (mkApp2 (mkConst ``Logic.Fact.holds) f w)
+      hl ← mkAppOptM ``Logic.Facts.holds_cons #[f, tl, w, ← mkExpectedTypeHint pf fh, hl]
+      tl := mkApp3 (mkConst ``List.cons [Level.zero]) (mkConst ``Logic.Fact) f tl
+    let (_, g') ← (← g.assert `rawf (mkApp2 (mkConst ``Logic.Facts.holds) tl w) hl).intro1P
+    g := g'
   return g
 
 /-- The frames in the context: `(proof, from, to)`. -/
@@ -254,16 +432,14 @@ def collectFacts (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.Ref Coll
         g := g'
       catch _ => saved.restore
     return g
-  let (left, miss, n) ← proveFacts g
-  let path ← g.withContext do
-    let t ← whnfR (← instantiateMVars (← g.getType))
-    pure (← framePath s0 t.appArg!).isSome
-  let _ := top
+  let (left, _, n) ← proveFacts g
+  let _ := top; let _ := s0
   let found := n - left.length
-  st.modify fun c =>
-    let sf := if path then c.startFacts ++ miss else c.startFacts
-    let np := if path then c.noPath else c.noPath ++ miss
-    { c with matched := c.matched + found, startFacts := sf, noPath := np }
+  st.modify fun c => { c with matched := c.matched + found }
+  pendingFacts.modify (· ++ left.toArray)
+
+/-- The hypotheses already normalized. -/
+initialize normalized : IO.Ref (Array FVarId) ← IO.mkRef #[]
 
 /-- Walks an obligation: introduces (taking apart conjunctions and existentials), opens `∃`s with unknowns, splits
 `∧`s, matches fact lists; the rest is closed by an assumption or counted (a premise the top can state, or stuck). -/
@@ -280,9 +456,23 @@ partial def collectGoal (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.R
     IO.eprintln s!"collect: {c.steps} steps, {c.matched} found, {c.startFacts.size} start facts, {c.pures.size} pures, {c.stuck.size} stuck, head {t.getAppFn.constName?.getD `fvar}"
     (← IO.getStderr).flush
   if t.isForall then
-    let (h, g') ← g.intro1P
-    let g'' ← destructure g' h
-    return ← collectGoal g'' top s0 st (fuel - 1)
+    let (h, gI) ← g.intro1P
+    let gD ← destructure gI h
+    -- the fact lists among what was introduced: their existential facts made exact
+    let gN ← gD.withContext do
+      let mut gc := gD
+      let mut fresh : Array LocalDecl := #[]
+      for d in ← getLCtx do
+        if d.isImplementationDetail then continue
+        if d.userName.toString.startsWith "exact" || d.userName.toString.startsWith "nf" || d.userName.toString.startsWith "rawf" then continue
+        unless (← normalized.get).contains d.fvarId do
+          normalized.modify (·.push d.fvarId)
+          fresh := fresh.push d
+          try gc ← normalizeFacts gc d.toExpr catch _ => pure ()
+      -- single-fact hypotheses as fact lists
+      try gc ← rawFacts gc fresh catch _ => pure ()
+      pure gc
+    return ← collectGoal gN top s0 st (fuel - 1)
   if t.isAppOfArity ``Exists 2 then
     if let some g' ← openExists g then return ← collectGoal g' top s0 st (fuel - 1)
   if t.isAppOfArity ``And 2 then
@@ -291,8 +481,9 @@ partial def collectGoal (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.R
       let b ← mkFreshExprSyntheticOpaqueMVar t.appArg!
       g.assign (mkApp4 (mkConst ``And.intro) t.appFn!.appArg! t.appArg! a b)
       pure (a, b)
-    collectGoal a.mvarId! top s0 st (fuel - 1)
+    -- the right first: a spec's `Pre` puts its facts last, and they assign what its pure premises read
     collectGoal b.mvarId! top s0 st (fuel - 1)
+    collectGoal a.mvarId! top s0 st (fuel - 1)
     return
   if t.isAppOfArity ``Logic.Facts.holds 2 then
     return ← collectFacts g top s0 st
@@ -319,22 +510,133 @@ partial def collectGoal (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.R
       else saved.restore
     pure found
   if ok then st.modify fun c => { c with closed := c.closed + 1 }; return
-  let isLocal ← g.withContext do
-    let t ← instantiateMVars (← g.getType)
-    pure (t.hasAnyFVar fun f => !top.contains f)
-  if isLocal then st.modify fun c => { c with stuck := c.stuck.push t }
-  else st.modify fun c => { c with pures := c.pures.push t }
+  pendingPures.modify (·.push g)
+
+/-- A goal `Fact.holds f w`: matched against the fact lists at `w` in its context (one candidate fits, or `f` has no
+unknowns and one does). -/
+def matchOne (g : MVarId) : MetaM Bool := g.withContext do
+  if ← g.isAssigned then return true
+  let t ← instantiateMVars (← g.getType)
+  unless t.isAppOfArity ``Logic.Fact.holds 2 do return false
+  let f := t.appFn!.appArg!
+  let w := t.appArg!
+  let (c, k) ← factKey f
+  let ground := !f.hasExprMVar
+  let mut fits : Array (Expr × Expr × Nat × Expr) := #[]
+  for (h, Ls, keyed) in ← sourcesAt w do
+    for i in [:keyed.size] do
+      let (e, c', k') := keyed[i]!
+      unless c' == c && (k == k' || k == "?" || k' == "?") do continue
+      let saved ← saveState
+      let ok ← try withReducible (isDefEq e f) catch _ => pure false
+      saved.restore
+      if ok then
+        fits := fits.push (h, Ls, i, e)
+        if ground then break
+    if ground && fits.size ≥ 1 then break
+  unless fits.size == 1 || (ground && fits.size ≥ 1) do return false
+  let (h, Ls, i, e) := fits[0]!
+  let _ ← withReducible (isDefEq e f)
+  let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit i, ← mkAppM ``List.length #[Ls]])
+  let gi ← mkAppOptM ``Logic.Facts.get #[Ls, w, h, mkNatLit i, hm]
+  g.assign (← mkExpectedTypeHint gi t)
+  return true
+
+/-- A pure goal closed by a hypothesis with its head, matched reducibly. -/
+def assumeOne (g : MVarId) : MetaM Bool := g.withContext do
+  if ← g.isAssigned then return true
+  let goal ← instantiateMVars (← g.getType)
+  let hd := goal.getAppFn
+  for d in ← getLCtx do
+    if d.isImplementationDetail then continue
+    let ty ← instantiateMVars d.type
+    unless ty.getAppFn == hd do continue
+    let saved ← saveState
+    if ← (try withReducible (isDefEq ty goal) catch _ => pure false) then
+      g.assign d.toExpr; return true
+    saved.restore
+  return false
+
+/-- Pure goals and fact goals retried in turn (the pure ones assign what the facts' objects are) until nothing
+changes: the rounds taken. -/
+def fixedPoint (st : IO.Ref Collected) (rounds : Nat := 64) : MetaM Nat := do
+  for r in [:rounds] do
+    let mut progress := false
+    let ps ← pendingPures.get
+    let mut ps' := #[]
+    for g in ps do
+      if ← assumeOne g then
+        progress := true; st.modify fun c => { c with closed := c.closed + 1 }
+      else ps' := ps'.push g
+    pendingPures.set ps'
+    let fs ← pendingFacts.get
+    let mut fs' := #[]
+    for g in fs do
+      if ← matchOne g then
+        progress := true; st.modify fun c => { c with matched := c.matched + 1 }
+      else fs' := fs'.push g
+    pendingFacts.set fs'
+    unless progress do return r + 1
+  return rounds
+
+/-- What is left after the fixed point, classified: facts (a start fact, or none reachable), pure goals (a premise
+the top can state, or stuck on a local). -/
+def classifyLeft (top : Array FVarId) (s0 : Expr) (st : IO.Ref Collected) : MetaM Unit := do
+  let mut shown := 0
+  for g in ← pendingFacts.get do
+    -- diagnosis: a few facts about known objects with same-key candidates at their state
+    if shown < 6 then
+      let r ← g.withContext do
+        let t ← instantiateMVars (← g.getType)
+        let f := t.appFn!.appArg!
+        let fw ← whnfR f
+        let (c, key) ← factKey f
+        unless c == ``Logic.Fact.prop do return none
+        if (← instantiateMVars fw.getAppArgs[0]!).hasExprMVar then return none
+        let mut cs : Array Format := #[]
+        for (_, _, keyed) in ← sourcesAt t.appArg! do
+          for (e, c', k') in keyed do
+            if c' == c && k' == key && cs.size < 3 then cs := cs.push (← ppExpr (← instantiateMVars e))
+        if cs.isEmpty then return none
+        return some (← ppExpr f, cs)
+      if let some (fe, cs) := r then
+        shown := shown + 1
+        logInfo m!"left fact: {((toString fe).take 300).toString}\n  candidates: {cs.map fun x => ((toString x).take 300).toString}"
+  for g in ← pendingFacts.get do
+    g.withContext do
+      let t ← instantiateMVars (← g.getType)
+      let f := t.appFn!.appArg!
+      let (c, key) ← factKey f
+      let fw ← whnfR f
+      let mut obj := ""
+      if c == ``Logic.Fact.prop || c == ``Logic.Fact.propP then
+        let o ← instantiateMVars fw.getAppArgs[0]!
+        let op ← ppExpr o
+        obj := if o.hasExprMVar then "?" else op.pretty
+      let item := s!"{c.componentsRev.head!}:{obj}:{key}"
+      let path := (← framePath s0 t.appArg!).isSome
+      st.modify fun cl => if path then { cl with startFacts := cl.startFacts.push item }
+        else { cl with noPath := cl.noPath.push item }
+  for g in ← pendingPures.get do
+    g.withContext do
+      let t ← instantiateMVars (← g.getType)
+      let isLocal := t.hasAnyFVar fun f => !top.contains f
+      st.modify fun c => if isLocal then { c with stuck := c.stuck.push t } else { c with pures := c.pures.push t }
 
 /-- `facts_collect s`: walks the goal (an obligation) as `collectGoal` does from start state `s`, and reports. -/
 elab "facts_collect " s:term : tactic => Tactic.withMainContext do
   let s0 ← Term.elabTerm s none
   let top := (← getLCtx).getFVarIds
   let st ← IO.mkRef ({} : Collected)
+  pendingFacts.set #[]; pendingPures.set #[]
   collectGoal (← Tactic.getMainGoal) top s0 st
+  let rounds ← fixedPoint st
+  classifyLeft top s0 st
   let c ← st.get
+  logInfo m!"fixed point: {rounds} rounds"
   let showSome (es : Array Expr) : MetaM (Array Format) := (es.extract 0 12).mapM fun e => do
     return Format.text (((← ppExpr e).pretty.take 160).toString)
-  logInfo m!"facts_collect: {c.matched} facts found, {c.closed} closed by assumption; {c.startFacts.size} start facts to state ({c.startFacts.extract 0 40}); {c.noPath.size} facts with no frame from the start ({c.noPath.extract 0 40}); {c.pures.size} pure premises; {c.stuck.size} stuck"
+  logInfo m!"facts_collect: {c.matched} facts found, {c.closed} closed by assumption; {c.startFacts.size} start facts to state ({c.startFacts}); {c.noPath.size} facts with no frame from the start ({c.noPath.extract 0 40}); {c.pures.size} pure premises; {c.stuck.size} stuck"
   let mut heads : Array (Name × Nat) := #[]
   for e in c.stuck do
     let hn := e.getAppFn.constName?.getD (if e.isForall then `forall else `other)
@@ -342,6 +644,10 @@ elab "facts_collect " s:term : tactic => Tactic.withMainContext do
     | some i => heads := heads.modify i fun (n, k) => (n, k + 1)
     | none => heads := heads.push (hn, 1)
   logInfo m!"stuck by head: {heads}"
+  let nm ← nearMisses.get
+  logInfo m!"near misses: {nm.size}"
+  for (a, b) in nm.extract 0 8 do
+    logInfo m!"near miss:\n  goal {((toString a).take 400).toString}\n  cand {((toString b).take 400).toString}"
   let eqs := (c.stuck.filter (·.isAppOfArity ``Eq 3)).extract 0 6
   for e in eqs do
     logInfo m!"stuck eq: {((← ppExpr e).pretty.take 300).toString}"
@@ -353,6 +659,52 @@ elab "facts_collect " s:term : tactic => Tactic.withMainContext do
     | none => pheads := pheads.push (hn, 1)
   logInfo m!"pures by head: {pheads}"
   Tactic.replaceMainGoal []
+
+/-- A composite's statement opened up to its premise `obn`: its values as unknowns, the context's parameters and the
+start state kept as locals; `k` gets the premise's type and the premises before it. -/
+partial def openTop (ty : Expr) (obn : Name) (hyps : Array (Name × Expr))
+    (k : Expr → Array (Name × Expr) → TermElabM Unit) : TermElabM Unit := do
+  let keep : List Name := [`eng, `σ, `answer, `HI, `s, `h]
+  match ty with
+  | .forallE n d b _ =>
+    if ← isProp d then
+      if n == obn then k d hyps
+      else openTop (b.instantiate1 (← mkFreshExprMVar d)) obn (hyps.push (n, d)) k
+    else if keep.contains n then
+      withLocalDeclD n d fun x => openTop (b.instantiate1 x) obn hyps k
+    else
+      openTop (b.instantiate1 (← mkFreshExprMVar d (userName := n))) obn hyps k
+  | _ => throwError "facts_collect_top: no premise {obn}"
+
+/-- The premises as hypotheses, then `k`. -/
+partial def withHyps (hyps : Array (Name × Expr)) (i : Nat) (k : TermElabM Unit) : TermElabM Unit := do
+  if h : i < hyps.size then
+    withLocalDeclD hyps[i].1 hyps[i].2 fun _ => withHyps hyps (i + 1) k
+  else k
+
+/-- `facts_collect_top X ob`: `X`'s binders opened — its values (objects, records' data, numbers, flags…) as unknowns
+that matching assigns, the context's parameters and the start state `s` kept, its premises as hypotheses — and its
+obligation `ob` walked as `facts_collect` does; reports. -/
+elab "facts_collect_top " X:ident ob:ident : command => do
+  let Xn ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo X
+  let obn := ob.getId
+  liftTermElabM do
+    let ci ← getConstInfo Xn
+    openTop ci.type obn #[] fun obTy hyps => do
+      withHyps hyps 0 do
+        let some s ← (← getLCtx).findFromUserName? `s |>.map (·.toExpr) |> pure | throwError "no s"
+        let top := (← getLCtx).getFVarIds
+        let st ← IO.mkRef ({} : Collected)
+        pendingFacts.set #[]; pendingPures.set #[]
+        let g ← mkFreshExprSyntheticOpaqueMVar obTy
+        collectGoal g.mvarId! top s st
+        let rounds ← fixedPoint st
+        classifyLeft top s st
+        let c ← st.get
+        logInfo m!"facts_collect_top: {c.matched} facts found, {c.closed} closed by assumption, fixed point {rounds} rounds; {c.startFacts.size} start facts; {c.noPath.size} unreachable; {c.pures.size} pure premises; {c.stuck.size} stuck"
+        let mut props : Array String := #[]
+        for x in c.startFacts do if x.startsWith "prop" then props := props.push x
+        logInfo m!"start facts (props): {props}"
 
 /-- `facts_obligation X ob as n := by tac`: see the module docstring. -/
 syntax (name := factsObligation) "facts_obligation " ident ident " as " ident " := " term : command
