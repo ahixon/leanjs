@@ -8,6 +8,7 @@ import JSProofs.ReactRenderHooks
 import JSProofs.ReactUpdateFunction
 import JSProofs.ReactBeginCounter
 import JSProofs.ReactUnitCounter
+import JSProofs.ReactUnitButton
 
 /-! The render's callees composed in Lean (contract-style specs and `facts_compose`, replacing
 `tools/gen_react_*.py`): `useFiber` with `createWorkInProgress`; `reconcileChildFibersImpl` with `useFiber`;
@@ -15,7 +16,8 @@ import JSProofs.ReactUnitCounter
 `reconcileChildren` with `reconcileChildFibers`;
 the counter component with `useState`; `renderWithHooks` with the counter component;
 `updateFunctionComponent` with `renderWithHooks` and `reconcileChildren`; the counter's `beginWork` with
-`updateFunctionComponent`; `performUnitOfWork` on the counter with its `beginWork`. -/
+`updateFunctionComponent`; `performUnitOfWork` on the counter with its `beginWork`; on the button with its `beginWork` and
+`completeUnitOfWork`. -/
 
 facts_form ReactCreateWIP.reuse_spec
 facts_form ReactUseFiber.spec_c
@@ -123,3 +125,17 @@ facts_compose counter_unit_comp := counter_unit_spec_c
   | hcBW => ReactBeginCounter.click_comp (d := d) (r := (.obj fBS)) (tB := .undefined) same
 
 end ReactUnitCounter
+
+facts_form ReactBeginButton.button_spec
+facts_form ReactCompleteUnit.unit_spec
+facts_form ReactUnitButton.button_unit_spec_c
+
+namespace ReactUnitButton
+open ES Logic
+
+set_option maxHeartbeats 2000000 in
+facts_compose button_unit_comp := button_unit_spec_c
+  | hcBB => ReactBeginButton.button_spec (fB := b_fB) (dB := b_dB) (tB := .undefined) (str := b_str) (bdDR := b_bdDR) (bdPH := b_bdPH) (bdSS := b_bdSS) (bdMR := b_bdMR) (bdRC := b_bdRC) (bdCSC := bdCS) (bdGC := b_bdGC) (bdRCF := b_bdRCF) (bdT := b_bdT) (bdTS := b_bdTS) (fPH := b_fPH) (fSS := b_fSS) (fMR := b_fMR) (fC := b_fC) (fGC := b_fGC) (fR := b_fR) (dPH := b_dPH) (dSS := b_dSS) (dMR := b_dMR) (dC := b_dC) (dGC := b_dGC) (dR := b_dR) (bdRI := b_bdRI) (bdDel := b_bdDel) (bdST := b_bdST) (fI := b_fI) (fDel := b_fDel) (dI := b_dI) (dDel := b_dDel) (mpw := b_mpw) (mpe := b_mpe) (mpc := b_mpc) (hcw := b_hcw) (hce := b_hce) (hcc := b_hcc) (hrw := b_hrw) (hre := b_hre) (hrc := b_hrc) (ppw := b_ppw) (ppe := b_ppe) (ppc := b_ppc) (tgw := b_tgw) (tge := b_tge) (tgc := b_tgc) (tyw := b_tyw) (tye := b_tye) (tyc := b_tyc) (msw := b_msw) (mse := b_mse) (msc := b_msc) (xrw := b_xrw) (xre := b_xre) (xrc := b_xrc) (lw := b_lw) (lc := b_lc) (cw := b_cw) (cc := b_cc) (kw := b_kw) (ke := b_ke) (kc := b_kc) (csw := b_csw) (cse := b_cse) (csc := b_csc) (ch0 := b_ch0) (l0 := b_l0) same
+  | hcCU => ReactCompleteUnit.unit_spec (fU := fCU) (dU := dCU) (tU := .undefined) (a := ((F64.fin false 0 (-1074)))) (cw := true) (ce := b_cw) (cc := b_cc) (xlw := true) (xle := b_lw) (xlc := b_lc) same
+
+end ReactUnitButton

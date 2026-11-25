@@ -528,6 +528,569 @@ theorem button_unit_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Val
   all_goals first | rfl | omega | exact frame_restore FW2 s | exact hW2 | (simpa using hW2) | exact hFacts2 | exact hXmpW2 | (simp only [restore_objEntry, withFuel_objEntry, setEnv_objEntry]; exact hXmpW2) |
     (simpa only [restore_objEntry, setEnv_objEntry, withFuel_objEntry] using hFacts2)
 
+
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 40000000 in
+set_option maxRecDepth 100000 in
+/-- `button_unit_spec_c1` with its callee as a contract (`facts_compose` composes it). -/
+theorem button_unit_spec_c {n : Nat}
+    {h : σ}
+    {fo : ObjId}
+    {d : FuncData}
+    {t : Value}
+    {s : State}
+    {fCU : ObjId}
+    {dCU : FuncData}
+    {bdBW bdCU : Binding}
+    {bG : HashMap JSStr Binding}
+    {g : EnvId}
+    {fW : ObjId}
+    {dW : FuncData}
+    {bdCW : Binding}
+    {bdEL : Binding}
+    {bdWIP : Binding}
+    {bdES : Binding}
+    {ln : Value}
+    {wv : Value}
+    {H : ObjId}
+    {X : ObjId}
+    {P0 : ObjId}
+    {P1 : ObjId}
+    {D : ObjId}
+    {CFb : ObjId}
+    {HT : ObjId}
+    {Rb : ObjId}
+    {bdPT : Binding}
+    {bdPH : Binding}
+    {bdMU : Binding}
+    {bdBP : Binding}
+    {bdPI : Binding}
+    {bdTF : Binding}
+    {bdTC : Binding}
+    {bdCFb : Binding}
+    {bdHT : Binding}
+    {fPT : ObjId}
+    {fPH : ObjId}
+    {fMU : ObjId}
+    {fBP : ObjId}
+    {fPI : ObjId}
+    {dPT : FuncData}
+    {dPH : FuncData}
+    {dMU : FuncData}
+    {dBP : FuncData}
+    {dPI : FuncData}
+    {fl : F64}
+    {sf : F64}
+    {m : F64}
+    {cl : Value}
+    {mpw : Bool}
+    {mpe : Bool}
+    {mpc : Bool}
+    {ppw : Bool}
+    {ppe : Bool}
+    {ppc : Bool}
+    {tgw : Bool}
+    {tge : Bool}
+    {tgc : Bool}
+    {tyw : Bool}
+    {tye : Bool}
+    {tyc : Bool}
+    {snw : Bool}
+    {sne : Bool}
+    {snc : Bool}
+    {aw : Bool}
+    {ae : Bool}
+    {ac : Bool}
+    {hcw : Bool}
+    {hce : Bool}
+    {hcc : Bool}
+    {fe : Bool}
+    {fc : Bool}
+    {se : Bool}
+    {sc : Bool}
+    {le : Bool}
+    {lc : Bool}
+    {me : Bool}
+    {mc : Bool}
+    {cfw : Bool}
+    {cfe : Bool}
+    {cfc : Bool}
+    {htw : Bool}
+    {hte : Bool}
+    {htc : Bool}
+    {rwe : Bool}
+    {rwc : Bool}
+    {sbw : Bool}
+    {sbe : Bool}
+    {sbc : Bool}
+    {C : ObjId}
+    {A : ObjId}
+    {pp2 : ObjId}
+    {cl2 : Value}
+    {e2 : F64}
+    {f2 : F64}
+    {a2 : F64}
+    {ppw2 : Bool}
+    {ppe2 : Bool}
+    {ppc2 : Bool}
+    {tgw2 : Bool}
+    {tge2 : Bool}
+    {tgc2 : Bool}
+    {aw2 : Bool}
+    {ae2 : Bool}
+    {ac2 : Bool}
+    {cw2 : Bool}
+    {ce2 : Bool}
+    {cc2 : Bool}
+    {yw2 : Bool}
+    {ye2 : Bool}
+    {yc2 : Bool}
+    {se2 : Bool}
+    {sc2 : Bool}
+    {le2 : Bool}
+    {lc2 : Bool}
+    {xlw2 : Bool}
+    {xle2 : Bool}
+    {xlc2 : Bool}
+    {xfw2 : Bool}
+    {xfe2 : Bool}
+    {xfc2 : Bool}
+    {rwe2 : Bool}
+    {rwc2 : Bool}
+    {sbw2 : Bool}
+    {sbe2 : Bool}
+    {sbc2 : Bool}
+    {RH : ObjId}
+    {R : ObjId}
+    {FR : ObjId}
+    {MS0 : ObjId}
+    {MS1 : ObjId}
+    {CA : ObjId}
+    {pp3 : Value}
+    {cl3 : Value}
+    {e3 : F64}
+    {fR : F64}
+    {bdPP : Binding}
+    {bdPHC : Binding}
+    {bdCC : Binding}
+    {bdI : Binding}
+    {bdV : Binding}
+    {bdVC : Binding}
+    {bdCS : Binding}
+    {bdCF : Binding}
+    {bdRI : Binding}
+    {bdO : Binding}
+    {fPP : ObjId}
+    {fPHC : ObjId}
+    {fO : ObjId}
+    {dPP : FuncData}
+    {dPHC : FuncData}
+    {dO : FuncData}
+    {VS : ObjId}
+    {Cu : ObjId}
+    {Cx : ObjId}
+    {CS : ObjId}
+    {CF : ObjId}
+    {RI : ObjId}
+    {L : F64}
+    {o0 : Value}
+    {o1 : Value}
+    {o2 : Value}
+    {o3 : Value}
+    {vu : Value}
+    {cxv : Value}
+    {vr : Value}
+    {vf : Value}
+    {vc : Value}
+    {ppw3 : Bool}
+    {ppe3 : Bool}
+    {ppc3 : Bool}
+    {tgw3 : Bool}
+    {tge3 : Bool}
+    {tgc3 : Bool}
+    {snw3 : Bool}
+    {sne3 : Bool}
+    {snc3 : Bool}
+    {m0w : Bool}
+    {m0e : Bool}
+    {m0c : Bool}
+    {m1w : Bool}
+    {m1e : Bool}
+    {m1c : Bool}
+    {caw : Bool}
+    {cae : Bool}
+    {cac : Bool}
+    {cbw : Bool}
+    {cbe : Bool}
+    {cbc : Bool}
+    {pcw : Bool}
+    {pce : Bool}
+    {pcc : Bool}
+    {hcw3 : Bool}
+    {hce3 : Bool}
+    {hcc3 : Bool}
+    {aw3 : Bool}
+    {ae3 : Bool}
+    {ac3 : Bool}
+    {cw3 : Bool}
+    {ce3 : Bool}
+    {cc3 : Bool}
+    {se3 : Bool}
+    {sc3 : Bool}
+    {le3 : Bool}
+    {lc3 : Bool}
+    {fw3 : Bool}
+    {fe3 : Bool}
+    {fc3 : Bool}
+    {rw3 : Bool}
+    {re3 : Bool}
+    {rc3 : Bool}
+    {sw3 : Bool}
+    {se3' : Bool}
+    {sc3' : Bool}
+    {e0 : Bool}
+    {c0 : Bool}
+    {e1 : Bool}
+    {c1 : Bool}
+    {e2' : Bool}
+    {c2 : Bool}
+    {e3' : Bool}
+    {c3 : Bool}
+    {lw : Bool}
+    {lle : Bool}
+    {llc : Bool}
+    {ue : Bool}
+    {uc : Bool}
+    {xe : Bool}
+    {xc : Bool}
+    {re : Bool}
+    {rc : Bool}
+    {fe' : Bool}
+    {fc' : Bool}
+    {vce : Bool}
+    {vcc : Bool}
+    {b_fB : ObjId}
+    {b_dB : FuncData}
+    {b_tB : Value}
+    {b_str : JSStr}
+    {b_bdDR : Binding}
+    {b_bdPH : Binding}
+    {b_bdSS : Binding}
+    {b_bdMR : Binding}
+    {b_bdRC : Binding}
+    {b_bdGC : Binding}
+    {b_bdRCF : Binding}
+    {b_bdT : Binding}
+    {b_bdTS : Binding}
+    {b_fPH : ObjId}
+    {b_fSS : ObjId}
+    {b_fMR : ObjId}
+    {b_fC : ObjId}
+    {b_fGC : ObjId}
+    {b_fR : ObjId}
+    {b_dPH : FuncData}
+    {b_dSS : FuncData}
+    {b_dMR : FuncData}
+    {b_dC : FuncData}
+    {b_dGC : FuncData}
+    {b_dR : FuncData}
+    {b_bR : HashMap JSStr Binding}
+    {b_bdRI : Binding}
+    {b_bdDel : Binding}
+    {b_bdST : Binding}
+    {b_fI : ObjId}
+    {b_fDel : ObjId}
+    {b_dI : FuncData}
+    {b_dDel : FuncData}
+    {b_mpw : Bool}
+    {b_mpe : Bool}
+    {b_mpc : Bool}
+    {b_hcw : Bool}
+    {b_hce : Bool}
+    {b_hcc : Bool}
+    {b_hrw : Bool}
+    {b_hre : Bool}
+    {b_hrc : Bool}
+    {b_ppw : Bool}
+    {b_ppe : Bool}
+    {b_ppc : Bool}
+    {b_tgw : Bool}
+    {b_tge : Bool}
+    {b_tgc : Bool}
+    {b_tyw : Bool}
+    {b_tye : Bool}
+    {b_tyc : Bool}
+    {b_msw : Bool}
+    {b_mse : Bool}
+    {b_msc : Bool}
+    {b_xrw : Bool}
+    {b_xre : Bool}
+    {b_xrc : Bool}
+    {b_lw : Bool}
+    {b_lc : Bool}
+    {b_cw : Bool}
+    {b_cc : Bool}
+    {b_kw : Bool}
+    {b_ke : Bool}
+    {b_kc : Bool}
+    {b_csw : Bool}
+    {b_cse : Bool}
+    {b_csc : Bool}
+    {b_ch0 : Value}
+    {b_l0 : Value}
+    {mpv : Value}
+    {mpe' mpc' : Bool}
+    {oG : Option EnvId}
+    (hlt : fo < s.heap.size)
+    (hk : (s.objEntry fo).kind = .func d)
+    (hf : 840 ≤ s.fuel)
+    (hcode : d.code = PUWGen.performUnitOfWork_func)
+    (hcls : d.isClassCtor = false)
+    (hmode : d.thisMode = .strict)
+    (henv : d.env = g)
+    (hGBW : bG[JSStr.ofString "beginWork"]? = some bdBW)
+    (hGBWv : bdBW.value = some (.obj b_fB))
+    (hGCU : bG[JSStr.ofString "completeUnitOfWork"]? = some bdCU)
+    (hGCUv : bdCU.value = some (.obj fCU))
+    (hCUo : fCU < s.heap.size)
+    (hCUk : (s.objEntry fCU).kind = .func dCU)
+    (hCUcode : dCU.code = CUWGen.completeUnitOfWork_func)
+    (hCUcls : dCU.isClassCtor = false)
+    (hCUmode : dCU.thisMode = .strict)
+    (hCUenv : dCU.env = g)
+    (hXmp : (s.objEntry X).props.get? (.str "memoizedProps") = some (.data mpv true mpe' mpc'))
+    (dCUX : fCU ≠ X)
+    (dBWX : b_fB ≠ X)
+    (hdXall : ∀ Y ∈ [A, C, CF, CS, Cu, Cx, FR, H, HT, MS0, MS1, R, RH, RI, VS, fBP, fMU, fO, fPH, fPHC, fPI, fPP, fPT, fW], Y ≠ X)
+    (hG : g < s.envs.size)
+    (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
+    (hGEL : bG[JSStr.ofString "entangledRenderLanes"]? = some bdEL)
+    (hGELv : bdEL.value = some ln)
+    (hRbX : Rb ≠ X)
+    (dS1 : VS ≠ Cu)
+    (dS2 : VS ≠ Cx)
+    (dS3 : Cu ≠ Cx)
+    (dS4 : VS ≠ RI)
+    (dS5 : VS ≠ CF)
+    (dS6 : VS ≠ CS)
+    (dS7 : RI ≠ CF)
+    (dS8 : RI ≠ CS)
+    (dS9 : CF ≠ CS)
+    (dU1 : Cu ≠ CS)
+    (dU2 : Cu ≠ CF)
+    (dU3 : Cu ≠ RI)
+    (dX1 : Cx ≠ CS)
+    (dX2 : Cx ≠ CF)
+    (dX3 : Cx ≠ RI)
+    (dO1 : fO ≠ VS)
+    (dO2 : fO ≠ Cu)
+    (dO3 : fO ≠ Cx)
+    (dO4 : fO ≠ RI)
+    (dO5 : fO ≠ CF)
+    (dO6 : fO ≠ CS)
+    (hX : X < s.heap.size)
+    (hXk : (s.objEntry X).kind.isPlain = true)
+    (hHX : H ≠ X)
+    (hXpp : (s.objEntry X).props.get? (.str "pendingProps") = some (.data (.obj P1) ppw ppe ppc))
+    (hXa : (s.objEntry X).props.get? (.str "alternate") = some (.data (.obj H) aw ae ac))
+    (hP01 : P0 ≠ P1)
+    (hCX : C ≠ X)
+    (hRC : R ≠ C)
+    (hAC : A ≠ C)
+    (hAX : A ≠ X)
+    (hRX : R ≠ X)
+    (hdX : ∀ Y ∈ [fPT, fPH, fMU, fBP, fPI, CF, HT, fW], Y ≠ X)
+    (b_hBW : b_fB < s.heap.size)
+    (b_hBWk : (s.objEntry b_fB).kind = .func b_dB)
+    (b_hCS : CS < s.heap.size)
+    (b_hgU : g ≠ b_dR.env)
+    (b_hRg : b_dR.env ≠ g)
+    (b_hH : H < s.heap.size)
+    (b_hX : X < s.heap.size)
+    (b_hHX : H ≠ X)
+    (b_hP01 : P0 ≠ P1)
+    (b_hdX : ∀ Y ∈ [b_fPH, b_fSS, b_fMR, b_fC, b_fGC, CS, b_fR, b_fI, b_fDel, P1, b_fB], Y ≠ X)
+    (hcBB : ∀ w h1, Frame {} s w → 200 ≤ w.fuel →
+      WP eng answer (n + 4) h1 (callImpl eng (.obj b_fB) .undefined #[.obj H, .obj X, ln]) w fun v w' h' =>
+        v = .null ∧ Frame (ReactBeginButton.fpBB g X) w w' ∧ w.fuel ≤ w'.fuel + 200 ∧ h' = h1 ∧ w'.realm = w.realm ∧ (w'.objEntry X).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true b_lw b_lc) ∧ (w'.objEntry X).props.get? (.str "child") = some (.data .null true b_cw b_cc))
+    (hcCU : ∀ w h1, Frame (Logic.Footprint.union (ReactBeginButton.fpBB g X) ⟨[], [(X, .str "memoizedProps")], false⟩) s w → 600 ≤ w.fuel →
+      fCU < w.heap.size →
+      (w.objEntry fCU).kind = .func dCU →
+      dCU.code = CUWGen.completeUnitOfWork_func →
+      dCU.isClassCtor = false →
+      dCU.thisMode = .strict →
+      dCU.env = g →
+      (w.objEntry X).props.get? (.str "child") = some (.data .null true b_cw b_cc) →
+      (w.objEntry X).props.get? (.str "lanes") = some (.data (.num ((F64.fin false 0 (-1074)))) true b_lw b_lc) →
+      WP eng answer (n + 4) h1 (callImpl eng (.obj fCU) .undefined #[.obj X]) w fun v w' h' =>
+        v = .undefined ∧ Frame (ReactCompleteUnit.fpU g VS Cu Cx CS CF RI R C X) w w' ∧ w.fuel ≤ w'.fuel + 600 ∧ h' = h1 ∧ ((w'.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))) true fe fc) ∧ (w'.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitAnd (numberBinOp .bitOr sf (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) true se sc) ∧ (w'.objEntry X).props.get? (.str "childLanes") = some (.data (.num (F64.fin false 0 (-1074))) true le lc) ∧ (w'.objEntry C).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr e2 (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitAnd (numberBinOp .bitOr sf (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) (numberBinOp .bitAnd (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))))) true se2 sc2) ∧ (w'.objEntry C).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr ((F64.fin false 0 (-1074))) (F64.fin false 0 (-1074))))) true le2 lc2) ∧ (w'.objEntry X).props.get? (.str "return") = some (.data (.obj C) true rwe rwc) ∧ (w'.objEntry R).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr e3 (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr e2 (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitAnd (numberBinOp .bitOr sf (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) (numberBinOp .bitAnd (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))))) f2))) true se3 sc3) ∧ (w'.objEntry R).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr a2 (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr ((F64.fin false 0 (-1074))) (F64.fin false 0 (-1074))))))) true le3 lc3) ∧ (w'.objEntry C).props.get? (.str "return") = some (.data (.obj R) true rwe2 rwc2)) ∧ ∃ bm, Scope.declLike? (w'.envEntry g) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧ bd.value = some .null ∧ ∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true) :
+    WP eng answer (n + 5) h (callImpl eng (.obj fo) t #[.obj X]) s fun v w h' =>
+      v = .undefined ∧ Frame (Logic.Footprint.union (ReactBeginButton.fpBB g X) (Logic.Footprint.union ⟨[], [(X, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU g VS Cu Cx CS CF RI R C X))) s w ∧ s.fuel ≤ w.fuel + 840 ∧ h' = h ∧
+      ((w.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd
+        (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))) true fe fc) ∧
+      (w.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitAnd
+        (numberBinOp .bitOr sf (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) true se sc) ∧
+      (w.objEntry X).props.get? (.str "childLanes") = some (.data (.num (F64.fin false 0 (-1074))) true le lc) ∧
+      (w.objEntry C).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr e2
+        (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitAnd (numberBinOp .bitOr sf (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) (numberBinOp .bitAnd (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))))) true se2 sc2) ∧
+      (w.objEntry C).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074))
+        (numberBinOp .bitOr (F64.fin false 0 (-1074)) (F64.fin false 0 (-1074))))) true le2 lc2) ∧
+      (w.objEntry X).props.get? (.str "return") = some (.data (.obj C) true rwe rwc) ∧
+      (w.objEntry R).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr e3
+        (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr e2 (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitAnd (numberBinOp .bitOr sf (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) (numberBinOp .bitAnd (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))))) f2))) true se3 sc3) ∧
+      (w.objEntry R).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074))
+        (numberBinOp .bitOr a2 (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr (F64.fin false 0 (-1074)) (F64.fin false 0 (-1074))))))) true le3 lc3) ∧
+      (w.objEntry C).props.get? (.str "return") = some (.data (.obj R) true rwe2 rwc2) ∧
+        (w.objEntry X).props.get? (.str "memoizedProps") = some (.data (.obj P1) true mpe' mpc')) ∧
+      ∃ bm, Scope.declLike? (w.envEntry g) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧
+        bd.value = some .null ∧
+        ∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true := by
+  apply wp_callGen PUWGen.performUnitOfWork_eq (by decide) hlt hk (by omega) hcls hmode
+    (by rw [hcode]; rfl) (by rw [hcode]; rfl) (simpleP d hcode) (by rw [hcode]; rfl) (by rw [hcode]; rfl)
+  have hpn : d.code.info.fdi.paramNames = #[JSStr.ofString "unitOfWork"] := by rw [hcode]; rfl
+  have hv : d.code.info.fdi.varNames = #[JSStr.ofString "next"] := by rw [hcode]; rfl
+  have hl : FDI.lexDecls d = #[] := by simp [FDI.lexDecls, hcode, PUWGen.performUnitOfWork_func, Func.info]
+  have ha : d.code.isAsync = false := by rw [hcode]; rfl
+  have hne : s.envs.size ≠ g := Nat.ne_of_gt hG
+  have hG1 : g < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  have xo_A : A ≠ X := hdXall A (by simp)
+  have xo_C : C ≠ X := hdXall C (by simp)
+  have xo_CF : CF ≠ X := hdXall CF (by simp)
+  have xo_CS : CS ≠ X := hdXall CS (by simp)
+  have xo_Cu : Cu ≠ X := hdXall Cu (by simp)
+  have xo_Cx : Cx ≠ X := hdXall Cx (by simp)
+  have xo_FR : FR ≠ X := hdXall FR (by simp)
+  have xo_H : H ≠ X := hdXall H (by simp)
+  have xo_HT : HT ≠ X := hdXall HT (by simp)
+  have xo_MS0 : MS0 ≠ X := hdXall MS0 (by simp)
+  have xo_MS1 : MS1 ≠ X := hdXall MS1 (by simp)
+  have xo_R : R ≠ X := hdXall R (by simp)
+  have xo_RH : RH ≠ X := hdXall RH (by simp)
+  have xo_RI : RI ≠ X := hdXall RI (by simp)
+  have xo_VS : VS ≠ X := hdXall VS (by simp)
+  have xo_fBP : fBP ≠ X := hdXall fBP (by simp)
+  have xo_fMU : fMU ≠ X := hdXall fMU (by simp)
+  have xo_fO : fO ≠ X := hdXall fO (by simp)
+  have xo_fPH : fPH ≠ X := hdXall fPH (by simp)
+  have xo_fPHC : fPHC ≠ X := hdXall fPHC (by simp)
+  have xo_fPI : fPI ≠ X := hdXall fPI (by simp)
+  have xo_fPP : fPP ≠ X := hdXall fPP (by simp)
+  have xo_fPT : fPT ≠ X := hdXall fPT (by simp)
+  have xo_fW : fW ≠ X := hdXall fW (by simp)
+  clear hcode
+  simp only [PUWGen.performUnitOfWork]
+  js [hpn, hv, hl, ha, henv, hG, hG1, hne, Ne.symm hne, hGe, hGBW, hGBWv, b_hBW, b_hBWk, hX, hXk, hXa, hGEL, hGELv,
+    FDI.fdiCtx, Sem.inner]
+  -- (`beginWork(unitOfWork.alternate, unitOfWork, entangledRenderLanes)`)
+  refine ⟨by js_norm [CallableC, b_hBW, b_hBWk], ?_⟩
+  refine ReactReconcileFibers.wp_gen_state fun St hSt => ?_
+  have gZ1 : s.heap.size ≤ St.heap.size := by rw [hSt]; js_norm; try exact Nat.le_refl _
+  have gK1 : ∀ o, o < s.heap.size → (St.objEntry o).kind = (s.objEntry o).kind := by intro o ho; rw [hSt]; js_norm
+  have gP1 : ∀ o k, (o, k) ∉ ([] : List (ObjId × PropKey)) → o < s.heap.size →
+      (St.objEntry o).props.get? k = (s.objEntry o).props.get? k := by intro o k _ ho; rw [hSt]; js_norm
+  have gE1 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
+  have gE1' : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
+  have gF1 : 830 ≤ St.fuel := by rw [hSt]; js_norm; omega
+  have gFe1 : s.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
+  have gG1 : Scope.declLike? (St.envEntry g) = some (bG, oG) := by rw [hSt]; js_norm [hG, hG1, hne, Ne.symm hne, hGe]
+  have gB1 : ∀ x, x ≠ JSStr.ofString "workInProgress" → bG[x]? = bG[x]? := fun _ _ => rfl
+  have gV1 : ∀ e, e < s.envs.size → St.envEntry e = s.envEntry e := by
+    intro e he; rw [hSt]; js_norm [he, Nat.ne_of_lt he, Ne.symm (Nat.ne_of_lt he), Nat.lt_succ_of_lt he]
+  have gF0 : Frame {} s St := by
+    rw [hSt]; frame_go' [hG, hG1, hne, Ne.symm hne, hGe]
+  have gFS1 : Frame (Logic.Footprint.union (ReactBeginButton.fpBB g X) (Logic.Footprint.union ⟨[], [(X, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU g VS Cu Cx CS CF RI R C X))) s St := by
+    rw [hSt]; simp only [Logic.Footprint.union, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW,
+      ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, Bool.false_or, Bool.or_false]
+    frame_go' [hG, hG1, hne, Ne.symm hne, hGe]
+  refine wp_mono (hcBB St _  gF0 (Nat.le_trans (by decide) gF1) ) ?_
+  clear hcBB
+  intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, hr1, hXl1, hXc1⟩
+  subst hv1 hh1
+  have hw1K := envEntry_frame hF1 (e := s.envs.size) (by rw [gE1']; exact Nat.lt_succ_self _)
+    (by simp [ReactBeginButton.fpBB, hne, Ne.symm hne])
+  rw [hSt] at hw1K
+  try simp only [js_simp, ↓reduceIte, hne, Ne.symm hne] at hw1K
+  obtain ⟨bw, hbw, hbwx⟩ := declLike_frame hF1 (e := g) (Nat.lt_of_lt_of_le hG gE1) gG1
+  clear hSt
+  have z1 : s.heap.size ≤ w1.heap.size := Nat.le_trans gZ1 hF1.heap_le
+  have E1 : s.envs.size + 1 ≤ w1.envs.size := Nat.le_trans (Nat.le_of_eq gE1'.symm) hF1.envs_le
+  have p1 : ∀ o k, (o, k) ∉ (ReactBeginButton.fpBB g X).props → o < s.heap.size →
+      (w1.objEntry o).props.get? k = (s.objEntry o).props.get? k := fun o k hk ho => by
+    rw [props_frame hF1 (Nat.lt_of_lt_of_le ho gZ1) (by simpa using hk), gP1 o k (by simp) ho]
+  have k1 : ∀ o, o < s.heap.size → (w1.objEntry o).kind = (s.objEntry o).kind := fun o ho => by
+    rw [kind_frame hF1 (Nat.lt_of_lt_of_le ho gZ1), gK1 o ho]
+  try simp only [js_simp] at hfu1
+  have f1 : 620 ≤ w1.fuel := by omega
+  have hXpp1 := (p1 X (.str "pendingProps") (by simp [ReactBeginButton.fpBB]) hX).trans hXpp
+  have hXk1 : (w1.objEntry X).kind.isPlain = true := by rw [k1 X hX]; exact hXk
+  have hCUk1 : (w1.objEntry fCU).kind = .func dCU := by rw [k1 fCU hCUo]; exact hCUk
+  have hbCU : bw[JSStr.ofString "completeUnitOfWork"]? = some bdCU := by
+    rw [hbwx _ (by simp [ReactBeginButton.fpBB] <;> decide)]; exact hGCU
+  have hXmp1 := (p1 X (.str "memoizedProps") (by simp [ReactBeginButton.fpBB]) hX).trans hXmp
+  js [hw1K, hbw, hbCU, hGCUv, hXpp1, hXk1, hXmp1, hCUk1, Nat.lt_of_lt_of_le hX z1, Nat.lt_of_lt_of_le hCUo z1, f1,
+    Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E1, Nat.ne_of_gt (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E1),
+    Nat.lt_of_lt_of_le hG1 E1, Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1), hG, hG1, hne, Ne.symm hne, hpn, hv, hl, ha,
+    FDI.fdiCtx, Sem.inner]
+  -- (`completeUnitOfWork(unitOfWork)`)
+  refine ⟨by js_norm [CallableC, hCUk1, Nat.lt_of_lt_of_le hCUo z1, dCUX, Ne.symm dCUX], ?_⟩
+  refine ReactReconcileFibers.wp_gen_state fun St hSt => ?_
+  have gZ2 : s.heap.size ≤ St.heap.size := by rw [hSt]; js_norm; exact z1
+  have gK2 : ∀ o, o < s.heap.size → (St.objEntry o).kind = (s.objEntry o).kind := fun o ho => by
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le ho z1, Nat.lt_of_lt_of_le hX z1]
+    by_cases hoX : X = o
+    · subst hoX; simp [k1 X hX]
+    · simp [hoX, k1 o ho]
+  have gP2 : ∀ o k, (o, k) ∉ (ReactBeginButton.fpBB g X).props ++ [(X, PropKey.str (JSStr.ofString "memoizedProps"))] →
+      o < s.heap.size → (St.objEntry o).props.get? k = (s.objEntry o).props.get? k := fun o k hk ho => by
+    simp only [List.mem_append, not_or, List.mem_singleton] at hk
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le ho z1, Nat.lt_of_lt_of_le hX z1]
+    by_cases hoX : X = o
+    · subst hoX
+      have hk2 : k ≠ PropKey.str (JSStr.ofString "memoizedProps") := fun h => hk.2 (by rw [h])
+      simp [PropMap.get?_insert_ne _ _ _ _ (Ne.symm hk2), p1 X k hk.1 ho]
+    · simp [hoX, p1 o k hk.1 ho]
+  have gE2 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
+  have gF2 : 600 ≤ St.fuel := by rw [hSt]; js_norm; omega
+  have gFe2 : w1.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
+  have gG2 : Scope.declLike? (St.envEntry g) = some (bw, oG) := by
+    rw [hSt]; js_norm [hbw, hG, Nat.lt_of_lt_of_le hG1 E1, hne, Ne.symm hne,
+      Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1), Ne.symm (Nat.ne_of_gt (Nat.lt_of_lt_of_le hG1 E1))]
+  have gB2 : ∀ x, (g, x) ∉ (ReactBeginButton.fpBB g X).binds → bw[x]? = bG[x]? := hbwx
+  have hXla2 : (St.objEntry X).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true b_lw b_lc) := by
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le hX z1, hXl1]
+  have hXc2 : (St.objEntry X).props.get? (.str "child") = some (.data .null true b_cw b_cc) := by
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le hX z1, hXc1]
+  have FW1 := frame_extend' gFS1 hF1 (fun q hq _ => by simp [ReactBeginButton.fpBB] at hq; rcases hq with hq | hq | hq <;> simp [Logic.Footprint.union, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, hq])
+    (fun q hq _ => by simp [ReactBeginButton.fpBB] at hq; rcases hq with hq | hq <;> simp [Logic.Footprint.union, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, hq]) (fun _ => rfl)
+  have gFS2 : Frame (Logic.Footprint.union (ReactBeginButton.fpBB g X) (Logic.Footprint.union ⟨[], [(X, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU g VS Cu Cx CS CF RI R C X))) s St := by
+    rw [hSt]; clear hF1 gFS1
+    exact frame_setProp_in (frame_setEnv_new FW1 (Nat.le_refl _) _) hX
+      (by simp [Logic.Footprint.union]) _
+  have FW1t : Frame (Logic.Footprint.union (ReactBeginButton.fpBB g X) ⟨[], [(X, .str "memoizedProps")], false⟩) s w1 := frame_mono (frame_trans gF0 hF1)
+    (fun q hq => by simp only [Logic.Footprint.union, List.mem_append] at hq ⊢; simp at hq; exact Or.inl hq)
+    (fun q hq => by simp only [Logic.Footprint.union, List.mem_append] at hq ⊢; simp at hq; exact Or.inl hq)
+    (fun _ => rfl)
+  have gFS2t : Frame (Logic.Footprint.union (ReactBeginButton.fpBB g X) ⟨[], [(X, .str "memoizedProps")], false⟩) s St := by
+    rw [hSt]
+    exact frame_setProp_in (frame_setEnv_new FW1t (Nat.le_refl _) _) hX (by simp [Logic.Footprint.union]) _
+  have hXmp2 : (St.objEntry X).props.get? (.str "memoizedProps") = some (.data (.obj P1) true mpe' mpc') := by
+    rw [hSt]; js_norm [Nat.lt_of_lt_of_le hX z1, hXmp1]
+  clear hSt
+  refine wp_mono (hcCU St _  gFS2t (Nat.le_trans (by decide) gF2) ((Nat.lt_of_lt_of_le hCUo gZ2)) ((by rw [gK2 fCU hCUo]; exact hCUk)) hCUcode hCUcls hCUmode hCUenv hXc2 hXla2) ?_
+  clear hcCU
+  intro v2 w2 h2 ⟨hv2, hF2, hfu2, hh2, hFacts2, hW2⟩
+  subst hv2 hh2
+  have hXmpW2 : (w2.objEntry X).props.get? (.str "memoizedProps") = some (.data (.obj P1) true mpe' mpc') := by
+    rw [props_frame hF2 (Nat.lt_of_lt_of_le hX gZ2) (by simp [ReactCompleteUnit.fpU, ReactCompleteButton.fpCW,
+      ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC])]; exact hXmp2
+  have FW2 := frame_extend' gFS2 hF2 (fun q hq _ => by simp [ReactCompleteUnit.fpU] at hq; rcases hq with hq | hq | hq <;> simp [Logic.Footprint.union, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, hq])
+    (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append]; exact Or.inr (Or.inr hq)) (fun _ => rfl)
+  try simp only [js_simp] at hfu2
+  js [hpn, hv, hl, ha, FDI.fdiCtx, Sem.inner]
+  all_goals (repeat' apply And.intro)
+  all_goals first | rfl | omega | exact frame_restore FW2 s | exact hW2 | (simpa using hW2) | exact hFacts2 | exact hXmpW2 | (simp only [restore_objEntry, withFuel_objEntry, setEnv_objEntry]; exact hXmpW2) |
+    (simpa only [restore_objEntry, setEnv_objEntry, withFuel_objEntry] using hFacts2)
+
 end
 
 end ReactUnitButton
