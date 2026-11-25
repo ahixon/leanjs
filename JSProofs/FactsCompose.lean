@@ -1,4 +1,5 @@
 import JSProofs.FactsForm
+import JSProofs.Hide
 
 /-!
 # Composing specs in Lean (zippy docs/react-proofs.md, "Composition in Lean")
@@ -54,7 +55,11 @@ type) the contract's proof. -/
 def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Array (Name × Expr))
     (cstr : Option Syntax) (uinsts : Array (Name × Syntax) := #[]) (same : Bool := false)
     (callerVars : Array Expr := #[]) : TermElabM Expr := do
-  let ct ← inferType x
+  let ct0 ← inferType x
+  -- a contract hidden from simp (`Hide P`): `P`
+  let hidden := ct0.isAppOfArity ``Logic.Hide 1
+  let ct := if hidden then ct0.appArg! else ct0
+  let wrapHide (e : Expr) : Expr := if hidden then mkApp2 (mkConst ``Logic.Hide.mk) ct e else e
   forallTelescope ct fun bs body => do
     unless body.isAppOf ``Logic.WP do throwError "facts_compose: {x} is not a contract (∀ …, WP …): {body}"
     let uOf ← mkConstWithFreshMVarLevels (Name.mkStr U "ofPre")
@@ -155,7 +160,7 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
               unless rem.isEmpty do
                 throwError "facts_compose: the postcondition of {U} does not give {x}'s: goals left {rem.map (MessageData.ofGoal ·)}"
               mkLetFVars #[hobv] (← mkAppM ``Logic.wp_mono #[hw, ← instantiateMVars mv])
-        mkLambdaFVars bs (← open_ 0 hob)
+        return wrapHide (← mkLambdaFVars bs (← open_ 0 hob))
 where
   /-- `∀ b w h', qU b w h' → qC b w h'` -/
   mkPostGoal (qU qC : Expr) : MetaM Expr := do
