@@ -254,6 +254,169 @@ theorem click_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData}  {s : State} {
   simp only [fpR, fpI, ReactCreateWIP.fp] at hFw1 ⊢
   frame_go' [hFw1, hG, hGw1, hw1E, hStg, hneG, Ne.symm hneG]
 
+
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 20000 in
+/-- `click_spec` with its callee as a contract (`facts_compose` composes it). -/
+theorem click_spec_c {n : Nat}
+    {h : σ}
+    {fo : ObjId}
+    {d : FuncData}
+    {s : State}
+    {fU : ObjId}
+    {dU : FuncData}
+    {bR bG : HashMap JSStr Binding}
+    {g : EnvId}
+    {bdCW : Binding}
+    {H X : ObjId}
+    {fl : F64}
+    {vHT vCL vL vC vMP vMS vUQ vI vR vRC o0 o1 o2 o3 o4 o5 o6 o7 o8 o9 o10 o11 o12 o13 o14 o15 : Value}
+    {r0w r0e r0c r1w r1e r1c r2w r2e r2c r3w r3e r3c r4w r4e r4c r5w r5e r5c r6w r6e r6c r7w r7e r7c r8w r8e r8c r9w r9e r9c r10w r10e r10c r11w r11e r11c r12w r12e r12c r13w r13e r13c e0 c0 e1 c1 e2 c2 e3 c3 e4 c4 e5 c5 e6 c6 e7 c7 e8 c8 e9 c9 e10 c10 e11 c11 e12 c12 e13 c13 e14 c14 e15 c15 : Bool}
+    {oG : Option EnvId}
+    -- (useFiber's record: the reconciler's closure, whose outer record is the module's)
+    (hE : dU.env < s.envs.size)
+    (hEe : Scope.declLike? (s.envEntry dU.env) = some (bR, some g))
+    (hG : g < s.envs.size)
+    (hGe : Scope.declLike? (s.envEntry g) = some (bG, oG))
+    (hf : 150 ≤ s.fuel)
+    {fI fDel fPl fCR RF El C OP : ObjId}
+    {dI dDel dPl dCR : FuncData}
+    {ln vEl vFr : Value}
+    {bdDel bdUF bdPl bdST bdFr bdEl bdCR : Binding}
+    {ew ee ec kw ke kc yw ye yc pw pe pc bkw bke bkc bew bee bec aw ae ac rew rec : Bool}
+    {rv0 : Value}
+    -- (reconcileChildFibersImpl, in the reconciler's closure record, as are its helpers)
+    (hI : fI < s.heap.size)
+    (hIk : (s.objEntry fI).kind = .func dI)
+    -- (the module: the element and fragment symbols, coerceRef)
+    -- (the new child: the button element; its props have no ref)
+    -- (the current child: a button with no key and no sibling; its alternate, reused, points back to it)
+    -- (the closures, the element, its props, Object.prototype are not the reused fiber)
+    {fR : ObjId}
+    {dR : FuncData}
+    {tR : Value}
+    {bdRI bdT bdTS : Binding}
+    -- (the reconciler's returned function, in its closure record; the module's thenable variables)
+    (hR : fR < s.heap.size)
+    (hRk : (s.objEntry fR).kind = .func dR)
+    (hRcode : dR.code = CCRGen.fn34_func)
+    (hRcls : dR.isClassCtor = false)
+    (hRmode : dR.thisMode = .strict)
+    (hRenv : dR.env = dU.env)
+    (hRRI : bR[JSStr.ofString "reconcileChildFibersImpl"]? = some bdRI)
+    (hRRIv : bdRI.value = some (.obj fI))
+    (hRnT : bR[JSStr.ofString "thenableIndexCounter$1"]? = none)
+    (hRnS : bR[JSStr.ofString "thenableState$1"]? = none)
+    (hGT : bG[JSStr.ofString "thenableIndexCounter$1"]? = some bdT)
+    (hGTm : bdT.mutable = true)
+    (hGTi : bdT.value.isSome = true)
+    (hGS : bG[JSStr.ofString "thenableState$1"]? = some bdTS)
+    (hGSm : bdTS.mutable = true)
+    (hGSi : bdTS.value.isSome = true)
+    (hgU : g ≠ dU.env)
+    (hRI : ∀ w h1, Frame ⟨[(g, JSStr.ofString "thenableIndexCounter$1")], [], false⟩ s w → 120 ≤ w.fuel →
+      WP eng answer (n + 2) h1 (callImpl eng (.obj fI) .undefined #[.obj RF, .obj H, .obj El, ln]) w fun v w' h' =>
+        v = .obj X ∧ Logic.Frame (ReactReconcileImpl.fpI X) w w' ∧ w.fuel ≤ w'.fuel + 120 ∧ h' = h1 ∧
+        (w'.objEntry X).props.get? (.str "pendingProps") = some (.data (.obj C) true e0 c0) ∧
+        (w'.objEntry X).props.get? (.str "type") = some (.data (vHT) true e1 c1) ∧
+        (w'.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true e2 c2) ∧
+        (w'.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true e3 c3) ∧
+        (w'.objEntry X).props.get? (.str "deletions") = some (.data (.null) true e4 c4) ∧
+        (w'.objEntry X).props.get? (.str "childLanes") = some (.data (vCL) true e5 c5) ∧
+        (w'.objEntry X).props.get? (.str "lanes") = some (.data (vL) true e6 c6) ∧
+        (w'.objEntry X).props.get? (.str "child") = some (.data (vC) true e7 c7) ∧
+        (w'.objEntry X).props.get? (.str "memoizedProps") = some (.data (vMP) true e8 c8) ∧
+        (w'.objEntry X).props.get? (.str "memoizedState") = some (.data (vMS) true e9 c9) ∧
+        (w'.objEntry X).props.get? (.str "updateQueue") = some (.data (vUQ) true e10 c10) ∧
+        (w'.objEntry X).props.get? (.str "dependencies") = some (.data (.null) true e11 c11) ∧
+        (w'.objEntry X).props.get? (.str "sibling") = some (.data .null true e12 c12) ∧
+        (w'.objEntry X).props.get? (.str "index") = some (.data (.num (F64.fin false 0 (-1074))) true e13 c13) ∧
+        (w'.objEntry X).props.get? (.str "ref") = some (.data .null true e14 c14) ∧
+        (w'.objEntry X).props.get? (.str "refCleanup") = some (.data (vRC) true e15 c15) ∧
+        w'.realm = w.realm ∧ (w'.objEntry X).props.get? (.str "return") = some (.data (.obj RF) true rew rec)) :
+    WP eng answer (n + 3) h (callImpl eng (.obj fR) tR #[.obj RF, .obj H, .obj El, ln]) s fun v w h' =>
+      v = .obj X ∧ Logic.Frame (fpR g X) s w ∧ s.fuel ≤ w.fuel + 150 ∧ h' = h ∧
+      (w.objEntry X).props.get? (.str "pendingProps") = some (.data (.obj C) true e0 c0) ∧
+      (w.objEntry X).props.get? (.str "type") = some (.data (vHT) true e1 c1) ∧
+      (w.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true e2 c2) ∧
+      (w.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true e3 c3) ∧
+      (w.objEntry X).props.get? (.str "deletions") = some (.data (.null) true e4 c4) ∧
+      (w.objEntry X).props.get? (.str "childLanes") = some (.data (vCL) true e5 c5) ∧
+      (w.objEntry X).props.get? (.str "lanes") = some (.data (vL) true e6 c6) ∧
+      (w.objEntry X).props.get? (.str "child") = some (.data (vC) true e7 c7) ∧
+      (w.objEntry X).props.get? (.str "memoizedProps") = some (.data (vMP) true e8 c8) ∧
+      (w.objEntry X).props.get? (.str "memoizedState") = some (.data (vMS) true e9 c9) ∧
+      (w.objEntry X).props.get? (.str "updateQueue") = some (.data (vUQ) true e10 c10) ∧
+      (w.objEntry X).props.get? (.str "dependencies") = some (.data (.null) true e11 c11) ∧
+      (w.objEntry X).props.get? (.str "sibling") = some (.data .null true e12 c12) ∧
+      (w.objEntry X).props.get? (.str "index") = some (.data (.num (F64.fin false 0 (-1074))) true e13 c13) ∧
+      (w.objEntry X).props.get? (.str "ref") = some (.data .null true e14 c14) ∧
+      (w.objEntry X).props.get? (.str "refCleanup") = some (.data (vRC) true e15 c15) ∧
+      w.realm = s.realm ∧ (w.objEntry X).props.get? (.str "return") = some (.data (.obj RF) true rew rec) ∧
+      Scope.declLike? (w.envEntry g) = some ((bG.modify (JSStr.ofString "thenableIndexCounter$1")
+        (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) })).modify (JSStr.ofString "thenableState$1")
+        (fun bd => { bd with value := some .null }), oG) := by
+  apply wp_callGen CCRGen.fn34_eq (by decide) hR hRk (by omega) hRcls hRmode
+    (by rw [hRcode]; rfl) (by rw [hRcode]; rfl) (simpleR dR hRcode) (by rw [hRcode]; rfl) (by rw [hRcode]; rfl)
+  have hpn : dR.code.info.fdi.paramNames = #[JSStr.ofString "returnFiber", JSStr.ofString "currentFirstChild",
+      JSStr.ofString "newChild", JSStr.ofString "lanes"] := by rw [hRcode]; rfl
+  have hv : dR.code.info.fdi.varNames = #[JSStr.ofString "firstChildFiber", JSStr.ofString "fiber"] := by rw [hRcode]; rfl
+  have hl : FDI.lexDecls dR = #[] := by simp [FDI.lexDecls, hRcode, CCRGen.fn34_func, Func.info]
+  have ha : dR.code.isAsync = false := by rw [hRcode]; rfl
+  have hne : s.envs.size ≠ dU.env := Nat.ne_of_gt hE
+  have hE1 : dU.env < s.envs.size + 1 := Nat.lt_succ_of_lt hE
+  have hneG : s.envs.size ≠ g := Nat.ne_of_gt hG
+  have hG1 : g < s.envs.size + 1 := Nat.lt_succ_of_lt hG
+  clear hRcode
+  simp only [CCRGen.fn34]
+  js [hpn, hv, hl, ha, hRenv, hE, hE1, hne, Ne.symm hne, hEe, hG, hG1, hneG, Ne.symm hneG, hGe, hRRI, hRRIv, hRnT,
+    hRnS, hGT, hGTm, hGTi, hGS, hGSm, hGSi, hI, hIk, hgU, Ne.symm hgU, FDI.fdiCtx, Sem.inner]
+  refine ⟨by js_norm [CallableC, hI, hIk], ?_⟩
+  refine wp_gen_state fun St hSt => ?_
+  have hStO : ∀ o, St.objEntry o = s.objEntry o := by intro o; rw [hSt]; rfl
+  have hStz : St.heap.size = s.heap.size := by rw [hSt]; rfl
+  have hStE : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
+  have hStF : St.fuel = s.fuel - 1 := by rw [hSt]; js_norm
+  have hStU : St.envEntry dU.env = s.envEntry dU.env := by
+    rw [hSt]; js_norm [hE, hne, Ne.symm hne, hgU, Ne.symm hgU, hE1]
+  have hStg : Scope.declLike? (St.envEntry g) = some (bG.modify (JSStr.ofString "thenableIndexCounter$1")
+      (fun bd => { bd with value := some (.num (F64.fin false 0 (-1074))) }), oG) := by
+    rw [hSt]; js_norm [hG, hG1, hGe, hneG, Ne.symm hneG]
+  have hStK : St.envEntry s.envs.size = (bodyState s fR dR tR #[.obj RF, .obj H, .obj El, ln]).envEntry s.envs.size := by
+    rw [hSt]; js_norm [hneG, Ne.symm hneG]
+  have hF0 : Frame (fpR g X) s St := by
+    rw [hSt]; simp only [fpR, fpI, ReactCreateWIP.fp]; frame_go' [hG, hG1, hGe, hneG, Ne.symm hneG]
+  have hFt : Frame ⟨[(g, JSStr.ofString "thenableIndexCounter$1")], [], false⟩ s St := by
+    rw [hSt]; frame_go' [hG, hG1, hGe, hneG, Ne.symm hneG]
+  clear hSt
+  refine wp_mono (hRI St _ hFt (by rw [hStF]; omega)) ?postI
+  intro v1 w1 h1 ⟨hv1, hF1, hfu1, hh1, f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, hr1, hret1⟩
+  subst v1 h1
+  have hw1K : w1.envEntry s.envs.size = St.envEntry s.envs.size :=
+    envEntry_frame hF1 (by rw [hStE]; exact Nat.lt_succ_self _) (by simp [fpI, ReactCreateWIP.fp])
+  have hw1g : w1.envEntry g = St.envEntry g :=
+    envEntry_frame hF1 (by rw [hStE]; exact hG1) (by simp [fpI, ReactCreateWIP.fp])
+  have hw1E : s.envs.size < w1.envs.size := Nat.lt_of_lt_of_le (by rw [hStE]; exact Nat.lt_succ_self _) hF1.envs_le
+  have hw1f : 10 ≤ w1.fuel := by rw [hStF] at hfu1; omega
+  rw [hStK] at hw1K
+  have hw1U : w1.envEntry dU.env = s.envEntry dU.env :=
+    (envEntry_frame hF1 (by rw [hStE]; exact hE1) (by simp [fpI, ReactCreateWIP.fp])).trans hStU
+  have hUw1 : dU.env < w1.envs.size := Nat.lt_of_lt_of_le (Nat.lt_trans hE (by rw [hStE]; exact Nat.lt_succ_self _)) hF1.envs_le
+  have hStgS := hStg
+  rw [← hw1g] at hStg
+  js [hpn, hv, hl, ha, hw1K, hw1E, hw1f, hStg, Nat.lt_of_lt_of_le (Nat.lt_trans hG (by rw [hStE]; exact Nat.lt_succ_self _)) hF1.envs_le,
+    hGS, hGSm, hneG, Ne.symm hneG, hw1U, hUw1, hEe, hRnS, hStgS, hw1g, hgU, Ne.symm hgU, hne, Ne.symm hne, FDI.fdiCtx, Sem.inner]
+  refine ⟨?_, by rw [hStF] at hfu1; omega, rfl⟩
+  have hFw1 : Frame (fpR g X) s w1 := frame_extend hF0 hF1 (by simp [fpI, fpR, ReactCreateWIP.fp])
+    (by simp [fpI, fpR, ReactCreateWIP.fp]) (fun _ => rfl)
+  have hGw1 : g < w1.envs.size := Nat.lt_of_lt_of_le (Nat.lt_trans hG (by rw [hStE]; exact Nat.lt_succ_self _)) hF1.envs_le
+  clear hF0 hF1
+  refine frame_restore ?_ s
+  rw [← hw1g]
+  simp only [fpR, fpI, ReactCreateWIP.fp] at hFw1 ⊢
+  frame_go' [hFw1, hG, hGw1, hw1E, hStg, hneG, Ne.symm hneG]
+
 end
 
 end ReactReconcileFibers
