@@ -5,6 +5,8 @@ import JSProofs.ReactMicrotaskClick
 import JSProofs.ReactFinishQueueing
 import JSProofs.ReactPrepareFresh
 import JSProofs.FactsComposeRender
+import JSProofs.FactsComposeCompleteRoot
+import JSProofs.ReactEnsureAfter
 
 /-!
 # The render from `performSyncWorkOnRoot`, composed (zippy docs/react-proofs.md)
@@ -24,21 +26,34 @@ facts_form ReactRenderClick.work_render
 facts_form ReactMicrotaskClick.microtask_click
 facts_form ReactPrepareFresh.call_spec
 facts_post ReactPrepareFresh.call_spec
+facts_post ReactCommitEntry.crw_comp
 
 namespace ReactRenderClick
+
+/-- `After` reads the heap and records, which `restore` keeps. -/
+theorem after_restore {w c : State} {g : EnvId} {oG : Option EnvId} {R : ObjId} {bdF : Binding}
+    (h : ReactFlushSync.After w g oG R bdF) : ReactFlushSync.After (w.restore c) g oG R bdF := by
+  cases h; constructor <;> assumption
 
 -- `performWorkOnRoot` with `prepareFreshStack` (`ReactPrepareFresh.call_spec`; `P1`: its call state, framed from the
 -- start, with its facts there, and its result's facts) and `finishQueueingConcurrentUpdates` proved: the work loop's post (`P2`) says the queues'
 -- function is there (`ReactFinishQueueing.Ready`) and that the render's result holds after its writes.
 set_option maxHeartbeats 4000000 in
 set_option maxRecDepth 20000 in
-facts_compose work_render_fin {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lC1 lX lOP : ObjId} (f_code : dFQ.code = FQCGen.finishQueueingConcurrentUpdates_func)
+facts_compose work_render_fin {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lC1 lX lOP : ObjId}
+    {cEA cXA cdom cRSI cRDSI : ObjId} {ckP : JSStr} {cR1 cR2 : State → σ → Prop} {cgP : EnvId} {cbFSR cbEn : Binding}
+    {cD : FuncData} (hcD : cD.env = d.env) (f_code : dFQ.code = FQCGen.finishQueueingConcurrentUpdates_func)
     (f_cls : dFQ.isClassCtor = false) (f_mode : dFQ.thisMode = .strict) (f_env : dFQ.env = d.env) :=
     ReactRenderClick.work_render
     (P2 := fun w2 h => ReactFinishQueueing.Ready w2 d.env fFQ dFQ ∧ ∀ e w w', Frame (ReactRenderSync.fpEnd e d.env I) w2 w →
       ReactRenderSync.EndBinds w d.env oG ec → Frame (ReactFinishQueueing.fp d.env) w w' →
       ReactFinishQueueing.QueuesDone w' d.env → ∀ c, (fun x h => (∃ C' alt bm x1 x2 x3 x4 x5 x6 x7, ReactPerformWork.RenderDone x d.env oG R C' alt bm x1 x2 x3 x4 x5 x6 x7) ∧ PRu x h) (w'.restore c) h)
-    (fpFQ := ReactFinishQueueing.fp d.env) (kF := 20) (j := j + 10)
+    (fpFQ := ReactFinishQueueing.fp d.env) (kF := 20) (j := j + 12)
+    (PC := fun x h => ∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP cbFSR cbEn fE cD ws oG R v x h)
+    (fpE := ReactEnsureRoot.fpS d.env) (kE := 20)
+    (Q := fun x h => ReactFlushSync.After x d.env oG R cbFSR ∧
+      (∃ a b c, (x.objEntry R).props.get? (.str "pendingLanes") = some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧
+      (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP cbFSR cbEn fe cD ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS d.env)) y x))
     (PRu := fun x (_ : σ) => ∃ wL e, ReactWorkLoop.work_loop_comp.PLex lD oG pX lC1 lOP lX wL ∧
       Frame ((ReactRenderSync.fpEnd e d.env I).union (ReactFinishQueueing.fp d.env)) wL x)
     (P1 := fun w' (_ : σ) => ∃ w0, Frame (({} : Footprint).union (ReactRenderSync.fpPre d.env I)) s w0 ∧
@@ -122,39 +137,81 @@ facts_compose work_render_fin {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {
              .num (F64.fin false 0 (-1074)), .num (F64.fin false 0 (-1074)), .bool false,
              ⟨hdR, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ⟨?_, ?_, ?_⟩, ⟨?_, ?_, ?_⟩⟩⟩
            all_goals first | facts_get hR1 | facts_get hRB | facts_get hR0 | exact ⟨_, _, _, by facts_get hR0⟩
+  | hComplete => ReactCommitEntry.crw_comp (EA := cEA) (XA := cXA) (dom := cdom) (RSI := cRSI) (RDSI := cRDSI) (kP := ckP)
+      (R1 := cR1) (R2 := cR2) (gP := cgP) (bFSR := cbFSR) (bEn := cbEn) (fEn := fE) (d := cD) (oG := oG)
+      with (Footprint.Sub (Footprint.union (Footprint.union ⟨[], [(R, .str (JSStr.ofString "timeoutHandle"))], false⟩
+        (((ReactCommitEntry.FPE cD.env R).union ((((((ReactCommitRootFn.FPC cD.env R cRSI cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
+          (ReactBeforeMutation.FB cD.env)).union
+          (((ReactFlushMutation.FPRE cD.env cRSI cRDSI).union ((ReactCommitRoot.F0 cD.env).union
+            (Footprint.union ⟨[(cD.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩
+              ⟨[(cD.env, JSStr.ofString "viewTransitionMutationContext")], [(cdom, .str ckP)], false⟩))).union
+            ⟨[(cD.env, JSStr.ofString "selectionInformation"), (cD.env, JSStr.ofString "eventsEnabled"),
+              (cD.env, JSStr.ofString "_enabled")], [(R, .str (JSStr.ofString "current"))], false⟩)).union
+          (ReactFlushLayout.FPL cD.env cRSI cRDSI)).union
+          ((ReactSpawned.FPA cD.env cgP R).union (ReactEnsureCall.fpEn cD.env)))).union {})) {}) fpC ∧ 59400 + 100 ≤ kC)
+      by intro v w' h' hq
+         have hq0 := hq
+         obtain ⟨-, hfu, w0, hP, hF0⟩ := hq
+         obtain ⟨hsub, hkC⟩ := hob.get.2
+         have hHIw : HI h' := by
+           obtain ⟨⟨_, _, _, ⟨⟨_, ⟨⟨_, _, _, hh⟩, _⟩, _⟩, _⟩, _⟩, _⟩ := hP
+           exact hh
+         exact ⟨frame_mono (frame_trans hP.2 hF0) hsub.1 hsub.2.1 hsub.2.2, Nat.le_trans hfu (Nat.add_le_add_left hkC _),
+           ⟨w, v, hq0⟩, hHIw⟩
+  | hEnsure := fun w3 w h1 hPC hHI1 hO hfw => by
+      obtain ⟨ws, v, hpost⟩ := hPC
+      have hpost0 := hpost
+      obtain ⟨-, -, w0, ⟨⟨s1, w0', -, ⟨⟨w1, ⟨-, hD⟩, hF1⟩, -⟩, hF2⟩, -⟩, hF3⟩ := hpost
+      rw [hcD] at hD
+      refine wp_mono (ReactEnsureAfter.ensure_call (sW := s) (sP := s)
+        (Pu := fun x h => (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP cbFSR cbEn fe cD ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS d.env)) y x)) hD
+        (frame_trans (frame_trans (frame_trans hF1 hF2) hF3) hO)
+        (ReactEnsureAfter.binds_ne_of (e := s.envs.size) (by simp [Logic.Footprint.union, ReactPerformWork.fpOwn])
+          (Nat.ne_of_gt (by facts_get hpre)))
+        (by simp [Logic.Footprint.union, ReactPerformWork.fpOwn]) hfw
+        (fun w' hS => ⟨_, w3, _, ⟨ws, v, hpost0⟩, frame_restore (frame_restore (frame_trans hO hS) s) s⟩)) ?_
+      rintro v' w' h' ⟨hS, hfu, hA, hPL, hPu', hh⟩
+      exact ⟨hS, hfu, ⟨hA, hPL, hPu'⟩, by rw [hh]; exact hHI1⟩
   | r_Finish := fun sR _ fuR w2 w h1 hP2 hHI1 hFe hEB hfu =>
       wp_mono (ReactFinishQueueing.finish_of_ready (σ := σ) (EP := fun w => ReactRenderSync.EndBinds w d.env oG ec) (Post := (fun x h => (∃ C' alt bm x1 x2 x3 x4 x5 x6 x7, ReactPerformWork.RenderDone x d.env oG R C' alt bm x1 x2 x3 x4 x5 x6 x7) ∧ ∃ wL e, ReactWorkLoop.work_loop_comp.PLex lD oG pX lC1 lOP lX wL ∧ Frame ((ReactRenderSync.fpEnd e d.env I).union (ReactFinishQueueing.fp d.env)) wL x)) (c := sR) f_code f_cls f_mode f_env hP2.1 hP2.2 hFe hEB
         (by omega)) (fun _ _ _ ⟨a, b, c, d⟩ => ⟨a, b, c, by rw [d]; exact hHI1⟩)
 
 set_option maxHeartbeats 4000000 in
 set_option maxRecDepth 20000 in
-facts_compose sync_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lC1 lX lOP : ObjId} {fpWL fpC fpE : Footprint} {kWL kC kE j : Nat} {I R : ObjId} :=
-    ReactPerformSync.call_spec (n := j + 11) (root := .obj R) (lanes := .num (F64.fin false 4503599627370496 (-51)))
-    (fpW := ⟨(ReactRenderSync.fpRS dW.env I (ReactPrepareFresh.fp dW.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp dW.env)).binds ++ fpC.binds ++ fpE.binds,
-      (ReactRenderSync.fpRS dW.env I (ReactPrepareFresh.fp dW.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp dW.env)).props ++ fpC.props ++ fpE.props,
-      (ReactRenderSync.fpRS dW.env I (ReactPrepareFresh.fp dW.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp dW.env)).jobs || fpC.jobs || fpE.jobs⟩)
-    (kW := (400 + kWL + 20 + 300) + kC + kE + 300)
+facts_compose sync_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lC1 lX lOP : ObjId} {cEA cXA cdom cRSI cRDSI : ObjId} {ckP : JSStr} {cR1 cR2 : State → σ → Prop} {cgP : EnvId} {cbFSR cbEn : Binding} {cD : FuncData}
+    {fpWL fpC : Footprint} {kWL kC j : Nat} {I R : ObjId} :=
+    ReactPerformSync.call_spec (n := j + 13) (root := .obj R) (lanes := .num (F64.fin false 4503599627370496 (-51)))
+    (fpW := ⟨(ReactRenderSync.fpRS dW.env I (ReactPrepareFresh.fp dW.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp dW.env)).binds ++ fpC.binds ++ (ReactEnsureRoot.fpS dW.env).binds,
+      (ReactRenderSync.fpRS dW.env I (ReactPrepareFresh.fp dW.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp dW.env)).props ++ fpC.props ++ (ReactEnsureRoot.fpS dW.env).props,
+      (ReactRenderSync.fpRS dW.env I (ReactPrepareFresh.fp dW.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp dW.env)).jobs || fpC.jobs || (ReactEnsureRoot.fpS dW.env).jobs⟩)
+    (kW := (400 + kWL + 20 + 300) + kC + 20 + 300)
+    (Q := fun x h => ReactFlushSync.After x dW.env oG R cbFSR ∧
+      (∃ a b c, (x.objEntry R).props.get? (.str "pendingLanes") = some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧
+      (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP cbFSR cbEn fe cD ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS dW.env)) y x))
   | hWork => ReactRenderClick.work_render_fin (fo := fW) (d := dW) (t := .undefined) (I := I) (j := j)
       (pX := pX) (pA := pA) (pQo := pQo) (pU := pU) (pF := pF) (pFa := pFa) (pH := pH)
-      (lD := lD) (lC1 := lC1) (lX := lX) (lOP := lOP)
-      (fpWL := fpWL) (fpC := fpC) (fpE := fpE) (kW := kWL) (kC := kC) (kE := kE)
-      (Q := fun w h => Q (w.restore s) h) same
-      by intro v w' h' hq; exact ⟨hq.2.1, by have := hq.2.2.1; omega, hq.2.2.2.1, hq.2.2.2.2⟩
+      (lD := lD) (lC1 := lC1) (lX := lX) (lOP := lOP) (cEA := cEA) (cXA := cXA) (cdom := cdom) (cRSI := cRSI) (cRDSI := cRDSI) (ckP := ckP) (cR1 := cR1) (cR2 := cR2)
+      (cgP := cgP) (cbEn := cbEn) (cD := cD) (cbFSR := cbFSR)
+      (fpWL := fpWL) (fpC := fpC) (kW := kWL) (kC := kC) same
+      by intro v w' h' hq
+         obtain ⟨-, hF, hfu, ⟨hA, hPL, e, y, fe, hPC, hFy⟩, hHI⟩ := hq
+         exact ⟨hF, by omega, ⟨after_restore hA, hPL, e, y, fe, hPC, frame_restore hFy s⟩, hHI⟩
 
 set_option maxHeartbeats 4000000 in
 set_option maxRecDepth 20000 in
-facts_compose microtask_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lC1 lX lOP : ObjId} {fpWL fpC fpE' : Footprint} {kWL kC kE j : Nat}
-    {I : ObjId} {wD : FuncData} :=
-    ReactMicrotaskClick.microtask_click (m := j + 12)
-    (fpP := ⟨(ReactRenderSync.fpRS wD.env I (ReactPrepareFresh.fp wD.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp wD.env)).binds ++ fpC.binds ++ fpE'.binds,
-      (ReactRenderSync.fpRS wD.env I (ReactPrepareFresh.fp wD.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp wD.env)).props ++ fpC.props ++ fpE'.props,
-      (ReactRenderSync.fpRS wD.env I (ReactPrepareFresh.fp wD.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp wD.env)).jobs || fpC.jobs || fpE'.jobs⟩)
-    (kP := (400 + kWL + 20 + 300) + kC + kE + 300 + 100)
+facts_compose microtask_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lC1 lX lOP : ObjId} {cEA cXA cdom cRSI cRDSI : ObjId} {ckP : JSStr} {cR1 cR2 : State → σ → Prop} {cgP : EnvId} {cbEn : Binding} {cD : FuncData}
+    {fpWL fpC : Footprint} {kWL kC j : Nat} {I : ObjId} {wD : FuncData} :=
+    ReactMicrotaskClick.microtask_click (m := j + 14)
+    (fpP := ⟨(ReactRenderSync.fpRS d.env I (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp d.env)).binds ++ fpC.binds ++ (ReactEnsureRoot.fpS d.env).binds,
+      (ReactRenderSync.fpRS d.env I (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp d.env)).props ++ fpC.props ++ (ReactEnsureRoot.fpS d.env).props,
+      (ReactRenderSync.fpRS d.env I (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp d.env)).jobs || fpC.jobs || (ReactEnsureRoot.fpS d.env).jobs⟩)
+    (kP := (400 + kWL + 20 + 300) + kC + 20 + 300 + 100)
+    (Pu := fun x h => (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP bdF cbEn fe cD ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS d.env)) y x))
   | hPerf => ReactRenderClick.sync_render_comp (fo := fS) (d := dS) (t := .undefined) (R := R) (oG := oG) (j := j)
-      (dW := wD) (I := I) (pX := pX) (pA := pA) (pQo := pQo) (pU := pU) (pF := pF) (pFa := pFa) (pH := pH)
-      (lD := lD) (lC1 := lC1) (lX := lX) (lOP := lOP)
-      (fpWL := fpWL) (fpC := fpC) (fpE := fpE') (kWL := kWL) (kC := kC) (kE := kE)
-      (Q := (fun w h => ReactFlushSync.After w d.env oG R bdF ∧ (∃ a b c, (w.objEntry R).props.get? (.str "pendingLanes") =
-        some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧ Pu w h))
+      (dW := { wD with env := d.env }) (I := I) (pX := pX) (pA := pA) (pQo := pQo) (pU := pU) (pF := pF) (pFa := pFa) (pH := pH)
+      (lD := lD) (lC1 := lC1) (lX := lX) (lOP := lOP) (cEA := cEA) (cXA := cXA) (cdom := cdom) (cRSI := cRSI) (cRDSI := cRDSI) (ckP := ckP) (cR1 := cR1) (cR2 := cR2)
+      (cgP := cgP) (cbEn := cbEn) (cD := cD) (cbFSR := bdF)
+      (fpWL := fpWL) (fpC := fpC) (kWL := kWL) (kC := kC)
       by intro v w' h' hq; exact ⟨hq.2.1, by have := hq.2.2.1; omega, hq.2.2.2.1.1, hq.2.2.2.1.2.1, hq.2.2.2.1.2.2, hq.2.2.2.2⟩
+
 end ReactRenderClick

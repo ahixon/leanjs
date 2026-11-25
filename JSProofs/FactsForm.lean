@@ -970,7 +970,19 @@ def factsPost (n : Name) : TermElabM Unit := do
             for (f, pf) in out do facts := facts.push f; prfs := prfs.push pf
             continue
         rest := rest.push (c, hc)
-      if facts.isEmpty then throwError "facts_post: no fact in {n}'s postcondition"
+      if facts.isEmpty then
+        -- no facts: only `T.Post`, over the variables the post mentions
+        let mut used : Array Expr := #[]
+        for x in vars.reverse do
+          let inUsed ← used.anyM fun u => return (← inferType u).containsFVar x.fvarId!
+          if body.containsFVar x.fvarId! || inUsed ||
+              (← [v, w, hh].anyM fun u => return (← inferType u).containsFVar x.fvarId!) then
+            used := #[x] ++ used
+        let postV := explicitBinders (← instantiateMVars (← mkLambdaFVars (used ++ #[v, w, hh]) body)) (used.size + 3)
+        let postT := explicitBinders (← instantiateMVars (← mkForallFVars (used ++ #[v, w, hh]) (mkSort .zero))) (used.size + 3)
+        addDecl (Declaration.defnDecl (mkDefinitionValEx (Name.mkStr n "Post") ci.levelParams postT postV .abbrev .safe []))
+        logInfo m!"{n}: no post facts; Post declared over {used.size} variables"
+        return
       let L ← mkListLit (mkConst ``Logic.Fact) facts.toList
       let params := (vars ++ bound).filter fun x => L.containsFVar x.fvarId!
       let lps := ci.levelParams.map mkLevelParam
@@ -1005,6 +1017,10 @@ def factsPost (n : Name) : TermElabM Unit := do
             (← [v, w, hh].anyM fun u => return (← inferType u).containsFVar x.fvarId!) then
           used := #[x] ++ used
       let vars := used
+      -- `T.Post vars v w h'`: the postcondition, over the variables it mentions
+      let postV := explicitBinders (← instantiateMVars (← mkLambdaFVars (vars ++ #[v, w, hh]) body)) (vars.size + 3)
+      let postT := explicitBinders (← instantiateMVars (← mkForallFVars (vars ++ #[v, w, hh]) (mkSort .zero))) (vars.size + 3)
+      addDecl (Declaration.defnDecl (mkDefinitionValEx (Name.mkStr n "Post") ci.levelParams postT postV .abbrev .safe []))
       let tyI ← instantiateMVars (← mkForallImplicit (vars ++ #[v, w, hh]) (← mkForallFVars #[hq] S))
       let valI ← instantiateMVars (← mkLambdaFVars (vars ++ #[v, w, hh, hq]) prf)
       addDecl (Declaration.thmDecl { name := Name.mkStr n "post_facts", levelParams := ci.levelParams, type := tyI, value := valI })

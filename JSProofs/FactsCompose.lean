@@ -111,9 +111,38 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
     let ba := body.getAppArgs
     let ua := uc.getAppArgs
     unless ba.size == ua.size do throwError "facts_compose: WP arities differ"
+    -- a call whose arguments are values the callee fixes (`alt` vs `.obj A`): the arguments that unify are unified,
+    -- and the arrays' equality is an obligation (`argEq`: the call's position, the contract's and the callee's arrays)
+    let mut argEq : Option (Nat × Expr × Expr) := none
     for i in [:ba.size - 1] do
-      unless ← isDefEq ba[i]! ua[i]! do
-        throwError "facts_compose: {U}'s call does not match {x}'s at argument {i}:{indentExpr ba[i]!}\nvs{indentExpr ua[i]!}"
+      let isCall (e : Expr) := e.isAppOfArity ``ES.callImpl 4
+      -- calls compared by their parts (never by unfolding `callImpl`)
+      let whole ← if isCall ba[i]! && isCall ua[i]! then
+          withReducible (isDefEq ba[i]! ua[i]!)
+        else isDefEq ba[i]! ua[i]!
+      unless whole do
+        let b := ba[i]!; let u := ua[i]!
+        unless isCall b && isCall u do
+          throwError "facts_compose: {U}'s call does not match {x}'s at argument {i}:{indentExpr b}\nvs{indentExpr u}"
+        for k in [:3] do
+          unless ← isDefEq b.getAppArgs[k]! u.getAppArgs[k]! do
+            throwError "facts_compose: {U}'s call does not match {x}'s:{indentExpr b}\nvs{indentExpr u}"
+        let bA := b.appArg!; let uA := u.appArg!
+        if bA.isAppOfArity ``List.toArray 2 && uA.isAppOfArity ``List.toArray 2 then
+          -- a literal list's elements (at most 4096)
+          let elems (l : Expr) : List Expr := Id.run do
+            let mut out : Array Expr := #[]
+            let mut l := l
+            for _ in [:4096] do
+              if l.isAppOfArity ``List.cons 3 then out := out.push l.appFn!.appArg!; l := l.appArg!
+            return out.toList
+          let be := elems bA.appArg!; let ue := elems uA.appArg!
+          unless be.length == ue.length do
+            throwError "facts_compose: {U}'s call has another number of arguments than {x}'s"
+          for (e1, e2) in be.zip ue do
+            let saved ← saveState
+            unless ← isDefEq e1 e2 do saved.restore
+        argEq := some (i, bA, uA)
     let some ip := names.findIdx? (· == `hpre) | throwError "facts_compose: {U}.ofPre has no `hpre`"
     let tA ← tick s!"{U}: call unified" tA
     -- the arm's instantiations of `U`'s variables
@@ -151,6 +180,9 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
       let mut rest : Array Expr := #[]
       if let some c := cstr then
         rest := rest.push (← instantiateMVars (← Term.elabTermEnsuringType c (mkSort .zero)))
+      -- the arguments' equality, after the constraint
+      if let some (_, bA, uA) := argEq then
+        rest := rest.push (← instantiateMVars (← mkEq bA uA))
       for k in [ip + 1:ms.size] do
         let t ← instantiateMVars (← inferType ms[k]!)
         -- only fuel bounds (`k ≤ w.fuel`) and the host invariant are closed here; omega on anything else is costly
@@ -182,7 +214,7 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
             for _ in rest do
               rs := rs.push (← mkAppM ``And.right #[cur])
               cur ← mkAppM ``And.left #[cur]
-            let mut ri := if cstr.isSome then 1 else 0
+            let mut ri := (if cstr.isSome then 1 else 0) + (if argEq.isSome then 1 else 0)
             let mut args : Array Expr := #[]
             for k in [:ms.size] do
               if k < ip then args := args.push (← instantiateMVars ms[k]!)
@@ -192,6 +224,19 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
                 | some p => args := args.push p
                 | none => args := args.push rs[ri]!; ri := ri + 1
             let hw := mkAppN uOf args
+            -- the callee's call rewritten to the contract's, along the arguments' equality
+            let hw ← match argEq with
+              | none => pure hw
+              | some (ic, bA, uA) => do
+                let heq := rs[if cstr.isSome then 1 else 0]!
+                let hwTy ← instantiateMVars (← inferType hw)
+                let wargs := hwTy.getAppArgs
+                let call := wargs[ic]!
+                let F ← withLocalDeclD `a (← inferType uA) fun a => do
+                  mkLambdaFVars #[a] (mkAppN hwTy.getAppFn (wargs.set! ic (mkApp call.appFn! a)))
+                let bA ← instantiateMVars bA
+                let uA ← instantiateMVars uA
+                pure (mkApp4 (mkConst ``Eq.mpr [levelZero]) (F.beta #[bA]) (F.beta #[uA]) (← mkAppM ``congrArg #[F, heq]) hw)
             let preTyU ← instantiateMVars (← inferType cur)
             let qU := (← instantiateMVars (← inferType hw)).appArg!
             let qC := body.appArg!
