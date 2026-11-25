@@ -7,7 +7,8 @@ import JSProofs.FactsForm
 … → WP … (callImpl f this args) w Q`, discharged by `U` (a spec `facts_form` has processed). `U`'s variables are found
 by unifying its call with the contract's; those left open are existential. The contract is replaced by an obligation,
 `∀ w …, ∃ (U's open variables), U.Pre … w ∧ (U's other premises not closed by the contract's hypotheses)`, and `tac`
-proves `U`'s postcondition gives the contract's (default: as is, or `simp_all`/`omega`). So no callee premise is
+proves `U`'s postcondition gives the contract's (default: `exact`, as is; `simp_all`/`omega` over a context of
+contracts is too costly to try by default). So no callee premise is
 restated: the obligation is proved where the facts are known (`Pre_frame`, `facts_apart`).
 
 This replaces `tools/react_commit/compose.py` and the generators built on it.
@@ -206,7 +207,7 @@ partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (arg
     let same := !a[5].isNone
     let cstr : Option Syntax := if a[6].isNone then none else some a[6][1]
     let tac : Syntax ← if a[7].isNone then
-        `(tacticSeq| intro b w' h' hq; first | exact hq | simp_all | omega)
+        `(tacticSeq| intro b w' h' hq; exact hq)
       else pure a[7][1]
     return (c, U, tac, cstr, ui, same)
   liftTermElabM do

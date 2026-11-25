@@ -5,12 +5,14 @@ import JSProofs.ReactReconcileFibers
 import JSProofs.ReactReconcileChildren
 import JSProofs.ReactCounter
 import JSProofs.ReactRenderHooks
+import JSProofs.ReactUpdateFunction
 
 /-! The render's callees composed in Lean (contract-style specs and `facts_compose`, replacing
 `tools/gen_react_*.py`): `useFiber` with `createWorkInProgress`; `reconcileChildFibersImpl` with `useFiber`;
 `reconcileChildFibers` with `reconcileChildFibersImpl`;
 `reconcileChildren` with `reconcileChildFibers`;
-the counter component with `useState`; `renderWithHooks` with the counter component. -/
+the counter component with `useState`; `renderWithHooks` with the counter component;
+`updateFunctionComponent` with `renderWithHooks` and `reconcileChildren`. -/
 
 facts_form ReactCreateWIP.reuse_spec
 facts_form ReactUseFiber.spec_c
@@ -79,3 +81,19 @@ facts_compose click_comp := click_spec_c
       (bdSD := { bdSD with value := some (.bool false) }) same
 
 end ReactRenderHooks
+
+facts_form ReactUpdateFunction.click_spec_c
+
+namespace ReactUpdateFunction
+open ES Logic ReactReducer
+
+set_option maxHeartbeats 2000000 in
+facts_compose click_comp := click_spec_c
+  | hcRW => ReactRenderHooks.click_comp (d := d)
+      (bG := ((bG.modify (JSStr.ofString "currentlyRenderingFiber$1") (fun bd => { bd with value := some (.obj C1) })).modify
+        (JSStr.ofString "lastContextDependency") (fun bd => { bd with value := some .null })))
+      (rw := false) (ue := false) (le := false) (uwS := uw) (ucS := uc) same
+  | hcRC => ReactReconcileChildren.click_comp (g := d.env) (El := E) (C := C) (RF := C1) (ln := two) (vEl := vT) (bG := bGc)
+      (e1 := r_e1) (c1 := r_c1) (e2 := r_e2) (c2 := r_c2) (e3 := r_e3) (c3 := r_c3) (e4 := r_e4) (c4 := r_c4) (oG := oG) same
+
+end ReactUpdateFunction

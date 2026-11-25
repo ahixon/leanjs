@@ -578,7 +578,7 @@ theorem click_spec_c {n : Nat}
     {xE : F64}
     {irw ire irc ijw ije ijc pw pe pc nnw nne nnc : Bool}
     {bdRSI : Binding}
-    {rw re rc uw ue' uc : Bool}
+    {rw re rc uwS ue' ucS : Bool}
     {bdU bdB : Binding}
     {bdC bdW bdF bdUW bdUR bdRL bdCE bdSD bdDR bdIs : Binding}
     {bdIsb : BuiltinData}
@@ -686,7 +686,7 @@ theorem click_spec_c {n : Nat}
     (hGTSm : bdTS.mutable = true)
     (hGTSi : bdTS.value.isSome = true)
     -- (the work in progress's fields renderWithHooks resets; the current hook is the only one)
-    (hC1u : (s.objEntry C1).props.get? (.str "updateQueue") = some (.data uq true uw uc))
+    (hC1u : (s.objEntry C1).props.get? (.str "updateQueue") = some (.data uq true uwS ucS))
     (hC1l : (s.objEntry C1).props.get? (.str "lanes") = some (.data ln true lw lc))
     (hH0n : (s.objEntry H0).props.get? (.str "next") = some (.data .null nw' ne' nc'))
     -- (the objects the component reads are neither the work in progress nor ReactSharedInternals; react's module
@@ -777,7 +777,7 @@ theorem click_spec_c {n : Nat}
       (w.objEntry RSI).props.get? (.str "H") = some (.data vCO true re rc) ∧
       -- (the work in progress: its new first hook, its update queue and lanes cleared)
       (w.objEntry C1).props.get? (.str "memoizedState") = some (.data (.obj s.heap.size) true me mc) ∧
-      (w.objEntry C1).props.get? (.str "updateQueue") = some (.data .null true uw uc) ∧
+      (w.objEntry C1).props.get? (.str "updateQueue") = some (.data .null true uwS ucS) ∧
       (w.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) ∧
       (w.objEntry s.heap.size).props.get? (.str "memoizedState") = some (.data (.num xE) true true true) ∧
       (w.objEntry s.heap.size).props.get? (.str "baseState") = some (.data (.num xE) true true true) ∧
@@ -877,7 +877,7 @@ theorem click_spec_c {n : Nat}
     rw [hSt]; js_norm [hI, hIH, dRC, Ne.symm dRC]
   have hF0 : Frame (fpRWH d.env C1 s.heap.size H0 Q RSI) s St := by
     rw [hSt]; simp only [fpRWH]; frame_go' [*, hne, Ne.symm hne, hG1]
-  have hC1u' : (St.objEntry C1).props.get? (.str "updateQueue") = some (.data .null true uw uc) := by
+  have hC1u' : (St.objEntry C1).props.get? (.str "updateQueue") = some (.data .null true uwS ucS) := by
     rw [hSt]; js_norm [hC1, hC1u, dRC, Ne.symm dRC]
   have hC1l' : (St.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) := by
     rw [hSt]; js_norm [hC1, hC1l, dRC, Ne.symm dRC]
