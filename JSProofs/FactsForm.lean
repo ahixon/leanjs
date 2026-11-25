@@ -621,20 +621,18 @@ partial def factsOf (h : Expr) : MetaM Expr := do
   if ty'.isAppOfArity ``And 2 then return ← factsOf (← mkExpectedTypeHint (mkProj ``And 1 h) ty'.appArg!)
   throwError "facts: {h} is not `Facts.holds L s` (nor a `Pre`)"
 
-/-- `facts_frame h hF as h'`: from `h : Facts.holds L s` and `hF : Frame fp s w`, `h' : Facts.holds L' w` with `L'`
-the facts of `L` whose places `fp` misses, each needed distinctness closed by an assumption or `omega` (the others
-dropped). -/
-elab "facts_frame " h:term:max hF:term:max " as " n:ident : tactic => Tactic.withMainContext do
-  let hE ← factsOf (← Term.elabTerm h none)
-  let hFE ← Term.elabTerm hF none
+/-- The facts of `hE : Facts.holds L s` that the frame `hFE : Frame fp s w` misses (each needed distinctness closed
+by an assumption or `omega`), carried to `w`: `(L', its proof)`. -/
+def carry (hE hFE : Expr) : TermElabM (Expr × Expr × Nat × Nat) := do
+  let hE ← factsOf hE
   let hTy ← whnfR (← instantiateMVars (← inferType hE))
   let fTy ← whnfR (← instantiateMVars (← inferType hFE))
-  unless fTy.isAppOfArity ``Logic.Frame 3 do throwError "facts_frame: {hF} is not a frame"
+  unless fTy.isAppOfArity ``Logic.Frame 3 do throwError "facts: not a frame: {fTy}"
   let L := hTy.appFn!.appArg!
   let s := hTy.appArg!
   let fp := fTy.appFn!.appFn!.appArg!
   let w := fTy.appArg!
-  unless ← isDefEq fTy.appFn!.appArg! s do throwError "facts_frame: the frame does not start at {s}"
+  unless ← isDefEq fTy.appFn!.appArg! s do throwError "facts: the frame does not start at {s}"
   let (A, elems, rs, _, fbs, fps) ← reflectAll fp L
   -- the facts kept: their pairs closed
   let mut cache : Array ((Bool × Nat × Nat) × Option Expr) := #[]
@@ -667,23 +665,34 @@ elab "facts_frame " h:term:max hF:term:max " as " n:ident : tactic => Tactic.wit
   let mut po : Array (Nat × Nat) := #[]
   let mut pe : Array (Nat × Nat) := #[]
   for r in rs2 do
-    let some (a, b) ← placePairs A2 fbs2 fps2 r | throwError "facts_frame: internal"
+    let some (a, b) ← placePairs A2 fbs2 fps2 r | throwError "facts: internal"
     po := po ++ a; pe := pe ++ b
   let dedup (l : Array (Nat × Nat)) : Array (Nat × Nat) := l.foldl (fun acc p => if acc.contains p then acc else acc.push p) #[]
   po := dedup po; pe := dedup pe
   let neO ← po.mapM fun (i, j) => do
-    let some p ← closeNe A2.objs[i]! A2.objs[j]! | throwError "facts_frame: internal ne"
+    let some p ← closeNe A2.objs[i]! A2.objs[j]! | throwError "facts: internal ne"
     return p
   let neE ← pe.mapM fun (i, j) => do
-    let some p ← closeNe A2.envs[i]! A2.envs[j]! | throwError "facts_frame: internal ne"
+    let some p ← closeNe A2.envs[i]! A2.envs[j]! | throwError "facts: internal ne"
     return p
   let hap ← apartProof fp L' A2 rs2 sf2 po pe neO neE
   let prf ← mkAppOptM ``Logic.Facts.frame #[fp, s, w, hFE, L', hap, hl]
   let ty := mkApp2 (mkConst ``Logic.Facts.holds) L' w
+  return (L', prf, keep.size, elems.size)
+
+/-- `facts_frame h hF as h'`: from `h : Facts.holds L s` and `hF : Frame fp s w`, `h' : Facts.holds L' w` with `L'`
+the facts of `L` whose places `fp` misses, each needed distinctness closed by an assumption or `omega` (the others
+dropped). -/
+elab "facts_frame " h:term:max hF:term:max " as " n:ident : tactic => Tactic.withMainContext do
+  let hE ← Term.elabTerm h none
+  let hFE ← Term.elabTerm hF none
+  let (L', prf, nk, ne) ← carry hE hFE
+  let fTy ← whnfR (← instantiateMVars (← inferType hFE))
+  let ty := mkApp2 (mkConst ``Logic.Facts.holds) L' fTy.appArg!
   let g ← Tactic.getMainGoal
   let (_, g') ← (← g.assert n.getId ty prf).intro1P
   Tactic.replaceMainGoal [g']
-  logInfo m!"facts_frame: {keep.size} of {elems.size} facts kept"
+  logInfo m!"facts_frame: {nk} of {ne} facts kept"
 
 /-- `facts_get h` (`h : Facts.holds L s`) closes the goal with one of `L`'s facts: its statement, either half (the
 existence, the read), or a binding's predicate read in a record whose map an assumption gives. -/

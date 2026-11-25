@@ -54,7 +54,7 @@ facts_compose work_render_fin {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {
     (Q := fun x h => ReactFlushSync.After x d.env oG R cbFSR ∧
       (∃ a b c, (x.objEntry R).props.get? (.str "pendingLanes") = some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧
       (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP cbFSR cbEn fe cD ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS d.env)) y x))
-    (PRu := fun x (_ : σ) => ∃ wL e, ReactWorkLoop.work_loop_comp.PLex lD oG pX lC1 lOP lX wL ∧
+    (PRu := fun x (_ : σ) => ∃ wL e e', Frame ((((({} : Footprint).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH)).union (ReactRenderSync.fpOwn e')).union fpWL) s wL ∧ ReactWorkLoop.work_loop_comp.PLex lD oG pX lC1 lOP lX wL ∧
       Frame ((ReactRenderSync.fpEnd e d.env I).union (ReactFinishQueueing.fp d.env)) wL x)
     (P1 := fun w' (_ : σ) => ∃ w0, Frame (({} : Footprint).union (ReactRenderSync.fpPre d.env I)) s w0 ∧
       Facts.holds [Fact.propP R (.str (JSStr.ofString "current")) (fun r => ∃ a b c, r = some (.data (.obj pH) a b c)),
@@ -128,7 +128,8 @@ facts_compose work_render_fin {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {
            exact ⟨hlt, by facts_get hAS, by facts_get hAS, bm, oG, bdI, bdU, hd, hI1, hI2, hI3, hU1, hU2, hU3⟩
          · intro e w3 w4 hFe _ hFQ _ c
            have cE := frame_restore (frame_trans hFe hFQ) c
-           refine ⟨?_, w', e, ReactWorkLoop.work_loop_comp.post_ex hq0, cE⟩
+           refine ⟨?_, w', e, _, frame_trans (frame_trans (frame_trans hF0 hFP) hown) (frame_mono hF hsub.1 hsub.2.1 hsub.2.2),
+             ReactWorkLoop.work_loop_comp.post_ex hq0, cE⟩
            facts_frame hA0 cE as hR0
            facts_frame hA1 cE as hR1
            facts_frame hB0 cE as hRB
@@ -173,7 +174,7 @@ facts_compose work_render_fin {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {
       rintro v' w' h' ⟨hS, hfu, hA, hPL, hPu', hh⟩
       exact ⟨hS, hfu, ⟨hA, hPL, hPu'⟩, by rw [hh]; exact hHI1⟩
   | r_Finish := fun sR _ fuR w2 w h1 hP2 hHI1 hFe hEB hfu =>
-      wp_mono (ReactFinishQueueing.finish_of_ready (σ := σ) (EP := fun w => ReactRenderSync.EndBinds w d.env oG ec) (Post := (fun x h => (∃ C' alt bm x1 x2 x3 x4 x5 x6 x7, ReactPerformWork.RenderDone x d.env oG R C' alt bm x1 x2 x3 x4 x5 x6 x7) ∧ ∃ wL e, ReactWorkLoop.work_loop_comp.PLex lD oG pX lC1 lOP lX wL ∧ Frame ((ReactRenderSync.fpEnd e d.env I).union (ReactFinishQueueing.fp d.env)) wL x)) (c := sR) f_code f_cls f_mode f_env hP2.1 hP2.2 hFe hEB
+      wp_mono (ReactFinishQueueing.finish_of_ready (σ := σ) (EP := fun w => ReactRenderSync.EndBinds w d.env oG ec) (Post := (fun x h => (∃ C' alt bm x1 x2 x3 x4 x5 x6 x7, ReactPerformWork.RenderDone x d.env oG R C' alt bm x1 x2 x3 x4 x5 x6 x7) ∧ ∃ wL e e', Frame ((((({} : Footprint).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH)).union (ReactRenderSync.fpOwn e')).union fpWL) s wL ∧ ReactWorkLoop.work_loop_comp.PLex lD oG pX lC1 lOP lX wL ∧ Frame ((ReactRenderSync.fpEnd e d.env I).union (ReactFinishQueueing.fp d.env)) wL x)) (c := sR) f_code f_cls f_mode f_env hP2.1 hP2.2 hFe hEB
         (by omega)) (fun _ _ _ ⟨a, b, c, d⟩ => ⟨a, b, c, by rw [d]; exact hHI1⟩)
 
 set_option maxHeartbeats 4000000 in
@@ -207,7 +208,7 @@ facts_compose microtask_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncD
       (ReactRenderSync.fpRS d.env I (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH) fpWL (ReactFinishQueueing.fp d.env)).jobs || fpC.jobs || (ReactEnsureRoot.fpS d.env).jobs⟩)
     (kP := (400 + kWL + 20 + 300) + kC + 20 + 300 + 100)
     (Pu := fun x h => (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP bdF cbEn fe cD ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS d.env)) y x))
-  | hPerf => ReactRenderClick.sync_render_comp (fo := fS) (d := dS) (t := .undefined) (R := R) (oG := oG) (j := j)
+  | hPerf => ReactRenderClick.sync_render_comp (fo := fS) (d := { dS with env := d.env }) (t := .undefined) (R := R) (oG := oG) (j := j)
       (dW := { wD with env := d.env }) (I := I) (pX := pX) (pA := pA) (pQo := pQo) (pU := pU) (pF := pF) (pFa := pFa) (pH := pH)
       (lD := lD) (lC1 := lC1) (lX := lX) (lOP := lOP) (cEA := cEA) (cXA := cXA) (cdom := cdom) (cRSI := cRSI) (cRDSI := cRDSI) (ckP := ckP) (cR1 := cR1) (cR2 := cR2)
       (cgP := cgP) (cbEn := cbEn) (cD := cD) (cbFSR := bdF)
