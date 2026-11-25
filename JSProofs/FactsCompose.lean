@@ -46,7 +46,7 @@ def mkExistsFVars (xs : Array Expr) (b : Expr) : MetaM Expr :=
 /-- A contract `x` discharged by spec `U`: with `ob? = none` the obligation's type; with `some ob` (a local of that
 type) the contract's proof. -/
 def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Array (Name × Expr))
-    (cstr : Option Syntax) : TermElabM Expr := do
+    (cstr : Option Syntax) (uinsts : Array (Name × Syntax) := #[]) : TermElabM Expr := do
   let ct ← inferType x
   forallTelescope ct fun bs body => do
     unless body.isAppOf ``Logic.WP do throwError "facts_compose: {x} is not a contract (∀ …, WP …): {body}"
@@ -62,6 +62,12 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
       unless ← isDefEq ba[i]! ua[i]! do
         throwError "facts_compose: {U}'s call does not match {x}'s at argument {i}:{indentExpr ba[i]!}\nvs{indentExpr ua[i]!}"
     let some ip := names.findIdx? (· == `hpre) | throwError "facts_compose: {U}.ofPre has no `hpre`"
+    -- the arm's instantiations of `U`'s variables
+    for (nm, stx) in uinsts do
+      let some k := names.findIdx? (· == nm) | throwError "facts_compose: {U} has no variable {nm}"
+      let e ← Term.elabTermEnsuringType stx (← instantiateMVars (← inferType ms[k]!))
+      Term.synthesizeSyntheticMVarsNoPostponing
+      unless ← isDefEq ms[k]! e do throwError "facts_compose: {U}'s {nm} cannot be {e}"
     -- the context's parameters (engine, host, its invariant) are the caller's
     for k in [:ip] do
       if let some (_, c) := ctx.find? (·.1 == names[k]!) then
@@ -125,9 +131,12 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
             let pt ← mkPostGoal qU qC
             -- the post tactic sees the opened obligation as `hob`
             withLetDecl `hob (← inferType hob) hob fun hobv => do
-              let some hq ← tryTac pt post
-                | throwError "facts_compose: the postcondition of {U} does not give {x}'s:{indentExpr pt}"
-              mkLetFVars #[hobv] (← mkAppM ``Logic.wp_mono #[hw, hq])
+              let mv ← mkFreshExprSyntheticOpaqueMVar pt
+              let rem ← try Term.withoutErrToSorry (Tactic.run mv.mvarId! (Tactic.evalTactic post))
+                catch e => throwError "facts_compose: the postcondition of {U} does not give {x}'s:{indentExpr pt}\n{e.toMessageData}"
+              unless rem.isEmpty do
+                throwError "facts_compose: the postcondition of {U} does not give {x}'s: goals left {rem.map (MessageData.ofGoal ·)}"
+              mkLetFVars #[hobv] (← mkAppM ``Logic.wp_mono #[hw, ← instantiateMVars mv])
         mkLambdaFVars bs (← open_ 0 hob)
 where
   /-- `∀ b w h', qU b w h' → qC b w h'` -/
@@ -136,27 +145,48 @@ where
     forallTelescope ty fun ys _ => do
       mkForallFVars ys (← mkArrow (Expr.headBeta (mkAppN qU ys)) (Expr.headBeta (mkAppN qC ys)))
 
-syntax compArm := " | " ident " => " ident (" with " term)? (" by " tacticSeq)?
+syntax compInst := " (" ident " := " term ")"
+syntax compArm := " | " ident " => " ident (compInst)* (" with " term)? (" by " tacticSeq)?
 
 /-- `facts_compose X := T | hC => U by tac …`: see the module docstring. -/
-syntax (name := factsCompose) "facts_compose " ident " := " ident (compArm)+ : command
+syntax (name := factsCompose) "facts_compose " ident " := " ident (compInst)* (compArm)+ : command
+
+/-- `T.ofPre`'s binders, those named in `insts` instantiated (elaborated after the binders before them): the
+arguments for `T.ofPre`, the binders left, the conclusion. -/
+partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (args locals : Array Expr)
+    (k : Array Expr → Array Expr → Expr → TermElabM α) : TermElabM α := do
+  let ty ← whnfR ty
+  match ty with
+  | .forallE n d b bi =>
+    if let some (_, stx) := insts.find? (·.1 == n) then
+      -- `e` may use a new binder of the same name (`(n := n + 2)`): kept when it does
+      withLocalDecl n bi d fun x0 => do
+        let e ← instantiateMVars (← Term.elabTermEnsuringType stx d)
+        Term.synthesizeSyntheticMVarsNoPostponing
+        let locals := if e.containsFVar x0.fvarId! then locals.push x0 else locals
+        telescopeInst (b.instantiate1 e) insts (args.push e) locals k
+    else
+      withLocalDecl n bi d fun x => telescopeInst (b.instantiate1 x) insts (args.push x) (locals.push x) k
+  | _ => k args locals ty
 
 @[command_elab factsCompose] def elabFactsCompose : CommandElab := fun stx => do
   let newName := stx[1].getId
   let T ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo stx[3]
   let ns ← getCurrNamespace
-  let arms ← stx[4].getArgs.mapM fun a => do
+  let insts := stx[4].getArgs.map fun a => (a[1].getId, a[3])
+  let arms ← stx[5].getArgs.mapM fun a => do
     let c := a[1].getId
     let U ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo a[3]
-    let cstr : Option Syntax := if a[4].isNone then none else some a[4][1]
-    let tac : Syntax ← if a[5].isNone then
+    let ui := a[4].getArgs.map fun i => (i[1].getId, i[3])
+    let cstr : Option Syntax := if a[5].isNone then none else some a[5][1]
+    let tac : Syntax ← if a[6].isNone then
         `(tacticSeq| intro b w' h' hq; first | exact hq | simp_all | omega)
-      else pure a[5][1]
-    return (c, U, tac, cstr)
+      else pure a[6][1]
+    return (c, U, tac, cstr, ui)
   liftTermElabM do
     let tOf := Name.mkStr T "ofPre"
     let ci ← getConstInfo tOf
-    forallTelescope ci.type fun xs concl => do
+    telescopeInst ci.type insts #[] #[] fun args0 xs concl => do
       let mut ctx : Array (Name × Expr) := #[]
       for x in xs do
         let nm ← x.fvarId!.getUserName
@@ -167,27 +197,26 @@ syntax (name := factsCompose) "facts_compose " ident " := " ident (compArm)+ : c
         let nm ← x.fvarId!.getUserName
         match arms.findIdx? (·.1 == nm) with
         | some a =>
-          let (_, U, tac, cstr) := arms[a]!
-          let t ← armWork x U (← `(tactic| ($(⟨tac⟩)))) none ctx cstr
+          let (_, U, tac, cstr, ui) := arms[a]!
+          let t ← armWork x U (← `(tactic| ($(⟨tac⟩)))) none ctx cstr ui
           which := which.push (some obls.size)
           obls := obls.push (Name.mkSimple s!"ob_{nm}", t)
         | none => which := which.push none
-      for (c, _, _, _) in arms do
+      for (c, _, _, _, _) in arms do
         unless obls.any (·.1 == Name.mkSimple s!"ob_{c}") do throwError "facts_compose: {T}.ofPre has no premise {c}"
       withLocalDeclsDND obls fun obs => do
-        let mut args : Array Expr := #[]
+        let mut args := args0
         let mut bs : Array Expr := #[]
         for x in xs, w in which do
           match w with
           | some j =>
             let nm ← x.fvarId!.getUserName
             let some a := arms.findIdx? (·.1 == nm) | unreachable!
-            let (_, U, tac, cstr) := arms[a]!
-            args := args.push (← armWork x U (← `(tactic| ($(⟨tac⟩)))) (some obs[j]!) ctx cstr)
+            let (_, U, tac, cstr, ui) := arms[a]!
+            let d ← armWork x U (← `(tactic| ($(⟨tac⟩)))) (some obs[j]!) ctx cstr ui
+            args := args.map fun y => if y == x then d else y
             bs := bs.push obs[j]!
-          | none =>
-            args := args.push x
-            bs := bs.push x
+          | none => bs := bs.push x
         let val := mkAppN (mkConst tOf (ci.levelParams.map mkLevelParam)) args
         let ty ← instantiateMVars (← mkForallFVars bs concl)
         let val ← instantiateMVars (← mkLambdaFVars bs val)
