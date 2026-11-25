@@ -1,3 +1,4 @@
+import JSProofs.Hide
 import JSProofs.ReactUnitRoot
 import JSProofs.ReactUnitCounter
 import JSProofs.ReactUnitButton
@@ -1310,6 +1311,1475 @@ theorem work_loop_spec {n : Nat} {h : σ} {s : State} {fWL : ObjId} {dWL : FuncD
   have gFS3 : Frame (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB dPU.env X) (Logic.Footprint.union ⟨[], [(X, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU dPU.env VS Cu Cx CS CF RI Rw C1 X))))) s St := by rw [hSt]; exact frame_withFuel FW2 _
   have hCnX : Cn ≠ X := Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le hXs (Nat.le_trans gZ2 hCge2)))
   refine wp_mono (ReactUnitButton.button_unit_spec (fo := fPU) (d := dPU) (t := .undefined) (fCU := B_fCU) (dCU := B_dCU) (bdBW := B_bdBW) (bdCU := B_bdCU) (bG := bm2) (g := dPU.env) (fW := B_fW) (dW := B_dW) (bdCW := B_bdCW) (bdEL := B_bdEL) (bdWIP := bdW2) (bdES := B_bdES) (ln := B_ln) (wv := (.obj X)) (H := H) (X := X) (P0 := B_P0) (P1 := Cn) (D := B_D) (CFb := B_CFb) (HT := B_HT) (Rb := Rw) (bdPT := B_bdPT) (bdPH := B_bdPH) (bdMU := B_bdMU) (bdBP := B_bdBP) (bdPI := B_bdPI) (bdTF := B_bdTF) (bdTC := B_bdTC) (bdCFb := B_bdCFb) (bdHT := B_bdHT) (fPT := B_fPT) (fPH := B_fPH) (fMU := B_fMU) (fBP := B_fBP) (fPI := B_fPI) (dPT := B_dPT) (dPH := B_dPH) (dMU := B_dMU) (dBP := B_dBP) (dPI := B_dPI) (fl := (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) (sf := (F64.fin false 0 (-1074))) (m := B_m) (cl := vCL) (mpw := B_mpw) (mpe := B_mpe) (mpc := B_mpc) (ppw := true) (ppe := e0) (ppc := c0) (tgw := B_tgw) (tge := B_tge) (tgc := B_tgc) (tyw := true) (tye := r_e1) (tyc := r_c1) (snw := B_snw) (sne := B_sne) (snc := B_snc) (aw := B_aw) (ae := B_ae) (ac := B_ac) (hcw := B_hcw) (hce := B_hce) (hcc := B_hcc) (fe := r_e2) (fc := r_c2) (se := r_e3) (sc := r_c3) (le := e5) (lc := c5) (me := B_me) (mc := B_mc) (cfw := B_cfw) (cfe := B_cfe) (cfc := B_cfc) (htw := B_htw) (hte := B_hte) (htc := B_htc) (rwe := rew) (rwc := rec) (sbw := true) (sbe := e12) (sbc := c12) (C := C1) (A := C0) (pp2 := Pp) (cl2 := R_e_vCL) (e2 := (F64.fin false 0 (-1074))) (f2 := (numberBinOp .bitOr (numberBinOp .bitAnd R_e_fl (F64.fin false 5062151534280704 (-22))) (F64.fin false 4503599627370496 (-52)))) (a2 := (F64.fin false 0 (-1074))) (ppw2 := true) (ppe2 := R_e_e0) (ppc2 := R_e_c0) (tgw2 := B_tgw2) (tge2 := B_tge2) (tgc2 := B_tgc2) (aw2 := B_aw2) (ae2 := B_ae2) (ac2 := B_ac2) (cw2 := true) (ce2 := R_e_e7) (cc2 := R_e_c7) (yw2 := B_yw2) (ye2 := B_ye2) (yc2 := B_yc2) (se2 := R_e_e3) (sc2 := R_e_c3) (le2 := R_e_e5) (lc2 := R_e_c5) (xlw2 := true) (xle2 := R_e_e6) (xlc2 := R_e_c6) (xfw2 := true) (xfe2 := R_e_e2) (xfc2 := R_e_c2) (rwe2 := R_e_re) (rwc2 := R_e_rc) (sbw2 := true) (sbe2 := R_e_e12) (sbc2 := R_e_c12) (RH := Rc) (R := Rw) (FR := B_FR) (MS0 := B_MS0) (MS1 := B_MS1) (CA := B_CA) (pp3 := B_pp3) (cl3 := B_cl3) (e3 := B_e3) (fR := B_fR) (bdPP := B_bdPP) (bdPHC := B_bdPHC) (bdCC := B_bdCC) (bdI := bdI1) (bdV := B_bdV) (bdVC := B_bdVC) (bdCS := B_bdCS) (bdCF := B_bdCF) (bdRI := B_bdRI) (bdO := B_bdO) (fPP := B_fPP) (fPHC := B_fPHC) (fO := B_fO) (dPP := B_dPP) (dPHC := B_dPHC) (dO := B_dO) (VS := VS) (Cu := Cu) (Cx := Cx) (CS := CS) (CF := CF) (RI := RI) (L := B_L) (o0 := R_a_vr) (o1 := R_a_vf) (o2 := R_a_vc) (o3 := R_b_cur) (vu := R_b_cv) (cxv := R_cache) (vr := (.obj R_C)) (vf := B_vf) (vc := (.num (F64.fin false 0 (-1074)))) (ppw3 := B_ppw3) (ppe3 := B_ppe3) (ppc3 := B_ppc3) (tgw3 := B_tgw3) (tge3 := B_tge3) (tgc3 := B_tgc3) (snw3 := B_snw3) (sne3 := B_sne3) (snc3 := B_snc3) (m0w := B_m0w) (m0e := B_m0e) (m0c := B_m0c) (m1w := B_m1w) (m1e := B_m1e) (m1c := B_m1c) (caw := B_caw) (cae := B_cae) (cac := B_cac) (cbw := B_cbw) (cbe := B_cbe) (cbc := B_cbc) (pcw := B_pcw) (pce := B_pce) (pcc := B_pcc) (hcw3 := B_hcw3) (hce3 := B_hce3) (hcc3 := B_hcc3) (aw3 := B_aw3) (ae3 := B_ae3) (ac3 := B_ac3) (cw3 := true) (ce3 := R_e_xce) (cc3 := R_e_xcc) (se3 := B_se3) (sc3 := B_sc3) (le3 := B_le3) (lc3 := B_lc3) (fw3 := B_fw3) (fe3 := B_fe3) (fc3 := B_fc3) (rw3 := B_rw3) (re3 := B_re3) (rc3 := B_rc3) (sw3 := B_sw3) (se3' := B_se3') (sc3' := B_sc3') (e0 := R_a_e0) (c0 := R_a_c0) (e1 := R_a_e1) (c1 := R_a_c1) (e2' := R_a_e2) (c2 := R_a_c2) (e3' := R_b_oe) (c3 := R_b_oc) (lw := B_lw) (lle := B_lle) (llc := B_llc) (ue := R_b_ce) (uc := R_b_cc) (xe := R_b_xe) (xc := R_b_xc) (re := R_a_re) (rc := R_a_rc) (fe' := R_a_fe) (fc' := R_a_fc) (vce := R_a_ce) (vcc := R_a_cc) (b_fB := B_b_fB) (b_dB := B_b_dB) (b_tB := B_b_tB) (b_str := (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) (b_bdDR := bdD2) (b_bdPH := B_b_bdPH) (b_bdSS := B_b_bdSS) (b_bdMR := B_b_bdMR) (b_bdRC := B_b_bdRC) (b_bdGC := B_b_bdGC) (b_bdRCF := B_b_bdRCF) (b_bdT := bdT2) (b_bdTS := bdS2) (b_fPH := B_b_fPH) (b_fSS := B_b_fSS) (b_fMR := B_b_fMR) (b_fC := B_b_fC) (b_fGC := B_b_fGC) (b_fR := B_b_fR) (b_dPH := B_b_dPH) (b_dSS := B_b_dSS) (b_dMR := B_b_dMR) (b_dC := B_b_dC) (b_dGC := B_b_dGC) (b_dR := B_b_dR) (b_bR := B_b_bR) (b_bdRI := B_b_bdRI) (b_bdDel := B_b_bdDel) (b_bdST := B_b_bdST) (b_fI := B_b_fI) (b_fDel := B_b_fDel) (b_dI := B_b_dI) (b_dDel := B_b_dDel) (b_mpw := B_b_mpw) (b_mpe := B_b_mpe) (b_mpc := B_b_mpc) (b_hcw := B_b_hcw) (b_hce := B_b_hce) (b_hcc := B_b_hcc) (b_hrw := B_b_hrw) (b_hre := B_b_hre) (b_hrc := B_b_hrc) (b_ppw := true) (b_ppe := e0) (b_ppc := c0) (b_tgw := B_b_tgw) (b_tge := B_b_tge) (b_tgc := B_b_tgc) (b_tyw := true) (b_tye := r_e1) (b_tyc := r_c1) (b_msw := true) (b_mse := e9) (b_msc := c9) (b_xrw := true) (b_xre := e14) (b_xrc := c14) (b_lw := e6) (b_lc := c6) (b_cw := e7) (b_cc := c7) (b_kw := true) (b_ke := true) (b_kc := true) (b_csw := true) (b_cse := R_a_ce) (b_csc := R_a_cc) (b_ch0 := vC) (b_l0 := vL) (mpv := vMP) (mpe' := e8) (mpc' := c8) (hlt := (Nat.lt_of_lt_of_le R_hlt gZ3)) (hk := (by rw [gK3 fPU R_hlt]; exact R_hk)) (hf := (Nat.le_trans (by decide) gF3)) (hcode := R_hcode) (hcls := R_hcls) (hmode := R_hmode) (henv := rfl) (hGBW := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGBW)) (hGBWv := B_hGBWv) (hGCU := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGCU)) (hGCUv := B_hGCUv) (hCUo := (Nat.lt_of_lt_of_le B_hCUo gZ3)) (hCUk := (by rw [gK3 B_fCU B_hCUo]; exact B_hCUk)) (hCUcode := B_hCUcode) (hCUcls := B_hCUcls) (hCUmode := B_hCUmode) (hCUenv := B_hCUenv) (hXmp := (by rw [gW3]; exact x8)) (dCUX := B_dCUX) (dBWX := B_dBWX) (hdXall := B_hdXall) (hG := (by first | exact Nat.lt_of_lt_of_le B_hG gE3 | (rw [hWenv] at *; exact Nat.lt_of_lt_of_le B_hG gE3))) (hGe := gG3) (hGCW := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGCW)) (hGCWv := B_hGCWv) (hGEL := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGEL)) (hGELv := B_hGELv) (hGWIP := hbdW2) (hGWIPm := hbdW2m) (hGWIPi := hbdW2v) (hGES := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGES)) (hGESm := B_hGESm) (hGESv := B_hGESv) (hW := (Nat.lt_of_lt_of_le B_hW gZ3)) (hWk := (by rw [gK3 B_fW B_hW]; exact B_hWk)) (hWcode := B_hWcode) (hWcls := B_hWcls) (hWmode := B_hWmode) (hWenv := B_hWenv) (hGPT := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGPT)) (hGPTv := B_hGPTv) (hGPH := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGPH)) (hGPHv := B_hGPHv) (hGMU := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGMU)) (hGMUv := B_hGMUv) (hGBP := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGBP)) (hGBPv := B_hGBPv) (hGPI := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGPI)) (hGPIv := B_hGPIv) (hGTF := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGTF)) (hGTFv := B_hGTFv) (hGTC := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGTC)) (hGTCv := B_hGTCv) (hGCFb := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGCFb)) (hGCFbv := B_hGCFbv) (hGHT := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGHT)) (hGHTv := B_hGHTv) (hGPP := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGPP)) (hGPPv := B_hGPPv) (hGPHC := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGPHC)) (hGPHCv := B_hGPHCv) (hGCC := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGCC)) (hGCCv := B_hGCCv) (hGI := (by rw [hbw2x _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, hKdEnv] <;> decide)]; exact hbdI1)) (hGIm := hbdI1m) (hGIv := hbdI1v) (hGV := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGV)) (hGVv := B_hGVv) (hGVC := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGVC)) (hGVCv := B_hGVCv) (hGCS := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGCS)) (hGCSv := B_hGCSv) (hGRI := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGRI)) (hGRIv := B_hGRIv) (hGO := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_hGO)) (hGOv := B_hGOv) (hPT := (Nat.lt_of_lt_of_le B_hPT gZ3)) (hPTk := (by rw [gK3 B_fPT B_hPT]; exact B_hPTk)) (hPTcode := B_hPTcode) (hPTcls := B_hPTcls) (hPTmode := B_hPTmode) (hPTenv := B_hPTenv) (hPH := (Nat.lt_of_lt_of_le B_hPH gZ3)) (hPHk := (by rw [gK3 B_fPH B_hPH]; exact B_hPHk)) (hPHcode := B_hPHcode) (hPHcls := B_hPHcls) (hPHmode := B_hPHmode) (hPHenv := B_hPHenv) (hMU := (Nat.lt_of_lt_of_le B_hMU gZ3)) (hMUk := (by rw [gK3 B_fMU B_hMU]; exact B_hMUk)) (hMUcode := B_hMUcode) (hMUcls := B_hMUcls) (hMUmode := B_hMUmode) (hBP := (Nat.lt_of_lt_of_le B_hBP gZ3)) (hBPk := (by rw [gK3 B_fBP B_hBP]; exact B_hBPk)) (hBPcode := B_hBPcode) (hBPcls := B_hBPcls) (hBPmode := B_hBPmode) (hPI := (Nat.lt_of_lt_of_le B_hPI gZ3)) (hPIk := (by rw [gK3 B_fPI B_hPI]; exact B_hPIk)) (hPIcode := B_hPIcode) (hPIcls := B_hPIcls) (hPImode := B_hPImode) (hPP := (Nat.lt_of_lt_of_le B_hPP gZ3)) (hPPk := (by rw [gK3 B_fPP B_hPP]; exact B_hPPk)) (hPPcode := B_hPPcode) (hPPcls := B_hPPcls) (hPPmode := B_hPPmode) (hPPenv := B_hPPenv) (hPHC := (Nat.lt_of_lt_of_le B_hPHC gZ3)) (hPHCk := (by rw [gK3 B_fPHC B_hPHC]; exact B_hPHCk)) (hPHCcode := B_hPHCcode) (hPHCcls := B_hPHCcls) (hPHCmode := B_hPHCmode) (hPHCenv := B_hPHCenv) (hOo := (Nat.lt_of_lt_of_le B_hOo gZ3)) (hOk := (by rw [gK3 B_fO B_hOo]; exact B_hOk)) (hOcode := B_hOcode) (hOcls := B_hOcls) (hOmode := B_hOmode) (hOenv := B_hOenv) (hVS := (Nat.lt_of_lt_of_le B_hVS gZ3)) (hVSk := (by rw [gK3 VS B_hVS]; exact B_hVSk)) (hV0 := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hVS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact s0)) (hV1 := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hVS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact s1)) (hV2 := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hVS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact s2)) (hV3 := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hVS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact s3)) (hVL := (by rw [gP3 VS (.str "length") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hVS]; exact B_hVL)) (hL4 := B_hL4) (hCu := (Nat.lt_of_lt_of_le B_hCu gZ3)) (hCuk := (by rw [gK3 Cu B_hCu]; exact B_hCuk)) (hCuc := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hCu gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sCu)) (hCx := (Nat.lt_of_lt_of_le B_hCx gZ3)) (hCxk := (by rw [gK3 Cx B_hCx]; exact B_hCxk)) (hCxv := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hCx gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sCx)) (hRI := (Nat.lt_of_lt_of_le B_hRI gZ3)) (hRIk := (by rw [gK3 RI B_hRI]; exact B_hRIk)) (hRIc := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hRI gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sRI)) (hCF := (Nat.lt_of_lt_of_le B_hCF gZ3)) (hCFk := (by rw [gK3 CF B_hCF]; exact B_hCFk)) (hCFc := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hCF gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sCF)) (hRbX := B_hRbX) (hCS := (Nat.lt_of_lt_of_le B_b_hCS gZ3)) (hCSk := (by rw [gK3 CS B_b_hCS]; exact B_hCSk)) (hCSc := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_b_hCS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sCS)) (hHT := (Nat.lt_of_lt_of_le B_hHT gZ3)) (hHTk := (by rw [gK3 B_HT B_hHT]; exact B_hHTk)) (hHTc := (by rw [gP3 B_HT (.str "current") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hHT]; exact B_hHTc)) (dS1 := B_dS1) (dS2 := B_dS2) (dS3 := B_dS3) (dS4 := B_dS4) (dS5 := B_dS5) (dS6 := B_dS6) (dS7 := B_dS7) (dS8 := B_dS8) (dS9 := B_dS9) (dU1 := B_dU1) (dU2 := B_dU2) (dU3 := B_dU3) (dX1 := B_dX1) (dX2 := B_dX2) (dX3 := B_dX3) (dO1 := B_dO1) (dO2 := B_dO2) (dO3 := B_dO3) (dO4 := B_dO4) (dO5 := B_dO5) (dO6 := B_dO6) (hH := (Nat.lt_of_lt_of_le B_b_hH gZ3)) (hHk := (by rw [gK3 H B_b_hH]; exact B_hHk)) (hHmp := (by rw [gP3 H (.str "memoizedProps") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_b_hH]; exact B_hHmp)) (hHc := (by rw [gP3 H (.str "child") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_b_hH]; exact B_hHc)) (hX := (Nat.lt_of_lt_of_le B_b_hX gZ3)) (hXk := (by rw [gK3 X B_b_hX]; exact B_hXk)) (hHX := B_hHX) (hXpp := (by rw [gW3]; exact x0)) (hXtag := (by rw [gP3 X (.str "tag") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_b_hX]; exact B_hXtag)) (hXty := (by rw [gW3]; exact x1)) (hXsn := (by rw [gP3 X (.str "stateNode") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_b_hX]; exact B_hXsn)) (hXa := (by rw [gP3 X (.str "alternate") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_b_hX]; exact B_hXa)) (hXf := (by rw [gW3]; exact x2)) (hXs := (by rw [gW3]; exact x3)) (hXl := (by rw [gW3]; exact x5)) (hXm := (by rw [gP3 X (.str "mode") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_b_hX]; exact B_hXm)) (hm := B_hm) (hXr := (by rw [gW3]; exact xret)) (hXsb := (by rw [gW3]; exact x12)) (hXi := B_hXi) (hP01 := (Nat.ne_of_lt (Nat.lt_of_lt_of_le hP0 (Nat.le_trans gZ2 hCge2)))) (hC := (Nat.lt_of_lt_of_le B_hC gZ3)) (hCk := (by rw [gK3 C1 B_hC]; exact B_hCk)) (hCX := B_hCX) (hCpp := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r1)) (hCtag := (by rw [gP3 C1 (.str "tag") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hC]; exact B_hCtag)) (hCa := (by rw [gP3 C1 (.str "alternate") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hC]; exact B_hCa)) (hCc := (by rw [gW3]; exact hch)) (hCs := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r4)) (hCl := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r6)) (hCla := (by rw [gW3]; exact hC1l2)) (hCf := (by rw [gW3]; exact hC1f2)) (hCr := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r17)) (hCsb := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r13)) (hCi := B_hCi) (hA := (Nat.lt_of_lt_of_le B_hA gZ3)) (hAk := (by rw [gK3 C0 B_hA]; exact B_hAk)) (hAc := (by rw [gP3 C0 (.str "child") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hA]; exact B_hAc)) (hRH := (Nat.lt_of_lt_of_le B_hRH gZ3)) (hRHk := (by rw [gK3 Rc B_hRH]; exact B_hRHk)) (hRHms := (by rw [gP3 Rc (.str "memoizedState") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hRH]; exact B_hRHms)) (hRHc := (by rw [gP3 Rc (.str "child") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hRH]; exact B_hRHc)) (hMS0 := (Nat.lt_of_lt_of_le B_hMS0 gZ3)) (hMS0k := (by rw [gK3 B_MS0 B_hMS0]; exact B_hMS0k)) (hMS0c := (by rw [gP3 B_MS0 (.str "cache") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hMS0]; exact B_hMS0c)) (hR := (Nat.lt_of_lt_of_le B_hR gZ3)) (hRk := (by rw [gK3 Rw B_hR]; exact B_hRk)) (hRpp := (by rw [gP3 Rw (.str "pendingProps") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hR]; exact B_hRpp)) (hRtag := (by rw [gP3 Rw (.str "tag") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hR]; exact B_hRtag)) (hRsn := (by rw [gP3 Rw (.str "stateNode") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hR]; exact B_hRsn)) (hRms := (by rw [gP3 Rw (.str "memoizedState") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hR]; exact B_hRms)) (hMS1 := (Nat.lt_of_lt_of_le B_hMS1 gZ3)) (hMS1k := (by rw [gK3 B_MS1 B_hMS1]; exact B_hMS1k)) (hMS1c := (by rw [gP3 B_MS1 (.str "cache") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hMS1]; exact B_hMS1c)) (hFR := (Nat.lt_of_lt_of_le B_hFR gZ3)) (hFRk := (by rw [gK3 B_FR B_hFR]; exact B_hFRk)) (hFRp := (by rw [gP3 B_FR (.str "pendingContext") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hFR]; exact B_hFRp)) (hRa := (by rw [gP3 Rw (.str "alternate") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hR]; exact B_hRa)) (hRc := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hR gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r18)) (hRs := (by rw [gP3 Rw (.str "subtreeFlags") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hR]; exact B_hRs)) (hRl := (by rw [gP3 Rw (.str "childLanes") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hR]; exact B_hRl)) (hRf := (by rw [gP3 Rw (.str "flags") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hR]; exact B_hRf)) (hRr := (by rw [gP3 Rw (.str "return") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hR]; exact B_hRr)) (hRsb := (by rw [gP3 Rw (.str "sibling") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_hR]; exact B_hRsb)) (hRi := B_hRi) (hRC := B_hRC) (hAC := B_hAC) (hAX := B_hAX) (hRX := B_hRX) (hdF := B_hdF) (hdX := B_hdX) (b_hBW := (Nat.lt_of_lt_of_le B_b_hBW gZ3)) (b_hBWk := (by rw [gK3 B_b_fB B_b_hBW]; exact B_b_hBWk)) (b_hf := (Nat.le_trans (by decide) gF3)) (b_hBWcode := B_b_hBWcode) (b_hBWcls := B_b_hBWcls) (b_hBWmode := B_b_hBWmode) (b_hBWenv := B_b_hBWenv) (b_hG := (by first | exact Nat.lt_of_lt_of_le B_b_hG gE3 | (rw [hWenv] at *; exact Nat.lt_of_lt_of_le B_b_hG gE3))) (b_hGe := gG3) (b_hGDR := hbdD2) (b_hGDRm := hbdD2m) (b_hGDRi := hbdD2i) (b_hGPH := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_b_hGPH)) (b_hGPHv := B_b_hGPHv) (b_hGSS := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_b_hGSS)) (b_hGSSv := B_b_hGSSv) (b_hGMR := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_b_hGMR)) (b_hGMRv := B_b_hGMRv) (b_hGRC := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_b_hGRC)) (b_hGRCv := B_b_hGRCv) (b_hGCSC := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_b_hGCSC)) (b_hGCSCv := B_b_hGCSCv) (b_hGGC := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_b_hGGC)) (b_hGGCv := B_b_hGGCv) (b_hGRCF := (by rw [gB3 _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact B_b_hGRCF)) (b_hGRCFv := B_b_hGRCFv) (b_hGT := hbdT2) (b_hGTm := hbdT2m) (b_hGTi := hbdT2i) (b_hGS := hbdS2) (b_hGSm := hbdS2m) (b_hGSi := hbdS2i) (b_hPH := (Nat.lt_of_lt_of_le B_b_hPH gZ3)) (b_hPHk := (by rw [gK3 B_b_fPH B_b_hPH]; exact B_b_hPHk)) (b_hPHcode := B_b_hPHcode) (b_hPHcls := B_b_hPHcls) (b_hPHmode := B_b_hPHmode) (b_hPHenv := B_b_hPHenv) (b_hSS := (Nat.lt_of_lt_of_le B_b_hSS gZ3)) (b_hSSk := (by rw [gK3 B_b_fSS B_b_hSS]; exact B_b_hSSk)) (b_hSScode := B_b_hSScode) (b_hSScls := B_b_hSScls) (b_hSSmode := B_b_hSSmode) (b_hMR := (Nat.lt_of_lt_of_le B_b_hMR gZ3)) (b_hMRk := (by rw [gK3 B_b_fMR B_b_hMR]; exact B_b_hMRk)) (b_hMRcode := B_b_hMRcode) (b_hMRcls := B_b_hMRcls) (b_hMRmode := B_b_hMRmode) (b_hRC := (Nat.lt_of_lt_of_le B_b_hRC gZ3)) (b_hRCk := (by rw [gK3 B_b_fC B_b_hRC]; exact B_b_hRCk)) (b_hRCcode := B_b_hRCcode) (b_hRCcls := B_b_hRCcls) (b_hRCmode := B_b_hRCmode) (b_hRCenv := B_b_hRCenv) (b_hGCo := (Nat.lt_of_lt_of_le B_b_hGCo gZ3)) (b_hGCk := (by rw [gK3 B_b_fGC B_b_hGCo]; exact B_b_hGCk)) (b_hGCcode := B_b_hGCcode) (b_hGCcls := B_b_hGCcls) (b_hGCmode := B_b_hGCmode) (b_hCS := (Nat.lt_of_lt_of_le B_b_hCS gZ3)) (b_hCSk := (by rw [gK3 CS B_b_hCS]; exact B_b_hCSk)) (b_hCSc := (by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_b_hCS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sCS)) (b_hR := (Nat.lt_of_lt_of_le B_b_hR gZ3)) (b_hRk := (by rw [gK3 B_b_fR B_b_hR]; exact B_b_hRk)) (b_hRcode := B_b_hRcode) (b_hRcls := B_b_hRcls) (b_hRmode := B_b_hRmode) (b_hE := (by first | exact Nat.lt_of_lt_of_le B_b_hE gE3 | (rw [hWenv] at *; exact Nat.lt_of_lt_of_le B_b_hE gE3))) (b_hEe := (by rw [gV3 _ B_b_hE (by assumption)]; exact B_b_hEe)) (b_hgU := B_b_hgU) (b_hRRI := B_b_hRRI) (b_hRRIv := B_b_hRRIv) (b_hRnT := B_b_hRnT) (b_hRnS := B_b_hRnS) (b_hI := (Nat.lt_of_lt_of_le B_b_hI gZ3)) (b_hIk := (by rw [gK3 B_b_fI B_b_hI]; exact B_b_hIk)) (b_hIcode := B_b_hIcode) (b_hIcls := B_b_hIcls) (b_hImode := B_b_hImode) (b_hIenv := B_b_hIenv) (b_hRDel := B_b_hRDel) (b_hRDelv := B_b_hRDelv) (b_hDel := (Nat.lt_of_lt_of_le B_b_hDel gZ3)) (b_hDelk := (by rw [gK3 B_b_fDel B_b_hDel]; exact B_b_hDelk)) (b_hDelcode := B_b_hDelcode) (b_hDelcls := B_b_hDelcls) (b_hDelmode := B_b_hDelmode) (b_hDelenv := B_b_hDelenv) (b_hRST := B_b_hRST) (b_hRSTv := B_b_hRSTv) (b_hRg := B_b_hRg) (b_hH := (Nat.lt_of_lt_of_le B_b_hH gZ3)) (b_hHk := (by rw [gK3 H B_b_hH]; exact B_b_hHk)) (b_hHmp := (by rw [gP3 H (.str "memoizedProps") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_b_hH]; exact B_b_hHmp)) (b_hHc := (by rw [gP3 H (.str "child") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_b_hH]; exact B_b_hHc)) (b_hHr := (by rw [gP3 H (.str "ref") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_b_hH]; exact B_b_hHr)) (b_hX := (Nat.lt_of_lt_of_le B_b_hX gZ3)) (b_hXk := (by rw [gK3 X B_b_hX]; exact B_b_hXk)) (b_hHX := B_b_hHX) (b_hXpp := (by rw [gW3]; exact x0)) (b_hXtag := (by rw [gP3 X (.str "tag") (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw] <;> decide) B_b_hX]; exact B_b_hXtag)) (b_hXty := (by rw [gW3]; exact x1)) (b_hXms := (by rw [gW3]; exact x9)) (b_hXr := (by rw [gW3]; exact x14)) (b_hXl := (by rw [gW3]; exact x6)) (b_hXc := (by rw [gW3]; exact x7)) (b_hP01 := (Nat.ne_of_lt (Nat.lt_of_lt_of_le hP0 (Nat.le_trans gZ2 hCge2)))) (b_hdX := (fun Y hY => by simp only [List.mem_cons, List.not_mem_nil, or_false] at hY; rcases hY with h | h | h | h | h | h | h | h | h | h | h <;> rw [h] <;> first | exact hCnX | exact hdXB _ (by simp))) (b_hP1 := (by rw [gH3]; exact hCb2)) (b_hP1k := (by rw [gW3]; exact hCk2)) (b_hP1c := (by rw [gW3]; exact hCch)) (n := n + 4)) ?_
+  intro vS3 wS3 hS3 ⟨hv3, hF3, hfu3, hh3, hFacts3, ⟨bm3, hbm3, bdW3, hbdW3, hbdW3v, bdE3, hbdE3, hbdE3v, hbdE3m⟩⟩
+  subst hv3 hh3
+  have hw3K := envEntry_frame hF3 (e := s.envs.size) (by rw [hSt]; js_norm [Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E2])
+    (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, wP_ne, Ne.symm wP_ne])
+  rw [hSt] at hw3K
+  try simp only [js_simp] at hw3K
+  rw [hw2K] at hw3K
+  have E3a : s.envs.size + 1 ≤ St.envs.size := by rw [hSt]; js_norm; omega
+  have FW3 := frame_extend' gFS3 hF3
+    (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append, List.mem_cons, List.not_mem_nil, or_false, List.nil_append] at hq ⊢; exact Or.inr (Or.inr hq))
+    (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append, List.mem_cons, List.not_mem_nil, or_false, List.nil_append] at hq ⊢; exact Or.inr (Or.inr hq))
+    (fun _ => rfl)
+  clear hSt
+  have E3 : s.envs.size + 1 ≤ wS3.envs.size := Nat.le_trans E3a hF3.envs_le
+  try simp only [js_simp] at hfu3
+  have EX0 : ∃ a b, (wS3.objEntry Rw).props.get? (.str "child") = some (.data ((.obj C1)) true a b) := ⟨_, _, by
+    rw [props_frame hF3 (Nat.lt_of_lt_of_le B_hR gZ3) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hR gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r18⟩
+  have EX1 : ∃ a b, (wS3.objEntry C1).props.get? (.str "deletions") = some (.data .null true a b) := ⟨_, _, by
+    rw [props_frame hF3 (Nat.lt_of_lt_of_le B_hC gZ3) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r5⟩
+  have EX2 : ∃ a b, (wS3.objEntry C1).props.get? (.str "sibling") = some (.data .null true a b) := ⟨_, _, by
+    rw [props_frame hF3 (Nat.lt_of_lt_of_le B_hC gZ3) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r13⟩
+  have EX3 : ∃ a b, (wS3.objEntry C1).props.get? (.str "flags") = some (.data ((.num (numberBinOp .bitOr (numberBinOp .bitAnd R_e_fl (F64.fin false 5062151534280704 (-22))) (F64.fin false 4503599627370496 (-52))))) true a b) := ⟨_, _, by
+    rw [props_frame hF3 (Nat.lt_of_lt_of_le B_hC gZ3) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW3]; exact hC1f2⟩
+  have EX4 : ∃ a b, (wS3.objEntry C1).props.get? (.str "child") = some (.data ((.obj X)) true a b) := ⟨_, _, by
+    rw [props_frame hF3 (Nat.lt_of_lt_of_le B_hC gZ3) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW3]; exact hch⟩
+  have EX5 : ∃ a b, (wS3.objEntry X).props.get? (.str "sibling") = some (.data .null true a b) := ⟨_, _, by
+    rw [props_frame hF3 (Nat.lt_of_lt_of_le B_b_hX gZ3) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW3]; exact x12⟩
+  have EX6 : ∃ a b, (wS3.objEntry X).props.get? (.str "deletions") = some (.data .null true a b) := ⟨_, _, by
+    rw [props_frame hF3 (Nat.lt_of_lt_of_le B_b_hX gZ3) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW3]; exact x4⟩
+  have EX7 : ∃ a b, (wS3.objEntry X).props.get? (.str "type") = some (.data ((.str (JSStr.ofString "button"))) true a b) := ⟨_, _, by
+    rw [props_frame hF3 (Nat.lt_of_lt_of_le B_b_hX gZ3) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW3]; exact x1⟩
+  have NP3 : ReactNewProps.NewProps wS3 Cn F2 OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") :=
+    ReactNewProps.NewProps.frame hF3 (by unfold ReactNewProps.NewProps at hNP2 ⊢; rw [gW3, gH3]; exact hNP2)
+      (fun k hk => by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, hCnX, Ne.symm hCnX, Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hVS (Nat.le_trans gZ2 hCge2)), Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hVS (Nat.le_trans gZ2 hCge2))), Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hCu (Nat.le_trans gZ2 hCge2)), Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hCu (Nat.le_trans gZ2 hCge2))), Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hCx (Nat.le_trans gZ2 hCge2)), Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hCx (Nat.le_trans gZ2 hCge2))), Nat.ne_of_lt (Nat.lt_of_lt_of_le B_b_hCS (Nat.le_trans gZ2 hCge2)), Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le B_b_hCS (Nat.le_trans gZ2 hCge2))), Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hCF (Nat.le_trans gZ2 hCge2)), Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hCF (Nat.le_trans gZ2 hCge2))), Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hRI (Nat.le_trans gZ2 hCge2)), Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hRI (Nat.le_trans gZ2 hCge2))), Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hR (Nat.le_trans gZ2 hCge2)), Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hR (Nat.le_trans gZ2 hCge2))), Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hC (Nat.le_trans gZ2 hCge2)), Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le B_hC (Nat.le_trans gZ2 hCge2)))] at hk)
+  have BL : (∃ bd, bm3[JSStr.ofString "workInProgress"]? = some bd ∧ bd.value = some .null) ∧
+      (∃ bd, bm3[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true) ∧
+      (∃ bd, bm3[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+      (∃ bd, bm3[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) := by
+    obtain ⟨bw3, hbw3d, hbw3x⟩ := declLike_frame hF3 (Nat.lt_of_lt_of_le R_hG gE3) gG3
+    have hb3 : bm3 = bw3 := by rw [hbw3d] at hbm3; cases hbm3; rfl
+    subst hb3
+    exact ⟨⟨bdW3, hbdW3, hbdW3v⟩, ⟨bdE3, hbdE3, hbdE3v, hbdE3m⟩,
+      ⟨bdL2, by rw [hbw3x _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact hbdL2, hbdL2m, hbdL2i⟩,
+      ⟨bdF2, by rw [hbw3x _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact hbdF2, hbdF2m, hbdF2i⟩⟩
+  have f3 : 100 ≤ wS3.fuel := by omega
+  refine for_iter (by first | omega | (simp only [js_simp]; omega)) (by omega) ?_
+  js [hw3K, hbm3, hbdW3, hbdW3v, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E3, Nat.ne_of_gt (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E3),
+    Nat.lt_of_lt_of_le wP_G1 E3, Nat.ne_of_gt (Nat.lt_of_lt_of_le wP_G1 E3), R_hG, wP_G1, wP_ne, Ne.symm wP_ne,
+    wP_n, wP_v, wP_l, wP_a, FDI.fdiCtx, Sem.inner]
+  all_goals (try refine ⟨Cn, F2, ?_⟩)
+  all_goals (repeat' apply And.intro)
+  all_goals (try refine ⟨Cn, F2, ?_⟩)
+  all_goals (repeat' apply And.intro)
+  all_goals first | rfl | omega | exact frame_restore (frame_withFuel FW3 _) s | (rw [hKdEnv] at FW3; exact frame_restore (frame_withFuel FW3 _) s) |
+    (simp only [restore_objEntry, withFuel_objEntry, setEnv_objEntry]; first | exact hFacts3.1 | exact hFacts3.2.1 | exact hFacts3.2.2.1 | exact hFacts3.2.2.2.1 | exact hFacts3.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.2.2.1 | exact hFacts3.2.2.2.2.2.2.2.2.2 | exact EX0 | exact EX1 | exact EX2 | exact EX3 | exact EX4 | exact EX5 | exact EX6 | exact EX7 | exact NP3.2.1 | exact NP3.2.2.1 | exact NP3.2.2.2.1 | exact NP3.2.2.2.2.1 | exact NP3.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.2.1 | exact NP3.2.2.2.2.2.2.2.2) | (simp only [js_simp]; exact NP3.1) | exact Nat.le_trans gZ2 hCge2 | exact NP3.2.2.2.2.2.2.2.2 | exact ⟨bm3, rfl, BL⟩ | (simp only [restore_envEntry, withFuel_envEntry]; exact ⟨bm3, hbm3, BL⟩)
+
+
+set_option linter.unusedSimpArgs false in
+set_option linter.unusedVariables false in
+set_option maxHeartbeats 6000000 in
+set_option maxRecDepth 100000 in
+/-- `work_loop_spec_c2` with its callee as a contract (`facts_compose` composes it). -/
+theorem work_loop_spec_c {n : Nat}
+    {h : σ}
+    {s : State}
+    {fWL : ObjId}
+    {dWL : FuncData}
+    {tWL : Value}
+    {bdPU bdW0 : Binding}
+    {fPU : ObjId}
+    {dPU : FuncData}
+    {bG0 : HashMap JSStr Binding}
+    {oG : Option EnvId}
+    {R_bdI : Binding}
+    {R_bdV : Binding}
+    {R_a_bdCS : Binding}
+    {R_a_bdCF : Binding}
+    {R_a_bdRI : Binding}
+    {R_bdP : Binding}
+    {R_a_bdO : Binding}
+    {R_a_bdGO : Binding}
+    {R_a_bdGC : Binding}
+    {VS : ObjId}
+    {CS : ObjId}
+    {CF : ObjId}
+    {RI : ObjId}
+    {R_fP : ObjId}
+    {R_a_fO : ObjId}
+    {R_a_fGO : ObjId}
+    {R_a_fGC : ObjId}
+    {Rw : ObjId}
+    {R_C : ObjId}
+    {R_dP : FuncData}
+    {R_a_dO : FuncData}
+    {R_a_dGO : FuncData}
+    {R_a_dGC : FuncData}
+    {R_L : F64}
+    {R_a_o0 : Value}
+    {R_a_o1 : Value}
+    {R_a_o2 : Value}
+    {R_a_vr : Value}
+    {R_a_vf : Value}
+    {R_a_vc : Value}
+    {R_a_e0 : Bool}
+    {R_a_c0 : Bool}
+    {R_a_e1 : Bool}
+    {R_a_c1 : Bool}
+    {R_a_e2 : Bool}
+    {R_a_c2 : Bool}
+    {R_lw : Bool}
+    {R_le : Bool}
+    {R_lc : Bool}
+    {R_a_re : Bool}
+    {R_a_rc : Bool}
+    {R_a_fe : Bool}
+    {R_a_fc : Bool}
+    {R_a_ce : Bool}
+    {R_a_cc : Bool}
+    {R_b_bdC : Binding}
+    {Cu : ObjId}
+    {Cx : ObjId}
+    {R_b_cur : Value}
+    {R_b_old : Value}
+    {R_b_cv : Value}
+    {R_b_ce : Bool}
+    {R_b_cc : Bool}
+    {R_b_oe : Bool}
+    {R_b_oc : Bool}
+    {R_b_xe : Bool}
+    {R_b_xc : Bool}
+    {R_c_b1 : Binding}
+    {R_c_b2 : Binding}
+    {R_c_b3 : Binding}
+    {R_e_bdS : Binding}
+    {R_e_bdC : Binding}
+    {R_e_fC : ObjId}
+    {Rc : ObjId}
+    {C0 : ObjId}
+    {C1 : ObjId}
+    {R_e_dC : FuncData}
+    {R_e_sk : F64}
+    {R_e_xl : F64}
+    {R_e_xcl : F64}
+    {R_e_fl : F64}
+    {R_e_vCL : Value}
+    {ln : Value}
+    {ch0 : Value}
+    {mpv : Value}
+    {ms1 : Value}
+    {uq : Value}
+    {R_e_vS : Value}
+    {R_e_vI : Value}
+    {R_e_vR : Value}
+    {R_e_vRC : Value}
+    {R_e_xd : Value}
+    {R_e_or : Value}
+    {R_e_o0 : Value}
+    {R_e_o1 : Value}
+    {R_e_o2 : Value}
+    {R_e_o3 : Value}
+    {R_e_o4 : Value}
+    {R_e_o5 : Value}
+    {R_e_o6 : Value}
+    {R_e_o7 : Value}
+    {R_e_o8 : Value}
+    {R_e_o9 : Value}
+    {R_e_o10 : Value}
+    {R_e_o11 : Value}
+    {R_e_o12 : Value}
+    {R_e_o13 : Value}
+    {R_e_o14 : Value}
+    {R_e_o15 : Value}
+    {R_e_hdw : Bool}
+    {R_e_hde : Bool}
+    {R_e_hdc : Bool}
+    {R_e_hcw : Bool}
+    {R_e_hce : Bool}
+    {R_e_hcc : Bool}
+    {R_e_xlw : Bool}
+    {R_e_xle : Bool}
+    {R_e_xlc : Bool}
+    {R_e_xclw : Bool}
+    {R_e_xcle : Bool}
+    {R_e_xclc : Bool}
+    {R_e_cpw : Bool}
+    {R_e_cpe : Bool}
+    {R_e_cpc : Bool}
+    {R_e_caw : Bool}
+    {R_e_cae : Bool}
+    {R_e_cac : Bool}
+    {R_e_cfw : Bool}
+    {R_e_cfe : Bool}
+    {R_e_cfc : Bool}
+    {R_e_cdw : Bool}
+    {R_e_cde : Bool}
+    {R_e_cdc : Bool}
+    {R_e_c_typew : Bool}
+    {R_e_c_typee : Bool}
+    {R_e_c_typec : Bool}
+    {R_e_c_childLanesw : Bool}
+    {R_e_c_childLanese : Bool}
+    {R_e_c_childLanesc : Bool}
+    {R_e_c_lanesw : Bool}
+    {R_e_c_lanese : Bool}
+    {R_e_c_lanesc : Bool}
+    {R_e_c_childw : Bool}
+    {R_e_c_childe : Bool}
+    {R_e_c_childc : Bool}
+    {R_e_c_memoizedPropsw : Bool}
+    {R_e_c_memoizedPropse : Bool}
+    {R_e_c_memoizedPropsc : Bool}
+    {R_e_c_memoizedStatew : Bool}
+    {R_e_c_memoizedStatee : Bool}
+    {R_e_c_memoizedStatec : Bool}
+    {R_e_c_updateQueuew : Bool}
+    {R_e_c_updateQueuee : Bool}
+    {R_e_c_updateQueuec : Bool}
+    {R_e_c_siblingw : Bool}
+    {R_e_c_siblinge : Bool}
+    {R_e_c_siblingc : Bool}
+    {R_e_c_indexw : Bool}
+    {R_e_c_indexe : Bool}
+    {R_e_c_indexc : Bool}
+    {R_e_c_refw : Bool}
+    {R_e_c_refe : Bool}
+    {R_e_c_refc : Bool}
+    {R_e_c_refCleanupw : Bool}
+    {R_e_c_refCleanupe : Bool}
+    {R_e_c_refCleanupc : Bool}
+    {R_e_e0 : Bool}
+    {R_e_e1 : Bool}
+    {R_e_e2 : Bool}
+    {R_e_e3 : Bool}
+    {R_e_e4 : Bool}
+    {R_e_e5 : Bool}
+    {R_e_e6 : Bool}
+    {R_e_e7 : Bool}
+    {R_e_e8 : Bool}
+    {R_e_e9 : Bool}
+    {R_e_e10 : Bool}
+    {R_e_e11 : Bool}
+    {R_e_e12 : Bool}
+    {R_e_e13 : Bool}
+    {R_e_e14 : Bool}
+    {R_e_e15 : Bool}
+    {R_e_c0 : Bool}
+    {R_e_c1 : Bool}
+    {R_e_c2 : Bool}
+    {R_e_c3 : Bool}
+    {R_e_c4 : Bool}
+    {R_e_c5 : Bool}
+    {R_e_c6 : Bool}
+    {R_e_c7 : Bool}
+    {R_e_c8 : Bool}
+    {R_e_c9 : Bool}
+    {R_e_c10 : Bool}
+    {R_e_c11 : Bool}
+    {R_e_c12 : Bool}
+    {R_e_c13 : Bool}
+    {R_e_c14 : Bool}
+    {R_e_c15 : Bool}
+    {R_e_xde : Bool}
+    {R_e_xdc : Bool}
+    {R_e_xce : Bool}
+    {R_e_xcc : Bool}
+    {R_e_re : Bool}
+    {R_e_rc : Bool}
+    {R_fPHC : ObjId}
+    {R_fPPR : ObjId}
+    {R_fRHS : ObjId}
+    {R_fBOF : ObjId}
+    {R_Rt : ObjId}
+    {R_MS : ObjId}
+    {R_dPHC : FuncData}
+    {R_dPPR : FuncData}
+    {R_dRHS : FuncData}
+    {R_dBOF : FuncData}
+    {R_bdPHC : Binding}
+    {R_bdPPR : Binding}
+    {R_bdRHS : Binding}
+    {R_bdBOF : Binding}
+    {R_bdCC : Binding}
+    {R_cache : Value}
+    {R_tw : Bool}
+    {R_te : Bool}
+    {R_tc : Bool}
+    {R_sw : Bool}
+    {R_se : Bool}
+    {R_sc : Bool}
+    {R_kw : Bool}
+    {R_ke : Bool}
+    {R_kc : Bool}
+    {R_mw : Bool}
+    {R_me : Bool}
+    {R_mc : Bool}
+    {R_cw : Bool}
+    {R_ce2 : Bool}
+    {R_cc2 : Bool}
+    {R_fAEB : ObjId}
+    {R_fCHK : ObjId}
+    {R_dAEB : FuncData}
+    {R_dCHK : FuncData}
+    {R_bdAEB : Binding}
+    {R_bdCHK : Binding}
+    {R_bdDRU : Binding}
+    {R_hl0v : F64}
+    {R_xf : F64}
+    {R_hlw : Bool}
+    {R_hle : Bool}
+    {R_hlc : Bool}
+    {R_hdw2 : Bool}
+    {R_hde2 : Bool}
+    {R_hdc2 : Bool}
+    {R_mpw : Bool}
+    {R_mpe : Bool}
+    {R_mpc : Bool}
+    {R_ppw : Bool}
+    {R_ppe : Bool}
+    {R_ppc : Bool}
+    {R_xfw : Bool}
+    {R_xfe : Bool}
+    {R_xfc : Bool}
+    {R_fBW : ObjId}
+    {R_dBW : FuncData}
+    {R_bdBW : Binding}
+    {R_bdERL : Binding}
+    {R_bdWIP : Binding}
+    {R_mpv : Value}
+    {R_aw : Bool}
+    {R_ae : Bool}
+    {R_ac : Bool}
+    {bdBW : Binding}
+    {bdEL : Binding}
+    {bdWIP : Binding}
+    {aw' : Bool}
+    {ae' : Bool}
+    {ac' : Bool}
+    {fo : ObjId}
+    {K_d : FuncData}
+    {fD : ObjId}
+    {dD : FuncData}
+    {fS : ObjId}
+    {RSI : ObjId}
+    {HD : ObjId}
+    {dS : FuncData}
+    {bR : HashMap JSStr Binding}
+    {oR : Option EnvId}
+    {fK : ObjId}
+    {IR : ObjId}
+    {IJ : ObjId}
+    {fJ : ObjId}
+    {AP : ObjId}
+    {fV : ObjId}
+    {fN : ObjId}
+    {AIP : ObjId}
+    {IP : ObjId}
+    {OP : ObjId}
+    {dK : FuncData}
+    {dJ : FuncData}
+    {vT : Value}
+    {P : Value}
+    {vH0 : Value}
+    {vCO : Value}
+    {tRW : Value}
+    {fF : ObjId}
+    {fRW : ObjId}
+    {dF : FuncData}
+    {dRW : FuncData}
+    {bdHU : Binding}
+    {bdRSd : Binding}
+    {bdDP : Binding}
+    {bdFR : Binding}
+    {bdCO : Binding}
+    {bdDS : Binding}
+    {bdTI : Binding}
+    {bdTS : Binding}
+    {uw : Bool}
+    {ue : Bool}
+    {uc : Bool}
+    {le : Bool}
+    {nw' : Bool}
+    {ne' : Bool}
+    {nc' : Bool}
+    {bA : HashMap JSStr Binding}
+    {bJ : HashMap JSStr Binding}
+    {oA : Option EnvId}
+    {oJ : Option EnvId}
+    {bdIR : Binding}
+    {bdIJ : Binding}
+    {bdT : Binding}
+    {bdV : BuiltinData}
+    {bdN : BuiltinData}
+    {xE : F64}
+    {irw : Bool}
+    {ire : Bool}
+    {irc : Bool}
+    {ijw : Bool}
+    {ije : Bool}
+    {ijc : Bool}
+    {pw : Bool}
+    {pe : Bool}
+    {pc : Bool}
+    {nnw : Bool}
+    {nne : Bool}
+    {nnc : Bool}
+    {bdRSI : Binding}
+    {rw : Bool}
+    {re : Bool}
+    {rc : Bool}
+    {ue' : Bool}
+    {bdU : Binding}
+    {bdB : Binding}
+    {bdC : Binding}
+    {bdW : Binding}
+    {bdF : Binding}
+    {bdUW : Binding}
+    {bdUR : Binding}
+    {bdRL : Binding}
+    {bdCE : Binding}
+    {bdSD : Binding}
+    {bdDR : Binding}
+    {bdIs : Binding}
+    {bdIsb : BuiltinData}
+    {fW : ObjId}
+    {fR : ObjId}
+    {fIs : ObjId}
+    {fBS : ObjId}
+    {dBS : FuncData}
+    {H0 : ObjId}
+    {Q : ObjId}
+    {U : ObjId}
+    {dW : FuncData}
+    {dR : FuncData}
+    {r : Value}
+    {ms : Value}
+    {bs : Value}
+    {vE : Value}
+    {a : Value}
+    {dv : Value}
+    {aw : Bool}
+    {ae : Bool}
+    {ac : Bool}
+    {nw : Bool}
+    {ne : Bool}
+    {nc : Bool}
+    {w1 : Bool}
+    {e1 : Bool}
+    {c1 : Bool}
+    {w2 : Bool}
+    {e2 : Bool}
+    {c2 : Bool}
+    {e3 : Bool}
+    {c3 : Bool}
+    {w4 : Bool}
+    {e4 : Bool}
+    {c4 : Bool}
+    {qp : Bool × Bool × Bool}
+    {qr : Bool × Bool × Bool}
+    {ql : Bool × Bool × Bool}
+    {qd : Bool × Bool × Bool}
+    {ul : Bool × Bool × Bool}
+    {ur : Bool × Bool × Bool}
+    {ua : Bool × Bool × Bool}
+    {ue_2 : Bool × Bool × Bool}
+    {uv : Bool × Bool × Bool}
+    {un : Bool × Bool × Bool}
+    {r_fo : ObjId}
+    {r_d : FuncData}
+    {fU : ObjId}
+    {dU : FuncData}
+    {r_bR : HashMap JSStr Binding}
+    {bdCW : Binding}
+    {H : ObjId}
+    {X : ObjId}
+    {fl : F64}
+    {vCL : Value}
+    {vL : Value}
+    {vC : Value}
+    {vMP : Value}
+    {vUQ : Value}
+    {vI : Value}
+    {vR : Value}
+    {vRC : Value}
+    {o0 : Value}
+    {o1 : Value}
+    {o2 : Value}
+    {o3 : Value}
+    {o4 : Value}
+    {o5 : Value}
+    {o6 : Value}
+    {o7 : Value}
+    {o8 : Value}
+    {o9 : Value}
+    {o10 : Value}
+    {o11 : Value}
+    {o12 : Value}
+    {o13 : Value}
+    {o14 : Value}
+    {o15 : Value}
+    {r0w : Bool}
+    {r0e : Bool}
+    {r0c : Bool}
+    {r1w : Bool}
+    {r1e : Bool}
+    {r1c : Bool}
+    {r2w : Bool}
+    {r2e : Bool}
+    {r2c : Bool}
+    {r3w : Bool}
+    {r3e : Bool}
+    {r3c : Bool}
+    {r4w : Bool}
+    {r4e : Bool}
+    {r4c : Bool}
+    {r5w : Bool}
+    {r5e : Bool}
+    {r5c : Bool}
+    {r6w : Bool}
+    {r6e : Bool}
+    {r6c : Bool}
+    {r7w : Bool}
+    {r7e : Bool}
+    {r7c : Bool}
+    {r8w : Bool}
+    {r8e : Bool}
+    {r8c : Bool}
+    {r9w : Bool}
+    {r9e : Bool}
+    {r9c : Bool}
+    {r10w : Bool}
+    {r10e : Bool}
+    {r10c : Bool}
+    {r11w : Bool}
+    {r11e : Bool}
+    {r11c : Bool}
+    {r12w : Bool}
+    {r12e : Bool}
+    {r12c : Bool}
+    {r13w : Bool}
+    {r13e : Bool}
+    {r13c : Bool}
+    {e0 : Bool}
+    {c0 : Bool}
+    {r_e1 : Bool}
+    {r_c1 : Bool}
+    {r_e2 : Bool}
+    {r_c2 : Bool}
+    {r_e3 : Bool}
+    {r_c3 : Bool}
+    {r_e4 : Bool}
+    {r_c4 : Bool}
+    {e5 : Bool}
+    {c5 : Bool}
+    {e6 : Bool}
+    {c6 : Bool}
+    {e7 : Bool}
+    {c7 : Bool}
+    {e8 : Bool}
+    {c8 : Bool}
+    {e9 : Bool}
+    {c9 : Bool}
+    {e10 : Bool}
+    {c10 : Bool}
+    {e11 : Bool}
+    {c11 : Bool}
+    {e12 : Bool}
+    {c12 : Bool}
+    {e13 : Bool}
+    {c13 : Bool}
+    {e14 : Bool}
+    {c14 : Bool}
+    {e15 : Bool}
+    {c15 : Bool}
+    {fI : ObjId}
+    {fDel : ObjId}
+    {fPl : ObjId}
+    {fCR : ObjId}
+    {dI : FuncData}
+    {dDel : FuncData}
+    {dPl : FuncData}
+    {dCR : FuncData}
+    {vFr : Value}
+    {bdDel : Binding}
+    {bdUF : Binding}
+    {bdPl : Binding}
+    {bdST : Binding}
+    {bdFr : Binding}
+    {bdEl : Binding}
+    {bdCR : Binding}
+    {ew : Bool}
+    {ee : Bool}
+    {ec : Bool}
+    {kw : Bool}
+    {ke : Bool}
+    {kc : Bool}
+    {yw : Bool}
+    {ye : Bool}
+    {yc : Bool}
+    {r_pw : Bool}
+    {r_pe : Bool}
+    {r_pc : Bool}
+    {bkw : Bool}
+    {bke : Bool}
+    {bkc : Bool}
+    {bew : Bool}
+    {bee : Bool}
+    {bec : Bool}
+    {r_aw : Bool}
+    {r_ae : Bool}
+    {r_ac : Bool}
+    {rew : Bool}
+    {rec : Bool}
+    {rv0 : Value}
+    {r_fR : ObjId}
+    {r_dR : FuncData}
+    {bdRI : Binding}
+    {r_bdT : Binding}
+    {r_bdTS : Binding}
+    {fC : ObjId}
+    {dC : FuncData}
+    {bdRCF : Binding}
+    {c0w : Bool}
+    {c0e : Bool}
+    {c0c : Bool}
+    {fUF : ObjId}
+    {fP : ObjId}
+    {fCD : ObjId}
+    {dUF : FuncData}
+    {dP : FuncData}
+    {dCD : FuncData}
+    {bdP : Binding}
+    {bdRWb : Binding}
+    {bdCD : Binding}
+    {bdRCb : Binding}
+    {bdHy : Binding}
+    {bdF1 : Binding}
+    {bdL1 : Binding}
+    {bdLI : Binding}
+    {fw : Bool}
+    {fB : ObjId}
+    {fCS : ObjId}
+    {dB : FuncData}
+    {dCS : FuncData}
+    {tB : Value}
+    {bdCS : Binding}
+    {bdUFb : Binding}
+    {Pp : ObjId}
+    {f0 : F64}
+    {mpw : Bool}
+    {mpe : Bool}
+    {mpc : Bool}
+    {c0lw : Bool}
+    {c0le : Bool}
+    {c0lc : Bool}
+    {c0fw : Bool}
+    {c0fe : Bool}
+    {c0fc : Bool}
+    {tgw : Bool}
+    {tge : Bool}
+    {tgc : Bool}
+    {B_fCU : ObjId}
+    {B_dCU : FuncData}
+    {B_bdBW : Binding}
+    {B_bdCU : Binding}
+    {B_fW : ObjId}
+    {B_dW : FuncData}
+    {B_bdCW : Binding}
+    {B_bdEL : Binding}
+    {B_bdWIP : Binding}
+    {B_bdES : Binding}
+    {B_ln : Value}
+    {B_P0 : ObjId}
+    {B_P1 : ObjId}
+    {B_D : ObjId}
+    {B_CFb : ObjId}
+    {B_HT : ObjId}
+    {B_bdPT : Binding}
+    {B_bdPH : Binding}
+    {B_bdMU : Binding}
+    {B_bdBP : Binding}
+    {B_bdPI : Binding}
+    {B_bdTF : Binding}
+    {B_bdTC : Binding}
+    {B_bdCFb : Binding}
+    {B_bdHT : Binding}
+    {B_fPT : ObjId}
+    {B_fPH : ObjId}
+    {B_fMU : ObjId}
+    {B_fBP : ObjId}
+    {B_fPI : ObjId}
+    {B_dPT : FuncData}
+    {B_dPH : FuncData}
+    {B_dMU : FuncData}
+    {B_dBP : FuncData}
+    {B_dPI : FuncData}
+    {B_m : F64}
+    {B_mpw : Bool}
+    {B_mpe : Bool}
+    {B_mpc : Bool}
+    {B_tgw : Bool}
+    {B_tge : Bool}
+    {B_tgc : Bool}
+    {B_snw : Bool}
+    {B_sne : Bool}
+    {B_snc : Bool}
+    {B_aw : Bool}
+    {B_ae : Bool}
+    {B_ac : Bool}
+    {B_hcw : Bool}
+    {B_hce : Bool}
+    {B_hcc : Bool}
+    {B_me : Bool}
+    {B_mc : Bool}
+    {B_cfw : Bool}
+    {B_cfe : Bool}
+    {B_cfc : Bool}
+    {B_htw : Bool}
+    {B_hte : Bool}
+    {B_htc : Bool}
+    {B_tgw2 : Bool}
+    {B_tge2 : Bool}
+    {B_tgc2 : Bool}
+    {B_aw2 : Bool}
+    {B_ae2 : Bool}
+    {B_ac2 : Bool}
+    {B_yw2 : Bool}
+    {B_ye2 : Bool}
+    {B_yc2 : Bool}
+    {B_FR : ObjId}
+    {B_MS0 : ObjId}
+    {B_MS1 : ObjId}
+    {B_CA : ObjId}
+    {B_pp3 : Value}
+    {B_cl3 : Value}
+    {B_e3 : F64}
+    {B_fR : F64}
+    {B_bdPP : Binding}
+    {B_bdPHC : Binding}
+    {B_bdCC : Binding}
+    {B_bdI : Binding}
+    {B_bdV : Binding}
+    {B_bdVC : Binding}
+    {B_bdCS : Binding}
+    {B_bdCF : Binding}
+    {B_bdRI : Binding}
+    {B_bdO : Binding}
+    {B_fPP : ObjId}
+    {B_fPHC : ObjId}
+    {B_fO : ObjId}
+    {B_dPP : FuncData}
+    {B_dPHC : FuncData}
+    {B_dO : FuncData}
+    {B_L : F64}
+    {B_vf : Value}
+    {B_ppw3 : Bool}
+    {B_ppe3 : Bool}
+    {B_ppc3 : Bool}
+    {B_tgw3 : Bool}
+    {B_tge3 : Bool}
+    {B_tgc3 : Bool}
+    {B_snw3 : Bool}
+    {B_sne3 : Bool}
+    {B_snc3 : Bool}
+    {B_m0w : Bool}
+    {B_m0e : Bool}
+    {B_m0c : Bool}
+    {B_m1w : Bool}
+    {B_m1e : Bool}
+    {B_m1c : Bool}
+    {B_caw : Bool}
+    {B_cae : Bool}
+    {B_cac : Bool}
+    {B_cbw : Bool}
+    {B_cbe : Bool}
+    {B_cbc : Bool}
+    {B_pcw : Bool}
+    {B_pce : Bool}
+    {B_pcc : Bool}
+    {B_hcw3 : Bool}
+    {B_hce3 : Bool}
+    {B_hcc3 : Bool}
+    {B_aw3 : Bool}
+    {B_ae3 : Bool}
+    {B_ac3 : Bool}
+    {B_se3 : Bool}
+    {B_sc3 : Bool}
+    {B_le3 : Bool}
+    {B_lc3 : Bool}
+    {B_fw3 : Bool}
+    {B_fe3 : Bool}
+    {B_fc3 : Bool}
+    {B_rw3 : Bool}
+    {B_re3 : Bool}
+    {B_rc3 : Bool}
+    {B_sw3 : Bool}
+    {B_se3' : Bool}
+    {B_sc3' : Bool}
+    {B_lw : Bool}
+    {B_lle : Bool}
+    {B_llc : Bool}
+    {B_b_fB : ObjId}
+    {B_b_dB : FuncData}
+    {B_b_tB : Value}
+    {B_b_bdDR : Binding}
+    {B_b_bdPH : Binding}
+    {B_b_bdSS : Binding}
+    {B_b_bdMR : Binding}
+    {B_b_bdRC : Binding}
+    {B_b_bdGC : Binding}
+    {B_b_bdRCF : Binding}
+    {B_b_bdT : Binding}
+    {B_b_bdTS : Binding}
+    {B_b_fPH : ObjId}
+    {B_b_fSS : ObjId}
+    {B_b_fMR : ObjId}
+    {B_b_fC : ObjId}
+    {B_b_fGC : ObjId}
+    {B_b_fR : ObjId}
+    {B_b_dPH : FuncData}
+    {B_b_dSS : FuncData}
+    {B_b_dMR : FuncData}
+    {B_b_dC : FuncData}
+    {B_b_dGC : FuncData}
+    {B_b_dR : FuncData}
+    {B_b_bR : HashMap JSStr Binding}
+    {B_b_bdRI : Binding}
+    {B_b_bdDel : Binding}
+    {B_b_bdST : Binding}
+    {B_b_fI : ObjId}
+    {B_b_fDel : ObjId}
+    {B_b_dI : FuncData}
+    {B_b_dDel : FuncData}
+    {B_b_mpw : Bool}
+    {B_b_mpe : Bool}
+    {B_b_mpc : Bool}
+    {B_b_hcw : Bool}
+    {B_b_hce : Bool}
+    {B_b_hcc : Bool}
+    {B_b_hrw : Bool}
+    {B_b_hre : Bool}
+    {B_b_hrc : Bool}
+    {B_b_tgw : Bool}
+    {B_b_tge : Bool}
+    {B_b_tgc : Bool}
+    (hWLo : fWL < s.heap.size)
+    (hWLk : (s.objEntry fWL).kind = .func dWL)
+    (hWLf : 2400 ≤ s.fuel)
+    (hWLcode : dWL.code = WLSGen.workLoopSync_func)
+    (hWLcls : dWL.isClassCtor = false)
+    (hWLmode : dWL.thisMode = .strict)
+    (hWLenv : dWL.env = dPU.env)
+    (hGPU : bG0[JSStr.ofString "performUnitOfWork"]? = some bdPU)
+    (hGPUv : bdPU.value = some (.obj fPU))
+    (hGW0 : bG0[JSStr.ofString "workInProgress"]? = some bdW0)
+    (hGW0v : bdW0.value = some (.obj Rw))
+    (hKdEnv : K_d.env = dPU.env)
+    (hP0 : B_P0 < s.heap.size)
+    (hXs : X < s.heap.size)
+    (hdXB : ∀ Y ∈ [B_b_fPH, B_b_fSS, B_b_fMR, B_b_fC, B_b_fGC, CS, B_b_fR, B_b_fI, B_b_fDel, B_b_fB], Y ≠ X)
+    (de_B_b_dR_env : B_b_dR.env ≠ dPU.env)
+    (de_dJ_env : dJ.env ≠ dPU.env)
+    (de_dK_env : dK.env ≠ dPU.env)
+    (de_dS_env : dS.env ≠ dPU.env)
+    (de_dU_env : dU.env ≠ dPU.env)
+    (dd_AIP_C1 : AIP ≠ C1)
+    (dd_AIP_CF : AIP ≠ CF)
+    (dd_AIP_CS : AIP ≠ CS)
+    (dd_AIP_Cu : AIP ≠ Cu)
+    (dd_AIP_Cx : AIP ≠ Cx)
+    (dd_AIP_RI : AIP ≠ RI)
+    (dd_AIP_Rw : AIP ≠ Rw)
+    (dd_AIP_VS : AIP ≠ VS)
+    (dd_AP_C1 : AP ≠ C1)
+    (dd_AP_CF : AP ≠ CF)
+    (dd_AP_CS : AP ≠ CS)
+    (dd_AP_Cu : AP ≠ Cu)
+    (dd_AP_Cx : AP ≠ Cx)
+    (dd_AP_RI : AP ≠ RI)
+    (dd_AP_Rw : AP ≠ Rw)
+    (dd_AP_VS : AP ≠ VS)
+    (dd_B_HT_CF : B_HT ≠ CF)
+    (dd_B_HT_CS : B_HT ≠ CS)
+    (dd_B_HT_Cu : B_HT ≠ Cu)
+    (dd_B_HT_RI : B_HT ≠ RI)
+    (dd_C0_C1 : C0 ≠ C1)
+    (dd_C0_Rw : C0 ≠ Rw)
+    (dd_C0_X : C0 ≠ X)
+    (dd_H_C1 : H ≠ C1)
+    (dd_H_Rw : H ≠ Rw)
+    (dd_H_X : H ≠ X)
+    (dd_H0_C1 : H0 ≠ C1)
+    (dd_IP_C1 : IP ≠ C1)
+    (dd_OP_C1 : OP ≠ C1)
+    (dd_Rc_C1 : Rc ≠ C1)
+    (dd_Rc_Rw : Rc ≠ Rw)
+    (dd_Rc_X : Rc ≠ X)
+    (dd_Rw_C1 : Rw ≠ C1)
+    (dd_Rw_X : Rw ≠ X)
+    (dd_X_C1 : X ≠ C1)
+    (dd_X_Rw : X ≠ Rw)
+    (R_hlt : fPU < s.heap.size)
+    (R_hk : (s.objEntry fPU).kind = .func dPU)
+    (R_hcode : dPU.code = PUWGen.performUnitOfWork_func)
+    (R_hcls : dPU.isClassCtor = false)
+    (R_hmode : dPU.thisMode = .strict)
+    (R_hG : dPU.env < s.envs.size)
+    (R_hGe : Scope.declLike? (s.envEntry dPU.env) = some (bG0, oG))
+    (R_x_BW_X : R_fBW ≠ Rw)
+    (R_x_BW_H : R_fBW ≠ Rc)
+    (R_x_CHK_X : R_fCHK ≠ Rw)
+    (R_x_CHK_H : R_fCHK ≠ Rc)
+    (R_x_AEB_X : R_fAEB ≠ Rw)
+    (R_x_AEB_H : R_fAEB ≠ Rc)
+    (R_a_d1 : VS ≠ RI)
+    (R_a_d2 : VS ≠ CF)
+    (R_a_d3 : VS ≠ CS)
+    (R_a_d4 : RI ≠ CF)
+    (R_a_d5 : RI ≠ CS)
+    (R_a_d6 : CF ≠ CS)
+    (R_a_dP1 : R_fP ≠ VS)
+    (R_a_dP2 : R_fP ≠ RI)
+    (R_a_dP3 : R_fP ≠ CF)
+    (R_a_dP4 : R_fP ≠ CS)
+    (R_a_dO1 : R_a_fO ≠ VS)
+    (R_a_dO2 : R_a_fO ≠ RI)
+    (R_a_dO3 : R_a_fO ≠ CF)
+    (R_a_dO4 : R_a_fO ≠ CS)
+    (R_a_dG1 : R_a_fGO ≠ VS)
+    (R_a_dG2 : R_a_fGO ≠ RI)
+    (R_a_dG3 : R_a_fGO ≠ CF)
+    (R_a_dG4 : R_a_fGO ≠ CS)
+    (R_a_dC1 : R_a_fGC ≠ VS)
+    (R_a_dC2 : R_a_fGC ≠ RI)
+    (R_a_dC3 : R_a_fGC ≠ CF)
+    (R_a_dC4 : R_a_fGC ≠ CS)
+    (R_b_d1 : VS ≠ Cu)
+    (R_b_d2 : VS ≠ Cx)
+    (R_b_d3 : Cu ≠ Cx)
+    (R_b_d4 : R_fP ≠ VS)
+    (R_b_d5 : R_fP ≠ Cu)
+    (R_b_d6 : R_fP ≠ Cx)
+    (R_e_n_H_X : Rc ≠ Rw)
+    (R_e_n_H_C0 : Rc ≠ C0)
+    (R_e_n_H_C1 : Rc ≠ C1)
+    (R_e_n_X_C0 : Rw ≠ C0)
+    (R_e_n_X_C1 : Rw ≠ C1)
+    (R_e_n_C0_C1 : C0 ≠ C1)
+    (R_e_n_fC_X : R_e_fC ≠ Rw)
+    (R_e_n_fC_C1 : R_e_fC ≠ C1)
+    (R_x_VS_X : VS ≠ Rw)
+    (R_x_VS_H : VS ≠ Rc)
+    (R_x_VS_e_C0 : VS ≠ C0)
+    (R_x_VS_e_C1 : VS ≠ C1)
+    (R_x_VS_e_fC : VS ≠ R_e_fC)
+    (R_x_VS_Rt : VS ≠ R_Rt)
+    (R_x_VS_MS : VS ≠ R_MS)
+    (R_x_VS_fPHC : VS ≠ R_fPHC)
+    (R_x_VS_fPPR : VS ≠ R_fPPR)
+    (R_x_VS_fRHS : VS ≠ R_fRHS)
+    (R_x_VS_fBOF : VS ≠ R_fBOF)
+    (R_x_VS_fP : VS ≠ R_fP)
+    (R_x_VS_a_fO : VS ≠ R_a_fO)
+    (R_x_VS_a_fGO : VS ≠ R_a_fGO)
+    (R_x_VS_a_fGC : VS ≠ R_a_fGC)
+    (R_x_VS_a_RI : VS ≠ RI)
+    (R_x_VS_a_CF : VS ≠ CF)
+    (R_x_VS_a_CS : VS ≠ CS)
+    (R_x_VS_b_Cu : VS ≠ Cu)
+    (R_x_VS_Cx : VS ≠ Cx)
+    (R_x_a_RI_X : RI ≠ Rw)
+    (R_x_a_RI_H : RI ≠ Rc)
+    (R_x_a_RI_e_C0 : RI ≠ C0)
+    (R_x_a_RI_e_C1 : RI ≠ C1)
+    (R_x_a_RI_e_fC : RI ≠ R_e_fC)
+    (R_x_a_RI_Rt : RI ≠ R_Rt)
+    (R_x_a_RI_MS : RI ≠ R_MS)
+    (R_x_a_RI_fPHC : RI ≠ R_fPHC)
+    (R_x_a_RI_fPPR : RI ≠ R_fPPR)
+    (R_x_a_RI_fRHS : RI ≠ R_fRHS)
+    (R_x_a_RI_fBOF : RI ≠ R_fBOF)
+    (R_x_a_RI_fP : RI ≠ R_fP)
+    (R_x_a_RI_a_fO : RI ≠ R_a_fO)
+    (R_x_a_RI_a_fGO : RI ≠ R_a_fGO)
+    (R_x_a_RI_a_fGC : RI ≠ R_a_fGC)
+    (R_x_a_RI_a_CF : RI ≠ CF)
+    (R_x_a_RI_a_CS : RI ≠ CS)
+    (R_x_a_RI_b_Cu : RI ≠ Cu)
+    (R_x_a_RI_Cx : RI ≠ Cx)
+    (R_x_a_CF_X : CF ≠ Rw)
+    (R_x_a_CF_H : CF ≠ Rc)
+    (R_x_a_CF_e_C0 : CF ≠ C0)
+    (R_x_a_CF_e_C1 : CF ≠ C1)
+    (R_x_a_CF_e_fC : CF ≠ R_e_fC)
+    (R_x_a_CF_Rt : CF ≠ R_Rt)
+    (R_x_a_CF_MS : CF ≠ R_MS)
+    (R_x_a_CF_fPHC : CF ≠ R_fPHC)
+    (R_x_a_CF_fPPR : CF ≠ R_fPPR)
+    (R_x_a_CF_fRHS : CF ≠ R_fRHS)
+    (R_x_a_CF_fBOF : CF ≠ R_fBOF)
+    (R_x_a_CF_fP : CF ≠ R_fP)
+    (R_x_a_CF_a_fO : CF ≠ R_a_fO)
+    (R_x_a_CF_a_fGO : CF ≠ R_a_fGO)
+    (R_x_a_CF_a_fGC : CF ≠ R_a_fGC)
+    (R_x_a_CF_a_CS : CF ≠ CS)
+    (R_x_a_CF_b_Cu : CF ≠ Cu)
+    (R_x_a_CF_Cx : CF ≠ Cx)
+    (R_x_a_CS_X : CS ≠ Rw)
+    (R_x_a_CS_H : CS ≠ Rc)
+    (R_x_a_CS_e_C0 : CS ≠ C0)
+    (R_x_a_CS_e_C1 : CS ≠ C1)
+    (R_x_a_CS_e_fC : CS ≠ R_e_fC)
+    (R_x_a_CS_Rt : CS ≠ R_Rt)
+    (R_x_a_CS_MS : CS ≠ R_MS)
+    (R_x_a_CS_fPHC : CS ≠ R_fPHC)
+    (R_x_a_CS_fPPR : CS ≠ R_fPPR)
+    (R_x_a_CS_fRHS : CS ≠ R_fRHS)
+    (R_x_a_CS_fBOF : CS ≠ R_fBOF)
+    (R_x_a_CS_fP : CS ≠ R_fP)
+    (R_x_a_CS_a_fO : CS ≠ R_a_fO)
+    (R_x_a_CS_a_fGO : CS ≠ R_a_fGO)
+    (R_x_a_CS_a_fGC : CS ≠ R_a_fGC)
+    (R_x_a_CS_b_Cu : CS ≠ Cu)
+    (R_x_a_CS_Cx : CS ≠ Cx)
+    (R_x_b_Cu_X : Cu ≠ Rw)
+    (R_x_b_Cu_H : Cu ≠ Rc)
+    (R_x_b_Cu_e_C0 : Cu ≠ C0)
+    (R_x_b_Cu_e_C1 : Cu ≠ C1)
+    (R_x_b_Cu_e_fC : Cu ≠ R_e_fC)
+    (R_x_b_Cu_Rt : Cu ≠ R_Rt)
+    (R_x_b_Cu_MS : Cu ≠ R_MS)
+    (R_x_b_Cu_fPHC : Cu ≠ R_fPHC)
+    (R_x_b_Cu_fPPR : Cu ≠ R_fPPR)
+    (R_x_b_Cu_fRHS : Cu ≠ R_fRHS)
+    (R_x_b_Cu_fBOF : Cu ≠ R_fBOF)
+    (R_x_b_Cu_fP : Cu ≠ R_fP)
+    (R_x_b_Cu_a_fO : Cu ≠ R_a_fO)
+    (R_x_b_Cu_a_fGO : Cu ≠ R_a_fGO)
+    (R_x_b_Cu_a_fGC : Cu ≠ R_a_fGC)
+    (R_x_b_Cu_Cx : Cu ≠ Cx)
+    (R_x_Cx_X : Cx ≠ Rw)
+    (R_x_Cx_H : Cx ≠ Rc)
+    (R_x_Cx_e_C0 : Cx ≠ C0)
+    (R_x_Cx_e_C1 : Cx ≠ C1)
+    (R_x_Cx_e_fC : Cx ≠ R_e_fC)
+    (R_x_Cx_Rt : Cx ≠ R_Rt)
+    (R_x_Cx_MS : Cx ≠ R_MS)
+    (R_x_Cx_fPHC : Cx ≠ R_fPHC)
+    (R_x_Cx_fPPR : Cx ≠ R_fPPR)
+    (R_x_Cx_fRHS : Cx ≠ R_fRHS)
+    (R_x_Cx_fBOF : Cx ≠ R_fBOF)
+    (R_x_Cx_fP : Cx ≠ R_fP)
+    (R_x_Cx_a_fO : Cx ≠ R_a_fO)
+    (R_x_Cx_a_fGO : Cx ≠ R_a_fGO)
+    (R_x_Cx_a_fGC : Cx ≠ R_a_fGC)
+    (hGBW : bG0[JSStr.ofString "beginWork"]? = some bdBW)
+    (hGBWv : bdBW.value = some (.obj fB))
+    (hGEL : bG0[JSStr.ofString "entangledRenderLanes"]? = some bdEL)
+    (hGELv : bdEL.value = some two)
+    (dXC1 : X ≠ C1)
+    (dPC1 : fPU ≠ C1)
+    (hlt : fo < s.heap.size)
+    (hk : (s.objEntry fo).kind = .func K_d)
+    (hf : 520 ≤ s.fuel)
+    (hcode : K_d.code = URGen.updateReducer_func)
+    (hcls : K_d.isClassCtor = false)
+    (hmode : K_d.thisMode = .strict)
+    (hG : K_d.env < s.envs.size)
+    (hW : fW < s.heap.size)
+    (hWk : (s.objEntry fW).kind = .func dW)
+    (hWcode : dW.code = UWHGen.updateWorkInProgressHook_func)
+    (hWcls : dW.isClassCtor = false)
+    (hWmode : dW.thisMode = .strict)
+    (hWenv : dW.env = K_d.env)
+    (hR : fR < s.heap.size)
+    (hRk : (s.objEntry fR).kind = .func dR)
+    (hrBS : r = .obj fBS)
+    (dBS1 : C1 ≠ fBS)
+    (dBS2 : fBS ≠ H0)
+    (dBS3 : fBS ≠ Q)
+    (dBS4 : fBS ≠ U)
+    (d1 : C1 ≠ C0)
+    (d2 : C1 ≠ H0)
+    (d3 : C1 ≠ Q)
+    (d4 : C1 ≠ U)
+    (d5 : C1 ≠ fIs)
+    (d6 : C1 ≠ fR)
+    (d7 : H0 ≠ Q)
+    (d8 : H0 ≠ U)
+    (d9 : Q ≠ U)
+    (d10 : fIs ≠ H0)
+    (d11 : fIs ≠ Q)
+    (d12 : fIs ≠ U)
+    (dAP : AP ≠ C1 ∧ AP ≠ H0 ∧ AP ≠ Q)
+    (dfV : fV ≠ C1 ∧ fV ≠ H0 ∧ fV ≠ Q)
+    (dAIP : AIP ≠ C1 ∧ AIP ≠ H0 ∧ AIP ≠ Q)
+    (dfN : fN ≠ C1 ∧ fN ≠ H0 ∧ fN ≠ Q)
+    (dIP : IP ≠ C1 ∧ IP ≠ H0 ∧ IP ≠ Q)
+    (dOP : OP ≠ C1 ∧ OP ≠ H0 ∧ OP ≠ Q)
+    (dIJ : IJ ≠ C1 ∧ IJ ≠ H0 ∧ IJ ≠ Q)
+    (dfJ : fJ ≠ C1 ∧ fJ ≠ H0 ∧ fJ ≠ Q)
+    (hKd : dK.env ≠ K_d.env)
+    (hJd : dJ.env ≠ K_d.env)
+    (hdist : ∀ X ∈ [fo, fW, fR, fIs, fBS, C0, H0, Q, U, fD, HD, fS, IR, IJ, fJ, AP, fV, AIP, fN, IP, OP, fK, fF], X ≠ C1 ∧ X ≠ RSI)
+    (dRC : RSI ≠ C1)
+    (hSd : dS.env ≠ K_d.env)
+    (dFH : fF ≠ H0 ∧ fF ≠ Q)
+    (dRQ : RSI ≠ Q)
+    (rhHX : H ≠ X)
+    (rhFrEl : vFr ≠ vT)
+    (rhdX : ∀ Y ∈ [fCR, fPl, OP], Y ≠ X)
+    (rhgU : K_d.env ≠ dU.env)
+    (rhRFX : C1 ≠ X)
+    (hdW : ∀ Y ∈ [r_fo, fU, fI, fDel, fPl, fCR, r_fR, fC, H, X, fCD, C0], Y ≠ C1 ∧ Y ≠ H0 ∧ Y ≠ Q ∧ Y ≠ RSI)
+    (hdUe : dU.env ≠ K_d.env)
+    (hGCS : bG0[JSStr.ofString "checkScheduledUpdateOrContext"]? = some bdCS)
+    (hGCSv : bdCS.value = some (.obj fCS))
+    (hCS : fCS < s.heap.size)
+    (hCSk : (s.objEntry fCS).kind = .func dCS)
+    (dUFC1 : fUF ≠ C1)
+    (B_dCUX : B_fCU ≠ X)
+    (B_dBWX : B_b_fB ≠ X)
+    (B_hdXall : ∀ Y ∈ [C0, C1, CF, CS, Cu, Cx, B_FR, H, B_HT, B_MS0, B_MS1, Rw, Rc, RI, VS, B_fBP, B_fMU, B_fO, B_fPH, B_fPHC, B_fPI, B_fPP, B_fPT, B_fW], Y ≠ X)
+    (B_hVS : VS < s.heap.size)
+    (B_hCu : Cu < s.heap.size)
+    (B_hCx : Cx < s.heap.size)
+    (B_hRI : RI < s.heap.size)
+    (B_hCF : CF < s.heap.size)
+    (B_hRbX : Rw ≠ X)
+    (B_dS1 : VS ≠ Cu)
+    (B_dS2 : VS ≠ Cx)
+    (B_dS3 : Cu ≠ Cx)
+    (B_dS4 : VS ≠ RI)
+    (B_dS5 : VS ≠ CF)
+    (B_dS6 : VS ≠ CS)
+    (B_dS7 : RI ≠ CF)
+    (B_dS8 : RI ≠ CS)
+    (B_dS9 : CF ≠ CS)
+    (B_dU1 : Cu ≠ CS)
+    (B_dU2 : Cu ≠ CF)
+    (B_dU3 : Cu ≠ RI)
+    (B_dX1 : Cx ≠ CS)
+    (B_dX2 : Cx ≠ CF)
+    (B_dX3 : Cx ≠ RI)
+    (B_dO1 : B_fO ≠ VS)
+    (B_dO2 : B_fO ≠ Cu)
+    (B_dO3 : B_fO ≠ Cx)
+    (B_dO4 : B_fO ≠ RI)
+    (B_dO5 : B_fO ≠ CF)
+    (B_dO6 : B_fO ≠ CS)
+    (B_hHX : H ≠ X)
+    (B_hC : C1 < s.heap.size)
+    (B_hCX : C1 ≠ X)
+    (B_hR : Rw < s.heap.size)
+    (B_hRC : Rw ≠ C1)
+    (B_hAC : C0 ≠ C1)
+    (B_hAX : C0 ≠ X)
+    (B_hRX : Rw ≠ X)
+    (B_hdX : ∀ Y ∈ [B_fPT, B_fPH, B_fMU, B_fBP, B_fPI, CF, B_HT, B_fW], Y ≠ X)
+    (B_b_hCS : CS < s.heap.size)
+    (B_b_hgU : dPU.env ≠ B_b_dR.env)
+    (B_b_hRg : B_b_dR.env ≠ dPU.env)
+    (B_b_hX : X < s.heap.size)
+    (B_b_hHX : H ≠ X)
+    (hHI : HI h)
+    (hcR : Hide (∀ w h1, Frame {} s w → 800 ≤ w.fuel →
+      HI h1 →
+      WP eng answer (n + 9) h1 (callImpl eng (.obj fPU) .undefined #[.obj Rw]) w fun v w' h' =>
+        v = .undefined ∧ Frame (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) w w' ∧ w.fuel ≤ w'.fuel + 800 ∧ h' = h1 ∧ (∃ bm, Scope.declLike? (w'.envEntry dPU.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧ bd.value = some (.obj C1) ∧ bd.mutable = true) ∧ (∃ bd, bm[JSStr.ofString "index"]? = some bd ∧ bd.value = some (.num (F64.fin false 6755399441055744 (-51))) ∧ bd.mutable = true) ∧ (∃ bd, bm[JSStr.ofString "isHydrating"]? = some bd ∧ bd.value = some (.bool false)) ∧ ∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value = some (.bool false)) ∧ (w'.objEntry VS).props.get? (.str "0") = some (.data R_a_vr true R_a_e0 R_a_c0) ∧ (w'.objEntry VS).props.get? (.str "1") = some (.data R_a_vf true R_a_e1 R_a_c1) ∧ (w'.objEntry VS).props.get? (.str "2") = some (.data R_a_vc true R_a_e2 R_a_c2) ∧ (w'.objEntry VS).props.get? (.str "3") = some (.data R_b_cur true R_b_oe R_b_oc) ∧ (w'.objEntry RI).props.get? (.str "current") = some (.data (.obj R_C) true R_a_re R_a_rc) ∧ (w'.objEntry CF).props.get? (.str "current") = some (.data (.obj Rw) true R_a_fe R_a_fc) ∧ (w'.objEntry CS).props.get? (.str "current") = some (.data (.num (F64.fin false 0 (-1074))) true R_a_ce R_a_cc) ∧ (w'.objEntry Cu).props.get? (.str "current") = some (.data R_b_cv true R_b_ce R_b_cc) ∧ (w'.objEntry Cx).props.get? (.str "_currentValue") = some (.data R_cache true R_b_xe R_b_xc) ∧ (w'.objEntry C1).props.get? (.str "pendingProps") = some (.data (((.obj Pp))) true R_e_e0 R_e_c0) ∧ (w'.objEntry C1).props.get? (.str "type") = some (.data (((.obj fK))) true R_e_e1 R_e_c1) ∧ (w'.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd R_e_fl (F64.fin false 5062151534280704 (-22)))) true R_e_e2 R_e_c2) ∧ (w'.objEntry C1).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true R_e_e3 R_e_c3) ∧ (w'.objEntry C1).props.get? (.str "deletions") = some (.data (.null) true R_e_e4 R_e_c4) ∧ (w'.objEntry C1).props.get? (.str "childLanes") = some (.data (R_e_vCL) true R_e_e5 R_e_c5) ∧ (w'.objEntry C1).props.get? (.str "lanes") = some (.data (ln) true R_e_e6 R_e_c6) ∧ (w'.objEntry C1).props.get? (.str "child") = some (.data (ch0) true R_e_e7 R_e_c7) ∧ (w'.objEntry C1).props.get? (.str "memoizedProps") = some (.data (mpv) true R_e_e8 R_e_c8) ∧ (w'.objEntry C1).props.get? (.str "memoizedState") = some (.data (ms1) true R_e_e9 R_e_c9) ∧ (w'.objEntry C1).props.get? (.str "updateQueue") = some (.data (uq) true R_e_e10 R_e_c10) ∧ (w'.objEntry C1).props.get? (.str "dependencies") = some (.data (.null) true R_e_e11 R_e_c11) ∧ (w'.objEntry C1).props.get? (.str "sibling") = some (.data (.null) true R_e_e12 R_e_c12) ∧ (w'.objEntry C1).props.get? (.str "index") = some (.data (R_e_vI) true R_e_e13 R_e_c13) ∧ (w'.objEntry C1).props.get? (.str "ref") = some (.data (R_e_vR) true R_e_e14 R_e_c14) ∧ (w'.objEntry C1).props.get? (.str "refCleanup") = some (.data (R_e_vRC) true R_e_e15 R_e_c15) ∧ (w'.objEntry C1).props.get? (.str "return") = some (.data (.obj Rw) true R_e_re R_e_rc) ∧ (w'.objEntry Rw).props.get? (.str "child") = some (.data (.obj C1) true R_e_xce R_e_xcc)))
+    (hcK : Hide (∀ w h1 (bG : HashMap JSStr Binding) (bdWIP : Binding) (mpe' : Bool) (mpc' : Bool) (bdDR : Binding) (bdHy : Binding) (fl1 : F64), Frame (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) s w → 520 ≤ w.fuel →
+      fPU < w.heap.size →
+      (w.objEntry fPU).kind = .func dPU →
+      560 ≤ w.fuel →
+      dPU.code = PUWGen.performUnitOfWork_func →
+      dPU.isClassCtor = false →
+      dPU.thisMode = .strict →
+      dPU.env = K_d.env →
+      bG[JSStr.ofString "workInProgress"]? = some bdWIP →
+      bdWIP.mutable = true →
+      bdWIP.value = some ((.obj C1)) →
+      (w.objEntry C1).props.get? (.str "memoizedProps") = some (.data mpv true mpe' mpc') →
+      Scope.declLike? (w.envEntry K_d.env) = some (bG, oG) →
+      bG[JSStr.ofString "didReceiveUpdate"]? = some bdDR →
+      bdDR.mutable = true →
+      bdDR.value.isSome = true →
+      (w.objEntry C1).props.get? (.str "memoizedState") = some (.data ms1 true R_e_e9 R_e_c9) →
+      (w.objEntry C1).props.get? (.str "updateQueue") = some (.data uq true R_e_e10 R_e_c10) →
+      (w.objEntry C1).props.get? (.str "lanes") = some (.data ln true R_e_e6 R_e_c6) →
+      (w.objEntry C1).props.get? (.str "child") = some (.data ch0 true R_e_e7 R_e_c7) →
+      bG[JSStr.ofString "isHydrating"]? = some bdHy →
+      bdHy.value = some (.bool false) →
+      (w.objEntry C1).props.get? (.str "dependencies") = some (.data .null true R_e_e11 R_e_c11) →
+      (w.objEntry C1).props.get? (.str "flags") = some (.data (.num fl1) true R_e_e2 R_e_c2) →
+      (w.objEntry C1).props.get? (.str "pendingProps") = some (.data (.obj Pp) true R_e_e0 R_e_c0) →
+      (w.objEntry C1).props.get? (.str "type") = some (.data (.obj fK) true R_e_e1 R_e_c1) →
+      WP eng answer (n + 9) h1 (callImpl eng (.obj fPU) .undefined #[.obj C1]) w fun v w' h' =>
+        v = .undefined ∧ Frame (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩) w w' ∧ w.fuel ≤ w'.fuel + 560 ∧ h' = h1 ∧ (∃ bm, Scope.declLike? (w'.envEntry K_d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧ bd.value = some (.obj X) ∧ bd.mutable = true) ∧ (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true ∧ (∃ bd, bm[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)) ∧ ∃ C : ObjId, (w'.objEntry X).props.get? (.str "pendingProps") = some (.data (.obj C) true e0 c0) ∧ (w'.objEntry X).props.get? (.str "type") = some (.data (((.str (JSStr.ofString "button")))) true r_e1 r_c1) ∧ (w'.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true r_e2 r_c2) ∧ (w'.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true r_e3 r_c3) ∧ (w'.objEntry X).props.get? (.str "deletions") = some (.data (.null) true r_e4 r_c4) ∧ (w'.objEntry X).props.get? (.str "childLanes") = some (.data (vCL) true e5 c5) ∧ (w'.objEntry X).props.get? (.str "lanes") = some (.data (vL) true e6 c6) ∧ (w'.objEntry X).props.get? (.str "child") = some (.data (vC) true e7 c7) ∧ (w'.objEntry X).props.get? (.str "memoizedProps") = some (.data (vMP) true e8 c8) ∧ (w'.objEntry X).props.get? (.str "memoizedState") = some (.data (.null) true e9 c9) ∧ (w'.objEntry X).props.get? (.str "updateQueue") = some (.data (vUQ) true e10 c10) ∧ (w'.objEntry X).props.get? (.str "dependencies") = some (.data (.null) true e11 c11) ∧ (w'.objEntry X).props.get? (.str "sibling") = some (.data .null true e12 c12) ∧ (w'.objEntry X).props.get? (.str "index") = some (.data (.num (F64.fin false 0 (-1074))) true e13 c13) ∧ (w'.objEntry X).props.get? (.str "ref") = some (.data .null true e14 c14) ∧ (w'.objEntry X).props.get? (.str "refCleanup") = some (.data (vRC) true e15 c15) ∧ (w'.objEntry X).props.get? (.str "return") = some (.data (.obj C1) true rew rec) ∧ (w'.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true R_e_e7 R_e_c7) ∧ (w'.objEntry C).props.get? (.str "children") = some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧ (w'.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true R_e_e6 R_e_c6) ∧ (w'.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitOr fl1 (F64.fin false 4503599627370496 (-52)))) true R_e_e2 R_e_c2) ∧ (w'.objEntry C).kind.isPlain = true ∧ C < w'.heap.size ∧ w.heap.size ≤ C ∧ ∃ F, ReactNewProps.NewProps w' C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")))
+    (hcB : Hide (∀ w h1 (mpe' : Bool) (mpc' : Bool) (bG : HashMap JSStr Binding) (oG : Option EnvId) (bdWIP : Binding) (bdI : Binding) (e2' : Bool) (e3' : Bool) (fe' : Bool) (fc' : Bool) (P1 : ObjId) (fl : F64) (f2 : F64) (b_bdDR : Binding) (b_bdT : Binding) (b_bdTS : Binding) (b_str : JSStr), Frame (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩)) s w → 840 ≤ w.fuel →
+      fPU < w.heap.size →
+      (w.objEntry fPU).kind = .func dPU →
+      dPU.code = PUWGen.performUnitOfWork_func →
+      dPU.isClassCtor = false →
+      dPU.thisMode = .strict →
+      dPU.env = dPU.env →
+      (w.objEntry X).props.get? (.str "memoizedProps") = some (.data vMP true mpe' mpc') →
+      Scope.declLike? (w.envEntry dPU.env) = some (bG, oG) →
+      bG[JSStr.ofString "workInProgress"]? = some bdWIP →
+      bdWIP.mutable = true →
+      bdWIP.value = some ((.obj X)) →
+      bG[JSStr.ofString "index"]? = some bdI →
+      bdI.mutable = true →
+      bdI.value = some (.num (F64.fin false 6755399441055744 (-51))) →
+      (w.objEntry VS).props.get? (.str "0") = some (.data R_a_vr true R_a_e0 R_a_c0) →
+      (w.objEntry VS).props.get? (.str "1") = some (.data R_a_vf true R_a_e1 R_a_c1) →
+      (w.objEntry VS).props.get? (.str "2") = some (.data R_a_vc true e2' R_a_c2) →
+      (w.objEntry VS).props.get? (.str "3") = some (.data R_b_cur true e3' R_b_oc) →
+      (w.objEntry Cu).props.get? (.str "current") = some (.data R_b_cv true R_b_ce R_b_cc) →
+      (w.objEntry Cx).props.get? (.str "_currentValue") = some (.data R_cache true R_b_xe R_b_xc) →
+      (w.objEntry RI).props.get? (.str "current") = some (.data ((.obj R_C)) true R_a_re R_a_rc) →
+      (w.objEntry CF).props.get? (.str "current") = some (.data (.obj Rw) true fe' fc') →
+      (w.objEntry CS).props.get? (.str "current") = some (.data ((.num (F64.fin false 0 (-1074)))) true R_a_ce R_a_cc) →
+      (w.objEntry X).props.get? (.str "pendingProps") = some (.data (.obj P1) true e0 c0) →
+      (w.objEntry X).props.get? (.str "type") = some (.data (.str (JSStr.ofString "button")) true r_e1 r_c1) →
+      (w.objEntry X).props.get? (.str "flags") = some (.data (.num fl) true r_e2 r_c2) →
+      (w.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num ((F64.fin false 0 (-1074)))) true r_e3 r_c3) →
+      (w.objEntry X).props.get? (.str "childLanes") = some (.data vCL true e5 c5) →
+      (w.objEntry X).props.get? (.str "return") = some (.data (.obj C1) true rew rec) →
+      (w.objEntry X).props.get? (.str "sibling") = some (.data .null true e12 c12) →
+      B_P0 ≠ P1 →
+      (w.objEntry C1).props.get? (.str "pendingProps") = some (.data (.obj Pp) true R_e_e0 R_e_c0) →
+      (w.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true R_e_e7 R_e_c7) →
+      (w.objEntry C1).props.get? (.str "subtreeFlags") = some (.data (.num ((F64.fin false 0 (-1074)))) true R_e_e3 R_e_c3) →
+      (w.objEntry C1).props.get? (.str "childLanes") = some (.data R_e_vCL true R_e_e5 R_e_c5) →
+      (w.objEntry C1).props.get? (.str "lanes") = some (.data (.num ((F64.fin false 0 (-1074)))) true R_e_e6 R_e_c6) →
+      (w.objEntry C1).props.get? (.str "flags") = some (.data (.num f2) true R_e_e2 R_e_c2) →
+      (w.objEntry C1).props.get? (.str "return") = some (.data (.obj Rw) true R_e_re R_e_rc) →
+      (w.objEntry C1).props.get? (.str "sibling") = some (.data .null true R_e_e12 R_e_c12) →
+      (w.objEntry Rw).props.get? (.str "child") = some (.data (.obj C1) true R_e_xce R_e_xcc) →
+      Scope.declLike? (w.envEntry dPU.env) = some (bG, oG) →
+      bG[JSStr.ofString "didReceiveUpdate"]? = some b_bdDR →
+      b_bdDR.mutable = true →
+      b_bdDR.value.isSome = true →
+      bG[JSStr.ofString "thenableIndexCounter$1"]? = some b_bdT →
+      b_bdT.mutable = true →
+      b_bdT.value.isSome = true →
+      bG[JSStr.ofString "thenableState$1"]? = some b_bdTS →
+      b_bdTS.mutable = true →
+      b_bdTS.value.isSome = true →
+      (w.objEntry CS).props.get? (.str "current") = some (.data (.num (F64.fin false 0 (-1074))) true R_a_ce R_a_cc) →
+      (w.objEntry X).props.get? (.str "pendingProps") = some (.data (.obj P1) true e0 c0) →
+      (w.objEntry X).props.get? (.str "type") = some (.data (.str (JSStr.ofString "button")) true r_e1 r_c1) →
+      (w.objEntry X).props.get? (.str "memoizedState") = some (.data .null true e9 c9) →
+      (w.objEntry X).props.get? (.str "ref") = some (.data .null true e14 c14) →
+      (w.objEntry X).props.get? (.str "lanes") = some (.data vL true e6 c6) →
+      (w.objEntry X).props.get? (.str "child") = some (.data vC true e7 c7) →
+      B_P0 ≠ P1 →
+      (∀ Y ∈ [B_b_fPH, B_b_fSS, B_b_fMR, B_b_fC, B_b_fGC, CS, B_b_fR, B_b_fI, B_b_fDel, P1, B_b_fB], Y ≠ X) →
+      P1 < w.heap.size →
+      (w.objEntry P1).kind.isPlain = true →
+      (w.objEntry P1).props.get? (.str "children") = some (.data (.str b_str) true true true) →
+      WP eng answer (n + 9) h1 (callImpl eng (.obj fPU) .undefined #[.obj X]) w fun v w' h' =>
+        v = .undefined ∧ Frame (Logic.Footprint.union (ReactBeginButton.fpBB dPU.env X) (Logic.Footprint.union ⟨[], [(X, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU dPU.env VS Cu Cx CS CF RI Rw C1 X))) w w' ∧ w.fuel ≤ w'.fuel + 840 ∧ h' = h1 ∧ ((w'.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))) true r_e2 r_c2) ∧ (w'.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitAnd (numberBinOp .bitOr ((F64.fin false 0 (-1074))) (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) true r_e3 r_c3) ∧ (w'.objEntry X).props.get? (.str "childLanes") = some (.data (.num (F64.fin false 0 (-1074))) true e5 c5) ∧ (w'.objEntry C1).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr ((F64.fin false 0 (-1074))) (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitAnd (numberBinOp .bitOr ((F64.fin false 0 (-1074))) (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) (numberBinOp .bitAnd (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))))) true R_e_e3 R_e_c3) ∧ (w'.objEntry C1).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr (F64.fin false 0 (-1074)) (F64.fin false 0 (-1074))))) true R_e_e5 R_e_c5) ∧ (w'.objEntry X).props.get? (.str "return") = some (.data (.obj C1) true rew rec) ∧ (w'.objEntry Rw).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr B_e3 (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr ((F64.fin false 0 (-1074))) (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitAnd (numberBinOp .bitOr ((F64.fin false 0 (-1074))) (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) (numberBinOp .bitAnd (numberBinOp .bitOr fl (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))))) f2))) true B_se3 B_sc3) ∧ (w'.objEntry Rw).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr ((F64.fin false 0 (-1074))) (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr (F64.fin false 0 (-1074)) (F64.fin false 0 (-1074))))))) true B_le3 B_lc3) ∧ (w'.objEntry C1).props.get? (.str "return") = some (.data (.obj Rw) true R_e_re R_e_rc) ∧ (w'.objEntry X).props.get? (.str "memoizedProps") = some (.data (.obj P1) true mpe' mpc')) ∧ ∃ bm, Scope.declLike? (w'.envEntry dPU.env) = some (bm, oG) ∧ ∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧ bd.value = some .null ∧ ∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true)) :
+    WP eng answer (n + 10) h (callImpl eng (.obj fWL) tWL #[]) s fun v w h' =>
+      v = .undefined ∧ Frame (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB dPU.env X) (Logic.Footprint.union ⟨[], [(X, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU dPU.env VS Cu Cx CS CF RI Rw C1 X))))) s w ∧ s.fuel ≤ w.fuel + 2400 ∧ h' = h ∧
+      ∃ Cn F, ((w.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd
+        (numberBinOp .bitOr (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22))) (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))) true r_e2 r_c2) ∧
+      (w.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitAnd
+        (numberBinOp .bitOr (F64.fin false 0 (-1074)) (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) true r_e3 r_c3) ∧
+      (w.objEntry X).props.get? (.str "childLanes") = some (.data (.num (F64.fin false 0 (-1074))) true e5 c5) ∧
+      (w.objEntry C1).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074))
+        (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitAnd (numberBinOp .bitOr (F64.fin false 0 (-1074)) (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) (numberBinOp .bitAnd (numberBinOp .bitOr (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22))) (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))))) true R_e_e3 R_e_c3) ∧
+      (w.objEntry C1).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074))
+        (numberBinOp .bitOr (F64.fin false 0 (-1074)) (F64.fin false 0 (-1074))))) true R_e_e5 R_e_c5) ∧
+      (w.objEntry X).props.get? (.str "return") = some (.data (.obj C1) true rew rec) ∧
+      (w.objEntry Rw).props.get? (.str "subtreeFlags") = some (.data (.num (numberBinOp .bitOr B_e3
+        (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitAnd (numberBinOp .bitOr (F64.fin false 0 (-1074)) (F64.fin false 0 (-1074))) (F64.fin true 4503599761588224 (-27)))) (numberBinOp .bitAnd (numberBinOp .bitOr (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22))) (F64.fin false 4503599627370496 (-50))) (F64.fin true 4503599895805952 (-28)))))) (numberBinOp .bitOr (numberBinOp .bitAnd R_e_fl (F64.fin false 5062151534280704 (-22))) (F64.fin false 4503599627370496 (-52)))))) true B_se3 B_sc3) ∧
+      (w.objEntry Rw).props.get? (.str "childLanes") = some (.data (.num (numberBinOp .bitOr (F64.fin false 0 (-1074))
+        (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr (F64.fin false 0 (-1074)) (numberBinOp .bitOr (F64.fin false 0 (-1074)) (F64.fin false 0 (-1074))))))) true B_le3 B_lc3) ∧
+      (w.objEntry C1).props.get? (.str "return") = some (.data (.obj Rw) true R_e_re R_e_rc) ∧
+        (w.objEntry X).props.get? (.str "memoizedProps") = some (.data (.obj Cn) true e8 c8)) ∧ (∃ a b, (w.objEntry Rw).props.get? (.str "child") = some (.data ((.obj C1)) true a b)) ∧
+      (∃ a b, (w.objEntry C1).props.get? (.str "deletions") = some (.data .null true a b)) ∧
+      (∃ a b, (w.objEntry C1).props.get? (.str "sibling") = some (.data .null true a b)) ∧
+      (∃ a b, (w.objEntry C1).props.get? (.str "flags") = some (.data ((.num (numberBinOp .bitOr (numberBinOp .bitAnd R_e_fl (F64.fin false 5062151534280704 (-22))) (F64.fin false 4503599627370496 (-52))))) true a b)) ∧
+      (∃ a b, (w.objEntry C1).props.get? (.str "child") = some (.data ((.obj X)) true a b)) ∧
+      (∃ a b, (w.objEntry X).props.get? (.str "sibling") = some (.data .null true a b)) ∧
+      (∃ a b, (w.objEntry X).props.get? (.str "deletions") = some (.data .null true a b)) ∧
+      (∃ a b, (w.objEntry X).props.get? (.str "type") = some (.data ((.str (JSStr.ofString "button"))) true a b)) ∧
+      ReactNewProps.NewProps w Cn F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "") ∧ s.heap.size ≤ Cn ∧
+      ∃ bm, Scope.declLike? (w.envEntry dPU.env) = some (bm, oG) ∧
+      (∃ bd, bm[JSStr.ofString "workInProgress"]? = some bd ∧ bd.value = some .null) ∧
+      (∃ bd, bm[JSStr.ofString "workInProgressRootExitStatus"]? = some bd ∧ bd.value = some (.num (F64.fin false 5629499534213120 (-50))) ∧ bd.mutable = true) ∧
+      (∃ bd, bm[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
+      (∃ bd, bm[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) := by
+  subst hrBS
+  apply wp_callGen WLSGen.workLoopSync_eq (by decide) hWLo hWLk (by omega) hWLcls hWLmode
+    (by rw [hWLcode]; rfl) (by rw [hWLcode]; rfl) (simpleW dWL hWLcode) (by rw [hWLcode]; rfl) (by rw [hWLcode]; rfl)
+  have wP_n : dWL.code.info.fdi.paramNames = #[] := by rw [hWLcode]; rfl
+  have wP_v : dWL.code.info.fdi.varNames = #[] := by rw [hWLcode]; rfl
+  have wP_l : FDI.lexDecls dWL = #[] := by simp [FDI.lexDecls, hWLcode, WLSGen.workLoopSync_func, Func.info]
+  have wP_a : dWL.code.isAsync = false := by rw [hWLcode]; rfl
+  have wP_ne : s.envs.size ≠ dPU.env := Nat.ne_of_gt R_hG
+  have wP_G1 : dPU.env < s.envs.size + 1 := Nat.lt_succ_of_lt R_hG
+  clear hWLcode
+  simp only [WLSGen.workLoopSync]
+  js [wP_n, wP_v, wP_l, wP_a, hWLenv, R_hG, wP_G1, wP_ne, Ne.symm wP_ne, R_hGe, FDI.fdiCtx, Sem.inner]
+  refine wp_forNone ?_
+  refine for_iter (by simp only [js_simp]; omega) (by simp only [js_simp]; omega) ?_
+  js [wP_n, wP_v, wP_l, wP_a, hWLenv, R_hG, wP_G1, wP_ne, Ne.symm wP_ne, R_hGe, hGW0, hGW0v, hGPU, hGPUv, R_hlt, R_hk,
+    FDI.fdiCtx, Sem.inner]
+  -- (the root's unit of work)
+  refine ⟨by js_norm [CallableC, R_hlt, R_hk], ?_⟩
+  refine ReactReconcileFibers.wp_gen_state fun St hSt => ?_
+  have gZ1 : s.heap.size ≤ St.heap.size := by rw [hSt]; js_norm; try exact Nat.le_refl _
+  have gO1 : ∀ o, St.objEntry o = s.objEntry o := by intro o; rw [hSt]; js_norm
+  have gK1 : ∀ o, o < s.heap.size → (St.objEntry o).kind = (s.objEntry o).kind := fun o _ => by rw [gO1]
+  have gP1 : ∀ o k, (o, k) ∉ ([] : List (ObjId × PropKey)) → o < s.heap.size →
+      (St.objEntry o).props.get? k = (s.objEntry o).props.get? k := fun o k _ _ => by rw [gO1]
+  have gE1 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
+  have gE1' : St.envs.size = s.envs.size + 1 := by rw [hSt]; js_norm
+  have gF1 : 2390 ≤ St.fuel := by rw [hSt]; js_norm; omega
+  have gFe1 : s.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
+  have gG1 : Scope.declLike? (St.envEntry dPU.env) = some (bG0, oG) := by
+    rw [hSt]; js_norm [R_hG, wP_G1, wP_ne, Ne.symm wP_ne, R_hGe]
+  have gB1 : ∀ x : JSStr, True → bG0[x]? = bG0[x]? := fun _ _ => rfl
+  have gV1 : ∀ e, e < s.envs.size → St.envEntry e = s.envEntry e := by
+    intro e he; rw [hSt]; js_norm [he, Nat.ne_of_lt he, Ne.symm (Nat.ne_of_lt he), Nat.lt_succ_of_lt he]
+  have gR1 : St.realms = s.realms := by rw [hSt]; rfl
+  have gF01 : Frame {} s St := by
+    rw [hSt]; exact frame_withFuel (frame_bodyState (frame_refl ({} : Footprint) s) _ _ _ _) _
+  have gFS1 : Frame (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB dPU.env X) (Logic.Footprint.union ⟨[], [(X, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU dPU.env VS Cu Cx CS CF RI Rw C1 X))))) s St := by
+    rw [hSt]; exact frame_mono (frame_withFuel (frame_bodyState (frame_refl ({} : Footprint) s) _ _ _ _) _)
+      (by simp) (by simp) (fun _ => rfl)
+  refine wp_mono (hcR.get _ h  gF01 (by first | omega | (simp only [js_simp]; omega)) hHI) ?_
+  all_goals (try clear hcR)
+  intro vS1 wS1 hS1 ⟨hv1, hF1, hfu1, hh1, ⟨bm1, hbm1, ⟨bdW1, hbdW1, hbdW1v, hbdW1m⟩, ⟨bdI1, hbdI1, hbdI1v, hbdI1m⟩,
+    ⟨bdH1, hbdH1, hbdH1v⟩, ⟨bdD1, hbdD1, hbdD1m, hbdD1v⟩⟩, s0, s1, s2, s3, sRI, sCF, sCS, sCu, sCx, r1, r2, r3, r4, r5, r6,
+    r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18⟩
+  subst hv1 hh1
+  have hw1K := envEntry_frame hF1 (e := s.envs.size) (by rw [gE1']; exact Nat.lt_succ_self _)
+    (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, wP_ne, Ne.symm wP_ne])
+  rw [hSt] at hw1K
+  try simp only [js_simp, ↓reduceIte, wP_ne, Ne.symm wP_ne] at hw1K
+  obtain ⟨bw1, hbw1, hbw1x⟩ := declLike_frame hF1 (e := dPU.env) (Nat.lt_of_lt_of_le R_hG gE1) gG1
+  have hbe1 : bm1 = bw1 := by rw [hbw1] at hbm1; cases hbm1; rfl
+  subst hbe1
+  have FW1 := frame_extend' gFS1 hF1
+    (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append] at hq ⊢; rcases hq with hq | hq <;> simp [hq])
+    (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append] at hq ⊢; rcases hq with hq | hq <;> simp [hq])
+    (fun _ => rfl)
+  have gV1' := gV1
+  have gR1' := gR1
+  clear hSt
+  have z1 : s.heap.size ≤ wS1.heap.size := Nat.le_trans gZ1 hF1.heap_le
+  have E1 : s.envs.size + 1 ≤ wS1.envs.size := Nat.le_trans (Nat.le_of_eq gE1'.symm) hF1.envs_le
+  have p1 : ∀ o k, (o, k) ∉ (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩).props → o < s.heap.size →
+      (wS1.objEntry o).props.get? k = (s.objEntry o).props.get? k := fun o k hk ho => by
+    rw [props_frame hF1 (Nat.lt_of_lt_of_le ho gZ1) (by simpa using hk), gO1]
+  have k1 : ∀ o, o < s.heap.size → (wS1.objEntry o).kind = (s.objEntry o).kind := fun o ho => by
+    rw [kind_frame hF1 (Nat.lt_of_lt_of_le ho gZ1), gO1]
+  have vS1 : ∀ e, e < s.envs.size → e ≠ dPU.env → wS1.envEntry e = s.envEntry e := fun e he hne => by
+    rw [envEntry_frame hF1 (Nat.lt_of_lt_of_le he gE1) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, hne, Ne.symm hne]), gV1' e he]
+  have rr1 : wS1.realms = s.realms := by rw [hF1.realms_eq, gR1']
+  try simp only [js_simp] at hfu1
+  have f1 : 1580 ≤ wS1.fuel := by omega
+  refine for_iter (by first | omega | (simp only [js_simp]; omega)) (by omega) ?_
+  js [hw1K, hbm1, hbdW1, hbdW1v, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E1, Nat.ne_of_gt (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E1),
+    Nat.lt_of_lt_of_le wP_G1 E1, Nat.ne_of_gt (Nat.lt_of_lt_of_le wP_G1 E1), R_hG, wP_G1, wP_ne, Ne.symm wP_ne,
+    hGPU, hGPUv, (by rw [hbw1x _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact hGPU : bm1[JSStr.ofString "performUnitOfWork"]? = some bdPU),
+    Nat.lt_of_lt_of_le R_hlt z1, (by rw [k1 fPU R_hlt]; exact R_hk : (wS1.objEntry fPU).kind = .func dPU),
+    wP_n, wP_v, wP_l, wP_a, FDI.fdiCtx, Sem.inner]
+  -- (the counter's unit of work)
+  refine ⟨by js_norm [CallableC, Nat.lt_of_lt_of_le R_hlt z1, (by rw [k1 fPU R_hlt]; exact R_hk : (wS1.objEntry fPU).kind = .func dPU)], ?_⟩
+  refine ReactReconcileFibers.wp_gen_state fun St hSt => ?_
+  have gW2 : ∀ o, St.objEntry o = wS1.objEntry o := by intro o; rw [hSt]; js_norm
+  have gZ2 : s.heap.size ≤ St.heap.size := by rw [hSt]; js_norm; exact z1
+  have gK2 : ∀ o, o < s.heap.size → (St.objEntry o).kind = (s.objEntry o).kind := fun o ho => by rw [gW2]; exact k1 o ho
+  have gP2 : ∀ o k, (o, k) ∉ (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩).props → o < s.heap.size →
+      (St.objEntry o).props.get? k = (s.objEntry o).props.get? k := fun o k hk ho => by rw [gW2]; exact p1 o k hk ho
+  have gQ2 : ∀ o, o < s.heap.size → (St.objEntry o).proto = (s.objEntry o).proto := fun o ho => by
+    have hA := hF1.obj_agree o (Nat.lt_of_lt_of_le ho gZ1)
+    unfold ObjAgree at hA
+    rw [gW2, hA.2.1, gO1]
+  have gE2 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
+  have gF2 : 1570 ≤ St.fuel := by rw [hSt]; js_norm; omega
+  have gFe2 : wS1.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
+  have gG2 : Scope.declLike? (St.envEntry K_d.env) = some (bm1, oG) := by rw [hKdEnv, hSt]; js_norm [hbm1]
+  have gB2 : ∀ x, (dPU.env, x) ∉ (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩).binds → bm1[x]? = bG0[x]? := hbw1x
+  have gV2 : ∀ e, e < s.envs.size → e ≠ dPU.env → St.envEntry e = s.envEntry e := fun e he hne => by
+    rw [hSt]; js_norm; exact vS1 e he hne
+  have gR2 : St.realms = s.realms := by rw [hSt]; exact rr1
+  have FWR1 : Frame (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) s wS1 := frame_extend' (frame_mono gF01 (by simp) (by simp) (fun _ => rfl)) hF1
+    (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append] at hq ⊢; rcases hq with hq | hq <;> simp [hq])
+    (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append] at hq ⊢; rcases hq with hq | hq <;> simp [hq])
+    (fun _ => rfl)
+  have gF02 : Frame (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) s St := by rw [hSt]; exact frame_withFuel FWR1 _
+  have gFS2 : Frame (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB dPU.env X) (Logic.Footprint.union ⟨[], [(X, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU dPU.env VS Cu Cx CS CF RI Rw C1 X))))) s St := by rw [hSt]; exact frame_withFuel FW1 _
+  refine wp_mono (hcK.get _ hS1 bm1 bdW1 _ _ bdD1 bdH1 ((numberBinOp .bitAnd R_e_fl (F64.fin false 5062151534280704 (-22)))) gF02 (by first | omega | (simp only [js_simp]; omega)) ((Nat.lt_of_lt_of_le R_hlt gZ2)) ((by rw [gK2 fPU R_hlt]; exact R_hk)) ((Nat.le_trans (by decide) gF2)) R_hcode R_hcls R_hmode hKdEnv.symm hbdW1 hbdW1m hbdW1v ((by rw [gW2]; exact r9)) gG2 hbdD1 hbdD1m ((by rw [hbdD1v]; rfl)) ((by rw [gW2]; exact r10)) ((by rw [gW2]; exact r11)) ((by rw [gW2]; exact r7)) ((by rw [gW2]; exact r8)) hbdH1 hbdH1v ((by rw [gW2]; exact r12)) ((by rw [gW2]; exact r3)) ((by rw [gW2]; exact r1)) ((by rw [gW2]; exact r2))) ?_
+  all_goals (try clear hcK)
+  intro vS2 wS2 hS2 ⟨hv2, hF2, hfu2, hh2, ⟨bm2, hbm2, ⟨bdW2, hbdW2, hbdW2v, hbdW2m⟩, ⟨bdD2, hbdD2, hbdD2m, hbdD2i⟩,
+    ⟨bdT2, hbdT2, hbdT2m, hbdT2i⟩, ⟨bdS2, hbdS2, hbdS2m, hbdS2i, ⟨bdL2, hbdL2, hbdL2m, hbdL2i⟩, ⟨bdF2, hbdF2, hbdF2m, hbdF2i⟩⟩⟩, Cn, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12,
+    x13, x14, x15, xret, hch, hCch, hC1l2, hC1f2, hCk2, hCb2, hCge2, ⟨F2, hNP2⟩⟩
+  subst hv2 hh2
+  have hKne : s.envs.size ≠ K_d.env := by rw [hKdEnv]; exact wP_ne
+  have hw2K := envEntry_frame hF2 (e := s.envs.size) (by rw [hSt]; js_norm [Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E1])
+    (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, hKne, Ne.symm hKne])
+  rw [hSt] at hw2K
+  try simp only [js_simp] at hw2K
+  rw [hw1K] at hw2K
+  obtain ⟨bw2, hbw2, hbw2x⟩ := declLike_frame hF2 (e := K_d.env) (by rw [hKdEnv]; exact Nat.lt_of_lt_of_le R_hG gE2) gG2
+  have hbe2 : bm2 = bw2 := by rw [hbw2] at hbm2; cases hbm2; rfl
+  subst hbe2
+  have FW2 := frame_extend' gFS2 hF2
+    (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append] at hq ⊢; rcases hq with hq | hq <;> simp [hq])
+    (fun q hq _ => by simp only [Logic.Footprint.union, List.mem_append] at hq ⊢; rcases hq with hq | hq <;> simp [hq])
+    (fun _ => rfl)
+  have gW2' := gW2
+  have gR2' := gR2
+  have E2a : s.envs.size + 1 ≤ St.envs.size := by rw [hSt]; js_norm; omega
+  clear hSt
+  have z2 : s.heap.size ≤ wS2.heap.size := Nat.le_trans gZ2 hF2.heap_le
+  have E2 : s.envs.size + 1 ≤ wS2.envs.size := Nat.le_trans E2a hF2.envs_le
+  have p2 : ∀ o k, (o, k) ∉ (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩).props ++ (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩).props → o < s.heap.size →
+      (wS2.objEntry o).props.get? k = (s.objEntry o).props.get? k := fun o k hk ho => by
+    simp only [List.mem_append, not_or] at hk
+    rw [props_frame hF2 (Nat.lt_of_lt_of_le ho gZ2) (by simpa using hk.2), gW2', p1 o k hk.1 ho]
+  have k2 : ∀ o, o < s.heap.size → (wS2.objEntry o).kind = (s.objEntry o).kind := fun o ho => by
+    rw [kind_frame hF2 (Nat.lt_of_lt_of_le ho gZ2), gW2', k1 o ho]
+  have q2 : ∀ o, o < s.heap.size → (wS2.objEntry o).proto = (s.objEntry o).proto := fun o ho => by
+    have hA := hF2.obj_agree o (Nat.lt_of_lt_of_le ho gZ2)
+    unfold ObjAgree at hA
+    rw [hA.2.1, gQ2 o ho]
+  have v2 : ∀ e, e < s.envs.size → e ≠ dPU.env → wS2.envEntry e = s.envEntry e := fun e he hne => by
+    rw [envEntry_frame hF2 (Nat.lt_of_lt_of_le he gE2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, hKdEnv, hne, Ne.symm hne]), gV2 e he hne]
+  have rr2 : wS2.realms = s.realms := by rw [hF2.realms_eq, gR2']
+  try simp only [js_simp] at hfu2
+  have f2 : 1000 ≤ wS2.fuel := by omega
+  have hbm2' : Scope.declLike? (wS2.envEntry dPU.env) = some (bm2, oG) := by rw [← hKdEnv]; exact hbm2
+  refine for_iter (by first | omega | (simp only [js_simp]; omega)) (by omega) ?_
+  js [hw2K, hbm2', hbdW2, hbdW2v, Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E2, Nat.ne_of_gt (Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E2),
+    Nat.lt_of_lt_of_le wP_G1 E2, Nat.ne_of_gt (Nat.lt_of_lt_of_le wP_G1 E2), R_hG, wP_G1, wP_ne, Ne.symm wP_ne, hGPUv,
+    (by rw [hbw2x _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, hKdEnv] <;> decide), hbw1x _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons] <;> decide)]; exact hGPU : bm2[JSStr.ofString "performUnitOfWork"]? = some bdPU),
+    Nat.lt_of_lt_of_le R_hlt z2, (by rw [k2 fPU R_hlt]; exact R_hk : (wS2.objEntry fPU).kind = .func dPU),
+    wP_n, wP_v, wP_l, wP_a, FDI.fdiCtx, Sem.inner]
+  -- (the button's unit of work)
+  refine ⟨by js_norm [CallableC, Nat.lt_of_lt_of_le R_hlt z2, (by rw [k2 fPU R_hlt]; exact R_hk : (wS2.objEntry fPU).kind = .func dPU)], ?_⟩
+  refine ReactReconcileFibers.wp_gen_state fun St hSt => ?_
+  have gW3 : ∀ o, St.objEntry o = wS2.objEntry o := by intro o; rw [hSt]; js_norm
+  have gH3 : St.heap.size = wS2.heap.size := by rw [hSt]; js_norm
+  have gZ3 : s.heap.size ≤ St.heap.size := by rw [gH3]; exact z2
+  have gK3 : ∀ o, o < s.heap.size → (St.objEntry o).kind = (s.objEntry o).kind := fun o ho => by rw [gW3]; exact k2 o ho
+  have gQ3 : ∀ o, o < s.heap.size → (St.objEntry o).proto = (s.objEntry o).proto := fun o ho => by rw [gW3]; exact q2 o ho
+  have gP3 : ∀ o k, (o, k) ∉ (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩).props ++ (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩).props → o < s.heap.size →
+      (St.objEntry o).props.get? k = (s.objEntry o).props.get? k := fun o k hk ho => by rw [gW3]; exact p2 o k hk ho
+  have gE3 : s.envs.size ≤ St.envs.size := by rw [hSt]; js_norm; omega
+  have gF3 : 990 ≤ St.fuel := by rw [hSt]; js_norm; omega
+  have gFe3 : wS2.fuel ≤ St.fuel + 10 := by rw [hSt]; js_norm; omega
+  have gG3 : Scope.declLike? (St.envEntry dPU.env) = some (bm2, oG) := by rw [hSt]; js_norm [hbm2']
+  have gB3 : ∀ x, (dPU.env, x) ∉ (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩).binds → (K_d.env, x) ∉ (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩).binds → bm2[x]? = bG0[x]? :=
+    fun x h1 h2 => by rw [hbw2x x h2, hbw1x x h1]
+  have gV3 : ∀ e, e < s.envs.size → e ≠ dPU.env → St.envEntry e = s.envEntry e := fun e he hne => by
+    rw [hSt]; js_norm; exact v2 e he hne
+  have gR3 : St.realms = s.realms := by rw [hSt]; exact rr2
+  have FWRC2 : Frame (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩)) s wS2 := frame_extend'
+    (frame_mono gF02 (fun q hq => List.mem_append_left _ hq) (fun q hq => List.mem_append_left _ hq) (fun _ => rfl)) hF2
+    (fun q hq _ => List.mem_append_right _ hq) (fun q hq _ => List.mem_append_right _ hq) (fun _ => rfl)
+  have gF03 : Frame (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩)) s St := by rw [hSt]; exact frame_withFuel FWRC2 _
+  have gFS3 : Frame (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dPU.env VS RI CF CS Cu Cx Rw C1) ⟨[(dPU.env, "workInProgress")], [(Rw, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (fpB K_d.env C1 H0 Q RSI X) ⟨[(K_d.env, "workInProgress")], [(C1, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB dPU.env X) (Logic.Footprint.union ⟨[], [(X, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU dPU.env VS Cu Cx CS CF RI Rw C1 X))))) s St := by rw [hSt]; exact frame_withFuel FW2 _
+  have hCnX : Cn ≠ X := Ne.symm (Nat.ne_of_lt (Nat.lt_of_lt_of_le hXs (Nat.le_trans gZ2 hCge2)))
+  refine wp_mono (hcB.get _ hS2 _ _ bm2 _ bdW2 bdI1 _ _ _ _ Cn ((numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) ((numberBinOp .bitOr (numberBinOp .bitAnd R_e_fl (F64.fin false 5062151534280704 (-22))) (F64.fin false 4503599627370496 (-52)))) bdD2 bdT2 bdS2 ((JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) gF03 (by first | omega | (simp only [js_simp]; omega)) ((Nat.lt_of_lt_of_le R_hlt gZ3)) ((by rw [gK3 fPU R_hlt]; exact R_hk)) R_hcode R_hcls R_hmode rfl ((by rw [gW3]; exact x8)) gG3 hbdW2 hbdW2m hbdW2v ((by rw [hbw2x _ (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, hKdEnv] <;> decide)]; exact hbdI1)) hbdI1m hbdI1v ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hVS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact s0)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hVS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact s1)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hVS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact s2)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hVS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact s3)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hCu gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sCu)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hCx gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sCx)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hRI gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sRI)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hCF gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sCF)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_b_hCS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sCS)) ((by rw [gW3]; exact x0)) ((by rw [gW3]; exact x1)) ((by rw [gW3]; exact x2)) ((by rw [gW3]; exact x3)) ((by rw [gW3]; exact x5)) ((by rw [gW3]; exact xret)) ((by rw [gW3]; exact x12)) ((Nat.ne_of_lt (Nat.lt_of_lt_of_le hP0 (Nat.le_trans gZ2 hCge2)))) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r1)) ((by rw [gW3]; exact hch)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r4)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r6)) ((by rw [gW3]; exact hC1l2)) ((by rw [gW3]; exact hC1f2)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r17)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hC gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r13)) ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_hR gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact r18)) gG3 hbdD2 hbdD2m hbdD2i hbdT2 hbdT2m hbdT2i hbdS2 hbdS2m hbdS2i ((by rw [gW3, props_frame hF2 (Nat.lt_of_lt_of_le B_b_hCS gZ2) (by simp [Logic.Footprint.union, ReactBeginRoot.fp, ReactEarlyBailout.fp, ReactHostContainer.fp, ReactBailout.fp, ReactCreateWIP.fp, fpB, ReactUpdateFunction.fpUF, ReactReconcileImpl.fpI, ReactBeginButton.fpBB, ReactCompleteUnit.fpU, ReactCompleteButton.fpCW, ReactCompleteButton.fpCC, ReactCompleteRoot.fpRC, List.cons_append, List.nil_append, List.mem_append, List.mem_cons, dd_AIP_C1, dd_AIP_CF, dd_AIP_CS, dd_AIP_Cu, dd_AIP_Cx, dd_AIP_RI, dd_AIP_Rw, dd_AIP_VS, dd_AP_C1, dd_AP_CF, dd_AP_CS, dd_AP_Cu, dd_AP_Cx, dd_AP_RI, dd_AP_Rw, dd_AP_VS, dd_B_HT_CF, dd_B_HT_CS, dd_B_HT_Cu, dd_B_HT_RI, dd_C0_C1, dd_C0_Rw, dd_C0_X, dd_H_C1, dd_H_Rw, dd_H_X, dd_H0_C1, dd_IP_C1, dd_OP_C1, dd_Rc_C1, dd_Rc_Rw, dd_Rc_X, dd_Rw_C1, dd_Rw_X, dd_X_C1, dd_X_Rw, Ne.symm dd_AIP_C1, Ne.symm dd_AIP_CF, Ne.symm dd_AIP_CS, Ne.symm dd_AIP_Cu, Ne.symm dd_AIP_Cx, Ne.symm dd_AIP_RI, Ne.symm dd_AIP_Rw, Ne.symm dd_AIP_VS, Ne.symm dd_AP_C1, Ne.symm dd_AP_CF, Ne.symm dd_AP_CS, Ne.symm dd_AP_Cu, Ne.symm dd_AP_Cx, Ne.symm dd_AP_RI, Ne.symm dd_AP_Rw, Ne.symm dd_AP_VS, Ne.symm dd_B_HT_CF, Ne.symm dd_B_HT_CS, Ne.symm dd_B_HT_Cu, Ne.symm dd_B_HT_RI, Ne.symm dd_C0_C1, Ne.symm dd_C0_Rw, Ne.symm dd_C0_X, Ne.symm dd_H_C1, Ne.symm dd_H_Rw, Ne.symm dd_H_X, Ne.symm dd_H0_C1, Ne.symm dd_IP_C1, Ne.symm dd_OP_C1, Ne.symm dd_Rc_C1, Ne.symm dd_Rc_Rw, Ne.symm dd_Rc_X, Ne.symm dd_Rw_C1, Ne.symm dd_Rw_X, Ne.symm dd_X_C1, Ne.symm dd_X_Rw]), gW2']; exact sCS)) ((by rw [gW3]; exact x0)) ((by rw [gW3]; exact x1)) ((by rw [gW3]; exact x9)) ((by rw [gW3]; exact x14)) ((by rw [gW3]; exact x6)) ((by rw [gW3]; exact x7)) ((Nat.ne_of_lt (Nat.lt_of_lt_of_le hP0 (Nat.le_trans gZ2 hCge2)))) ((fun Y hY => by simp only [List.mem_cons, List.not_mem_nil, or_false] at hY; rcases hY with h | h | h | h | h | h | h | h | h | h | h <;> rw [h] <;> first | exact hCnX | exact hdXB _ (by simp))) ((by rw [gH3]; exact hCb2)) ((by rw [gW3]; exact hCk2)) ((by rw [gW3]; exact hCch))) ?_
+  all_goals (try clear hcB)
   intro vS3 wS3 hS3 ⟨hv3, hF3, hfu3, hh3, hFacts3, ⟨bm3, hbm3, bdW3, hbdW3, hbdW3v, bdE3, hbdE3, hbdE3v, hbdE3m⟩⟩
   subst hv3 hh3
   have hw3K := envEntry_frame hF3 (e := s.envs.size) (by rw [hSt]; js_norm [Nat.lt_of_lt_of_le (Nat.lt_succ_self _) E2])
