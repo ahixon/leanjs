@@ -90,6 +90,14 @@ def listElems (l : Expr) : Nat → MetaM (Option (Array Expr))
       let some y ← listElems l.appArg! fuel | return none
       return some (x ++ y)
     if let some l' ← unfoldDefinition? l then return ← listElems l' fuel
+    -- a projection of a definition (`(fp X).props`)
+    let isProjApp ← match l.getAppFn with
+      | .proj .. => pure true
+      | .const c _ => do pure (← getProjectionFnInfo? c).isSome
+      | _ => pure false
+    if isProjApp then
+      let l' ← whnf l
+      if l' != l then return ← listElems l' fuel
     return none
 
 /-- A footprint term reflected into an `SFoot` over the atoms (its objects and records added), unfolding
@@ -421,10 +429,10 @@ def reflectLoc (A : AtomsB) (loc : Expr) : MetaM (Option (AtomsB × Expr)) := do
 
 /-- `facts_apart` proves `Facts.Apart fp L` (`L` a list of facts) by reflection, leaving `Atoms.Wf` of the objects and
 records both name: that they are distinct. -/
-elab "facts_apart" : tactic => Tactic.withMainContext do
+elab "facts_apart_wf" : tactic => Tactic.withMainContext do
   let g ← Tactic.getMainGoal
   let t ← whnfR (← instantiateMVars (← g.getType))
-  unless t.isAppOfArity ``Logic.Facts.Apart 2 do throwError "facts_apart: not `Facts.Apart fp L`: {t}"
+  unless t.isAppOfArity ``Logic.Facts.Apart 2 do throwError "facts_apart_wf: not `Facts.Apart fp L`: {t}"
   let fp := t.appFn!.appArg!
   let L := t.appArg!
   let some elems ← listElems L 4096 | throwError "facts_apart: the facts are not a list"
@@ -450,6 +458,285 @@ elab "facts_apart" : tactic => Tactic.withMainContext do
   g.assign prf
   Tactic.replaceMainGoal [hw.mvarId!]
 
+
+/-- A key's literal (`PropKey.str (JSStr.ofString "x")`, `JSStr.ofString "x"`). -/
+def strLit? (e : Expr) : Option String :=
+  let e := e.consumeMData
+  if e.isAppOfArity ``ES.JSStr.ofString 1 then
+    match e.appArg!.consumeMData with
+    | .lit (.strVal x) => some x
+    | _ => none
+  else none
+
+def keyLit? (e : Expr) : Option String :=
+  let e := e.consumeMData
+  if e.isAppOfArity ``ES.PropKey.str 1 then (strLit? e.appArg!).map ("str:" ++ ·) else strLit? e
+
+/-- Whether two keys are equal: known, or `none`. -/
+def keyEq? (a b : Expr) : Option Bool :=
+  if a == b then some true
+  else match keyLit? a, keyLit? b with
+    | some x, some y => some (x == y)
+    | _, _ => none
+
+/-- A reflected footprint's entries: bindings and properties, by atom index. -/
+partial def sfootEntries (sf : Expr) : MetaM (Array (Nat × Expr) × Array (Nat × Expr)) := do
+  if sf.isAppOfArity ``SFoot.union 2 then
+    let (b1, p1) ← sfootEntries sf.appFn!.appArg!
+    let (b2, p2) ← sfootEntries sf.appArg!
+    return (b1 ++ b2, p1 ++ p2)
+  if sf.isAppOfArity ``SFoot.mk 3 then
+    let args := sf.getAppArgs
+    let some bs ← listElems args[0]! 4096 | throwError "facts_apart: footprint"
+    let some ps ← listElems args[1]! 4096 | throwError "facts_apart: footprint"
+    let ent (q : Expr) : Option (Nat × Expr) := do
+      guard (q.isAppOfArity ``Prod.mk 4)
+      let i ← q.appFn!.appArg!.rawNatLit? <|> q.appFn!.appArg!.nat?
+      return (i, q.appArg!)
+    return (bs.filterMap ent, ps.filterMap ent)
+  throwError "facts_apart: footprint {sf}"
+
+/-- The pairs of atoms a reflected place needs distinct against the footprint's entries (`none`: it is inside). -/
+def placePairs (A : AtomsB) (fbs fps : Array (Nat × Expr)) (r : Expr) :
+    MetaM (Option (Array (Nat × Nat) × Array (Nat × Nat))) := do
+  let args := r.getAppArgs
+  let idx (e : Expr) : Nat := (e.rawNatLit? <|> e.nat?).getD 0
+  let _ := A
+  let mut po : Array (Nat × Nat) := #[]
+  let mut pe : Array (Nat × Nat) := #[]
+  match r.getAppFn.constName? with
+  | some ``RLoc.prop =>
+    let o := idx args[0]!; let k := args[1]!
+    for (j, k') in fps do
+      match keyEq? k k' with
+      | some false => pure ()
+      | _ => if j == o then return none else po := po.push (o, j)
+  | some ``RLoc.bind =>
+    let e := idx args[0]!; let x := args[1]!
+    for (j, x') in fbs do
+      match keyEq? x x' with
+      | some false => pure ()
+      | _ => if j == e then return none else pe := pe.push (e, j)
+  | some ``RLoc.recordAll =>
+    let e := idx args[0]!
+    for (j, _) in fbs do
+      if j == e then return none else pe := pe.push (e, j)
+  | some ``RLoc.objAll =>
+    let o := idx args[0]!
+    for (j, _) in fps do
+      if j == o then return none else po := po.push (o, j)
+  | _ => pure ()
+  return some (po, pe)
+
+/-- Reflects a fact list and a footprint: the atoms, the places, the footprint, its entries. -/
+def reflectAll (fp L : Expr) : MetaM (AtomsB × Array Expr × Array Expr × Expr × Array (Nat × Expr) × Array (Nat × Expr)) := do
+  let some elems ← listElems L 4096 | throwError "facts: the facts are not a list: {L}"
+  let mut A : AtomsB := {}
+  let mut rs : Array Expr := #[]
+  for x in elems do
+    let some (A', r) ← reflectLoc A (mkApp (mkConst ``Fact.loc) x) | throwError "facts: a place not reflected: {x}"
+    A := A'
+    rs := rs.push r
+  let some (A', sf) ← reflectFoot A fp 64 | throwError "facts: the footprint not reflected: {fp}"
+  A := A'
+  let (fbs, fps) ← sfootEntries sf
+  return (A, elems, rs, sf, fbs, fps)
+
+/-- A proof of `x ≠ y` by assumption or `omega`, if one closes it. -/
+def closeNe (x y : Expr) : TermElabM (Option Expr) := do
+  let mv ← mkFreshExprSyntheticOpaqueMVar (← mkAppM ``Ne #[x, y]) `ne
+  let saved ← saveState
+  let tac ← `(tactic| first | assumption | exact Ne.symm (by assumption) | omega)
+  try
+    let rem ← Term.withoutErrToSorry <| Tactic.run mv.mvarId! (Tactic.withoutRecover (Tactic.evalTactic tac))
+    if rem.isEmpty then return some (← instantiateMVars mv) else saved.restore; return none
+  catch _ => saved.restore; return none
+
+/-- `Facts.Apart fp L` from the needed pairs' proofs (`ne`: a proof or the goal left). -/
+def apartProof (fp L : Expr) (A : AtomsB) (rs : Array Expr) (sf : Expr) (po pe : Array (Nat × Nat))
+    (neO neE : Array Expr) : MetaM Expr := do
+  let U := mkApp2 (mkConst ``Atoms.mk) (← mkListLit (mkConst ``ES.ObjId) A.objs.toList)
+    (← mkListLit (mkConst ``ES.EnvId) A.envs.toList)
+  let pairTy ← mkAppM ``Prod #[mkConst ``Nat, mkConst ``Nat]
+  let mkPairs (l : Array (Nat × Nat)) : MetaM Expr := do
+    mkListLit pairTy (← l.toList.mapM fun (i, j) => mkAppM ``Prod.mk #[mkNatLit i, mkNatLit j])
+  let poL ← mkPairs po
+  let peL ← mkPairs pe
+  let allOf (ps : Array Expr) : MetaM Expr := ps.foldrM (fun p acc => mkAppM ``And.intro #[p, acc]) (mkConst ``True.intro)
+  let rsL ← mkListLit (mkConst ``RLoc) rs.toList
+  let lhs ← mkAppM ``List.map #[mkConst ``Fact.loc, L]
+  let rhs ← mkAppM ``List.map #[mkApp (mkConst ``RLoc.eval) U, rsL]
+  let hl ← mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs)
+  let chk ← mkAppM ``List.all #[rsL, mkApp3 (mkConst ``RLoc.covered) sf poL peL]
+  let hc ← mkExpectedTypeHint (← mkEqRefl (mkConst ``Bool.true)) (← mkEq chk (mkConst ``Bool.true))
+  let neTy (sel : Name) : MetaM Expr := withLocalDeclD `p pairTy fun p => do
+    mkLambdaFVars #[p] (← mkAppM ``Ne #[← mkAppM sel #[U, ← mkAppM ``Prod.fst #[p]], ← mkAppM sel #[U, ← mkAppM ``Prod.snd #[p]]])
+  let ho ← mkExpectedTypeHint (← allOf neO) (mkApp2 (mkApp (mkConst ``AllP) pairTy) (← neTy ``Atoms.obj) poL)
+  let he ← mkExpectedTypeHint (← allOf neE) (mkApp2 (mkApp (mkConst ``AllP) pairTy) (← neTy ``Atoms.env) peL)
+  let prf := mkAppN (mkConst ``Facts.apart_pairs) #[U, sf, L, rsL, poL, peL, hl, hc, ho, he]
+  -- (the reflection's evaluation is the footprint by definition: left to the kernel, whose lazy unfolding is cheap
+  -- where the elaborator's is not)
+  mkExpectedTypeHint prf (mkApp2 (mkConst ``Logic.Facts.Apart) fp L)
+
+/-- `facts_apart` proves `Facts.Apart fp L` (`L` a list of facts) by reflection, leaving one goal `o ≠ o'` (or
+`e ≠ e'`) for each object (record) of a fact and of the footprint under the same key — closed here when an assumption
+or `omega` does — and failing when a fact's place is in the footprint. -/
+elab "facts_apart" : tactic => Tactic.withMainContext do
+  let g ← Tactic.getMainGoal
+  let t ← whnfR (← instantiateMVars (← g.getType))
+  unless t.isAppOfArity ``Logic.Facts.Apart 2 do throwError "facts_apart: not `Facts.Apart fp L`: {t}"
+  let fp := t.appFn!.appArg!
+  let L := t.appArg!
+  let (A, elems, rs, sf, fbs, fps) ← reflectAll fp L
+  let dedup (l : Array (Nat × Nat)) : Array (Nat × Nat) := l.foldl (fun acc p => if acc.contains p then acc else acc.push p) #[]
+  let mut po : Array (Nat × Nat) := #[]
+  let mut pe : Array (Nat × Nat) := #[]
+  for r in rs, x in elems do
+    let some (a, b) ← placePairs A fbs fps r | throwError "facts_apart: {x}'s place is in the footprint"
+    po := po ++ a; pe := pe ++ b
+  po := dedup po; pe := dedup pe
+  let mut left : Array MVarId := #[]
+  let mut neO : Array Expr := #[]
+  for (i, j) in po do
+    match ← closeNe A.objs[i]! A.objs[j]! with
+    | some p => neO := neO.push p
+    | none => let mv ← mkFreshExprSyntheticOpaqueMVar (← mkAppM ``Ne #[A.objs[i]!, A.objs[j]!]) `ne
+              left := left.push mv.mvarId!; neO := neO.push mv
+  let mut neE : Array Expr := #[]
+  for (i, j) in pe do
+    match ← closeNe A.envs[i]! A.envs[j]! with
+    | some p => neE := neE.push p
+    | none => let mv ← mkFreshExprSyntheticOpaqueMVar (← mkAppM ``Ne #[A.envs[i]!, A.envs[j]!]) `ne
+              left := left.push mv.mvarId!; neE := neE.push mv
+  g.assign (← apartProof fp L A rs sf po pe neO neE)
+  Tactic.replaceMainGoal left.toList
+
+/-- `h`, or its last conjunct (a spec's `Pre`: pure premises, then the facts), as `Facts.holds L s`. -/
+partial def factsOf (h : Expr) : MetaM Expr := do
+  let ty ← whnfR (← instantiateMVars (← inferType h))
+  if ty.isAppOfArity ``Logic.Facts.holds 2 then return h
+  if ty.isAppOfArity ``And 2 then return ← factsOf (mkProj ``And 1 h)
+  let ty' ← whnf ty
+  if ty'.isAppOfArity ``Logic.Facts.holds 2 then return ← mkExpectedTypeHint h ty'
+  if ty'.isAppOfArity ``And 2 then return ← factsOf (← mkExpectedTypeHint (mkProj ``And 1 h) ty'.appArg!)
+  throwError "facts: {h} is not `Facts.holds L s` (nor a `Pre`)"
+
+/-- `facts_frame h hF as h'`: from `h : Facts.holds L s` and `hF : Frame fp s w`, `h' : Facts.holds L' w` with `L'`
+the facts of `L` whose places `fp` misses, each needed distinctness closed by an assumption or `omega` (the others
+dropped). -/
+elab "facts_frame " h:term:max hF:term:max " as " n:ident : tactic => Tactic.withMainContext do
+  let hE ← factsOf (← Term.elabTerm h none)
+  let hFE ← Term.elabTerm hF none
+  let hTy ← whnfR (← instantiateMVars (← inferType hE))
+  let fTy ← whnfR (← instantiateMVars (← inferType hFE))
+  unless fTy.isAppOfArity ``Logic.Frame 3 do throwError "facts_frame: {hF} is not a frame"
+  let L := hTy.appFn!.appArg!
+  let s := hTy.appArg!
+  let fp := fTy.appFn!.appFn!.appArg!
+  let w := fTy.appArg!
+  unless ← isDefEq fTy.appFn!.appArg! s do throwError "facts_frame: the frame does not start at {s}"
+  let (A, elems, rs, _, fbs, fps) ← reflectAll fp L
+  -- the facts kept: their pairs closed
+  let mut cache : Array ((Bool × Nat × Nat) × Option Expr) := #[]
+  let mut keep : Array Nat := #[]
+  for k in [:elems.size] do
+    let some (a, b) ← placePairs A fbs fps rs[k]! | continue
+    let mut ok := true
+    for (i, j) in a do
+      if ok then
+        match cache.find? (·.1 == (true, i, j)) with
+        | some (_, r) => ok := r.isSome
+        | none => let r ← closeNe A.objs[i]! A.objs[j]!; cache := cache.push ((true, i, j), r); ok := r.isSome
+    for (i, j) in b do
+      if ok then
+        match cache.find? (·.1 == (false, i, j)) with
+        | some (_, r) => ok := r.isSome
+        | none => let r ← closeNe A.envs[i]! A.envs[j]!; cache := cache.push ((false, i, j), r); ok := r.isSome
+    if ok then keep := keep.push k
+  let L' ← mkListLit (mkConst ``Logic.Fact) (keep.toList.map (elems[·]!))
+  -- `Facts.holds L' s`, picked from `h`
+  let mut hl ← mkAppOptM ``Logic.Facts.holds_nil #[s]
+  let mut tl := mkApp (mkConst ``List.nil [Level.zero]) (mkConst ``Logic.Fact)
+  for k in keep.reverse do
+    let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit k, ← mkAppM ``List.length #[L]])
+    let gk ← mkAppOptM ``Logic.Facts.get #[L, s, hE, mkNatLit k, hm]
+    hl ← mkAppOptM ``Logic.Facts.holds_cons #[elems[k]!, tl, s, gk, hl]
+    tl := mkApp3 (mkConst ``List.cons [Level.zero]) (mkConst ``Logic.Fact) elems[k]! tl
+  -- its places apart from `fp`
+  let (A2, _, rs2, sf2, fbs2, fps2) ← reflectAll fp L'
+  let mut po : Array (Nat × Nat) := #[]
+  let mut pe : Array (Nat × Nat) := #[]
+  for r in rs2 do
+    let some (a, b) ← placePairs A2 fbs2 fps2 r | throwError "facts_frame: internal"
+    po := po ++ a; pe := pe ++ b
+  let dedup (l : Array (Nat × Nat)) : Array (Nat × Nat) := l.foldl (fun acc p => if acc.contains p then acc else acc.push p) #[]
+  po := dedup po; pe := dedup pe
+  let neO ← po.mapM fun (i, j) => do
+    let some p ← closeNe A2.objs[i]! A2.objs[j]! | throwError "facts_frame: internal ne"
+    return p
+  let neE ← pe.mapM fun (i, j) => do
+    let some p ← closeNe A2.envs[i]! A2.envs[j]! | throwError "facts_frame: internal ne"
+    return p
+  let hap ← apartProof fp L' A2 rs2 sf2 po pe neO neE
+  let prf ← mkAppOptM ``Logic.Facts.frame #[fp, s, w, hFE, L', hap, hl]
+  let ty := mkApp2 (mkConst ``Logic.Facts.holds) L' w
+  let g ← Tactic.getMainGoal
+  let (_, g') ← (← g.assert n.getId ty prf).intro1P
+  Tactic.replaceMainGoal [g']
+  logInfo m!"facts_frame: {keep.size} of {elems.size} facts kept"
+
+/-- `facts_get h` (`h : Facts.holds L s`) closes the goal with one of `L`'s facts: its statement, either half (the
+existence, the read), or a binding's predicate read in a record whose map an assumption gives. -/
+elab "facts_get " h:term:max : tactic => Tactic.withMainContext do
+  let hE ← factsOf (← Term.elabTerm h none)
+  let hTy ← whnfR (← instantiateMVars (← inferType hE))
+  let L := hTy.appFn!.appArg!
+  let s := hTy.appArg!
+  let some elems ← listElems L 4096 | throwError "facts_get: the facts are not a list"
+  let g ← Tactic.getMainGoal
+  let goal0 ← instantiateMVars (← g.getType)
+  -- a definition at the head (`Writable bm x`) unfolded once: the candidates are matched reducibly
+  let goal ← match goal0.getAppFn.constName? with
+    | some c => if [``Eq, ``And, ``Exists, ``LT.lt, ``Ne, ``Not].contains c then pure goal0 else
+        match ← unfoldDefinition? goal0 with
+        | some u => pure u.headBeta
+        | none => pure goal0
+    | none => pure goal0
+  let goal ← match goal.getAppFn with
+    | .proj .. => whnf goal
+    | _ => pure goal
+  -- the records' maps in the context
+  let decls ← (← getLCtx).foldlM (init := #[]) fun acc d => do
+    if d.isImplementationDetail then return acc
+    let t ← instantiateMVars d.type
+    if (declLikeOf? s t).isSome then return acc.push d.toExpr else return acc
+  for k in [:elems.size] do
+    let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit k, ← mkAppM ``List.length #[L]])
+    let gk ← mkAppOptM ``Logic.Facts.get #[L, s, hE, mkNatLit k, hm]
+    let gk0 := gk
+    let ty ← whnf (← instantiateMVars (mkApp (mkProj ``Logic.Fact 1 elems[k]!) s))
+    let gk ← mkExpectedTypeHint gk ty
+    let mut cands : Array Expr := #[gk]
+    if ty.isAppOfArity ``And 2 then
+      cands := cands ++ #[← mkExpectedTypeHint (mkProj ``And 0 gk) ty.appFn!.appArg!,
+        ← mkExpectedTypeHint (mkProj ``And 1 gk) ty.appArg!]
+    let f ← whnfR elems[k]!
+    if f.isAppOfArity ``Logic.Fact.bind 4 then
+      for hd in decls do
+        let gkF ← mkExpectedTypeHint gk0 (mkApp2 (mkConst ``Logic.Fact.holds) elems[k]! s)
+        try cands := cands.push (← mkAppOptM ``Logic.Fact.bind_get #[none, none, none, none, s, none, hd, gkF])
+        catch _ => pure ()
+    for c in cands do
+      let saved ← saveState
+      try
+        if ← withReducible (isDefEq (← inferType c) goal) then
+          g.assign c
+          Tactic.replaceMainGoal []
+          return
+        saved.restore
+      catch _ => saved.restore
+  throwError "facts_get: no fact of {h} ({elems.size} facts at {s}) gives the goal{indentExpr goal}"
+
 elab "facts_form " id:ident : command => do
   let n ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
   liftTermElabM (factsForm n)
@@ -463,6 +750,22 @@ existentials; a record with lookups of its bindings, `∃ bm, Scope.declLike? (w
 every variable but the objects, records and functions existential (what a later step can be told about this one's
 result). An existence the post does not state (`o < w.heap.size`) follows from the read (a missing object has no
 properties, a missing record no bindings). -/
+
+/-- `∀ xs, b` with `xs` implicit. -/
+def mkForallImplicit (xs : Array Expr) (b : Expr) : MetaM Expr := do
+  let t ← mkForallFVars xs b
+  let rec go (t : Expr) (n : Nat) : Expr :=
+    match n, t with
+    | n + 1, .forallE nm d bd _ => .forallE nm d (go bd n) .implicit
+    | _, t => t
+  return go t xs.size
+
+/-- The first `n` binders of a `∀`/`fun` made explicit. -/
+def explicitBinders (t : Expr) (n : Nat) : Expr :=
+  match n, t with
+  | n + 1, .forallE nm d b _ => .forallE nm d (explicitBinders b n) .default
+  | n + 1, .lam nm d b _ => .lam nm d (explicitBinders b n) .default
+  | _, t => t
 
 /-- `∃ xs, b`. -/
 def existsFVars (xs : Array Expr) (b : Expr) : MetaM Expr :=
@@ -546,7 +849,7 @@ partial def openConj {α} (w : Expr) (items : List (Expr × Expr)) (acc : Array 
       match ← unfoldDefinition? c with
       | some u =>
         let u ← whnfCore u
-        if u.isAppOfArity ``And 2 then openConj w ((u, p) :: rest) acc bound opened k
+        if u.isAppOfArity ``And 2 || u.isAppOfArity ``Exists 2 then openConj w ((u, p) :: rest) acc bound opened k
         else openConj w rest (acc.push (c, p)) bound opened k
       | none => openConj w rest (acc.push (c, p)) bound opened k
     else openConj w rest (acc.push (c, p)) bound opened k
@@ -672,8 +975,8 @@ def factsPost (n : Name) : TermElabM Unit := do
       let params := (vars ++ bound).filter fun x => L.containsFVar x.fvarId!
       let lps := ci.levelParams.map mkLevelParam
       let plName := Name.mkStr n "PL"
-      let plT ← instantiateMVars (← mkForallFVars params (mkApp (mkConst ``List [Level.zero]) (mkConst ``Logic.Fact)))
-      let plV ← instantiateMVars (← mkLambdaFVars params L)
+      let plT := explicitBinders (← instantiateMVars (← mkForallFVars params (mkApp (mkConst ``List [Level.zero]) (mkConst ``Logic.Fact)))) params.size
+      let plV := explicitBinders (← instantiateMVars (← mkLambdaFVars params L)) params.size
       addDecl (Declaration.defnDecl (mkDefinitionValEx plName ci.levelParams plT plV .abbrev .safe []))
       let PLc := mkAppN (mkConst plName lps) params
       let holdsW := mkApp2 (mkConst ``Logic.Facts.holds) PLc w
@@ -694,21 +997,70 @@ def factsPost (n : Name) : TermElabM Unit := do
       let S ← existsFVars bound inner
       for (pe, lam, x, hx) in opened.reverse do
         prf ← mkAppOptM ``Exists.elim #[← inferType x, lam, S, pe, ← mkLambdaFVars #[x, hx] prf]
-      let tyI ← instantiateMVars (← mkForallFVars (vars ++ #[v, w, hh, hq]) S)
+      -- the variables the post mentions (and those their types do)
+      let mut used : Array Expr := #[]
+      for x in vars.reverse do
+        let inUsed ← used.anyM fun u => return (← inferType u).containsFVar x.fvarId!
+        if body.containsFVar x.fvarId! || inUsed ||
+            (← [v, w, hh].anyM fun u => return (← inferType u).containsFVar x.fvarId!) then
+          used := #[x] ++ used
+      let vars := used
+      let tyI ← instantiateMVars (← mkForallImplicit (vars ++ #[v, w, hh]) (← mkForallFVars #[hq] S))
       let valI ← instantiateMVars (← mkLambdaFVars (vars ++ #[v, w, hh, hq]) prf)
       addDecl (Declaration.thmDecl { name := Name.mkStr n "post_facts", levelParams := ci.levelParams, type := tyI, value := valI })
       -- the theorem's objects, records and functions kept, the rest existential
       let keepTy (t : Expr) : Bool := t.isConstOf ``ES.ObjId || t.isConstOf ``ES.EnvId || t.isConstOf ``ES.FuncData ||
-        t.isConstOf ``ES.State || (t.isAppOfArity ``Option 1 && t.appArg!.isConstOf ``ES.EnvId)
+        (t.isAppOfArity ``Option 1 && t.appArg!.isConstOf ``ES.EnvId)
       let keep ← params.filterM fun x => return !bound.contains x && keepTy (← instantiateMVars (← inferType x))
       let exs := params.filter (!keep.contains ·)
       let exTy ← existsFVars exs holdsW
       let exName := Name.mkStr n "PLex"
-      let exT ← instantiateMVars (← mkForallFVars (keep.push w) (mkSort .zero))
-      let exV ← instantiateMVars (← mkLambdaFVars (keep.push w) exTy)
+      let exT := explicitBinders (← instantiateMVars (← mkForallFVars (keep.push w) (mkSort .zero))) (keep.size + 1)
+      let exV := explicitBinders (← instantiateMVars (← mkLambdaFVars (keep.push w) exTy)) (keep.size + 1)
       addDecl (Declaration.defnDecl (mkDefinitionValEx exName ci.levelParams exT exV .abbrev .safe []))
+      -- `T.post_ex : post → T.PLex keep w`
+      let exApp := mkAppN (mkConst exName lps) (keep.push w)
+      let mut prfE ← existsIntro exs holdsW hlT
+      prfE ← mkExpectedTypeHint prfE exApp
+      for (pe, lam, x, hx) in opened.reverse do
+        prfE ← mkAppOptM ``Exists.elim #[← inferType x, lam, exApp, pe, ← mkLambdaFVars #[x, hx] prfE]
+      let tyE ← instantiateMVars (← mkForallImplicit (vars ++ #[v, w, hh]) (← mkForallFVars #[hq] exApp))
+      let valE ← instantiateMVars (← mkLambdaFVars (vars ++ #[v, w, hh, hq]) prfE)
+      addDecl (Declaration.thmDecl { name := Name.mkStr n "post_ex", levelParams := ci.levelParams, type := tyE, value := valE })
       if (← getOptions).getBool `diagnostics false then
         for (c, _) in rest do logInfo m!"rest: {(← ppExpr c).pretty.take 300}"
+      -- `T.PreEx keep s`: `T.Pre` with every variable but `keep` (by name) existential
+      let preName := Name.mkStr n "Pre"
+      let mut preNote := ""
+      if let some pci := (← getEnv).find? preName then
+        let keepNames ← keep.mapM fun x => x.fvarId!.getUserName
+        let r ← forallTelescope pci.type fun pvs _ => do
+          let some ps ← pvs.findM? (fun x => return (← x.fvarId!.getUserName) == `s) | return none
+          let mut kp : Array Expr := #[]
+          for kn in keepNames do
+            match ← pvs.findM? (fun x => return (← x.fvarId!.getUserName) == kn) with
+            | some x => kp := kp.push x
+            | none => return none
+          let others := pvs.filter fun x => x != ps && !kp.contains x
+          let preApp := mkAppN (mkConst preName lps) pvs
+          let body ← existsFVars others preApp
+          let ty := explicitBinders (← instantiateMVars (← mkForallFVars (kp.push ps) (mkSort .zero))) (kp.size + 1)
+          let val := explicitBinders (← instantiateMVars (← mkLambdaFVars (kp.push ps) body)) (kp.size + 1)
+          addDecl (Declaration.defnDecl (mkDefinitionValEx (Name.mkStr n "PreEx") ci.levelParams ty val .abbrev .safe []))
+          -- `T.pre_ex : T.Pre vars s → T.PreEx keep s`
+          let exApp := mkAppN (mkConst (Name.mkStr n "PreEx") lps) (kp.push ps)
+          let pr ← withLocalDeclD `hp preApp fun hp => do
+            let pf ← mkExpectedTypeHint (← existsIntro others preApp hp) exApp
+            let t ← instantiateMVars (← mkForallImplicit pvs (← mkForallFVars #[hp] exApp))
+            let v ← instantiateMVars (← mkLambdaFVars (pvs.push hp) pf)
+            return (t, v)
+          return some (ty, val, pr)
+        match r with
+        | some (_, _, (pt, pv)) =>
+          addDecl (Declaration.thmDecl { name := Name.mkStr n "pre_ex", levelParams := ci.levelParams, type := pt, value := pv })
+          preNote := "; PreEx declared"
+        | none => preNote := "; no PreEx (a kept variable is not Pre's)"
+      logInfo m!"{n}: kept {← keep.mapM fun x => x.fvarId!.getUserName}{preNote}"
       logInfo m!"{n}: {facts.size} post facts over {params.size} variables ({keep.size} kept in PLex, {bound.size} opened), {rest.size} other conjuncts"
 
 elab "facts_post " id:ident : command => do

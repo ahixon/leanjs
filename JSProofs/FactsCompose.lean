@@ -19,6 +19,14 @@ open Lean Meta Elab Command Term
 
 namespace Logic.FactsCompose
 
+/-- Phase timing on stderr (`set_option diagnostics true`). -/
+def tick (what : String) (t0 : Nat) : CoreM Nat := do
+  let t ← IO.monoMsNow
+  if (← getOptions).getBool `diagnostics false then
+    IO.eprintln s!"facts_compose: {what} {t - t0} ms"
+    (← IO.getStderr).flush
+  return t
+
 /-- The opened obligation, as post tactics see it (`hob.get`): wrapped so `omega`/`simp_all` leave it alone (it holds
 every callee premise; unwrapped, they decompose it, and that does not fit in memory). -/
 structure Ob (P : Prop) : Prop where
@@ -50,6 +58,37 @@ def tryTac (t : Expr) (tac : Syntax) : TermElabM (Option Expr) := do
 def mkExistsFVars (xs : Array Expr) (b : Expr) : MetaM Expr :=
   xs.foldrM (fun x acc => do mkAppM ``Exists #[← mkLambdaFVars #[x] acc]) b
 
+/-- The open variables as one tuple `τ₀ × (τ₁ × …)` (when no variable's type mentions another): the tuple type,
+its universe level, and the variables' projections from a tuple `p`. -/
+def tupleOf (exs : Array Expr) : MetaM (Option (Expr × Level × (Expr → Array Expr))) := do
+  let tys ← exs.mapM fun x => do instantiateMVars (← inferType x)
+  if tys.any (fun t => exs.any (t.containsFVar ·.fvarId!)) then return none
+  let lvls ← tys.mapM fun t => do
+    let l ← getLevel t
+    return (← instantiateLevelMVars l).normalize
+  let n := tys.size
+  -- the suffix types `τ_k × … × τ_{n-1}` and their levels, from the end
+  let mut sufT : Array Expr := Array.replicate n (mkConst ``Unit)
+  let mut sufL : Array Level := Array.replicate n levelZero
+  sufT := sufT.set! (n - 1) tys[n - 1]!
+  sufL := sufL.set! (n - 1) lvls[n - 1]!
+  for k' in [:n - 1] do
+    let k := n - 2 - k'
+    let u := lvls[k]!.dec.getD levelZero
+    let v := sufL[k + 1]!.dec.getD levelZero
+    sufT := sufT.set! k (mkApp2 (mkConst ``Prod [u, v]) tys[k]! sufT[k + 1]!)
+    sufL := sufL.set! k (mkLevelMax' lvls[k]! sufL[k + 1]!)
+  let projs (p : Expr) : Array Expr := Id.run do
+    let mut out : Array Expr := #[]
+    let mut r := p
+    for k in [:n - 1] do
+      let u := lvls[k]!.dec.getD levelZero
+      let v := sufL[k + 1]!.dec.getD levelZero
+      out := out.push (mkApp3 (mkConst ``Prod.fst [u, v]) tys[k]! sufT[k + 1]! r)
+      r := mkApp3 (mkConst ``Prod.snd [u, v]) tys[k]! sufT[k + 1]! r
+    out.push r
+  return some (sufT[0]!, sufL[0]!, projs)
+
 /-- A contract `x` discharged by spec `U`: with `ob? = none` the obligation's type; with `some ob` (a local of that
 type) the contract's proof. -/
 def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Array (Name × Expr))
@@ -60,12 +99,14 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
   let hidden := ct0.isAppOfArity ``Logic.Hide 1
   let ct := if hidden then ct0.appArg! else ct0
   let wrapHide (e : Expr) : Expr := if hidden then mkApp2 (mkConst ``Logic.Hide.mk) ct e else e
+  let tA ← tick s!"{U}: arm start" (← IO.monoMsNow)
   forallTelescope ct fun bs body => do
     unless body.isAppOf ``Logic.WP do throwError "facts_compose: {x} is not a contract (∀ …, WP …): {body}"
     let uOf ← mkConstWithFreshMVarLevels (Name.mkStr U "ofPre")
     let uTy ← inferType uOf
     let names := binderNames uTy
     let (ms, _, uc) ← forallMetaTelescope uTy
+    let tA ← tick s!"{U}: {ms.size} binders opened" tA
     unless uc.isAppOf ``Logic.WP do throwError "facts_compose: {U}.ofPre does not conclude WP"
     let ba := body.getAppArgs
     let ua := uc.getAppArgs
@@ -74,6 +115,7 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
       unless ← isDefEq ba[i]! ua[i]! do
         throwError "facts_compose: {U}'s call does not match {x}'s at argument {i}:{indentExpr ba[i]!}\nvs{indentExpr ua[i]!}"
     let some ip := names.findIdx? (· == `hpre) | throwError "facts_compose: {U}.ofPre has no `hpre`"
+    let tA ← tick s!"{U}: call unified" tA
     -- the arm's instantiations of `U`'s variables
     for (nm, stx) in uinsts do
       let some k := names.findIdx? (· == nm) | throwError "facts_compose: {U} has no variable {nm}"
@@ -98,6 +140,7 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
     let opens := openIdx.map (ms[·]!)
     let decls ← openIdx.mapM fun k => do
       return (Name.mkSimple ("u_" ++ names[k]!.toString), ← instantiateMVars (← inferType ms[k]!))
+    let t0 ← tick s!"{U}: instantiated, {decls.size} open" tA
     withLocalDeclsDND decls fun exs => do
       for m in opens, e in exs do m.mvarId!.assign e
       let preTy ← instantiateMVars (← inferType ms[ip]!)
@@ -116,22 +159,23 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
         closed := closed.push p?
         if p?.isNone then rest := rest.push t
       let conj := rest.foldr (fun t acc => mkAnd acc t) preTy
+      let t1 ← tick s!"{U}: {rest.size} premises left" t0
       match ob? with
-      | none => mkForallFVars bs (← mkExistsFVars exs conj)
+      | none =>
+        -- many variables: one tuple (opening it is one elimination, not one per variable)
+        let tup? ← if exs.size > 6 then tupleOf exs else pure none
+        let ex ← match tup? with
+          | some (T, _, projs) => withLocalDeclD `p T fun p => do
+              mkAppM ``Exists #[← mkLambdaFVars #[p] (conj.replaceFVars exs (projs p))]
+          | none => mkExistsFVars exs conj
+        let r ← mkForallFVars bs ex
+        let _ ← tick s!"{U}: obligation built" t1
+        return r
       | some ob =>
         -- the contract's proof: open the obligation, apply `U.ofPre`, adapt the postcondition
         let hob := mkAppN ob bs
-        let rec open_ (j : Nat) (h : Expr) : TermElabM Expr := do
-          if j < exs.size then
-            let e := exs[j]!
-            let pBody ← instantiateMVars (← whnf (← inferType h))
-            let lam := pBody.appArg!
-            withLocalDeclD `hx (← instantiateMVars (Expr.headBeta (mkApp lam e))) fun hx => do
-              let inner ← open_ (j + 1) hx
-              let f ← mkLambdaFVars #[e, hx] inner
-              mkAppM ``Exists.elim #[h, f]
-          else
-            -- `h : (Pre ∧ r₁) ∧ r₂ …` (left-nested)
+        -- the proof once the obligation is opened: `h : (Pre ∧ r₁) ∧ r₂ …` (left-nested), the variables `exs`
+        let finish (h : Expr) : TermElabM Expr := do
             let hob := h
             let mut cur := h
             let mut rs : Array Expr := #[]
@@ -148,19 +192,48 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
                 | some p => args := args.push p
                 | none => args := args.push rs[ri]!; ri := ri + 1
             let hw := mkAppN uOf args
+            let preTyU ← instantiateMVars (← inferType cur)
             let qU := (← instantiateMVars (← inferType hw)).appArg!
             let qC := body.appArg!
             let pt ← mkPostGoal qU qC
-            -- the post tactic sees the opened obligation as `hob.get`
+            -- the post tactic sees the opened obligation as `hob.get`, the callee's `Pre` as `hpreU`
             let obTy := mkApp (mkConst ``Ob) (← inferType hob)
+            withLetDecl `hpreU preTyU cur fun hprev => do
             withLetDecl `hob obTy (mkApp2 (mkConst ``Ob.mk) (← inferType hob) hob) fun hobv => do
               let mv ← mkFreshExprSyntheticOpaqueMVar pt
               let rem ← try Term.withoutErrToSorry (Tactic.run mv.mvarId! (Tactic.evalTactic post))
                 catch e => throwError "facts_compose: the postcondition of {U} does not give {x}'s:{indentExpr pt}\n{e.toMessageData}"
               unless rem.isEmpty do
                 throwError "facts_compose: the postcondition of {U} does not give {x}'s: goals left {rem.map (MessageData.ofGoal ·)}"
-              mkLetFVars #[hobv] (← mkAppM ``Logic.wp_mono #[hw, ← instantiateMVars mv])
-        return wrapHide (← mkLambdaFVars bs (← open_ 0 hob))
+              mkLetFVars #[hprev, hobv] (← mkAppM ``Logic.wp_mono #[hw, ← instantiateMVars mv])
+        let rec open_ (j : Nat) (h : Expr) : TermElabM Expr := do
+          if j < exs.size then
+            let e := exs[j]!
+            let pBody ← instantiateMVars (← whnf (← inferType h))
+            let lam := pBody.appArg!
+            withLocalDeclD `hx (← instantiateMVars (Expr.headBeta (mkApp lam e))) fun hx => do
+              let inner ← open_ (j + 1) hx
+              let f ← mkLambdaFVars #[e, hx] inner
+              mkAppM ``Exists.elim #[h, f]
+          else finish h
+        let tup? ← if exs.size > 6 then tupleOf exs else pure none
+        let r ← match tup? with
+          | none => open_ 0 hob
+          | some (T, lvl, projs) =>
+            -- one elimination of the tuple; the proof built over the variables, then they are its projections
+            withLocalDeclD `h conj fun h => do
+              let inner ← instantiateMVars (← finish h)
+              withLocalDeclD `p T fun p => do
+                let ps := projs p
+                let conjP := conj.replaceFVars exs ps
+                withLocalDeclD `hp conjP fun hp => do
+                  let f ← mkLambdaFVars #[p, hp] (inner.replaceFVars (exs.push h) (ps.push hp))
+                  let lam ← mkLambdaFVars #[p] conjP
+                  return mkAppN (mkConst ``Exists.elim [lvl]) #[T, lam, body, hob, f]
+        let t2 ← tick s!"{U}: proof built" t1
+        let r ← mkLambdaFVars bs r
+        let _ ← tick s!"{U}: proof abstracted" t2
+        return wrapHide r
 where
   /-- `∀ b w h', qU b w h' → qC b w h'` -/
   mkPostGoal (qU qC : Expr) : MetaM Expr := do
@@ -184,11 +257,14 @@ context's parameters (`eng`, `σ`, `answer`, `HI`), its explicit ones (hypothese
 first explicit premise. -/
 partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (args locals : Array Expr)
     (k : Array Expr → Array Expr → Expr → TermElabM α) (extras : Array Syntax := #[])
-    (late : Array Syntax := #[]) (pending : Array (Expr × Syntax) := #[]) (split : Bool := true) : TermElabM α := do
+    (late : Array Syntax := #[]) (pending : Array (Expr × Syntax) := #[]) (split : Bool := true)
+    (subs : Array (Expr × Expr) := #[]) : TermElabM α := do
+  -- an instantiated variable's placeholder (still in scope under its name) replaced by its value in later values
+  let sub (e : Expr) : Expr := subs.foldl (fun e (x, v) => e.replaceFVar x v) e
   if split && !extras.isEmpty then
     let (imp, exp) := extras.partition fun b => b.getKind == ``Lean.Parser.Term.implicitBinder ||
       b.getKind == ``Lean.Parser.Term.strictImplicitBinder || b.getKind == ``Lean.Parser.Term.instBinder
-    return ← telescopeInst ty insts args locals k imp (late ++ exp) pending false
+    return ← telescopeInst ty insts args locals k imp (late ++ exp) pending false subs
   let ty ← whnfR ty
   -- the deferred instantiations and the late binders, once `T`'s variables are bound
   let settle (ty : Expr) (args locals : Array Expr) (k' : Expr → Array Expr → Array Expr → TermElabM α) :
@@ -196,7 +272,7 @@ partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (arg
     let mut ty := ty; let mut args := args; let mut locals := locals
     for (x, stx) in pending do
       let d ← x.fvarId!.getType
-      let e ← instantiateMVars (← Term.elabTermEnsuringType stx d)
+      let e := sub (← instantiateMVars (← Term.elabTermEnsuringType stx d))
       Term.synthesizeSyntheticMVarsNoPostponing
       locals := locals.filter (· != x)
       for y in locals do
@@ -210,9 +286,9 @@ partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (arg
   | .forallE n d b bi =>
     -- the composite's own binders, after the context's parameters (they may mention `σ`, `HI`)
     if !extras.isEmpty && ![`eng, `σ, `answer, `HI].contains n then
-      return ← Term.elabBinders extras fun ex => telescopeInst ty insts args (locals ++ ex) k #[] late pending false
+      return ← Term.elabBinders extras fun ex => telescopeInst ty insts args (locals ++ ex) k #[] late pending false subs
     if bi == .default && (!pending.isEmpty || !late.isEmpty) then
-      return ← settle ty args locals fun ty args locals => telescopeInst ty insts args locals k #[] #[] #[] false
+      return ← settle ty args locals fun ty args locals => telescopeInst ty insts args locals k #[] #[] #[] false subs
     if let some (_, stx) := insts.find? (·.1 == n) then
       -- `e` may use a new binder of the same name (`(n := n + 2)`): kept when it does
       withLocalDecl n bi d fun x0 => do
@@ -222,16 +298,18 @@ partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (arg
               let e ← Term.elabTermEnsuringType stx d
               Term.synthesizeSyntheticMVarsNoPostponing
               instantiateMVars e
-            pure (some e)
+            pure (some (sub e))
           catch _ => st.restore; pure none
         match r with
         | some e =>
-          let locals := if e.containsFVar x0.fvarId! then locals.push x0 else locals
-          telescopeInst (← Core.betaReduce (b.instantiate1 e)) insts (args.push e) locals k extras late pending false
+          let keepX := e.containsFVar x0.fvarId!
+          let locals := if keepX then locals.push x0 else locals
+          let subs := if keepX then subs else subs.push (x0, e)
+          telescopeInst (← Core.betaReduce (b.instantiate1 e)) insts (args.push e) locals k extras late pending false subs
         | none =>
-          telescopeInst (b.instantiate1 x0) insts (args.push x0) (locals.push x0) k extras late (pending.push (x0, stx)) false
+          telescopeInst (b.instantiate1 x0) insts (args.push x0) (locals.push x0) k extras late (pending.push (x0, stx)) false subs
     else
-      withLocalDecl n bi d fun x => telescopeInst (b.instantiate1 x) insts (args.push x) (locals.push x) k extras late pending false
+      withLocalDecl n bi d fun x => telescopeInst (b.instantiate1 x) insts (args.push x) (locals.push x) k extras late pending false subs
   | _ =>
     if !pending.isEmpty || !late.isEmpty then
       settle ty args locals fun ty args locals => k args locals ty
@@ -258,7 +336,9 @@ partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (arg
     let tOf := Name.mkStr T "ofPre"
     let ci ← getConstInfo tOf
     -- the premises proved in place are instantiated like variables
+    let tS ← tick s!"{T}: start" (← IO.monoMsNow)
     telescopeInst (extras := extraBs) ci.type (insts ++ proofs) #[] #[] fun args0 xs concl => do
+      let _ ← tick s!"{T}: instantiations done ({xs.size} binders)" tS
       let mut ctx : Array (Name × Expr) := #[]
       for x in xs do
         let nm ← x.fvarId!.getUserName

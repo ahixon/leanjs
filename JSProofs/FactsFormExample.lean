@@ -3,7 +3,7 @@ import JSProofs.ReactBeforeMutation
 import JSProofs.ReactSelection
 
 /-! `facts_form` on real specs: their property, kind, binding and frame-closed premises as one list of facts;
-`facts_apart` deciding which facts a footprint misses. -/
+`facts_apart_wf` deciding which facts a footprint misses. -/
 
 facts_form ReactBeforeMutation.cbm_spec
 facts_form ReactBeforeMutation.cbmc_root
@@ -16,7 +16,7 @@ example (R : ObjId) (d : FuncData) (oG : Option EnvId) (v : Value) (P : Option B
     Facts.Apart (ReactBeforeMutation.FB d.env)
       [.prop R (.str (JSStr.ofString "current")) (some (.data v true true true)),
        .bind d.env oG (JSStr.ofString "current") P, .kindP R (fun _ => True)] := by
-  facts_apart
+  facts_apart_wf
   exact ⟨by simp, by simp⟩
 
 #check @ReactSelection.hsc_spec.Pre_frame
@@ -25,7 +25,7 @@ example (R : ObjId) (d : FuncData) (oG : Option EnvId) (v : Value) (P : Option B
 open ES Logic in
 /-- **A callee's contract from its spec**: commitBeforeMutationEffects' contract for hasSelectionCapabilities, from
 `hsc_spec`'s precondition at every state its frame (`FB d.env`) reaches. (Not from the precondition at its start:
-`hsc_spec`'s reads of the DOM hold through frames within `{}` only, and `facts_apart` rightly fails on them; who
+`hsc_spec`'s reads of the DOM hold through frames within `{}` only, and `facts_apart_wf` rightly fails on them; who
 holds them through `FB d.env` discharges this premise.) -/
 example {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ → Prop} {n : Nat} {h : σ} {s : State}
     {d : FuncData} {fHS E : ObjId}
@@ -54,4 +54,4 @@ example {eng : Engine} {σ : Type} {answer : HostAnswer σ} {n : Nat} {h : σ} {
       (d := d) (t := t) (s := w) (bG := bG) (oG := oG) (bdN := bdN) (R := R) (av := av) (fl := fl) (aw := aw)
       (ae := ae) (ac := ac) (fw := fw) (fe := fe) (fc := fc) (tw := tw) (te := te) (tc := tc) (sw := sw) (se := se)
       (sc := sc) (rw := rw) (re := re) (rc := rc) :=
-  ReactBeforeMutation.cbmc_root.Pre_frame w _ hp hF (by facts_apart; exact ⟨by simp [hRX], by simp⟩)
+  ReactBeforeMutation.cbmc_root.Pre_frame w _ hp hF (by facts_apart_wf; exact ⟨by simp [hRX], by simp⟩)

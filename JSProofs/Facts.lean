@@ -365,4 +365,113 @@ theorem Facts.apart_refl {a : Atoms} (hw : a.Wf) (f : SFoot) {l : List Fact} (rs
   rw [← he]
   exact RLoc.apart_sound hw r (List.all_eq_true.mp h r hr)
 
+/-! ### Apartness asking only for the distinctness it needs
+
+`RLoc.pairs f r`: the pairs of atoms that must name different objects (records) for `r` to lie outside `f` — a fact's
+object and every footprint object with the same key — or `none` when it lies inside on indices alone. -/
+
+def RLoc.pairs (f : SFoot) : RLoc → Option (List (Nat × Nat) × List (Nat × Nat))
+  | .pure | .obj _ | .record _ => some ([], [])
+  | .prop o k => if f.props.contains (o, k) then none
+      else some ((f.props.filter (fun p => p.2 == k)).map (fun p => (o, p.1)), [])
+  | .bind e x => if f.binds.contains (e, x) then none
+      else some ([], (f.binds.filter (fun p => p.2 == x)).map (fun p => (e, p.1)))
+  | .recordAll e => if f.binds.any (fun p => p.1 == e) then none else some ([], f.binds.map (fun p => (e, p.1)))
+  | .objAll o => if f.props.any (fun p => p.1 == o) then none else some (f.props.map (fun p => (o, p.1)), [])
+  | .closed g => if f.sub g then some ([], []) else none
+
+theorem RLoc.pairs_sound {a : Atoms} {f : SFoot} (r : RLoc) {po pe : List (Nat × Nat)}
+    (h : r.pairs f = some (po, pe)) (ho : ∀ p ∈ po, a.obj p.1 ≠ a.obj p.2) (he : ∀ p ∈ pe, a.env p.1 ≠ a.env p.2) :
+    (r.eval a).Apart (f.eval a) := by
+  cases r with
+  | pure | obj _ | record _ => trivial
+  | prop o k =>
+    simp only [RLoc.pairs] at h
+    split at h
+    · cases h
+    · rename_i hc
+      cases h
+      show (f.eval a).props.contains (a.obj o, k) = false
+      apply Bool.eq_false_iff.mpr
+      intro hm
+      obtain ⟨p, hp, hq⟩ := List.mem_map.mp (List.contains_iff_mem.mp hm)
+      have hk : p.2 = k := by simpa using congrArg Prod.snd hq
+      have hob : a.obj p.1 = a.obj o := by simpa using congrArg Prod.fst hq
+      by_cases hpo : p.1 = o
+      · apply hc; apply List.contains_iff_mem.mpr; rw [← hpo, ← hk]; exact hp
+      · exact ho (o, p.1) (List.mem_map.mpr ⟨p, List.mem_filter.mpr ⟨hp, by simp [hk]⟩, rfl⟩) hob.symm
+  | bind e x =>
+    simp only [RLoc.pairs] at h
+    split at h
+    · cases h
+    · rename_i hc
+      cases h
+      show (a.env e, x) ∉ (f.eval a).binds
+      intro hm
+      obtain ⟨p, hp, hq⟩ := List.mem_map.mp hm
+      have hk : p.2 = x := by simpa using congrArg Prod.snd hq
+      have hob : a.env p.1 = a.env e := by simpa using congrArg Prod.fst hq
+      by_cases hpo : p.1 = e
+      · apply hc; apply List.contains_iff_mem.mpr; rw [← hpo, ← hk]; exact hp
+      · exact he (e, p.1) (List.mem_map.mpr ⟨p, List.mem_filter.mpr ⟨hp, by simp [hk]⟩, rfl⟩) hob.symm
+  | recordAll e =>
+    simp only [RLoc.pairs] at h
+    split at h
+    · cases h
+    · cases h
+      show (f.eval a).binds.all (fun p => p.1 != a.env e) = true
+      simp only [SFoot.eval, List.all_eq_true, List.mem_map, bne_iff_ne, ne_eq]
+      rintro _ ⟨p, hp, rfl⟩ hq
+      exact he (e, p.1) (List.mem_map.mpr ⟨p, hp, rfl⟩) hq.symm
+  | objAll o =>
+    simp only [RLoc.pairs] at h
+    split at h
+    · cases h
+    · cases h
+      show (f.eval a).props.all (fun p => p.1 != a.obj o) = true
+      simp only [SFoot.eval, List.all_eq_true, List.mem_map, bne_iff_ne, ne_eq]
+      rintro _ ⟨p, hp, rfl⟩ hq
+      exact ho (o, p.1) (List.mem_map.mpr ⟨p, hp, rfl⟩) hq.symm
+  | closed g =>
+    simp only [RLoc.pairs] at h
+    split at h
+    · exact SFoot.sub_sound (by assumption)
+    · cases h
+
+/-- `P` of every element (a conjunction, by reduction, for a literal list). -/
+def AllP {α : Type} (P : α → Prop) : List α → Prop
+  | [] => True
+  | x :: l => P x ∧ AllP P l
+
+theorem AllP.mem {α : Type} {P : α → Prop} : ∀ {l : List α}, AllP P l → ∀ x ∈ l, P x
+  | [], _, _, hx => nomatch hx
+  | y :: l, ⟨hy, hl⟩, x, hx => by
+    cases List.mem_cons.mp hx with
+    | inl h => exact h ▸ hy
+    | inr h => exact AllP.mem hl x h
+
+/-- Every needed pair is among `po`/`pe`. -/
+def RLoc.covered (f : SFoot) (po pe : List (Nat × Nat)) (r : RLoc) : Bool :=
+  match r.pairs f with
+  | some (p1, p2) => p1.all (po.contains ·) && p2.all (pe.contains ·)
+  | none => false
+
+/-- **`Apart` by reflection, from the distinctness of the pairs that need it** (`ho`, `he`: one inequality per pair). -/
+theorem Facts.apart_pairs {a : Atoms} (f : SFoot) {l : List Fact} (rs : List RLoc) (po pe : List (Nat × Nat))
+    (hl : l.map Fact.loc = rs.map (RLoc.eval a)) (h : rs.all (RLoc.covered f po pe) = true)
+    (ho : AllP (fun p => a.obj p.1 ≠ a.obj p.2) po) (he : AllP (fun p => a.env p.1 ≠ a.env p.2) pe) :
+    Facts.Apart (f.eval a) l := by
+  intro x hx
+  have : x.loc ∈ rs.map (RLoc.eval a) := hl ▸ List.mem_map_of_mem hx
+  obtain ⟨r, hr, hre⟩ := List.mem_map.mp this
+  rw [← hre]
+  have hc := List.all_eq_true.mp h r hr
+  simp only [RLoc.covered] at hc
+  split at hc
+  · rename_i p1 p2 hp
+    simp only [Bool.and_eq_true, List.all_eq_true] at hc
+    exact RLoc.pairs_sound r hp (fun p hp' => AllP.mem ho p (List.contains_iff_mem.mp (hc.1 p hp')))
+      (fun p hp' => AllP.mem he p (List.contains_iff_mem.mp (hc.2 p hp')))
+  · cases hc
+
 end Logic
