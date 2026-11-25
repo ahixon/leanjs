@@ -177,26 +177,65 @@ syntax compProof := " | " ident " := " term
 syntax (name := factsCompose) "facts_compose " ident (ppSpace bracketedBinder)* " := " ident (compInst)*
   (atomic(compProof) <|> compArm)+ : command
 
-/-- `T.ofPre`'s binders, those named in `insts` instantiated (elaborated after the binders before them): the
-arguments for `T.ofPre`, the binders left, the conclusion. -/
+/-- `T.ofPre`'s binders, those named in `insts` instantiated (elaborated after the binders before them; one that
+mentions a later variable is elaborated once the variables are all bound, at the first explicit premise): the
+arguments for `T.ofPre`, the binders left, the conclusion. The composite's own implicit binders come after the
+context's parameters (`eng`, `σ`, `answer`, `HI`), its explicit ones (hypotheses over `T`'s variables) before `T`'s
+first explicit premise. -/
 partial def telescopeInst {α} (ty : Expr) (insts : Array (Name × Syntax)) (args locals : Array Expr)
-    (k : Array Expr → Array Expr → Expr → TermElabM α) (extras : Array Syntax := #[]) : TermElabM α := do
+    (k : Array Expr → Array Expr → Expr → TermElabM α) (extras : Array Syntax := #[])
+    (late : Array Syntax := #[]) (pending : Array (Expr × Syntax) := #[]) (split : Bool := true) : TermElabM α := do
+  if split && !extras.isEmpty then
+    let (imp, exp) := extras.partition fun b => b.getKind == ``Lean.Parser.Term.implicitBinder ||
+      b.getKind == ``Lean.Parser.Term.strictImplicitBinder || b.getKind == ``Lean.Parser.Term.instBinder
+    return ← telescopeInst ty insts args locals k imp (late ++ exp) pending false
   let ty ← whnfR ty
+  -- the deferred instantiations and the late binders, once `T`'s variables are bound
+  let settle (ty : Expr) (args locals : Array Expr) (k' : Expr → Array Expr → Array Expr → TermElabM α) :
+      TermElabM α := do
+    let mut ty := ty; let mut args := args; let mut locals := locals
+    for (x, stx) in pending do
+      let d ← x.fvarId!.getType
+      let e ← instantiateMVars (← Term.elabTermEnsuringType stx d)
+      Term.synthesizeSyntheticMVarsNoPostponing
+      locals := locals.filter (· != x)
+      for y in locals do
+        if (← y.fvarId!.getType).containsFVar x.fvarId! then
+          throwError "facts_compose: the instantiation of {← x.fvarId!.getUserName} is needed by a later variable's type"
+      ty := ty.replaceFVar x e
+      args := args.map (·.replaceFVar x e)
+    if late.isEmpty then k' ty args locals
+    else Term.elabBinders late fun ex => k' ty args (locals ++ ex)
   match ty with
   | .forallE n d b bi =>
     -- the composite's own binders, after the context's parameters (they may mention `σ`, `HI`)
     if !extras.isEmpty && ![`eng, `σ, `answer, `HI].contains n then
-      return ← Term.elabBinders extras fun ex => telescopeInst ty insts args (locals ++ ex) k
+      return ← Term.elabBinders extras fun ex => telescopeInst ty insts args (locals ++ ex) k #[] late pending false
+    if bi == .default && (!pending.isEmpty || !late.isEmpty) then
+      return ← settle ty args locals fun ty args locals => telescopeInst ty insts args locals k #[] #[] #[] false
     if let some (_, stx) := insts.find? (·.1 == n) then
       -- `e` may use a new binder of the same name (`(n := n + 2)`): kept when it does
       withLocalDecl n bi d fun x0 => do
-        let e ← instantiateMVars (← Term.elabTermEnsuringType stx d)
-        Term.synthesizeSyntheticMVarsNoPostponing
-        let locals := if e.containsFVar x0.fvarId! then locals.push x0 else locals
-        telescopeInst (← Core.betaReduce (b.instantiate1 e)) insts (args.push e) locals k extras
+        let st ← saveState
+        let r ← try
+            let e ← Term.withoutErrToSorry do
+              let e ← Term.elabTermEnsuringType stx d
+              Term.synthesizeSyntheticMVarsNoPostponing
+              instantiateMVars e
+            pure (some e)
+          catch _ => st.restore; pure none
+        match r with
+        | some e =>
+          let locals := if e.containsFVar x0.fvarId! then locals.push x0 else locals
+          telescopeInst (← Core.betaReduce (b.instantiate1 e)) insts (args.push e) locals k extras late pending false
+        | none =>
+          telescopeInst (b.instantiate1 x0) insts (args.push x0) (locals.push x0) k extras late (pending.push (x0, stx)) false
     else
-      withLocalDecl n bi d fun x => telescopeInst (b.instantiate1 x) insts (args.push x) (locals.push x) k extras
-  | _ => k args locals ty
+      withLocalDecl n bi d fun x => telescopeInst (b.instantiate1 x) insts (args.push x) (locals.push x) k extras late pending false
+  | _ =>
+    if !pending.isEmpty || !late.isEmpty then
+      settle ty args locals fun ty args locals => k args locals ty
+    else k args locals ty
 
 @[command_elab factsCompose] def elabFactsCompose : CommandElab := fun stx => do
   let newName := stx[1].getId
