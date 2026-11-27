@@ -51,21 +51,10 @@ def projConj (ts : Array Expr) (h : Expr) : Array Expr := Id.run do
       cur := mkApp3 (Lean.mkConst ``And.right) ts[i]! suf[i + 1]! cur
   return out
 
-/-- Progress, with the resident memory (Linux). -/
-def note (m : String) : IO Unit := do
-  let rss ← (try
-      let st ← IO.FS.readFile "/proc/self/status"
-      pure ((st.splitOn "\n").find? (·.startsWith "VmRSS:") |>.getD "")
-    catch _ => pure "")
-  -- (a file: a command's own output is held until it ends)
-  let h ← IO.FS.Handle.mk "facts_instantiate.progress" .append
-  h.putStrLn s!"[{(rss.drop 6).trim}] {m}"; h.flush
-
 syntax factsArg := "(" ident " := " term ")"
 syntax (name := factsInstantiate) "facts_instantiate " ident " := " ident factsArg* " using " tacticSeq : command
 
 @[command_elab factsInstantiate] def elabFactsInstantiate : CommandElab := fun stx => do
-  note "facts_instantiate: start"
   let n := stx[1].getId
   let tn := stx[3].getId
   let args := stx[4].getArgs
@@ -74,12 +63,10 @@ syntax (name := factsInstantiate) "facts_instantiate " ident " := " ident factsA
   liftTermElabM do
     let some tn ← (try some <$> realizeGlobalConstNoOverloadWithInfo (mkIdent tn) catch _ => pure none)
       | throwError "facts_instantiate: unknown theorem {tn}"
-    note "resolved"
     let ci ← getConstInfo tn
     let lvls := ci.levelParams.map mkLevelParam
     -- every binder an unknown, at once (an application elaborated binder by binder instantiates the huge type at
     -- each); the named ones given; the last two the start facts and the pure premises
-    note "telescope"
     -- (the binders up to `hP`: the conclusion's own premises stay in the conclusion)
     let ty := ci.type.instantiateLevelParams ci.levelParams lvls
     let rec countTo (t : Expr) (i : Nat) : Option Nat :=
@@ -88,7 +75,6 @@ syntax (name := factsInstantiate) "facts_instantiate " ident " := " ident factsA
       | _ => none
     let some nb := countTo ty 0 | throwError "facts_instantiate: {tn} has no premise hP"
     let (xs, _, concl) ← forallMetaTelescopeReducing ty (some nb)
-    note s!"opened {xs.size}"
     unless xs.size ≥ 2 do throwError "facts_instantiate: no premises"
     for a in args do
       let nm := a[1].getId
@@ -103,31 +89,19 @@ syntax (name := factsInstantiate) "facts_instantiate " ident " := " ident factsA
     if (concl.find? (fun x => x == xs[xs.size - 1]! || x == xs[xs.size - 2]!)).isSome then
       throwError "facts_instantiate: the conclusion names the premises"
     let e := mkAppN (Lean.mkConst tn lvls) (xs.extract 0 (xs.size - 2))
-    note "premises"
     let cs := conjuncts tP
-    note s!"{cs.size} conjuncts"
-    -- the binders given (assigned before any tactic runs)
-    let preA ← (xs.extract 0 (xs.size - 2)).filterM fun x => x.mvarId!.isAssigned
-    let preSet : Std.HashSet MVarId := preA.foldl (fun acc x => acc.insert x.mvarId!) {}
     -- each conjunct: proved by `tac` (its leftover goals premises), or kept
     let mut proved : Array (Option Expr) := #[]
     let mut extra : Array MVarId := #[]
     let mut nProved : Nat := 0
     for c in cs do
-      if proved.size % 200 == 0 then note s!"conjunct {proved.size}"
       let saved ← saveState
-      if (c.find? fun x => x.isConstOf ``Logic.Fact.closed).isSome then
-        let str := (toString (← ppExpr c)).replace "\n" " "
-        note s!"TRY {proved.size}: {(str.drop (str.length - 250)).toString}"
       -- (a timeout, a runtime exception, is caught too: the conjunct kept)
       let r ← tryCatchRuntimeEx (do try
-          let isC := (c.find? fun x => x.isConstOf ``Logic.Fact.closed).isSome
           let cUnk ← Logic.FactsDischarge.unknownsOf #[c]
-          if isC then note "  unknowns"
-          let _ := preSet
           let g ← mkFreshExprSyntheticOpaqueMVar c
           -- (no error recovery: a failed step fails the attempt, not leaves its goal)
-          -- (a budget per attempt: a runaway attempt fails, logged, instead of taking the machine's memory)
+          -- (a budget per attempt: a runaway attempt fails instead of taking the machine's memory)
           let hb0 ← IO.getNumHeartbeats
           let rs ← withTheReader Core.Context (fun ctx => { ctx with maxHeartbeats := 400000000 * 1000, initHeartbeats := hb0 }) do
             Term.withoutErrToSorry (Tactic.run g.mvarId! (Tactic.withoutRecover (evalTactic tac)))
@@ -137,36 +111,16 @@ syntax (name := factsInstantiate) "facts_instantiate " ident " := " ident factsA
           -- a failure. The message is not printed: its terms can be huge, and it prints with the options it was logged with.)
           unless ← g.mvarId!.isAssigned do throwError "facts_instantiate: the tactic made no progress"
           if (← getThe Core.State).messages.hasErrors then throwError "facts_instantiate: the tactic logged an error"
-          if isC then note "  tactic done"
           let badBinder ← (cUnk.map mkMVar).anyM fun x => do
             unless ← x.mvarId!.isAssigned do return false
             return (← instantiateMVars x).hasFVar
           -- (nor the conjunct itself left over a local: an unknown in it given one)
           let badBinder := badBinder || (← instantiateMVars c).hasFVar
-          if isC && badBinder then note "  bad binder"
           if badBinder then throwError "facts_instantiate: the tactic assigned an unknown a local"
           -- leftovers: statements over the binders (unknowns) alone
-          if isC then note "  checked binders"
           let ok ← rs.allM fun r => do return !(← instantiateMVars (← r.getType)).hasFVar
-          if isC then note s!"  leftovers ok={ok}"
-          if isC && !ok then
-            for r in rs do
-              let t ← instantiateMVars (← r.getType)
-              if t.hasFVar then
-                let str ← withOptions (fun o => (o.set `pp.maxSteps (400 : Nat)).setBool `pp.deepTerms false) do
-                  pure ((toString (← r.withContext (ppExpr t))).replace "\n" " ")
-                note s!"    on locals: {← r.getTag}: {str.take 300}"
           pure (if ok then some (g, rs) else none)
-        catch ex => do
-          if (c.find? fun x => x.isConstOf ``Logic.Fact.closed).isSome then
-            -- (printed with a capped printer: a message's terms can be huge)
-            let str ← withOptions (fun o => (o.set `pp.maxSteps (400 : Nat)).setBool `pp.deepTerms false) do
-              pure ((toString (← ex.toMessageData.format)).replace "\n" " ")
-            note s!"  error: {str.take 6000}"
-          pure none) (fun ex => do
-            if (c.find? fun x => x.isConstOf ``Logic.Fact.closed).isSome then note "  runtime exception (timeout?)"
-            let _ := ex
-            pure none)
+        catch _ => pure none) (fun _ => pure none)
       match r with
       | some (g, rs) =>
         -- leftovers an earlier proof left already (the same page fact, the same statement): merged
@@ -179,10 +133,6 @@ syntax (name := factsInstantiate) "facts_instantiate " ident " := " ident factsA
               m.assign (mkMVar e)
               break
         let rs := (← rs.filterM fun m => do return !(← m.isAssigned))
-        if nProved < 3 then
-          for m in rs do
-            let str := (toString (← ppExpr (← instantiateMVars (← m.getType)))).replace "\n" " "
-            note s!"LEFT {(← m.getDecl).userName}: {str.take 300}"
         proved := proved.push (some g)
         extra := extra ++ rs.toArray
         nProved := nProved + 1
@@ -216,7 +166,6 @@ syntax (name := factsInstantiate) "facts_instantiate " ident " := " ident factsA
       if next.isEmpty then throwError "facts_instantiate: the binders' types depend on each other in a cycle"
       rest := rest ++ next
       left := keep
-    note s!"{rest.size} binders left ({others.size} unknowns of no binder, {extraData.size} data leftovers)"
     let rec withVars (i : Nat) (fvs : Array Expr) (k : Array Expr → TermElabM Unit) : TermElabM Unit := do
       if h : i < rest.size then
         let x := rest[i]
@@ -237,7 +186,6 @@ syntax (name := factsInstantiate) "facts_instantiate " ident " := " ident factsA
     let zs ← extraTys.mapIdxM fun i t => do pure (Name.mkSimple s!"hZ{i}", t)
     withLocalDeclsDND zs fun zfs => do
       for (m, z) in extraP.zip zfs do m.assign z
-      note "building"
       let keptPfs := if keptTys.isEmpty then #[] else projConj keptTys hP
       let mut pfs : Array Expr := #[]
       let mut k := 0
@@ -248,12 +196,9 @@ syntax (name := factsInstantiate) "facts_instantiate " ident " := " ident factsA
       let csI ← cs.mapM instantiateMVars
       let val ← instantiateMVars (mkApp2 e hX (mkConj csI pfs))
       let bs := vars ++ #[hX, hP] ++ zfs
-      note "abstracting"
       let typ ← mkForallFVars bs concl
       let val ← mkLambdaFVars bs val
-      note "adding"
       addDecl (.thmDecl { name := ns ++ n, levelParams := ci.levelParams, type := typ, value := val })
-      note "added"
       logInfo m!"facts_instantiate: {ns ++ n} declared ({vars.size} binders)"
 
 end Logic.FactsInstantiate

@@ -1,9 +1,7 @@
 import JSProofs.FactsComposeCommitRoot
 import JSProofs.ReactCommitEntry
 
-/-! completeRoot with commitRoot and flushPendingEffects, and completeRootWhenReady with completeRoot, composed in Lean (`ReactCommitEntryFull.cpr_full`, generated
-by `gen_cpr_full.py`): commitRoot by `cmr_comp`, flushPendingEffects by `pending_none`;
-`crw_comp` = `gen_crw_full.py`'s `crw_full`. -/
+/-! completeRoot with commitRoot and flushPendingEffects, and completeRootWhenReady with completeRoot, composed in Lean: commitRoot by `cmr_comp`, flushPendingEffects by `pending_none`. -/
 
 facts_form ReactCommitEntry.cpr_spec
 

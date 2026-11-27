@@ -831,6 +831,14 @@ structure KeyTables where
   hnb : Expr
   hnp : Expr
 
+/-- Diagnostics of `facts_top`: appended to `facts_top.progress` in the working directory only when the environment
+sets `FACTS_PROGRESS=1`, else to `/dev/null`. -/
+def progressOn : IO Bool := return (← IO.getEnv "FACTS_PROGRESS") == some "1"
+
+/-- Where `facts_top`'s diagnostics go (`progressOn`). -/
+def progressHandle : IO IO.FS.Handle := do
+  IO.FS.Handle.mk (if ← progressOn then "facts_top.progress" else "/dev/null") .append
+
 initialize keyTables : IO.Ref (Option KeyTables) ← IO.mkRef none
 /-- The tables' keys so far (literal, its expression), by index. -/
 initialize keyListB : IO.Ref (Array (String × Expr)) ← IO.mkRef #[]
@@ -1023,7 +1031,7 @@ def topNe? (x y : Expr) (envs : Bool := false) : MetaM (Option Expr) := do
         let isTop ← if us.contains a.mvarId! then pure true else
           us.toArray.anyM fun u => do return (← instantiateMVars (mkMVar u)) == a
         unless isTop do
-          let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+          let hh ← progressHandle
           hh.putStrLn s!"TOPNE-REFUSED {← ppExpr a} (made on the way) in {← ppExpr x} vs {← ppExpr y}"; hh.flush
           return none
     return some (← mkAppM ``ES.FuncData.env #[a])
@@ -1036,7 +1044,7 @@ def topNe? (x y : Expr) (envs : Bool := false) : MetaM (Option Expr) := do
   let g ← mkFreshExprMVar (← mkAppM ``Ne #[a, b]) .natural `topNe
   topNes.modify (·.push (a, b, g))
   if envs then
-    let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+    let hh ← progressHandle
     hh.putStrLn s!"TOPNE-ENV {← ppExpr a} ≠ {← ppExpr b}"; hh.flush
   return some g
 
@@ -1052,7 +1060,7 @@ def ltOfFrameSize (a b : Expr) : MetaM (Option Expr) := do
   -- `a` up to reducible unfolding (`{ d with env := e }.env` is `e`)
   let aN ← whnfR (← instantiateMVars a)
   let dbg ← carryDebug.get
-  let h ← IO.FS.Handle.mk "facts_top.progress" .append
+  let h ← progressHandle
   if dbg then h.putStrLn s!"NEFS a≈ {(toString (← ppExpr aN)).take 80} vs {(toString (← ppExpr b)).take 60}"
   -- the frames in the context
   let mut frames : Array (Expr × Expr × Expr) := #[]
@@ -1364,7 +1372,7 @@ def carry (hE hFE : Expr) : TermElabM (Expr × Expr × Nat × Nat) := do
   for k in [:elems.size] do
     let some (a, b) ← placePairs A fbs fps rs[k]! lb lp | do
       if ← carryDebug.get then
-        let h ← IO.FS.Handle.mk "facts_top.progress" .append
+        let h ← progressHandle
         h.putStrLn s!"CARRY-PLACE {((toString (← ppExpr elems[k]!)).replace "\n" " ").take 300} FP {((toString (← ppExpr fp)).replace "\n" " ").take 1500}"; h.flush
       continue
     let mut ok := true
@@ -1375,7 +1383,7 @@ def carry (hE hFE : Expr) : TermElabM (Expr × Expr × Nat × Nat) := do
         | none =>
           let r ← closeNe A.objs[i]! A.objs[j]! true; cache := cache.push ((true, i, j), r); ok := r.isSome
           if r.isNone && (← carryDebug.get) then
-            let h ← IO.FS.Handle.mk "facts_top.progress" .append
+            let h ← progressHandle
             h.putStrLn s!"CARRY-NE obj {(toString (← ppExpr A.objs[i]!)).take 120} ≠ {(toString (← ppExpr A.objs[j]!)).take 120}"; h.flush
     for (i, j) in b do
       if ok then
@@ -1384,7 +1392,7 @@ def carry (hE hFE : Expr) : TermElabM (Expr × Expr × Nat × Nat) := do
         | none =>
           let r ← closeNe A.envs[i]! A.envs[j]! false true; cache := cache.push ((false, i, j), r); ok := r.isSome
           if r.isNone && (← carryDebug.get) then
-            let h ← IO.FS.Handle.mk "facts_top.progress" .append
+            let h ← progressHandle
             h.putStrLn s!"CARRY-NE env {((toString (← ppExpr A.envs[i]!)).replace "\n" " ").take 2000} ≠ {((toString (← ppExpr A.envs[j]!)).replace "\n" " ").take 2000}"; h.flush
     if ok then keep := keep.push k
   let L' ← mkListLit (mkConst ``Logic.Fact) (keep.toList.map (elems[·]!))

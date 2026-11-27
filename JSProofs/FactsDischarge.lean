@@ -33,7 +33,7 @@ def checkWatch (what : String) (goal cand : Expr) : MetaM Unit := do
   let some m ← watched.get | return
   if ← m.isAssigned then
     watched.set none
-    let h ← IO.FS.Handle.mk "facts_top.progress" .append
+    let h ← progressHandle
     h.putStrLn s!"WATCH {what}: assigned {((toString (← ppExpr (← instantiateMVars (mkMVar m)))).replace "\n" " ").take 200} by goal {((toString (← ppExpr (← instantiateMVars goal))).replace "\n" " ").take 500} with {((toString (← ppExpr (← instantiateMVars cand))).replace "\n" " ").take 500}"
     h.flush
 
@@ -213,7 +213,7 @@ def checkR (what : String) (gty : String) : MetaM Unit := do
   if ← m.isAssigned then
     let v ← instantiateMVars (mkMVar m)
     watched.set (if v.isMVar then some v.mvarId! else none)
-    let h ← IO.FS.Handle.mk "facts_top.progress" .append
+    let h ← progressHandle
     h.putStrLn s!"R-ASSIGNED after {what}: {((toString (← ppExpr v)).replace "\n" " ").take 300} | step goal: {gty} | previous: {← lastStep.get}"
     h.flush
   lastStep.set gty
@@ -1885,10 +1885,10 @@ partial def collectGoal (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.R
   -- progress on stderr
   st.modify fun c => { c with steps := c.steps + 1 }
   let c ← st.get
-  if c.steps % 25 == 0 then
+  if c.steps % 25 == 0 && (← progressOn) then
     IO.eprintln s!"collect: {c.steps} steps, {c.matched} found, {c.startFacts.size} start facts, {c.pures.size} pures, {c.stuck.size} stuck, head {t.getAppFn.constName?.getD `fvar}"
     (← IO.getStderr).flush
-    let h ← IO.FS.Handle.mk "facts_top.progress" .append
+    let h ← progressHandle
     h.putStrLn s!"{← IO.monoMsNow} collect {c.steps} steps, head {t.getAppFn.constName?.getD `fvar}"
     if c.steps % 100 == 0 then h.putStrLn s!"  times: {← stepReport}; carry {(← carryTimes.get).toList}"
     h.flush
@@ -1944,11 +1944,11 @@ partial def collectGoal (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.R
       try gc ← rawFacts gc fresh catch _ => pure ()
       pure gc
     let gN ← (try timed "walk:substOuter" (substOuter gN top) catch e => do
-      let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+      let hh ← progressHandle
       hh.putStrLn s!"SUBSTOUTER error {((toString (← e.toMessageData.format)).replace "\n" " ").take 600}"; hh.flush
       pure gN)
     let gN ← (try timed "walk:substSame" (substSame gN top s0) catch e => do
-      let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+      let hh ← progressHandle
       hh.putStrLn s!"SUBSTSAME error {((toString (← e.toMessageData.format)).replace "\n" " ").take 600}"; hh.flush
       pure gN)
     return ← collectGoal gN top s0 st (fuel - 1)
@@ -2067,12 +2067,6 @@ def fuelOne (g : MVarId) : TermElabM Bool := g.withContext do
       | none => none
   -- only what mentions nothing but the atoms
   let pure0 (t : Expr) : Bool := let u := abstract t (atoms.map fun _ => mkNatLit 0); !u.hasFVar && !u.hasExprMVar
-  let dbg := (toString (← ppExpr goal)).startsWith "2400"
-  if dbg then
-    let hh ← IO.FS.Handle.mk "facts_top.progress" .append
-    hh.putStrLn s!"FUELONE goal pure {pure0 goal}, atoms {← atoms.mapM fun a => do pure ((toString (← ppExpr a)).take 30).toString}"
-    for (_, t) in cand do hh.putStrLn s!"  cand pure {pure0 t}: {((toString (← ppExpr t)).take 120).toString}"
-    hh.flush
   unless pure0 goal do return false
   let hs := cand.filter fun (_, t) => pure0 t
   let natTy := mkConst ``Nat
@@ -2086,10 +2080,7 @@ def fuelOne (g : MVarId) : TermElabM Bool := g.withContext do
           let rem ← Term.withoutErrToSorry <| Tactic.run mv.mvarId! (Tactic.withoutRecover (Tactic.evalTactic (← `(tactic| omega))))
           unless rem.isEmpty do saved.restore; return none
           return some (← instantiateMVars (← mkLambdaFVars (fvs ++ hfs) (← instantiateMVars mv)))
-        catch e =>
-          if dbg then
-            let hh ← IO.FS.Handle.mk "facts_top.progress" .append
-            hh.putStrLn s!"FUELONE omega failed: {((toString (← e.toMessageData.format)).take 600).toString}"; hh.flush
+        catch _ =>
           saved.restore; return none
   let some lam := r | return false
   let pf := mkAppN lam (atoms ++ hs.map (·.1))
@@ -2202,7 +2193,7 @@ def existsMapOne (g : MVarId) : MetaM Bool := g.withContext do
     if ← g2.isAssigned then continue
     let t2 ← instantiateMVars (← g2.getType)
     if t2.containsMVar M.mvarId! then
-      let h ← IO.FS.Handle.mk "facts_top.progress" .append
+      let h ← progressHandle
       h.putStrLn s!"EXISTSMAP {(← M.mvarId!.getDecl).userName}: a fact mentions it: {((toString (← g2.withContext (ppExpr t2))).replace "\n" " ").take 400}"
       g2.withContext do
         for d in ← getLCtx do
@@ -2228,7 +2219,7 @@ def existsMapOne (g : MVarId) : MetaM Bool := g.withContext do
     if m.hasExprMVar then continue
     last := some m
   let logE (msg : String) : MetaM Unit := do
-    let h ← IO.FS.Handle.mk "facts_top.progress" .append
+    let h ← progressHandle
     h.putStrLn s!"EXISTSMAP {(← M.mvarId!.getDecl).userName}: {msg}"; h.flush
   let some m := last | logE "no record hypothesis"; return false
   let saved ← saveState
@@ -2296,7 +2287,7 @@ def recordFromDecl (g : MVarId) : TermElabM Bool := g.withContext do
     let saved ← saveState
     let rlog (msg : String) : MetaM Unit := do
       if M.isMVar then
-        let h ← IO.FS.Handle.mk "facts_top.progress" .append
+        let h ← progressHandle
         h.putStrLn s!"RECDECL {msg} (hyp at {(toString (← ppExpr a)).take 10}, map {(toString (← ppExpr pr.appFn!.appArg!)).take 20})"; h.flush
     unless ← withReducible (isDefEq ee.appArg! e) do rlog "env differs"; saved.restore; continue
     -- (an unknown outer is never made a walk-local's: the record's outer, found elsewhere or left a start fact's)
@@ -2576,7 +2567,7 @@ def forallBindOne (g : MVarId) : TermElabM Bool := g.withContext do
     let ty ← instantiateMVars d.type
     let some (a, e', x', Q) ← forallBindOf? ty | continue
     unless x' == x do continue
-    let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+    let hh ← progressHandle
     let pf? ← if a == w then pure none else framePath a w
     if a != w && pf?.isNone then
       hh.putStrLn s!"FBIND {d.userName} at {← ppExpr a}: no path to {← ppExpr w}"
@@ -2672,7 +2663,7 @@ def recordIsFromRecord (g : MVarId) : TermElabM Bool := g.withContext do
     saved.restore; return false
   unless M.isMVar do return false
   if ← M.mvarId!.isAssigned then return false
-  let hh0 ← IO.FS.Handle.mk "facts_top.progress" .append
+  let hh0 ← progressHandle
   hh0.putStrLn s!"RECMAP try at {← ppExpr w}"; hh0.flush
   let e := xs[0]!
   let o := xs[2]!
@@ -2682,7 +2673,7 @@ def recordIsFromRecord (g : MVarId) : TermElabM Bool := g.withContext do
     (mkApp2 (mkConst ``Logic.Fact.holds) (mkApp2 (mkConst ``Logic.Fact.record) e o) w) .syntheticOpaque `fact
   let saved ← saveState
   unless ← isDefEq M (mkAppN (mkConst ``recordMap) #[e, o, w, Rg]) do
-    let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+    let hh ← progressHandle
     let md ← M.mvarId!.getDecl
     hh.putStrLn s!"RECMAP no fit: map's context has w {md.lctx.contains w.fvarId!}, depth {md.depth}"; hh.flush
     saved.restore; return false
@@ -3149,13 +3140,14 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
     let ci ← getConstInfo Xn
     -- progress to a file (a command's own output is captured, and lost if Lean aborts)
     let mark (m : String) : IO Unit := do
+      unless ← progressOn do return
       -- (with the resident memory, from /proc on Linux)
       let rss ← (try
           let st ← IO.FS.readFile "/proc/self/status"
           pure ((st.splitOn "\n").find? (·.startsWith "VmRSS:") |>.getD "")
         catch _ => pure "")
       let rss := (rss.drop 6).trim
-      let h ← IO.FS.Handle.mk "facts_top.progress" .append
+      let h ← progressHandle
       h.putStrLn s!"{← IO.monoMsNow} [{rss}] {m}"; h.flush
     mark "start"
     openForTop ci.type obn #[] #[] #[] none fun concl args kept hyps ob => do
@@ -3234,7 +3226,7 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
               fg.withContext do
                 let w := t.appArg!
                 let (c, k) ← factKey f
-                let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+                let hh ← progressHandle
                 let one (e : Expr) : MetaM String := do pure (((toString (← ppExpr e)).replace "\n" " ").take 260).toString
                 let fvs := (collectFVars {} f).fvarIds.filter (fun x => !top.contains x)
                 let mut ls : Array String := #[]
@@ -3317,7 +3309,7 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
             stuck := stuck.push (← pg.withContext (ppExpr t))
             if (t.find? fun e => e.isAppOfArity ``ES.State.fuel 1).isSome then
               pg.withContext do
-                let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+                let hh ← progressHandle
                 hh.putStrLn s!"FUEL {((toString (← ppExpr t)).replace "\n" " ").take 200}"
                 for d in ← getLCtx do
                   if d.isImplementationDetail then continue
@@ -3329,7 +3321,7 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
                 hh.flush
             if (toString (← pg.withContext (ppExpr t))).contains "isHydrating" then
               pg.withContext do
-                let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+                let hh ← progressHandle
                 hh.putStrLn s!"HYD {((toString (← ppExpr t)).replace "\n" " ").take 300}"
                 let ms ← getMVars t
                 for m in ms do
@@ -3347,7 +3339,7 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
                 hh.flush
             if !t.isAppOfArity ``Ne 3 && stuck.size ≤ 40 then
               pg.withContext do
-                let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+                let hh ← progressHandle
                 hh.putStrLn s!"STUCKCTX {((toString (← ppExpr t)).replace "\n" " ").take 200}"
                 for x in (collectFVars {} t).fvarIds.filter (fun f => !top.contains f) do
                   let xd ← x.getDecl
@@ -3365,7 +3357,7 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
                 hh.flush
             if t.isAppOfArity ``Ne 3 && stuck.size ≤ 60 then
               pg.withContext do
-                let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+                let hh ← progressHandle
                 hh.putStrLn s!"NE {((toString (← ppExpr t)).replace "\n" " ").take 200}"
                 -- diagnosis: everything stated at a state named `w2`
                 for d in ← getLCtx do
@@ -3504,7 +3496,7 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
                 fg.withContext do
                   let t ← instantiateMVars (← fg.getType)
                   let (_, k) ← factKey t.appFn!.appArg!
-                  let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+                  let hh ← progressHandle
                   let mut n := 0
                   for d in ← getLCtx do
                     if d.isImplementationDetail || n ≥ 12 then continue
