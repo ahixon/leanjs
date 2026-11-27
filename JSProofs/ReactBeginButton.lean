@@ -1,4 +1,6 @@
-import JSProofs.ReactBeginCounter
+import JSProofs.ReactBeginWork
+import JSProofs.ReactRootBailout
+import JSProofs.FrameExt
 import JSProofs.ReactButtonHelpers
 import JSProofs.ReactReconcileNull
 

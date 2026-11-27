@@ -406,6 +406,341 @@ def factsForm (n : Name) : TermElabM Unit := do
     let nc := roles.foldl (fun c r => match r with | .closed .. => c + 1 | _ => c) 0
     logInfo m!"{n ++ `facts}: {fs.size} facts ({recs.size + whole.size} records, {nc} frame-closed); {kept.length} premises kept; L, Pre, ofPre, Pre_frame declared"
 
+end Logic.FactsForm
+
+namespace Logic
+
+/-- `RLoc.pairs` comparing keys only where `lb`/`lp` (one flag per footprint entry) say both sides' keys are literals:
+an entry whose key the kernel cannot compare (a variable, such as React's random internal props key) needs its
+object's pair outright, and a closed place is kept only when every key compares. -/
+def RLoc.pairsL (f : SFoot) (lb lp : List Bool) (fk : Bool) : RLoc → Option (List (Nat × Nat) × List (Nat × Nat))
+  | .prop o k =>
+    if (f.props.zip lp).any (fun q => q.1.1 == o && (!(q.2 && fk) || q.1.2 == k)) then none
+    else some (((f.props.zip lp).filter (fun q => !(q.2 && fk) || q.1.2 == k)).map (fun q => (o, q.1.1)), [])
+  | .bind e x =>
+    if (f.binds.zip lb).any (fun q => q.1.1 == e && (!(q.2 && fk) || q.1.2 == x)) then none
+    else some ([], ((f.binds.zip lb).filter (fun q => !(q.2 && fk) || q.1.2 == x)).map (fun q => (e, q.1.1)))
+  | .closed g => if lb.all id && lp.all id then (RLoc.closed g).pairs f else none
+  | r => r.pairs f
+
+/-- Every needed pair is among `po`/`pe` (`RLoc.pairsL`, the place's own key flagged `rf.2`). -/
+def RLoc.coveredL (f : SFoot) (lb lp : List Bool) (po pe : List (Nat × Nat)) (rf : RLoc × Bool) : Bool :=
+  match rf.1.pairsL f lb lp rf.2 with
+  | some (p1, p2) => p1.all (po.contains ·) && p2.all (pe.contains ·)
+  | none => false
+
+theorem mem_zip_of_mem {α β : Type} {l : List α} {m : List β} (hlen : m.length = l.length) {p : α} (hp : p ∈ l) :
+    ∃ b, (p, b) ∈ l.zip m := by
+  obtain ⟨i, hi, hpi⟩ := List.getElem_of_mem hp
+  have hi' : i < m.length := hlen ▸ hi
+  refine ⟨m[i], ?_⟩
+  have hz : i < (l.zip m).length := by simp [List.length_zip]; omega
+  have := List.getElem_mem hz
+  simpa [List.getElem_zip, hpi] using this
+
+theorem RLoc.pairsL_sound {a : Atoms} {f : SFoot} {lb lp : List Bool} {fk : Bool} (hlb : lb.length = f.binds.length)
+    (hlp : lp.length = f.props.length) (r : RLoc) {po pe : List (Nat × Nat)}
+    (h : r.pairsL f lb lp fk = some (po, pe)) (ho : ∀ p ∈ po, a.obj p.1 ≠ a.obj p.2) (he : ∀ p ∈ pe, a.env p.1 ≠ a.env p.2) :
+    (r.eval a).Apart (f.eval a) := by
+  cases r with
+  | prop o k =>
+    simp only [RLoc.pairsL] at h
+    split at h
+    · cases h
+    · rename_i hc
+      cases h
+      show (f.eval a).props.contains (a.obj o, k) = false
+      apply Bool.eq_false_iff.mpr
+      intro hm
+      obtain ⟨p, hp, hq⟩ := List.mem_map.mp (List.contains_iff_mem.mp hm)
+      have hk : p.2 = k := by simpa using congrArg Prod.snd hq
+      have hob : a.obj p.1 = a.obj o := by simpa using congrArg Prod.fst hq
+      obtain ⟨b, hz⟩ := mem_zip_of_mem hlp hp
+      by_cases hpo : p.1 = o
+      · exact hc (List.any_eq_true.mpr ⟨(p, b), hz, by simp [hpo, hk]⟩)
+      · exact ho (o, p.1) (List.mem_map.mpr ⟨(p, b), List.mem_filter.mpr ⟨hz, by simp [hk]⟩, rfl⟩) hob.symm
+  | bind e x =>
+    simp only [RLoc.pairsL] at h
+    split at h
+    · cases h
+    · rename_i hc
+      cases h
+      show (a.env e, x) ∉ (f.eval a).binds
+      intro hm
+      obtain ⟨p, hp, hq⟩ := List.mem_map.mp hm
+      have hk : p.2 = x := by simpa using congrArg Prod.snd hq
+      have hob : a.env p.1 = a.env e := by simpa using congrArg Prod.fst hq
+      obtain ⟨b, hz⟩ := mem_zip_of_mem hlb hp
+      by_cases hpo : p.1 = e
+      · exact hc (List.any_eq_true.mpr ⟨(p, b), hz, by simp [hpo, hk]⟩)
+      · exact he (e, p.1) (List.mem_map.mpr ⟨(p, b), List.mem_filter.mpr ⟨hz, by simp [hk]⟩, rfl⟩) hob.symm
+  | closed g =>
+    simp only [RLoc.pairsL] at h
+    split at h
+    · exact RLoc.pairs_sound (.closed g) h ho he
+    · cases h
+  | pure => exact RLoc.pairs_sound .pure h ho he
+  | obj o => exact RLoc.pairs_sound (.obj o) h ho he
+  | record e => exact RLoc.pairs_sound (.record e) h ho he
+  | recordAll e => exact RLoc.pairs_sound (.recordAll e) h ho he
+  | objAll o => exact RLoc.pairs_sound (.objAll o) h ho he
+
+/-- **`Apart` by reflection with keys compared only where literal** (`RLoc.coveredL`; `lf` the places' own keys'
+flags). -/
+theorem Facts.apart_pairsL {a : Atoms} (f : SFoot) (lb lp lf : List Bool) {l : List Fact} (rs : List RLoc)
+    (po pe : List (Nat × Nat)) (hlb : lb.length = f.binds.length) (hlp : lp.length = f.props.length)
+    (hlf : lf.length = rs.length)
+    (hl : l.map Fact.loc = rs.map (RLoc.eval a)) (h : (rs.zip lf).all (RLoc.coveredL f lb lp po pe) = true)
+    (ho : AllP (fun p => a.obj p.1 ≠ a.obj p.2) po) (he : AllP (fun p => a.env p.1 ≠ a.env p.2) pe) :
+    Facts.Apart (f.eval a) l := by
+  intro x hx
+  have : x.loc ∈ rs.map (RLoc.eval a) := hl ▸ List.mem_map_of_mem hx
+  obtain ⟨r, hr, hre⟩ := List.mem_map.mp this
+  rw [← hre]
+  obtain ⟨b, hz⟩ := mem_zip_of_mem hlf hr
+  have hc := List.all_eq_true.mp h (r, b) hz
+  simp only [RLoc.coveredL] at hc
+  split at hc
+  · rename_i p1 p2 hp
+    simp only [Bool.and_eq_true, List.all_eq_true] at hc
+    exact RLoc.pairsL_sound hlb hlp r hp (fun p hp' => AllP.mem ho p (List.contains_iff_mem.mp (hc.1 p hp')))
+      (fun p hp' => AllP.mem he p (List.contains_iff_mem.mp (hc.2 p hp')))
+  · cases hc
+
+
+/-! Keys by index: a table of the literal keys (duplicate-free, proved once), each footprint entry's and each place's
+key named by its index (`tbl[i]? = some k`, by definition), compared as numbers (the kernel compares literal keys as
+strings, which a long check repeats tens of millions of times). -/
+
+theorem keys_ne {α : Type} {l : List α} (h : l.Nodup) {i j : Nat} {a b : α} (ha : l[i]? = some a) (hb : l[j]? = some b)
+    (hij : i ≠ j) : a ≠ b := by
+  intro hab
+  subst hab
+  have hi : i < l.length := (List.getElem?_eq_some_iff.mp ha).1
+  exact hij ((h.getElem?_inj hi).mp (ha.trans hb.symm))
+
+/-- Each flagged key at its index in `tbl`. -/
+def KeysAt {α : Type} (tbl : List α) : List Bool → List Nat → List α → Prop
+  | true :: bs, i :: is, k :: ks => tbl[i]? = some k ∧ KeysAt tbl bs is ks
+  | false :: bs, _ :: is, _ :: ks => KeysAt tbl bs is ks
+  | _, _, _ => True
+
+theorem KeysAt.get {α : Type} {tbl : List α} : ∀ {bs : List Bool} {is : List Nat} {ks : List α},
+    KeysAt tbl bs is ks → ∀ {n : Nat} (hb : bs[n]? = some true) (hi : n < is.length) (hk : n < ks.length),
+      tbl[is[n]]? = some ks[n]
+  | true :: bs, i :: is, k :: ks, ⟨h1, h2⟩, n, hb, hi, hk => by
+    cases n with
+    | zero => exact h1
+    | succ n => exact KeysAt.get h2 (by simpa using hb) (by simpa using hi) (by simpa using hk)
+  | false :: bs, i :: is, k :: ks, h, n, hb, hi, hk => by
+    cases n with
+    | zero => simp at hb
+    | succ n => exact KeysAt.get (bs := bs) h (by simpa using hb) (by simpa using hi) (by simpa using hk)
+  | [], _, _, _, n, hb, _, _ => by simp at hb
+  | _ :: _, [], _, _, n, _, hi, _ => by simp at hi
+  | _ :: _, _ :: _, [], _, n, _, _, hk => by simp at hk
+
+/-- Each flagged place's own key at its index (a property's in `tp`, a binding's in `tb`). -/
+def FactKeysAt (tb : List ES.JSStr) (tp : List ES.PropKey) : List Bool → List Nat → List RLoc → Prop
+  | true :: bs, i :: is, .prop _ k :: rs => tp[i]? = some k ∧ FactKeysAt tb tp bs is rs
+  | true :: bs, i :: is, .bind _ x :: rs => tb[i]? = some x ∧ FactKeysAt tb tp bs is rs
+  | _ :: bs, _ :: is, _ :: rs => FactKeysAt tb tp bs is rs
+  | _, _, _ => True
+
+/-- `RLoc.pairsL` with keys compared by index (`kb`/`kp` the entries', `rk` the place's): equal indices, equal keys;
+different ones, different keys (the table duplicate-free). -/
+def RLoc.pairsK (f : SFoot) (lb lp : List Bool) (kb kp : List Nat) (fk : Bool) (rk : Nat) :
+    RLoc → Option (List (Nat × Nat) × List (Nat × Nat))
+  | .prop o _ =>
+    let es := (f.props.zip (lp.zip kp))
+    let maybe := fun (q : (Nat × ES.PropKey) × (Bool × Nat)) => !(q.2.1 && fk) || q.2.2 == rk
+    if es.any (fun q => q.1.1 == o && maybe q) then none
+    else some ((es.filter maybe).map (fun q => (o, q.1.1)), [])
+  | .bind e _ =>
+    let es := (f.binds.zip (lb.zip kb))
+    let maybe := fun (q : (Nat × ES.JSStr) × (Bool × Nat)) => !(q.2.1 && fk) || q.2.2 == rk
+    if es.any (fun q => q.1.1 == e && maybe q) then none
+    else some ([], (es.filter maybe).map (fun q => (e, q.1.1)))
+  | .closed g => if lb.all id && lp.all id then (RLoc.closed g).pairs f else none
+  | r => r.pairs f
+
+/-- Every needed pair is among `po`/`pe` (`RLoc.pairsK`; `q` the place, its key's flag and index). -/
+def RLoc.coveredK (f : SFoot) (lb lp : List Bool) (kb kp : List Nat) (po pe : List (Nat × Nat))
+    (q : RLoc × Bool × Nat) : Bool :=
+  match q.1.pairsK f lb lp kb kp q.2.1 q.2.2 with
+  | some (p1, p2) => p1.all (po.contains ·) && p2.all (pe.contains ·)
+  | none => false
+
+theorem mem_zip3_of_mem {α β γ : Type} {l : List α} {m : List β} {n : List γ} (hm : m.length = l.length)
+    (hn : n.length = l.length) {p : α} (hp : p ∈ l) :
+    ∃ i, ∃ (hi : i < l.length), l[i] = p ∧ (p, (m[i]'(hm ▸ hi), n[i]'(hn ▸ hi))) ∈ l.zip (m.zip n) := by
+  obtain ⟨i, hi, hpi⟩ := List.getElem_of_mem hp
+  refine ⟨i, hi, hpi, ?_⟩
+  have hz : i < (l.zip (m.zip n)).length := by simp [List.length_zip]; omega
+  have := List.getElem_mem hz
+  simpa [List.getElem_zip, hpi] using this
+
+theorem RLoc.pairsK_sound {a : Atoms} {f : SFoot} {lb lp : List Bool} {kb kp : List Nat} {tb : List ES.JSStr}
+    {tp : List ES.PropKey} (hnb : tb.Nodup) (hnp : tp.Nodup)
+    (hlb : lb.length = f.binds.length) (hlp : lp.length = f.props.length)
+    (hkb : kb.length = f.binds.length) (hkp : kp.length = f.props.length)
+    (hkb' : KeysAt tb lb kb (f.binds.map Prod.snd)) (hkp' : KeysAt tp lp kp (f.props.map Prod.snd))
+    {fk : Bool} {rk : Nat} (r : RLoc)
+    (hr : fk = true → match r with | .prop _ k => tp[rk]? = some k | .bind _ x => tb[rk]? = some x | _ => True)
+    {po pe : List (Nat × Nat)}
+    (h : r.pairsK f lb lp kb kp fk rk = some (po, pe)) (ho : ∀ p ∈ po, a.obj p.1 ≠ a.obj p.2)
+    (he : ∀ p ∈ pe, a.env p.1 ≠ a.env p.2) :
+    (r.eval a).Apart (f.eval a) := by
+  cases r with
+  | prop o k =>
+    simp only [RLoc.pairsK] at h
+    split at h
+    · cases h
+    · rename_i hc
+      cases h
+      show (f.eval a).props.contains (a.obj o, k) = false
+      apply Bool.eq_false_iff.mpr
+      intro hm
+      obtain ⟨p, hp, hq⟩ := List.mem_map.mp (List.contains_iff_mem.mp hm)
+      have hk : p.2 = k := by simpa using congrArg Prod.snd hq
+      have hob : a.obj p.1 = a.obj o := by simpa using congrArg Prod.fst hq
+      obtain ⟨i, hi, hpi, hz⟩ := mem_zip3_of_mem hlp hkp hp
+      -- its key could be the place's: the index test says so
+      have hmaybe : (!(lp[i]'(hlp ▸ hi) && fk) || kp[i]'(hkp ▸ hi) == rk) = true := by
+        cases hfl : (lp[i]'(hlp ▸ hi) && fk)
+        · simp
+        · simp only [Bool.not_true, Bool.false_or, beq_iff_eq]
+          refine Classical.byContradiction fun hne => ?_
+          have hb : lp[i]? = some true := by
+            rw [List.getElem?_eq_getElem (hlp ▸ hi)]; simp [Bool.and_eq_true] at hfl; simp [hfl.1]
+          have hfk : fk = true := by simp [Bool.and_eq_true] at hfl; exact hfl.2
+          have e1 := KeysAt.get hkp' hb (hkp ▸ hi) (by simp; exact hi)
+          have e2 : tp[rk]? = some k := hr hfk
+          simp only [List.getElem_map, hpi] at e1
+          exact keys_ne hnp e1 e2 hne hk
+      by_cases hpo : p.1 = o
+      · exact hc (List.any_eq_true.mpr ⟨_, hz, by simp [hpo]; simpa using hmaybe⟩)
+      · exact ho (o, p.1) (List.mem_map.mpr ⟨_, List.mem_filter.mpr ⟨hz, hmaybe⟩, rfl⟩) hob.symm
+  | bind e x =>
+    simp only [RLoc.pairsK] at h
+    split at h
+    · cases h
+    · rename_i hc
+      cases h
+      show (a.env e, x) ∉ (f.eval a).binds
+      intro hm
+      obtain ⟨p, hp, hq⟩ := List.mem_map.mp hm
+      have hk : p.2 = x := by simpa using congrArg Prod.snd hq
+      have hob : a.env p.1 = a.env e := by simpa using congrArg Prod.fst hq
+      obtain ⟨i, hi, hpi, hz⟩ := mem_zip3_of_mem hlb hkb hp
+      have hmaybe : (!(lb[i]'(hlb ▸ hi) && fk) || kb[i]'(hkb ▸ hi) == rk) = true := by
+        cases hfl : (lb[i]'(hlb ▸ hi) && fk)
+        · simp
+        · simp only [Bool.not_true, Bool.false_or, beq_iff_eq]
+          refine Classical.byContradiction fun hne => ?_
+          have hb : lb[i]? = some true := by
+            rw [List.getElem?_eq_getElem (hlb ▸ hi)]; simp [Bool.and_eq_true] at hfl; simp [hfl.1]
+          have hfk : fk = true := by simp [Bool.and_eq_true] at hfl; exact hfl.2
+          have e1 := KeysAt.get hkb' hb (hkb ▸ hi) (by simp; exact hi)
+          have e2 : tb[rk]? = some x := hr hfk
+          simp only [List.getElem_map, hpi] at e1
+          exact keys_ne hnb e1 e2 hne hk
+      by_cases hpo : p.1 = e
+      · exact hc (List.any_eq_true.mpr ⟨_, hz, by simp [hpo]; simpa using hmaybe⟩)
+      · exact he (e, p.1) (List.mem_map.mpr ⟨_, List.mem_filter.mpr ⟨hz, hmaybe⟩, rfl⟩) hob.symm
+  | closed g =>
+    simp only [RLoc.pairsK] at h
+    split at h
+    · exact RLoc.pairs_sound (.closed g) h ho he
+    · cases h
+  | pure => exact RLoc.pairs_sound .pure h ho he
+  | obj o => exact RLoc.pairs_sound (.obj o) h ho he
+  | record e => exact RLoc.pairs_sound (.record e) h ho he
+  | recordAll e => exact RLoc.pairs_sound (.recordAll e) h ho he
+  | objAll o => exact RLoc.pairs_sound (.objAll o) h ho he
+
+theorem FactKeysAt.get {tb : List ES.JSStr} {tp : List ES.PropKey} : ∀ {lf : List Bool} {rk : List Nat} {rs : List RLoc},
+    FactKeysAt tb tp lf rk rs → ∀ {n : Nat} (hn : n < rs.length) (hl : n < lf.length) (hr : n < rk.length),
+      lf[n] = true → match rs[n] with | .prop _ k => tp[rk[n]]? = some k | .bind _ x => tb[rk[n]]? = some x | _ => True
+  | b :: bs, i :: is, r :: rs, h, n, hn, hl, hr, hb => by
+    cases n with
+    | zero =>
+      simp at hb; subst hb
+      cases r <;> simp_all [FactKeysAt]
+    | succ n =>
+      have h' : FactKeysAt tb tp bs is rs := by
+        cases b <;> cases r <;> simp_all [FactKeysAt]
+      exact FactKeysAt.get h' (by simpa using hn) (by simpa using hl) (by simpa using hr) (by simpa using hb)
+  | [], _, _, _, n, _, hl, _, _ => by simp at hl
+  | _ :: _, [], _, _, n, _, _, hr, _ => by simp at hr
+  | _ :: _, _ :: _, [], _, n, hn, _, _, _ => by simp at hn
+
+/-- **`Apart` by reflection, keys compared by index** (`RLoc.coveredK`). -/
+theorem Facts.apart_pairsK {a : Atoms} (f : SFoot) (lb lp lf : List Bool) (kb kp rk : List Nat) (tb : List ES.JSStr)
+    (tp : List ES.PropKey) {l : List Fact} (rs : List RLoc) (po pe : List (Nat × Nat)) (hnb : tb.Nodup) (hnp : tp.Nodup)
+    (hlen : lb.length = f.binds.length ∧ lp.length = f.props.length ∧ kb.length = f.binds.length ∧
+      kp.length = f.props.length ∧ lf.length = rs.length ∧ rk.length = rs.length)
+    (hkb : KeysAt tb lb kb (f.binds.map Prod.snd)) (hkp : KeysAt tp lp kp (f.props.map Prod.snd))
+    (hfk : FactKeysAt tb tp lf rk rs)
+    (hl : l.map Fact.loc = rs.map (RLoc.eval a)) (h : (rs.zip (lf.zip rk)).all (RLoc.coveredK f lb lp kb kp po pe) = true)
+    (ho : AllP (fun p => a.obj p.1 ≠ a.obj p.2) po) (he : AllP (fun p => a.env p.1 ≠ a.env p.2) pe) :
+    Facts.Apart (f.eval a) l := by
+  obtain ⟨hlb, hlp, hkb', hkp', hlf, hrk⟩ := hlen
+  intro x hx
+  have : x.loc ∈ rs.map (RLoc.eval a) := hl ▸ List.mem_map_of_mem hx
+  obtain ⟨r, hr, hre⟩ := List.mem_map.mp this
+  rw [← hre]
+  obtain ⟨n, hn, hrn, hz⟩ := mem_zip3_of_mem hlf hrk hr
+  have hc := List.all_eq_true.mp h _ hz
+  simp only [RLoc.coveredK] at hc
+  split at hc
+  · rename_i p1 p2 hp
+    simp only [Bool.and_eq_true, List.all_eq_true] at hc
+    have hkey := fun (hb : lf[n]'(hlf ▸ hn) = true) => by
+      have := FactKeysAt.get hfk hn (hlf ▸ hn) (hrk ▸ hn) hb
+      rw [hrn] at this
+      exact this
+    exact RLoc.pairsK_sound hnb hnp hlb hlp hkb' hkp' hkb hkp r hkey hp
+      (fun p hp' => AllP.mem ho p (List.contains_iff_mem.mp (hc.1 p hp')))
+      (fun p hp' => AllP.mem he p (List.contains_iff_mem.mp (hc.2 p hp')))
+  · cases hc
+
+
+/-- The elements a mask keeps. -/
+def maskL {α : Type} : List Bool → List α → List α
+  | true :: m, x :: l => x :: maskL m l
+  | false :: m, _ :: l => maskL m l
+  | _, _ => []
+
+theorem mem_of_mem_maskL {α : Type} : ∀ {m : List Bool} {l : List α} {x : α}, x ∈ maskL m l → x ∈ l
+  | true :: m, y :: l, x, h => by
+    simp only [maskL, List.mem_cons] at h
+    rcases h with h | h
+    · exact h ▸ List.mem_cons_self
+    · exact List.mem_cons_of_mem _ (mem_of_mem_maskL h)
+  | false :: m, y :: l, x, h => by
+    simp only [maskL] at h
+    exact List.mem_cons_of_mem _ (mem_of_mem_maskL h)
+  | [], _, _, h => by simp [maskL] at h
+  | _ :: _, [], _, h => by simp [maskL] at h
+
+/-- The facts a mask keeps hold (one pass over the list, not an index per fact). -/
+theorem Facts.holds_mask {l : List Fact} {s : ES.State} (m : List Bool) (h : Facts.holds l s) : Facts.holds (maskL m l) s :=
+  fun x hx => h x (mem_of_mem_maskL hx)
+
+
+/-- A list's first fact. -/
+theorem Facts.head {f : Fact} {l : List Fact} {s : ES.State} (h : Facts.holds (f :: l) s) : f.holds s :=
+  h f List.mem_cons_self
+
+/-- A list's facts after the first. -/
+theorem Facts.tail {f : Fact} {l : List Fact} {s : ES.State} (h : Facts.holds (f :: l) s) : Facts.holds l s :=
+  fun x hx => h x (List.mem_cons_of_mem _ hx)
+
+end Logic
+
+namespace Logic.FactsForm
+
 /-- A fact's place reflected over the atoms (its objects and records added). -/
 def reflectLoc (A : AtomsB) (loc : Expr) : MetaM (Option (AtomsB × Expr)) := do
   let loc ← whnf loc
@@ -459,18 +794,55 @@ elab "facts_apart_wf" : tactic => Tactic.withMainContext do
   Tactic.replaceMainGoal [hw.mvarId!]
 
 
-/-- A key's literal (`PropKey.str (JSStr.ofString "x")`, `JSStr.ofString "x"`). -/
+/-- The natural number an `F64.fin false m x` literal is, if it is one below 2^53 (an array index's key). -/
+def f64NatLit? (e : Expr) : Option Nat := do
+  let e := e.consumeMData
+  guard (e.isAppOfArity ``ES.F64.fin 3)
+  let args := e.getAppArgs
+  guard (args[0]!.isConstOf ``Bool.false)
+  let m ← args[1]!.rawNatLit? <|> args[1]!.nat?
+  let x ← args[2]!.int?
+  let n ← if x ≥ 0 then some (m * 2 ^ x.toNat)
+    else if m % 2 ^ (-x).toNat == 0 then some (m / 2 ^ (-x).toNat) else none
+  guard (n < 2 ^ 53)
+  return n
+
+/-- A key's literal (`PropKey.str (JSStr.ofString "x")`, `JSStr.ofString "x"`; `numberToJSStr` of an integral
+number literal is its decimal digits, which the kernel's evaluation agrees with). -/
 def strLit? (e : Expr) : Option String :=
   let e := e.consumeMData
   if e.isAppOfArity ``ES.JSStr.ofString 1 then
     match e.appArg!.consumeMData with
     | .lit (.strVal x) => some x
     | _ => none
+  else if e.isAppOfArity ``ES.numberToJSStr 1 then
+    (f64NatLit? e.appArg!).map toString
   else none
 
 def keyLit? (e : Expr) : Option String :=
   let e := e.consumeMData
   if e.isAppOfArity ``ES.PropKey.str 1 then (strLit? e.appArg!).map ("str:" ++ ·) else strLit? e
+
+/-- The key tables of a `facts_top` walk (unknowns for the literal lists and their `Nodup` proofs, filled at its end):
+reflected checks then compare keys by index (`Facts.apart_pairsK`). `none`: keys compared as they are. -/
+structure KeyTables where
+  tb : Expr
+  tp : Expr
+  hnb : Expr
+  hnp : Expr
+
+initialize keyTables : IO.Ref (Option KeyTables) ← IO.mkRef none
+/-- The tables' keys so far (literal, its expression), by index. -/
+initialize keyListB : IO.Ref (Array (String × Expr)) ← IO.mkRef #[]
+initialize keyListP : IO.Ref (Array (String × Expr)) ← IO.mkRef #[]
+
+/-- A literal key's index in its table (added on first sight). -/
+def keyIndex (prop : Bool) (k : Expr) (lit : String) : IO Nat := do
+  let r := if prop then keyListP else keyListB
+  let l ← r.get
+  match l.findIdx? (·.1 == lit) with
+  | some i => return i
+  | none => r.set (l.push (lit, k)); return l.size
 
 /-- Whether two keys are equal: known, or `none`. -/
 def keyEq? (a b : Expr) : Option Bool :=
@@ -497,9 +869,14 @@ partial def sfootEntries (sf : Expr) : MetaM (Array (Nat × Expr) × Array (Nat 
   throwError "facts_apart: footprint {sf}"
 
 /-- The pairs of atoms a reflected place needs distinct against the footprint's entries (`none`: it is inside). -/
-def placePairs (A : AtomsB) (fbs fps : Array (Nat × Expr)) (r : Expr) :
+def placePairs (A : AtomsB) (fbs fps : Array (Nat × Expr)) (r : Expr) (lb lp : Array Bool := #[]) :
     MetaM (Option (Array (Nat × Nat) × Array (Nat × Nat))) := do
   let args := r.getAppArgs
+  -- (flags given: an entry flagged `false` has its key not compared, as `RLoc.pairsL` does)
+  -- (the place's own key a literal: compared, as `RLoc.pairsL`'s `fk`)
+  let fk : Bool := !(r.isAppOf ``RLoc.prop || r.isAppOf ``RLoc.bind) || (keyLit? args[1]!).isSome
+  let keyEqF (flags : Array Bool) (i : Nat) (a b : Expr) : Option Bool :=
+    if flags.isEmpty then keyEq? a b else if flags.getD i true && fk then keyEq? a b else none
   let idx (e : Expr) : Nat := (e.rawNatLit? <|> e.nat?).getD 0
   let _ := A
   let mut po : Array (Nat × Nat) := #[]
@@ -507,14 +884,16 @@ def placePairs (A : AtomsB) (fbs fps : Array (Nat × Expr)) (r : Expr) :
   match r.getAppFn.constName? with
   | some ``RLoc.prop =>
     let o := idx args[0]!; let k := args[1]!
-    for (j, k') in fps do
-      match keyEq? k k' with
+    for idx in [:fps.size] do
+      let (j, k') := fps[idx]!
+      match keyEqF lp idx k k' with
       | some false => pure ()
       | _ => if j == o then return none else po := po.push (o, j)
   | some ``RLoc.bind =>
     let e := idx args[0]!; let x := args[1]!
-    for (j, x') in fbs do
-      match keyEq? x x' with
+    for idx in [:fbs.size] do
+      let (j, x') := fbs[idx]!
+      match keyEqF lb idx x x' with
       | some false => pure ()
       | _ => if j == e then return none else pe := pe.push (e, j)
   | some ``RLoc.recordAll =>
@@ -525,11 +904,21 @@ def placePairs (A : AtomsB) (fbs fps : Array (Nat × Expr)) (r : Expr) :
     let o := idx args[0]!
     for (j, _) in fps do
       if j == o then return none else po := po.push (o, j)
+  | some ``RLoc.closed =>
+    -- (a key not compared: not kept, as `RLoc.pairsL`)
+    if lb.any (!·) || lp.any (!·) then return none
+    -- a closed place is kept only by frames inside its own footprint (`SFoot.sub`): each entry found there
+    let (gb, gp) ← sfootEntries args[0]!
+    for (j, x) in fbs do
+      unless gb.any (fun (j', x') => j' == j && keyEq? x x' == some true) do return none
+    for (j, k) in fps do
+      unless gp.any (fun (j', k') => j' == j && keyEq? k k' == some true) do return none
   | _ => pure ()
   return some (po, pe)
 
 /-- Reflects a fact list and a footprint: the atoms, the places, the footprint, its entries. -/
-def reflectAll (fp L : Expr) : MetaM (AtomsB × Array Expr × Array Expr × Expr × Array (Nat × Expr) × Array (Nat × Expr)) := do
+def reflectAll (fp L : Expr) : MetaM (AtomsB × Array Expr × Array Expr × Expr × Array (Nat × Expr) × Array (Nat × Expr) ×
+    Array Bool × Array Bool) := do
   let some elems ← listElems L 4096 | throwError "facts: the facts are not a list: {L}"
   let mut A : AtomsB := {}
   let mut rs : Array Expr := #[]
@@ -540,21 +929,227 @@ def reflectAll (fp L : Expr) : MetaM (AtomsB × Array Expr × Array Expr × Expr
   let some (A', sf) ← reflectFoot A fp 64 | throwError "facts: the footprint not reflected: {fp}"
   A := A'
   let (fbs, fps) ← sfootEntries sf
-  return (A, elems, rs, sf, fbs, fps)
+  -- each entry's key compared only when it and every fact's key of its kind are literals (`RLoc.pairsL`)
+  let lb := fbs.map fun (_, x) => (keyLit? x).isSome
+  let lp := fps.map fun (_, k) => (keyLit? k).isSome
+  return (A, elems, rs, sf, fbs, fps, lb, lp)
 
-/-- A proof of `x ≠ y` by assumption or `omega`, if one closes it. -/
-def closeNe (x y : Expr) : TermElabM (Option Expr) := do
-  let mv ← mkFreshExprSyntheticOpaqueMVar (← mkAppM ``Ne #[x, y]) `ne
+/-- `Facts.get`/`holds_cons`/`holds_nil` applied to all their arguments as they are: `mkAppOptM` would check each
+argument's type in the elaborator, which walks a long fact list (`L[i]`) for each element; the kernel checks the whole
+proof once. -/
+def appFacts (n : Name) (args : Array Expr) : MetaM Expr := pure (mkAppN (mkConst n) args)
+
+/-- `i < L.length`, decided by the kernel (`of_decide_eq_true … rfl`: the elaborator does not evaluate the length). -/
+def idxLtK (i : Nat) (L : Expr) : MetaM Expr := do
+  let len ← mkAppM ``List.length #[L]
+  let prop ← mkAppM ``LT.lt #[mkNatLit i, len]
+  let inst := mkApp2 (mkConst ``Nat.decLt) (mkNatLit i) len
+  return mkApp3 (mkConst ``of_decide_eq_true) prop inst (← mkEqRefl (mkConst ``Bool.true))
+
+
+/-- The proofs of a fact list's elements, taken apart once (`Facts.head` of `Facts.tail`s, the tails shared), by the
+list's proof: an index per fact (`Facts.get`) walks the list and decides its bound each time, which the kernel repeats
+for every fact of a long list. -/
+initialize factChains : IO.Ref (Std.HashMap Expr (Array Expr)) ← IO.mkRef {}
+
+/-- Element `i` of `h : Facts.holds L s` (`L` a list): from its chain (`factChains`), else `Facts.get`. -/
+def factAt (L s h : Expr) (i : Nat) : MetaM Expr := do
+  if let some a := (← factChains.get).get? h then
+    if h' : i < a.size then return a[i]
+  let some elems ← listElems L 4096 | return mkAppN (mkConst ``Logic.Facts.get) #[L, s, h, mkNatLit i, ← idxLtK i L]
+  if i ≥ elems.size then return mkAppN (mkConst ``Logic.Facts.get) #[L, s, h, mkNatLit i, ← idxLtK i L]
+  let factT := mkConst ``Logic.Fact
+  -- the suffixes, from the end
+  let mut suf : Array Expr := Array.replicate (elems.size + 1) (mkApp (mkConst ``List.nil [0]) factT)
+  for j in (List.range elems.size).reverse do
+    suf := suf.set! j (mkApp3 (mkConst ``List.cons [0]) factT elems[j]! suf[j+1]!)
+  let mut out : Array Expr := #[]
+  let mut cur := h
+  for j in [:elems.size] do
+    out := out.push (mkAppN (mkConst ``Facts.head) #[elems[j]!, suf[j+1]!, s, cur])
+    cur := mkAppN (mkConst ``Facts.tail) #[elems[j]!, suf[j+1]!, s, cur]
+  factChains.modify (·.insert h out)
+  return out[i]!
+
+/-- When set, `carry` logs the pairs it could not prove distinct (for diagnosis). -/
+initialize carryDebug : IO.Ref Bool ← IO.mkRef false
+
+/-- Time spent in `carry`'s parts and `closeNe`'s, in milliseconds (for diagnosis). -/
+initialize carryTimes : IO.Ref (Std.HashMap String (Nat × Nat)) ← IO.mkRef {}
+
+def carryTimed {α : Type} {m : Type → Type} [Monad m] [MonadLiftT IO m] (k : String) (x : m α) : m α := do
+  let t0 ← (IO.monoMsNow : IO Nat)
+  let r ← x
+  let t1 ← (IO.monoMsNow : IO Nat)
+  (carryTimes.modify fun h => h.insert k (let (a, b) := h.getD k (0, 0); (a + (t1 - t0), b + 1)) : IO Unit)
+  return r
+
+/-- When set (to the top theorem's own locals), `closeNe` assumes two objects distinct that it cannot prove distinct
+when both are atoms of the top theorem (unknowns or its locals): a premise `o ≠ o'` of the theorem, its goal kept in
+`topNes` for the caller to state (`facts_top`: start objects that are distinct in the start state). -/
+initialize topNeAllow : IO.Ref (Option (Array FVarId)) ← IO.mkRef none
+initialize topNes : IO.Ref (Array (Expr × Expr × Expr)) ← IO.mkRef #[]
+/-- The top theorem's own unknowns (its binders opened): a function's record is assumed distinct from another only when
+the function is one of them or the top's (an unknown made on the way may still be identified with another). -/
+initialize topUnknowns : IO.Ref (Option (Std.HashSet MVarId)) ← IO.mkRef none
+/-- While unknowns may still be identified (the walk, the fixed point): no record assumed distinct from one an
+unknown made on the way gives (it may yet be found to be the same). -/
+initialize topNeStrict : IO.Ref Bool ← IO.mkRef false
+
+/-- `x ≠ y` as a premise of the top theorem (see `topNeAllow`): the goal standing for it, shared by both orders. -/
+def topNe? (x y : Expr) (envs : Bool := false) : MetaM (Option Expr) := do
+  let some top ← topNeAllow.get | return none
+  let atom0 (e : Expr) : MetaM (Option Expr) := do
+    let e ← instantiateMVars e
+    if e.isMVar then return some e
+    if e.isFVar && top.contains e.fvarId! then return some e
+    return none
+  -- environments: a function's environment `FuncData.env a`, `a` an atom (a record's projection reduced)
+  let atom (e : Expr) : MetaM (Option Expr) := do
+    if !envs then return ← atom0 e
+    let e ← instantiateMVars e
+    -- `FuncData.env a`, or a record's projection (`{… env := FuncData.env a …}.env`, reduced)
+    -- (nested: a `←` inside `&&` would run before the test)
+    let isEnvAtom ← if e.isAppOfArity ``ES.FuncData.env 1 then pure (← atom0 e.appArg!).isSome else pure false
+    let e ← if isEnvAtom then pure e else whnfD e
+    let a? : Option Expr := match e with
+      | .proj ``ES.FuncData _ a => some a
+      | _ => if e.isAppOfArity ``ES.FuncData.env 1 then some e.appArg! else none
+    let some a := a? | return none
+    let some a ← atom0 a | return none
+    if a.isMVar && (← topNeStrict.get) then
+      if let some us ← topUnknowns.get then
+        -- (or one a top unknown has become)
+        let isTop ← if us.contains a.mvarId! then pure true else
+          us.toArray.anyM fun u => do return (← instantiateMVars (mkMVar u)) == a
+        unless isTop do
+          let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+          hh.putStrLn s!"TOPNE-REFUSED {← ppExpr a} (made on the way) in {← ppExpr x} vs {← ppExpr y}"; hh.flush
+          return none
+    return some (← mkAppM ``ES.FuncData.env #[a])
+  let some a ← atom x | return none
+  let some b ← atom y | return none
+  if a == b then return none
+  for (p, q, g) in ← topNes.get do
+    if p == a && q == b then return some g
+    if p == b && q == a then return some (← mkAppM ``Ne.symm #[g])
+  let g ← mkFreshExprMVar (← mkAppM ``Ne #[a, b]) .natural `topNe
+  topNes.modify (·.push (a, b, g))
+  if envs then
+    let hh ← IO.FS.Handle.mk "facts_top.progress" .append
+    hh.putStrLn s!"TOPNE-ENV {← ppExpr a} ≠ {← ppExpr b}"; hh.flush
+  return some g
+
+/-- `a ≠ z.envs.size` (or `z.heap.size`) from `a < y.envs.size` and frames `y → … → z` (sizes only grow along
+frames, `Frame.envs_le`/`heap_le`): the proof, if the context has both. -/
+def ltOfFrameSize (a b : Expr) : MetaM (Option Expr) := do
+  let some (field, le) := (if b.isAppOfArity ``Array.size 2 && b.appArg!.isAppOfArity ``ES.State.envs 1 then
+      some (``ES.State.envs, ``Logic.Frame.envs_le)
+    else if b.isAppOfArity ``Array.size 2 && b.appArg!.isAppOfArity ``ES.State.heap 1 then
+      some (``ES.State.heap, ``Logic.Frame.heap_le)
+    else none) | return none
+  let z := b.appArg!.appArg!
+  -- `a` up to reducible unfolding (`{ d with env := e }.env` is `e`)
+  let aN ← whnfR (← instantiateMVars a)
+  let dbg ← carryDebug.get
+  let h ← IO.FS.Handle.mk "facts_top.progress" .append
+  if dbg then h.putStrLn s!"NEFS a≈ {(toString (← ppExpr aN)).take 80} vs {(toString (← ppExpr b)).take 60}"
+  -- the frames in the context
+  let mut frames : Array (Expr × Expr × Expr) := #[]
+  for d in ← getLCtx do
+    if d.isImplementationDetail then continue
+    unless d.type.isAppOfArity ``Logic.Frame 3 || d.type.getAppFn.isMVar do continue
+    let ty ← whnfR (← instantiateMVars d.type)
+    if ty.isAppOfArity ``Logic.Frame 3 then frames := frames.push (d.toExpr, ty.appFn!.appArg!, ty.appArg!)
+  for d in ← getLCtx do
+    if d.isImplementationDetail then continue
+    unless d.type.isAppOfArity ``LT.lt 4 do continue
+    let ty ← instantiateMVars d.type
+    if dbg then
+      let sz0 := ty.appArg!
+      if sz0.isAppOfArity ``Array.size 2 && sz0.appArg!.isAppOfArity field 1 then
+        h.putStrLn s!"NEFS   hyp {d.userName}: {(toString (← ppExpr (← whnfR ty.appFn!.appArg!))).take 80} < … match {(← whnfR ty.appFn!.appArg!) == aN}"
+    unless ty.appFn!.appArg! == a || (← whnfR ty.appFn!.appArg!) == aN do continue
+    let sz := ty.appArg!
+    unless sz.isAppOfArity ``Array.size 2 && sz.appArg!.isAppOfArity field 1 do continue
+    let y := sz.appArg!.appArg!
+    -- `y.size ≤ z.size` along frames (breadth first)
+    let mut seen : Array Expr := #[y]
+    let mut les : Array Expr := #[← mkAppM ``Nat.le_refl #[sz]]
+    let mut i := 0
+    let mut found : Option Expr := if y == z then some les[0]! else none
+    while i < seen.size && found.isNone do
+      let st := seen[i]!
+      for (p, u, v) in frames do
+        if u == st && !seen.contains v then
+          let step ← mkAppM le #[p]
+          let lev ← mkAppM ``Nat.le_trans #[les[i]!, step]
+          seen := seen.push v; les := les.push lev
+          if v == z then found := some lev
+      i := i + 1
+    if let some lev := found then
+      let p ← mkAppM ``Nat.lt_of_lt_of_le #[d.toExpr, lev]
+      -- stated of `a` as given (defeq by unfolding)
+      return some (← mkExpectedTypeHint p (← mkAppM ``LT.lt #[a, b]))
+  return none
+
+/-- `a ≠ z.envs.size` (or `heap.size`) from `a < y.size` and frames `y → … → z`. -/
+def neOfFrameSize (a b : Expr) : MetaM (Option Expr) := do
+  let some lt ← ltOfFrameSize a b | return none
+  return some (← mkAppM ``Nat.ne_of_lt #[lt])
+
+/-- `a ≠ b` for an object made later: `a < z.size` (as `ltOfFrameSize`) and a hypothesis `z.size ≤ b` (`b` made at
+`z` or after: fresh objects are numbered from the heap's size). -/
+def neOfFresh (a b : Expr) : MetaM (Option Expr) := do
+  let b' ← instantiateMVars b
+  for d in ← getLCtx do
+    if d.isImplementationDetail then continue
+    unless d.type.isAppOfArity ``LE.le 4 do continue
+    let ty ← instantiateMVars d.type
+    unless ty.appArg! == b' do continue
+    let t := ty.appFn!.appArg!
+    unless t.isAppOfArity ``Array.size 2 do continue
+    let some lt ← ltOfFrameSize a t | continue
+    let p ← mkAppM ``Nat.ne_of_lt #[← mkAppM ``Nat.lt_of_lt_of_le #[lt, d.toExpr]]
+    return some (← mkExpectedTypeHint p (← mkAppM ``Ne #[a, b]))
+  return none
+
+/-- A proof of `x ≠ y` by assumption or `omega`, if one closes it without assigning an unknown of `x` or `y`
+(`assumption` would otherwise unify an unknown object with any distinctness in the context, records' too: both are
+`Nat`). -/
+def closeNe (x y : Expr) (objs : Bool := false) (envs : Bool := false) : TermElabM (Option Expr) := do
+  -- sizes along frames: `a ≠ z.envs.size` from `a < y.envs.size` and frames `y → … → z`
+  if let some p ← carryTimed "ne:frameSize" (neOfFrameSize x y) then return some p
+  if let some p ← carryTimed "ne:frameSize" (neOfFrameSize y x) then return some (← mkAppM ``Ne.symm #[p])
+  if let some p ← carryTimed "ne:fresh" (neOfFresh x y) then return some p
+  if let some p ← carryTimed "ne:fresh" (neOfFresh y x) then return some (← mkAppM ``Ne.symm #[p])
+  let ne ← mkAppM ``Ne #[x, y]
   let saved ← saveState
-  let tac ← `(tactic| first | assumption | exact Ne.symm (by assumption) | omega)
+  -- two atoms (unknowns, variables): only a hypothesis tells them apart (`omega` would gather every arithmetic
+  -- hypothesis of a large context to fail); `omega` when a side is a term (a size, a literal, a sum)
+  let atom (e : Expr) : MetaM Bool := do let e ← instantiateMVars e; pure (e.isMVar || e.isFVar)
+  let tac ← if (← atom x) && (← atom y) then `(tactic| first | assumption | exact Ne.symm (by assumption))
+    else `(tactic| first | assumption | exact Ne.symm (by assumption) | omega)
   try
-    let rem ← Term.withoutErrToSorry <| Tactic.run mv.mvarId! (Tactic.withoutRecover (Tactic.evalTactic tac))
-    if rem.isEmpty then return some (← instantiateMVars mv) else saved.restore; return none
-  catch _ => saved.restore; return none
+    -- at a new depth: the tactic assigns no unknown of the walk's (not the sides' unknowns, nor a premise list's
+    -- type still unknown, `hP : ?PX`, which `assumption` would otherwise make the goal)
+    let r ← withNewMCtxDepth do
+      let mv ← mkFreshExprSyntheticOpaqueMVar ne `ne
+      let rem ← carryTimed "ne:tactic" <| (try Term.withoutErrToSorry <| Tactic.run mv.mvarId! (Tactic.withoutRecover (Tactic.evalTactic tac))
+        catch _ => pure [mv.mvarId!])
+      if rem.isEmpty then return some (← instantiateMVars mv) else return none
+    if let some p := r then return some p
+    saved.restore
+    if objs || envs then return ← topNe? x y envs
+    return none
+  catch _ =>
+    saved.restore
+    if objs || envs then return ← topNe? x y envs
+    return none
 
 /-- `Facts.Apart fp L` from the needed pairs' proofs (`ne`: a proof or the goal left). -/
 def apartProof (fp L : Expr) (A : AtomsB) (rs : Array Expr) (sf : Expr) (po pe : Array (Nat × Nat))
-    (neO neE : Array Expr) : MetaM Expr := do
+    (neO neE : Array Expr) (lb lp : Array Bool := #[]) : MetaM Expr := do
   let U := mkApp2 (mkConst ``Atoms.mk) (← mkListLit (mkConst ``ES.ObjId) A.objs.toList)
     (← mkListLit (mkConst ``ES.EnvId) A.envs.toList)
   let pairTy ← mkAppM ``Prod #[mkConst ``Nat, mkConst ``Nat]
@@ -567,13 +1162,142 @@ def apartProof (fp L : Expr) (A : AtomsB) (rs : Array Expr) (sf : Expr) (po pe :
   let lhs ← mkAppM ``List.map #[mkConst ``Fact.loc, L]
   let rhs ← mkAppM ``List.map #[mkApp (mkConst ``RLoc.eval) U, rsL]
   let hl ← mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs)
-  let chk ← mkAppM ``List.all #[rsL, mkApp3 (mkConst ``RLoc.covered) sf poL peL]
+  -- some key not comparable: keys compared only where flagged (`Facts.apart_pairsL`)
+  let flagged := lb.any (!·) || lp.any (!·)
+  let boolL (l : Array Bool) : MetaM Expr := mkListLit (mkConst ``Bool) (l.toList.map fun b => mkConst (if b then ``Bool.true else ``Bool.false))
+  let lbL ← boolL lb
+  let lpL ← boolL lp
+  -- the places' own keys: literal or not
+  let lf := rs.map fun r => if r.isAppOf ``RLoc.prop || r.isAppOf ``RLoc.bind then (keyLit? r.getAppArgs[1]!).isSome else true
+  let flagged := flagged || lf.any (!·)
+  let lfL ← boolL lf
+  let chk ← if flagged then mkAppM ``List.all #[← mkAppM ``List.zip #[rsL, lfL], mkAppN (mkConst ``RLoc.coveredL) #[sf, lbL, lpL, poL, peL]]
+    else mkAppM ``List.all #[rsL, mkApp3 (mkConst ``RLoc.covered) sf poL peL]
   let hc ← mkExpectedTypeHint (← mkEqRefl (mkConst ``Bool.true)) (← mkEq chk (mkConst ``Bool.true))
   let neTy (sel : Name) : MetaM Expr := withLocalDeclD `p pairTy fun p => do
     mkLambdaFVars #[p] (← mkAppM ``Ne #[← mkAppM sel #[U, ← mkAppM ``Prod.fst #[p]], ← mkAppM sel #[U, ← mkAppM ``Prod.snd #[p]]])
   let ho ← mkExpectedTypeHint (← allOf neO) (mkApp2 (mkApp (mkConst ``AllP) pairTy) (← neTy ``Atoms.obj) poL)
   let he ← mkExpectedTypeHint (← allOf neE) (mkApp2 (mkApp (mkConst ``AllP) pairTy) (← neTy ``Atoms.env) peL)
-  let prf := mkAppN (mkConst ``Facts.apart_pairs) #[U, sf, L, rsL, poL, peL, hl, hc, ho, he]
+  -- key tables (a `facts_top` walk): keys by index
+  if let some kt ← keyTables.get then
+    let natL (l : Array Nat) : MetaM Expr := mkListLit (mkConst ``Nat) (l.toList.map mkNatLit)
+    let (fbs, fps) ← sfootEntries sf
+    let mut lbA : Array Bool := #[]; let mut kbA : Array Nat := #[]
+    for (_, x) in fbs do
+      match keyLit? x with
+      | some lit => lbA := lbA.push true; kbA := kbA.push (← keyIndex false x lit)
+      | none => lbA := lbA.push false; kbA := kbA.push 0
+    let mut lpA : Array Bool := #[]; let mut kpA : Array Nat := #[]
+    for (_, k) in fps do
+      match keyLit? k with
+      | some lit => lpA := lpA.push true; kpA := kpA.push (← keyIndex true k lit)
+      | none => lpA := lpA.push false; kpA := kpA.push 0
+    let mut lfA : Array Bool := #[]; let mut rkA : Array Nat := #[]
+    for r in rs do
+      let isP := r.isAppOf ``RLoc.prop
+      if isP || r.isAppOf ``RLoc.bind then
+        let k := r.getAppArgs[1]!
+        match keyLit? k with
+        | some lit => lfA := lfA.push true; rkA := rkA.push (← keyIndex isP k lit)
+        | none => lfA := lfA.push false; rkA := rkA.push 0
+      else lfA := lfA.push false; rkA := rkA.push 0
+    let lbL ← boolL lbA; let lpL ← boolL lpA; let lfL ← boolL lfA
+    let kbL ← natL kbA; let kpL ← natL kpA; let rkL ← natL rkA
+    -- `KeysAt`/`FactKeysAt`: `tbl[i]? = some k` for each flagged entry, by definition (the tables filled at the end);
+    -- built from the end, each conjunction with its parts' types (the lists' suffixes)
+    let jsT := mkConst ``ES.JSStr
+    let pkT := mkConst ``ES.PropKey
+    let lookupT (tbl : Expr) : MetaM (Nat → Expr) := do
+      let e0 ← mkAppM ``GetElem?.getElem? #[tbl, mkNatLit 0]
+      let f := e0.getAppFn
+      let args := e0.getAppArgs
+      return fun i => mkAppN f (args.set! (args.size - 1) (mkNatLit i))
+    let lkB ← lookupT kt.tb
+    let lkP ← lookupT kt.tp
+    let consL (α x l : Expr) : Expr := mkApp3 (mkConst ``List.cons [0]) α x l
+    let nilL (α : Expr) : Expr := mkApp (mkConst ``List.nil [0]) α
+    let boolE (b : Bool) : Expr := mkConst (if b then ``Bool.true else ``Bool.false)
+    let keysAt (tbl : Expr) (α : Expr) (lk : Nat → Expr) (flags : Array Bool) (idx : Array Nat) (keys : Array Expr) :
+        MetaM Expr := do
+      let mut acc := mkConst ``True.intro
+      let mut sb := nilL (mkConst ``Bool); let mut si := nilL (mkConst ``Nat); let mut sk := nilL α
+      let mut accTy := mkAppN (mkConst ``KeysAt) #[α, tbl, sb, si, sk]
+      acc ← mkExpectedTypeHint acc accTy
+      for n in (List.range flags.size).reverse do
+        sb := consL (mkConst ``Bool) (boolE flags[n]!) sb
+        si := consL (mkConst ``Nat) (mkNatLit idx[n]!) si
+        sk := consL α keys[n]! sk
+        let ty := mkAppN (mkConst ``KeysAt) #[α, tbl, sb, si, sk]
+        if flags[n]! then
+          let some_k := mkApp2 (mkConst ``Option.some [0]) α keys[n]!
+          let eqTy ← mkEq (lk idx[n]!) some_k
+          let eq ← mkExpectedTypeHint (mkApp2 (mkConst ``Eq.refl [1]) (mkApp (mkConst ``Option [0]) α) some_k) eqTy
+          acc := mkApp4 (mkConst ``And.intro) eqTy accTy eq acc
+        acc ← mkExpectedTypeHint acc ty
+        accTy := ty
+      return acc
+    let factKeysAt : MetaM Expr := do
+      let mut acc := mkConst ``True.intro
+      let mut sb := nilL (mkConst ``Bool); let mut si := nilL (mkConst ``Nat); let mut sr := nilL (mkConst ``RLoc)
+      let mut accTy := mkAppN (mkConst ``FactKeysAt) #[kt.tb, kt.tp, sb, si, sr]
+      acc ← mkExpectedTypeHint acc accTy
+      for n in (List.range rs.size).reverse do
+        sb := consL (mkConst ``Bool) (boolE lfA[n]!) sb
+        si := consL (mkConst ``Nat) (mkNatLit rkA[n]!) si
+        sr := consL (mkConst ``RLoc) rs[n]! sr
+        let ty := mkAppN (mkConst ``FactKeysAt) #[kt.tb, kt.tp, sb, si, sr]
+        if lfA[n]! then
+          let isP := rs[n]!.isAppOf ``RLoc.prop
+          let α := if isP then pkT else jsT
+          let k := rs[n]!.getAppArgs[1]!
+          let some_k := mkApp2 (mkConst ``Option.some [0]) α k
+          let eqTy ← mkEq ((if isP then lkP else lkB) rkA[n]!) some_k
+          let eq ← mkExpectedTypeHint (mkApp2 (mkConst ``Eq.refl [1]) (mkApp (mkConst ``Option [0]) α) some_k) eqTy
+          acc := mkApp4 (mkConst ``And.intro) eqTy accTy eq acc
+        acc ← mkExpectedTypeHint acc ty
+        accTy := ty
+      return acc
+    let hkb ← keysAt kt.tb jsT lkB lbA kbA (fbs.map (·.2))
+    let hkp ← keysAt kt.tp pkT lkP lpA kpA (fps.map (·.2))
+    let hfk ← factKeysAt
+    let rsL ← mkListLit (mkConst ``RLoc) rs.toList
+    let mapSnd (α : Expr) (l : Expr) : Expr :=
+      mkAppN (mkConst ``List.map [0, 0]) #[mkApp2 (mkConst ``Prod [0, 0]) (mkConst ``Nat) α, α,
+        mkApp2 (mkConst ``Prod.snd [0, 0]) (mkConst ``Nat) α, l]
+    let hkb ← mkExpectedTypeHint hkb (mkAppN (mkConst ``KeysAt) #[jsT, kt.tb, lbL, kbL, mapSnd jsT (← mkAppM ``SFoot.binds #[sf])])
+    let hkp ← mkExpectedTypeHint hkp (mkAppN (mkConst ``KeysAt) #[pkT, kt.tp, lpL, kpL, mapSnd pkT (← mkAppM ``SFoot.props #[sf])])
+    let hfk ← mkExpectedTypeHint hfk (mkAppN (mkConst ``FactKeysAt) #[kt.tb, kt.tp, lfL, rkL, rsL])
+    let len (l : Expr) : MetaM Expr := mkAppM ``List.length #[l]
+    let eqs ← [ (lbL, ← mkAppM ``SFoot.binds #[sf]), (lpL, ← mkAppM ``SFoot.props #[sf]), (kbL, ← mkAppM ``SFoot.binds #[sf]),
+      (kpL, ← mkAppM ``SFoot.props #[sf]), (lfL, rsL), (rkL, rsL) ].mapM fun (a, b) => do
+        let l ← len a
+        let r ← len b
+        pure (← mkEqRefl l, ← mkEq l r)
+    let mut hlen := (eqs.getLast!).1
+    let mut hlenTy := (eqs.getLast!).2
+    hlen ← mkExpectedTypeHint hlen hlenTy
+    for (p, t) in (eqs.dropLast).reverse do
+      let p' ← mkExpectedTypeHint p t
+      hlen := mkApp4 (mkConst ``And.intro) t hlenTy p' hlen
+      hlenTy := mkAnd t hlenTy
+    let chk ← mkAppM ``List.all #[← mkAppM ``List.zip #[rsL, ← mkAppM ``List.zip #[lfL, rkL]],
+      mkAppN (mkConst ``RLoc.coveredK) #[sf, lbL, lpL, kbL, kpL, poL, peL]]
+    let hc ← mkExpectedTypeHint (← mkEqRefl (mkConst ``Bool.true)) (← mkEq chk (mkConst ``Bool.true))
+    let prf := mkAppN (mkConst ``Facts.apart_pairsK) #[U, sf, lbL, lpL, lfL, kbL, kpL, rkL, kt.tb, kt.tp, L, rsL, poL, peL,
+      kt.hnb, kt.hnp, hlen, hkb, hkp, hfk, hl, hc, ho, he]
+    return ← mkExpectedTypeHint prf (mkApp2 (mkConst ``Logic.Facts.Apart) fp L)
+  let prf ← if flagged then do
+      let lenEq (l : Expr) (sel : Name) : MetaM Expr := do
+        let lhs ← mkAppM ``List.length #[l]
+        let rhs ← mkAppM ``List.length #[← mkAppM sel #[sf]]
+        mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs)
+      let hlf ← do
+        let lhs ← mkAppM ``List.length #[lfL]
+        let rhs ← mkAppM ``List.length #[rsL]
+        mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs)
+      pure (mkAppN (mkConst ``Facts.apart_pairsL) #[U, sf, lbL, lpL, lfL, L, rsL, poL, peL, ← lenEq lbL ``SFoot.binds,
+        ← lenEq lpL ``SFoot.props, hlf, hl, hc, ho, he])
+    else pure (mkAppN (mkConst ``Facts.apart_pairs) #[U, sf, L, rsL, poL, peL, hl, hc, ho, he])
   -- (the reflection's evaluation is the footprint by definition: left to the kernel, whose lazy unfolding is cheap
   -- where the elaborator's is not)
   mkExpectedTypeHint prf (mkApp2 (mkConst ``Logic.Facts.Apart) fp L)
@@ -587,7 +1311,7 @@ elab "facts_apart" : tactic => Tactic.withMainContext do
   unless t.isAppOfArity ``Logic.Facts.Apart 2 do throwError "facts_apart: not `Facts.Apart fp L`: {t}"
   let fp := t.appFn!.appArg!
   let L := t.appArg!
-  let (A, elems, rs, sf, fbs, fps) ← reflectAll fp L
+  let (A, elems, rs, sf, fbs, fps, _, _) ← reflectAll fp L
   let dedup (l : Array (Nat × Nat)) : Array (Nat × Nat) := l.foldl (fun acc p => if acc.contains p then acc else acc.push p) #[]
   let mut po : Array (Nat × Nat) := #[]
   let mut pe : Array (Nat × Nat) := #[]
@@ -633,49 +1357,57 @@ def carry (hE hFE : Expr) : TermElabM (Expr × Expr × Nat × Nat) := do
   let fp := fTy.appFn!.appFn!.appArg!
   let w := fTy.appArg!
   unless ← isDefEq fTy.appFn!.appArg! s do throwError "facts: the frame does not start at {s}"
-  let (A, elems, rs, _, fbs, fps) ← reflectAll fp L
+  let (A, elems, rs, _, fbs, fps, lb, lp) ← carryTimed "carry:reflect" (reflectAll fp L)
   -- the facts kept: their pairs closed
   let mut cache : Array ((Bool × Nat × Nat) × Option Expr) := #[]
   let mut keep : Array Nat := #[]
   for k in [:elems.size] do
-    let some (a, b) ← placePairs A fbs fps rs[k]! | continue
+    let some (a, b) ← placePairs A fbs fps rs[k]! lb lp | do
+      if ← carryDebug.get then
+        let h ← IO.FS.Handle.mk "facts_top.progress" .append
+        h.putStrLn s!"CARRY-PLACE {((toString (← ppExpr elems[k]!)).replace "\n" " ").take 300} FP {((toString (← ppExpr fp)).replace "\n" " ").take 1500}"; h.flush
+      continue
     let mut ok := true
     for (i, j) in a do
       if ok then
         match cache.find? (·.1 == (true, i, j)) with
         | some (_, r) => ok := r.isSome
-        | none => let r ← closeNe A.objs[i]! A.objs[j]!; cache := cache.push ((true, i, j), r); ok := r.isSome
+        | none =>
+          let r ← closeNe A.objs[i]! A.objs[j]! true; cache := cache.push ((true, i, j), r); ok := r.isSome
+          if r.isNone && (← carryDebug.get) then
+            let h ← IO.FS.Handle.mk "facts_top.progress" .append
+            h.putStrLn s!"CARRY-NE obj {(toString (← ppExpr A.objs[i]!)).take 120} ≠ {(toString (← ppExpr A.objs[j]!)).take 120}"; h.flush
     for (i, j) in b do
       if ok then
         match cache.find? (·.1 == (false, i, j)) with
         | some (_, r) => ok := r.isSome
-        | none => let r ← closeNe A.envs[i]! A.envs[j]!; cache := cache.push ((false, i, j), r); ok := r.isSome
+        | none =>
+          let r ← closeNe A.envs[i]! A.envs[j]! false true; cache := cache.push ((false, i, j), r); ok := r.isSome
+          if r.isNone && (← carryDebug.get) then
+            let h ← IO.FS.Handle.mk "facts_top.progress" .append
+            h.putStrLn s!"CARRY-NE env {((toString (← ppExpr A.envs[i]!)).replace "\n" " ").take 2000} ≠ {((toString (← ppExpr A.envs[j]!)).replace "\n" " ").take 2000}"; h.flush
     if ok then keep := keep.push k
   let L' ← mkListLit (mkConst ``Logic.Fact) (keep.toList.map (elems[·]!))
-  -- `Facts.holds L' s`, picked from `h`
-  let mut hl ← mkAppOptM ``Logic.Facts.holds_nil #[s]
-  let mut tl := mkApp (mkConst ``List.nil [Level.zero]) (mkConst ``Logic.Fact)
-  for k in keep.reverse do
-    let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit k, ← mkAppM ``List.length #[L]])
-    let gk ← mkAppOptM ``Logic.Facts.get #[L, s, hE, mkNatLit k, hm]
-    hl ← mkAppOptM ``Logic.Facts.holds_cons #[elems[k]!, tl, s, gk, hl]
-    tl := mkApp3 (mkConst ``List.cons [Level.zero]) (mkConst ``Logic.Fact) elems[k]! tl
+  -- `Facts.holds L' s`: the kept facts, by a mask over `L` (one pass; an index per fact walks `L` each time)
+  let maskE ← mkListLit (mkConst ``Bool) ((List.range elems.size).map fun k =>
+    mkConst (if keep.contains k then ``Bool.true else ``Bool.false))
+  let hl ← mkExpectedTypeHint (mkAppN (mkConst ``Facts.holds_mask) #[L, s, maskE, hE]) (mkApp2 (mkConst ``Logic.Facts.holds) L' s)
   -- its places apart from `fp`
-  let (A2, _, rs2, sf2, fbs2, fps2) ← reflectAll fp L'
+  let (A2, _, rs2, sf2, fbs2, fps2, lb2, lp2) ← carryTimed "carry:reflect2" (reflectAll fp L')
   let mut po : Array (Nat × Nat) := #[]
   let mut pe : Array (Nat × Nat) := #[]
   for r in rs2 do
-    let some (a, b) ← placePairs A2 fbs2 fps2 r | throwError "facts: internal"
+    let some (a, b) ← placePairs A2 fbs2 fps2 r lb2 lp2 | throwError "facts: internal"
     po := po ++ a; pe := pe ++ b
   let dedup (l : Array (Nat × Nat)) : Array (Nat × Nat) := l.foldl (fun acc p => if acc.contains p then acc else acc.push p) #[]
   po := dedup po; pe := dedup pe
   let neO ← po.mapM fun (i, j) => do
-    let some p ← closeNe A2.objs[i]! A2.objs[j]! | throwError "facts: internal ne"
+    let some p ← closeNe A2.objs[i]! A2.objs[j]! true | throwError "facts: internal ne"
     return p
   let neE ← pe.mapM fun (i, j) => do
-    let some p ← closeNe A2.envs[i]! A2.envs[j]! | throwError "facts: internal ne"
+    let some p ← closeNe A2.envs[i]! A2.envs[j]! false true | throwError "facts: internal ne"
     return p
-  let hap ← apartProof fp L' A2 rs2 sf2 po pe neO neE
+  let hap ← carryTimed "carry:apart" (apartProof fp L' A2 rs2 sf2 po pe neO neE lb2 lp2)
   let prf ← mkAppOptM ``Logic.Facts.frame #[fp, s, w, hFE, L', hap, hl]
   let ty := mkApp2 (mkConst ``Logic.Facts.holds) L' w
   return (L', prf, keep.size, elems.size)
@@ -720,8 +1452,7 @@ elab "facts_get " h:term:max : tactic => Tactic.withMainContext do
     let t ← instantiateMVars d.type
     if (declLikeOf? s t).isSome then return acc.push d.toExpr else return acc
   for k in [:elems.size] do
-    let hm ← mkDecideProof (← mkAppM ``LT.lt #[mkNatLit k, ← mkAppM ``List.length #[L]])
-    let gk ← mkAppOptM ``Logic.Facts.get #[L, s, hE, mkNatLit k, hm]
+    let gk ← factAt L s hE k
     let gk0 := gk
     let ty ← whnf (← instantiateMVars (mkApp (mkProj ``Logic.Fact 1 elems[k]!) s))
     let gk ← mkExpectedTypeHint gk ty
@@ -1001,10 +1732,10 @@ def factsPost (n : Name) : TermElabM Unit := do
       addDecl (Declaration.defnDecl (mkDefinitionValEx plName ci.levelParams plT plV .abbrev .safe []))
       let PLc := mkAppN (mkConst plName lps) params
       let holdsW := mkApp2 (mkConst ``Logic.Facts.holds) PLc w
-      let mut hl ← mkAppOptM ``Logic.Facts.holds_nil #[w]
+      let mut hl ← appFacts ``Logic.Facts.holds_nil #[w]
       let mut tl := mkApp (mkConst ``List.nil [Level.zero]) (mkConst ``Logic.Fact)
       for k in (List.range facts.size).reverse do
-        hl ← mkAppOptM ``Logic.Facts.holds_cons #[facts[k]!, tl, w, prfs[k]!, hl]
+        hl ← appFacts ``Logic.Facts.holds_cons #[facts[k]!, tl, w, prfs[k]!, hl]
         tl := mkApp3 (mkConst ``List.cons [Level.zero]) (mkConst ``Logic.Fact) facts[k]! tl
       let hlT ← mkExpectedTypeHint hl holdsW
       let restTy := if rest.isEmpty then mkConst ``True else rest.pop.foldr (fun t acc => mkAnd t.1 acc) rest.back!.1

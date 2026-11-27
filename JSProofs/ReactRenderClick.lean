@@ -126,7 +126,7 @@ theorem work_render {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ
     (r_FQk : (s.objEntry fFQ).kind = .func dFQ)
     (r_IFQ : I ≠ fFQ)
     (r_Prep : ∀ sR, Frame {} s sR → s.fuel ≤ sR.fuel + 40 →
-      ∀ w h1, Frame (ReactRenderSync.fpPre d.env I) sR w → HI h1 → sR.fuel ≤ w.fuel + 60 → (∃ v a b, (w.objEntry I).props.get? (.str "H") = some (.data v true a b)) → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) →
+      ∀ w h1, Frame (ReactRenderSync.fpPre d.env I) sR w → HI h1 → sR.fuel ≤ w.fuel + 60 → (∃ v, (w.objEntry I).props.get? (.str "H") = some (.data v true he hc)) → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) →
       WP eng answer j h1 (callImpl eng (.obj fPF) .undefined #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) w fun _ w' h' =>
         Frame fpPF w w' ∧ w.fuel ≤ w'.fuel + kP ∧ ReactRenderSync.AfterPrep w' d.env oG ∧ P1 w' h' ∧ HI h')
     (r_fpPB : fpPF.binds.all (fun q => decide (q.1 < s.envs.size)) = true)

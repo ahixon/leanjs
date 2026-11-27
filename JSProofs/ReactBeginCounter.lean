@@ -1,6 +1,7 @@
 import JSProofs.ReactUpdateFunction
 import JSProofs.ReactRootBailout
 import JSProofs.BWGen
+import JSProofs.ReactBeginWork
 import JSProofs.BWSwitch
 
 /-!
@@ -56,9 +57,6 @@ theorem check_lane {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s
   all_goals (repeat' apply And.intro)
   all_goals first | rfl | omega | (simp only [js_simp]; omega) | frame_go' [*]
 
-theorem simpleB (d : FuncData) (hc : d.code = BWGen.beginWork_func) : FDI.Simple d := by
-  constructor <;> rw [hc] <;> try rfl
-  simp [BWGen.beginWork_func, Func.params, Func.info]
 
 set_option linter.unusedSimpArgs false in
 set_option linter.unusedVariables false in
@@ -955,6 +953,9 @@ theorem click_spec_c {n : Nat}
     (hC1ty : (s.objEntry C1).props.get? (.str "type") = some (.data (.obj fK) tyw tye tyc))
     (dUFC1 : fUF ≠ C1)
     (hcUF : ∀ w h1, Frame ⟨[(d.env, JSStr.ofString "didReceiveUpdate")], [(C1, .str "lanes")], false⟩ s w → 500 ≤ w.fuel →
+      Scope.declLike? (w.envEntry d.env) = some (bG.modify (JSStr.ofString "didReceiveUpdate")
+        (fun bd => { bd with value := some (.bool false) }), oG) →
+      (w.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) →
       WP eng answer (n + 7) h1 (callImpl eng (.obj fUF) .undefined #[.obj C0, .obj C1, .obj fK, P, two]) w fun v w' h' =>
         ∃ C : ObjId, v = .obj X ∧ Frame (fpUF d.env C1 H0 Q RSI X) w w' ∧ w.fuel ≤ w'.fuel + 500 ∧ h' = h1 ∧ w'.realm = w.realm ∧ (w'.objEntry X).props.get? (.str "pendingProps") = some (.data (.obj C) true e0 c0) ∧ (w'.objEntry X).props.get? (.str "type") = some (.data (vHT) true r_e1 r_c1) ∧ (w'.objEntry X).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitAnd fl (F64.fin false 5062151534280704 (-22)))) true r_e2 r_c2) ∧ (w'.objEntry X).props.get? (.str "subtreeFlags") = some (.data (.num (F64.fin false 0 (-1074))) true r_e3 r_c3) ∧ (w'.objEntry X).props.get? (.str "deletions") = some (.data (.null) true r_e4 r_c4) ∧ (w'.objEntry X).props.get? (.str "childLanes") = some (.data (vCL) true e5 c5) ∧ (w'.objEntry X).props.get? (.str "lanes") = some (.data (vL) true e6 c6) ∧ (w'.objEntry X).props.get? (.str "child") = some (.data (vC) true e7 c7) ∧ (w'.objEntry X).props.get? (.str "memoizedProps") = some (.data (vMP) true e8 c8) ∧ (w'.objEntry X).props.get? (.str "memoizedState") = some (.data (vMS) true e9 c9) ∧ (w'.objEntry X).props.get? (.str "updateQueue") = some (.data (vUQ) true e10 c10) ∧ (w'.objEntry X).props.get? (.str "dependencies") = some (.data (.null) true e11 c11) ∧ (w'.objEntry X).props.get? (.str "sibling") = some (.data .null true e12 c12) ∧ (w'.objEntry X).props.get? (.str "index") = some (.data (.num (F64.fin false 0 (-1074))) true e13 c13) ∧ (w'.objEntry X).props.get? (.str "ref") = some (.data .null true e14 c14) ∧ (w'.objEntry X).props.get? (.str "refCleanup") = some (.data (vRC) true e15 c15) ∧ (w'.objEntry X).props.get? (.str "return") = some (.data (.obj C1) true rew rec) ∧ (w'.objEntry C1).props.get? (.str "child") = some (.data (.obj X) true cw cc) ∧ (w'.objEntry C).props.get? (.str "children") = some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧ (w'.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) ∧ (w'.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitOr fl1 (F64.fin false 4503599627370496 (-52)))) true fe fc) ∧ (w'.objEntry C).kind.isPlain = true ∧ C < w'.heap.size ∧ w.heap.size ≤ C ∧ (∃ F, ReactNewProps.NewProps w' C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "didReceiveUpdate"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "thenableIndexCounter$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ ∃ bd, bm[JSStr.ofString "thenableState$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true ∧ (∃ bd, bm[JSStr.ofString "lastContextDependency"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "currentlyRenderingFiber$1"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)) :
     WP eng answer (n + 8) h (callImpl eng (.obj fB) tB #[.obj C0, .obj C1, two]) s fun v w h' =>
@@ -1088,7 +1089,7 @@ theorem click_spec_c {n : Nat}
   have gStK : St.envEntry s.envs.size = w1.envEntry s.envs.size := by
     rw [hSt]; js_norm [hEw1', hnw1, Ne.symm hnw1, hne, Ne.symm hne]
   clear hSt
-  refine wp_mono (hcUF St _  gFStt (Nat.le_trans (by decide) gSF) ) ?postU
+  refine wp_mono (hcUF St _  gFStt (Nat.le_trans (by decide) gSF) gSd gSC1l) ?postU
   clear hcUF
   intro v2 w2 h2 ⟨C, hv2, hF2, hfu2, hh2, hr2, x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, xret,
     hch, hCch, hC1l2, hC1f2, hCk2, hCb2, hCge2, hNP2, hB2⟩

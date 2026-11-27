@@ -20,7 +20,7 @@ set_option maxRecDepth 40000 in
 /-- **`r_Prep` from facts at the microtask's start**: `prepareFreshStack`'s premises hold where it is called because
 none of them is about what the steps before it write (`fpPerf`, `fpPre`). The work loop then starts from a state
 framed from the microtask's start (`P1`). -/
-theorem prep_hyp {j : Nat} {s : State} {d dPF : FuncData} {R A I fPF : ObjId} {bG : HashMap JSStr Binding}
+theorem prep_hyp {j : Nat} {s : State} {d dPF : FuncData} {R A I fPF : ObjId} {he hc : Bool} {bG : HashMap JSStr Binding}
     {oG : Option EnvId} {p_bw0 p_bw1 p_bw2 p_bw3 p_bw4 p_bw5 p_bw6 p_bw7 p_bw8 p_bw9 p_bw10 p_bw11 p_bw12 p_bw13 p_bw14 p_bw15 p_bw16 p_bw17 p_bw18 p_bw19 p_bw20 p_bdA p_bd_fR p_bd_fC p_bd_fK p_bd_fE p_bd_fQ p_bd_fM : Binding} {p_H p_X p_F p_Fa p_A p_Qo p_U p_fR p_fC p_fK p_fE p_fQ p_fM p_Fq : ObjId} {p_dR p_dC p_dK p_dE p_dQ p_dM : FuncData} {p_fl p_hc p_fl' p_al p_L : F64} {p_vT p_vL p_vC p_vMP p_vMS p_vUQ p_vS p_vI p_vR p_vRC p_xo0 p_xo1 p_xo2 p_xo3 p_xo4 p_xo5 p_xo6 p_xo7 p_xo8 p_xo9 p_xo10 p_xo11 p_xo12 p_xo13 p_xo14 p_xo15 p_un : Value} {p_rtw p_rte p_rtc p_rcw p_rce p_rcc p_ruw p_rue p_ruc p_rpw p_rpe p_rpc p_rsw p_rse p_rsc p_riw p_rie p_ric p_rew p_ree p_rec p_haw p_hae p_hac p_hfw p_hfe p_hfc p_hdw p_hde p_hdc p_hcle p_hclc p_h_typew p_h_typee p_h_typec p_h_lanesw p_h_lanese p_h_lanesc p_h_childw p_h_childe p_h_childc p_h_memoizedPropsw p_h_memoizedPropse p_h_memoizedPropsc p_h_memoizedStatew p_h_memoizedStatee p_h_memoizedStatec p_h_updateQueuew p_h_updateQueuee p_h_updateQueuec p_h_siblingw p_h_siblinge p_h_siblingc p_h_indexw p_h_indexe p_h_indexc p_h_refw p_h_refe p_h_refc p_h_refCleanupw p_h_refCleanupe p_h_refCleanupc p_htw p_hte p_htc p_hrw p_hre p_hrc p_hsw p_hse p_hsc p_x0e p_x0c p_x1e p_x1c p_x2e p_x2c p_x3e p_x3c p_x4e p_x4c p_x5e p_x5c p_x6e p_x6c p_x7e p_x7c p_x8e p_x8c p_x9e p_x9c p_x10e p_x10c p_x11e p_x11c p_x12e p_x12c p_x13e p_x13c p_x14e p_x14c p_x15e p_x15c p_a0e p_a0c p_a1e p_a1c p_a2e p_a2c p_a3e p_a3c p_alw p_ale p_alc p_qpe p_qpc p_une p_unc p_fle p_flc p_faw p_fae p_fac p_frw p_fre p_frc p_fale p_falc p_xaw p_xae p_xac p_xtw p_xte p_xtc p_xrw p_xre p_xrc p_xsw p_xse p_xsc p_faaw p_faae p_faac p_farw p_fare p_farc : Bool}
     (hPFo : fPF < s.heap.size) (hPFk : (s.objEntry fPF).kind = .func dPF)
     (hPFcode : dPF.code = PFSGen.prepareFreshStack_func) (hPFcls : dPF.isClassCtor = false)
@@ -291,10 +291,10 @@ theorem prep_hyp {j : Nat} {s : State} {d dPF : FuncData} {R A I fPF : ObjId} {b
     ∀ sP, Frame (ReactMicrotaskClick.fpPerf d.env R A) s sP → ReactMicrotaskClick.MicroFacts sP d.env oG R A → s.fuel ≤ sP.fuel + 402 →
       ∀ sW, Frame {} sP sW → sP.fuel ≤ sW.fuel + 70 →
       ∀ sR, Frame {} sW sR → sW.fuel ≤ sR.fuel + 40 →
-      ∀ w h1, Frame (ReactRenderSync.fpPre d.env I) sR w → HI h1 → sR.fuel ≤ w.fuel + 60 → (∃ v a b, (w.objEntry I).props.get? (.str "H") = some (.data v true a b)) → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) →
+      ∀ w h1, Frame (ReactRenderSync.fpPre d.env I) sR w → HI h1 → sR.fuel ≤ w.fuel + 60 → (∃ v, (w.objEntry I).props.get? (.str "H") = some (.data v true he hc)) → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) →
       WP eng answer (j + 2) h1 (callImpl eng (.obj fPF) .undefined #[.obj R, .num (F64.fin false 4503599627370496 (-51))]) w fun _ w' h' =>
         Frame (ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H) w w' ∧ w.fuel ≤ w'.fuel + 400 ∧ ReactRenderSync.AfterPrep w' d.env oG ∧ (fun w' (_ : σ) => Frame (((((ReactMicrotaskClick.fpPerf d.env R A).union {}).union {}).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env p_X p_A p_Qo p_U p_F p_Fa p_H)) s w' ∧ ReactPrepareFresh.PrepBinds w' d.env oG R p_X ∧ ReactPrepareFresh.PrepFields w' p_X p_H p_F p_Fa p_Qo p_U p_vT p_vL p_vC p_vMP p_vMS p_vUQ p_vS p_vI p_vR p_vRC p_fl p_hc p_fl' p_al p_x0e p_x0c p_x1e p_x1c p_x2e p_x2c p_x3e p_x3c p_x4e p_x4c p_x5e p_x5c p_x6e p_x6c p_x7e p_x7c p_x8e p_x8c p_x9e p_x9c p_x10e p_x10c p_x11e p_x11c p_x12e p_x12c p_x13e p_x13c p_x14e p_x14c p_x15e p_x15c p_hcle p_hclc p_fle p_flc p_fale p_falc p_qpe p_qpc p_une p_unc ∧ (∃ v a b, (w'.objEntry I).props.get? (.str "H") = some (.data v true a b)) ∧ ∃ bm, Scope.declLike? (w'.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null) ∧ ReactMicrotaskClick.MicroFacts w' d.env oG R A) w' h' ∧ HI h' := by
-  intro sP hP hMF fuP sW hW fuW sR hR fuR w h1 hpre hHI1 fuw ⟨iv, ia, ib, hIHw⟩ ⟨bme, hbme, ⟨bdx, hbdx, hbdxm, hbdxv⟩, ⟨bdt, hbdt, hbdtv⟩⟩
+  intro sP hP hMF fuP sW hW fuW sR hR fuR w h1 hpre hHI1 fuw ⟨iv, hIHw⟩ ⟨bme, hbme, ⟨bdx, hbdx, hbdxm, hbdxv⟩, ⟨bdt, hbdt, hbdtv⟩⟩
   have hT := frame_trans (frame_trans (frame_trans hP hW) hR) hpre
   obtain ⟨bW, hWd, hWx⟩ := declLike_frame hT hG hGe
   refine wp_mono (ReactPrepareFresh.call_spec (n := j) (d := { dPF with env := d.env }) (bG := bW)
@@ -303,7 +303,7 @@ theorem prep_hyp {j : Nat} {s : State} {d dPF : FuncData} {R A I fPF : ObjId} {b
   intro v w' h' ⟨_, hF', hfu', hh, hAP, hPB, hPF⟩
   subst hh
   obtain ⟨bw', hdw', hbw'⟩ := declLike_frame hF' (envs_frame hT hG) hbme
-  refine ⟨hF', by omega, hAP, ⟨frame_trans hT hF', hPB, hPF, ⟨iv, ia, ib, ?_⟩, bw', hdw',
+  refine ⟨hF', by omega, hAP, ⟨frame_trans hT hF', hPB, hPF, ⟨iv, he, hc, ?_⟩, bw', hdw',
     ⟨bdx, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdx, hbdxm, hbdxv⟩,
     ⟨bdt, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdt, hbdtv⟩, ?mf⟩, hHI1⟩
   case mf =>

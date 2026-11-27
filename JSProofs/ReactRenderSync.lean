@@ -111,7 +111,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     (hWLo : fWL < s.heap.size) (hWLk : (s.objEntry fWL).kind = .func dWL) (hIWL : I ≠ fWL)
     (hFQo : fFQ < s.heap.size) (hFQk : (s.objEntry fFQ).kind = .func dFQ) (hIFQ : I ≠ fFQ)
     -- (`prepareFreshStack(root, lanes)`)
-    (hPrep : ∀ w h1, Frame (fpPre d.env I) s w → HI h1 → s.fuel ≤ w.fuel + 60 → (∃ v a b, (w.objEntry I).props.get? (.str "H") = some (.data v true a b)) → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) →
+    (hPrep : ∀ w h1, Frame (fpPre d.env I) s w → HI h1 → s.fuel ≤ w.fuel + 60 → (∃ v, (w.objEntry I).props.get? (.str "H") = some (.data v true he hc)) → (∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧ (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧ (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) →
       WP eng answer n h1 (callImpl eng (.obj fPF) .undefined #[.obj R, .num lanes]) w fun _ w' h' =>
         Frame fpPF w w' ∧ w.fuel ≤ w'.fuel + kP ∧ AfterPrep w' d.env oG ∧ P1 w' h' ∧ HI h')
     (hfpPB : fpPF.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
@@ -207,7 +207,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     case d5 => simp [Std.HashMap.getElem?_modify, hGT]; rfl
     all_goals first | rfl | simp [hGXm] | simp [hGTm] | skip
   case ih3 =>
-    refine ⟨.obj C, he, hc, ?_⟩
+    refine ⟨.obj C, ?_⟩
     simp only [js_simp]
     rw [props_frame hF2 (by simp only [js_simp]; exact hI1) (by simp [js_simp])]; simpa using hIH1
   case post3 =>

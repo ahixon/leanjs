@@ -62,7 +62,7 @@ set_option maxRecDepth 40000 in
 /-- **`r_Prep` from facts at the microtask's start**: `prepareFreshStack`'s premises hold where it is called because
 none of them is about what the steps before it write (`fpPerf`, `fpPre`). The work loop then starts from a state
 framed from the microtask's start (`P1`). -/
-theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : ObjId}} {{bG : HashMap JSStr Binding}}
+theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : ObjId}} {{he hc : Bool}} {{bG : HashMap JSStr Binding}}
     {{oG : Option EnvId}} {" ".join(imps)}
     (hPFo : fPF < s.heap.size) (hPFk : (s.objEntry fPF).kind = .func dPF)
     (hPFcode : dPF.code = PFSGen.prepareFreshStack_func) (hPFcls : dPF.isClassCtor = false)
@@ -72,7 +72,7 @@ theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : Ob
     (pI : p_X ≠ I ∧ p_A ≠ I ∧ p_Qo ≠ I ∧ p_U ≠ I ∧ p_F ≠ I ∧ p_Fa ≠ I ∧ p_H ≠ I)
     {chr(10).join("    " + x for x in hyps)} :
     {rp_i} := by
-  intro sP hP hMF fuP sW hW fuW sR hR fuR w h1 hpre hHI1 fuw ⟨iv, ia, ib, hIHw⟩ ⟨bme, hbme, ⟨bdx, hbdx, hbdxm, hbdxv⟩, ⟨bdt, hbdt, hbdtv⟩⟩
+  intro sP hP hMF fuP sW hW fuW sR hR fuR w h1 hpre hHI1 fuw ⟨iv, hIHw⟩ ⟨bme, hbme, ⟨bdx, hbdx, hbdxm, hbdxv⟩, ⟨bdt, hbdt, hbdtv⟩⟩
   have hT := frame_trans (frame_trans (frame_trans hP hW) hR) hpre
   obtain ⟨bW, hWd, hWx⟩ := declLike_frame hT hG hGe
   refine wp_mono (ReactPrepareFresh.call_spec (n := j) (d := {{ dPF with env := d.env }}) (bG := bW)
@@ -81,7 +81,7 @@ theorem prep_hyp {{j : Nat}} {{s : State}} {{d dPF : FuncData}} {{R A I fPF : Ob
   intro v w' h' ⟨_, hF', hfu', hh, hAP, hPB, hPF⟩
   subst hh
   obtain ⟨bw', hdw', hbw'⟩ := declLike_frame hF' (envs_frame hT hG) hbme
-  refine ⟨hF', by omega, hAP, ⟨frame_trans hT hF', hPB, hPF, ⟨iv, ia, ib, ?_⟩, bw', hdw',
+  refine ⟨hF', by omega, hAP, ⟨frame_trans hT hF', hPB, hPF, ⟨iv, he, hc, ?_⟩, bw', hdw',
     ⟨bdx, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdx, hbdxm, hbdxv⟩,
     ⟨bdt, by rw [hbw' _ (by simp [ReactPrepareFresh.fp])]; exact hbdt, hbdtv⟩, ?mf⟩, hHI1⟩
   case mf =>

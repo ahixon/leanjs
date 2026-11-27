@@ -705,6 +705,14 @@ theorem click_spec_c {n : Nat}
     (dFH : fF ≠ H0 ∧ fF ≠ Q)
     (dRQ : RSI ≠ Q)
     (hcK : ∀ w h1, Frame ⟨[(d.env, JSStr.ofString "renderLanes"), (d.env, JSStr.ofString "currentlyRenderingFiber"), (d.env, JSStr.ofString "shouldDoubleInvokeUserFnsInHooksDEV")], [(C1, .str "memoizedState"), (C1, .str "updateQueue"), (C1, .str "lanes"), (RSI, .str "H")], false⟩ s w → 200 ≤ w.fuel →
+      Scope.declLike? (w.envEntry d.env) = some (((bG.modify (JSStr.ofString "renderLanes")
+        (fun bd => { bd with value := some two })).modify (JSStr.ofString "currentlyRenderingFiber")
+        (fun bd => { bd with value := some (.obj C1) })).modify (JSStr.ofString "shouldDoubleInvokeUserFnsInHooksDEV")
+        (fun bd => { bd with value := some (.bool false) }), oG) →
+      (w.objEntry C1).props.get? (.str "memoizedState") = some (.data .null true me mc) →
+      (w.objEntry C1).props.get? (.str "updateQueue") = some (.data .null true uwS ucS) →
+      (w.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) →
+      (w.objEntry RSI).props.get? (.str "H") = some (.data (.obj HD) true re rc) →
       WP eng answer (n + 5) h1 (callImpl eng (.obj fK) .undefined (#[P, .undefined])) w fun v w' h' =>
         ∃ E C F dF, v = .obj E ∧ E < w'.heap.size ∧ C < w'.heap.size ∧ F < w'.heap.size ∧
         w.heap.size < w'.heap.size ∧ w.envs.size < w'.envs.size ∧ w.heap.size ≤ E ∧ w.heap.size ≤ C ∧
@@ -888,7 +896,7 @@ theorem click_spec_c {n : Nat}
     rw [hSt]; frame_go' [*, hne, Ne.symm hne, hG1]
   clear hSt
   -- (`Counter(props, undefined)`)
-  refine wp_mono (hcK _ _ hFt (by rw [hStF]; omega)) ?post
+  refine wp_mono (hcK _ _ hFt (by rw [hStF]; omega) hStd hC1m' hC1u' hC1l' hIH') ?post
   intro v w h1 ⟨E, C, F, dF', hvE, hEb, hCb, hFb, hKb, hEKb, hEge, hCge, hFc, hfuc, hhc, hEt, hEty, hEkey, hEref, hEpr, hCch, hCoc, hEk', hCk', hCp', hCr', hFk, hFcode, hFenv, hFthis,
     hdK', hdG, hm1, hk1, hk2, hk3, hk4, hk5, hH0b, hQp1, hQr1, hQl1, hNP⟩
   subst v h1
