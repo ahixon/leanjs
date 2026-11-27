@@ -3552,6 +3552,62 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
               let some pf ← framePath s0 w | return .error (← (m!"no frame path: " ++ (← ppExpr t)).format)
               let pfTy ← whnfR (← instantiateMVars (← inferType pf))
               let fpPath := pfTy.appFn!.appFn!.appArg!
+              -- the walk's states the fact names (a contract's post about where a call began, say): stated where it is
+              -- needed, `w`, with the frames to `w` from the start and from each of those states as hypotheses (a frame
+              -- from a state of the walk is no frame from the start, and generalized it is any state)
+              let lctx0 ← getLCtx
+              -- (only states the fact itself names: a footprint naming one, `fpOwn w.envs.size`, is carried as before)
+              let stIn := (collectFVars {} (← instantiateMVars P)).fvarIds.filter
+                (fun x => !top.contains x)
+              let stTy := mkConst ``ES.State
+              let mut sts : Array Expr := #[]
+              for x in stIn do
+                if let some d := lctx0.find? x then
+                  if ← isDefEq d.type stTy then
+                    if d.toExpr != w then sts := sts.push d.toExpr
+              let named := !stIn.isEmpty && (← stIn.anyM fun x => do
+                match lctx0.find? x with
+                | some d => isDefEq d.type stTy
+                | none => pure false)
+              if named then
+                let mut hyps : Array (Expr × Expr) := #[(← inferType pf, pf)]
+                for u in sts do
+                  let some pu ← framePath u w | return .error (← (m!"no frame path from a named state: " ++ (← ppExpr t)).format)
+                  hyps := hyps.push ((← inferType pu), pu)
+                let atW := mkApp2 (mkConst ``Logic.Fact.holds) (mkApp2 (mkConst ``Logic.Fact.closed) g P) w
+                let body0 ← hyps.foldrM (init := atW) fun (ty, _) acc => pure (mkForall `hF .default ty acc)
+                -- (unknowns made inside the obligation whose types name no local: moved to the top's context, as below)
+                let topDecl ← LX.mvarId!.getDecl
+                for m in ← getMVars (← instantiateMVars body0) do
+                  if ← m.isAssigned <||> m.isDelayedAssigned then continue
+                  let d ← m.getDecl
+                  unless d.lctx.any (fun x => !x.isImplementationDetail && !top.contains x.fvarId) do continue
+                  let ty ← instantiateMVars d.type
+                  if ty.hasAnyFVar (fun x => !top.contains x) then continue
+                  let m' ← mkFreshExprMVarAt topDecl.lctx topDecl.localInstances ty d.kind d.userName
+                  m.assign m'
+                let body ← instantiateMVars body0
+                let lctx ← getLCtx
+                let mut need : Std.HashSet FVarId := {}
+                let mut todo := (collectFVars {} body).fvarIds.filter (fun x => !top.contains x)
+                while !todo.isEmpty do
+                  let x := todo.back!
+                  todo := todo.pop
+                  if need.contains x then continue
+                  need := need.insert x
+                  let ty ← instantiateMVars (← x.getType)
+                  for y in (collectFVars {} ty).fvarIds do
+                    unless top.contains y || need.contains y do todo := todo.push y
+                let xs := (lctx.foldl (fun acc d => if need.contains d.fvarId then acc.push d.toExpr else acc) #[])
+                let premTy ← abstractNoLets xs.toList body
+                if premTy.hasAnyFVar (fun x => !top.contains x) then
+                  let ls ← ((collectFVars {} premTy).fvarIds.filter (fun x => !top.contains x)).mapM fun x => do
+                    return (← x.getDecl).userName
+                  return .error (← (m!"locals {ls} left (stated at the state): " ++ (← ppExpr t)).format)
+                let pm ← mkFreshExprMVar premTy
+                let got := mkAppN (mkAppN pm xs) (hyps.map (·.2))
+                fg.assign (← mkExpectedTypeHint got t)
+                return .ok (pm.mvarId!, premTy)
               let enl := mkApp2 (mkConst ``Logic.Fact.closed) (mkApp2 (mkConst ``Logic.Footprint.union) fpPath g) P
               let body := mkApp2 (mkConst ``Logic.Fact.holds) enl s0
               -- unknowns made inside the obligation whose types name no local: moved to the top's context (else
