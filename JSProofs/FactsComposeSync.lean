@@ -193,7 +193,8 @@ set_option maxHeartbeats 4000000 in
 set_option maxRecDepth 20000 in
 facts_compose sync_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lX lOP : ObjId} {lVS lRI lCF lCS lCu lCx lH0 : ObjId} {lKd : FuncData} {cEA cXA cdom cRSI cRDSI : ObjId} {ckP : JSStr} {cR1 cR2 : State → σ → Prop} {cgP : EnvId} {cbFSR cbEn : Binding} {cD : FuncData}
     {qfl qhc qfl' qal : F64} {qvT qvL qvC qvMP qvMS qvUQ qvS qvI qvR qvRC : Value} {qhcle qhclc qx0e qx0c qx1e qx1c qx2e qx2c qx3e qx3c qx4e qx4c qx5e qx5c qx6e qx6c qx7e qx7c qx8e qx8c qx9e qx9c qx10e qx10c qx11e qx11c qx12e qx12c qx13e qx13c qx14e qx14c qx15e qx15c qqpe qqpc qune qunc qfle qflc qfale qfalc : Bool} {wR_e_fl wxE wfl wB_e3 : F64} {wR_e_e3 wR_e_e5 wR_e_c3 wR_e_c5 wR_e_re wR_e_rc wr_e2 wr_c2 wr_e3 wr_c3 we5 wc5 we8 wc8 wrew wrec wB_se3 wB_sc3 wB_le3 wB_lc3 : Bool}
-    {kWL kC j : Nat} {I R : ObjId} :=
+    {kWL kC j : Nat} {I R : ObjId}
+    {wbdW wbdL wbdX wbdP : Binding} {wfP : ObjId} {wdP : FuncData} :=
     ReactPerformSync.call_spec (n := j + 13) (root := .obj R) (lanes := .num (F64.fin false 4503599627370496 (-51)))
     (fpW := ⟨(ReactRenderSync.fpRS dW.env I (ReactPrepareFresh.fp dW.env pX pA pQo pU pF pFa pH) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dW.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(dW.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB dW.env pFa lH0 pQo I lX) ⟨[(dW.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB dW.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU dW.env lVS lCu lCx lCS lCF lRI pX pFa lX))))) (ReactFinishQueueing.fp dW.env)).binds ++ (Footprint.union (Footprint.union ⟨[], [(R, .str (JSStr.ofString "timeoutHandle"))], false⟩
         (((ReactCommitEntry.FPE dW.env R).union ((((((ReactCommitRootFn.FPC dW.env R cRSI cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
@@ -236,7 +237,11 @@ facts_compose sync_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} 
       (cgP := cgP) (cbEn := cbEn) (cD := cD)
       (qfl := qfl) (qhc := qhc) (qfl' := qfl') (qal := qal) (qvT := qvT) (qvL := qvL) (qvC := qvC) (qvMP := qvMP) (qvMS := qvMS) (qvUQ := qvUQ) (qvS := qvS) (qvI := qvI) (qvR := qvR) (qvRC := qvRC) (qhcle := qhcle) (qhclc := qhclc) (qx0e := qx0e) (qx0c := qx0c) (qx1e := qx1e) (qx1c := qx1c) (qx2e := qx2e) (qx2c := qx2c) (qx3e := qx3e) (qx3c := qx3c) (qx4e := qx4e) (qx4c := qx4c) (qx5e := qx5e) (qx5c := qx5c) (qx6e := qx6e) (qx6c := qx6c) (qx7e := qx7e) (qx7c := qx7c) (qx8e := qx8e) (qx8c := qx8c) (qx9e := qx9e) (qx9c := qx9c) (qx10e := qx10e) (qx10c := qx10c) (qx11e := qx11e) (qx11c := qx11c) (qx12e := qx12e) (qx12c := qx12c) (qx13e := qx13e) (qx13c := qx13c) (qx14e := qx14e) (qx14c := qx14c) (qx15e := qx15e) (qx15c := qx15c) (qqpe := qqpe) (qqpc := qqpc) (qune := qune) (qunc := qunc) (qfle := qfle) (qflc := qflc) (qfale := qfale) (qfalc := qfalc)
       (wR_e_fl := wR_e_fl) (wR_e_e3 := wR_e_e3) (wR_e_e5 := wR_e_e5) (wR_e_c3 := wR_e_c3) (wR_e_c5 := wR_e_c5) (wR_e_re := wR_e_re) (wR_e_rc := wR_e_rc) (wxE := wxE) (wfl := wfl) (wr_e2 := wr_e2) (wr_c2 := wr_c2) (wr_e3 := wr_e3) (wr_c3 := wr_c3) (we5 := we5) (wc5 := wc5) (we8 := we8) (wc8 := wc8) (wrew := wrew) (wrec := wrec) (wB_e3 := wB_e3) (wB_se3 := wB_se3) (wB_sc3 := wB_sc3) (wB_le3 := wB_le3) (wB_lc3 := wB_lc3) (cbFSR := cbFSR)
-      (kW := kWL) (kC := kC) same
+      (kW := kWL) (kC := kC)
+      -- (the render's own bindings and `checkIfRootIsPrerendering`'s function: `same` would take `performSyncWorkOnRoot`'s
+      -- of the same names — `performWorkOnRoot`, `flushLayoutEffects`, `flushSpawnedWork`, `flushPassiveEffects` — making
+      -- one binding hold two values)
+      (bdW := wbdW) (bdL := wbdL) (bdX := wbdX) (bdP := wbdP) (fP := wfP) (dP := wdP) same
       by intro v w' h' hq
          obtain ⟨-, hF, hfu, ⟨hA, hPL, e, y, fe, hPC, hFy⟩, hHI⟩ := hq
          exact ⟨hF, by omega, ⟨after_restore hA, hPL, e, y, fe, hPC, frame_restore hFy s⟩, hHI⟩

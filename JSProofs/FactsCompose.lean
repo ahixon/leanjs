@@ -89,6 +89,69 @@ def tupleOf (exs : Array Expr) : MetaM (Option (Expr × Level × (Expr → Array
     out.push r
   return some (sufT[0]!, sufL[0]!, projs)
 
+/-- What a premise says identifies a binding or a function's data: `m[JSStr.ofString x]? = some b` (the binding `b` is
+the one named `x`) and `d.code = C` (the data `d` is `C`'s); through conjunctions, Prop structures (a `Pre`) and a few
+definitions. For `same`, which must not make one variable of two that these tell apart. -/
+partial def identities (t : Expr) (depth : Nat := 0) (acc : Array (Expr × Name) := #[]) : MetaM (Array (Expr × Name)) := do
+  let t ← instantiateMVars t
+  if depth > 8 then return acc
+  if t.isAppOfArity ``And 2 then return ← identities t.appArg! depth (← identities t.appFn!.appArg! depth acc)
+  -- fact lists: a binding fact `bind e oG x (fun b => b = some bd)` names `bd`
+  if t.isAppOfArity ``Logic.Facts.holds 2 then
+    let rec elems (l : Expr) (acc : Array Expr) (fuel : Nat) : Array Expr :=
+      match fuel with
+      | 0 => acc
+      | fuel + 1 => if l.isAppOfArity ``List.cons 3 then elems l.appArg! (acc.push l.appFn!.appArg!) fuel else acc
+    let mut acc := acc
+    for f in elems (← instantiateMVars t.appFn!.appArg!) #[] 100000 do
+      if f.isAppOfArity ``Logic.Fact.bind 4 then
+        let x := f.getArg! 2
+        if x.isAppOfArity ``ES.JSStr.ofString 1 then
+          if let .lit (.strVal str) := x.appArg! then
+            if let .lam _ _ body _ := f.getArg! 3 then
+              if let some (_, _, r) := body.eq? then
+                if r.isAppOfArity ``Option.some 2 && !r.appArg!.hasLooseBVars then
+                  acc := acc.push (r.appArg!, Name.mkSimple ("name:" ++ str))
+    return acc
+  if let some (_, l, r) := t.eq? then
+    if l.isAppOf ``GetElem?.getElem? && r.isAppOfArity ``Option.some 2 then
+      let k := l.getAppArgs[l.getAppNumArgs - 1]!
+      if k.isAppOfArity ``ES.JSStr.ofString 1 then
+        if let .lit (.strVal str) := k.appArg! then
+          return acc.push (r.appArg!, Name.mkSimple ("name:" ++ str))
+    if l.isAppOfArity ``ES.FuncData.code 1 then
+      if let some c := r.getAppFn.constName? then return acc.push (l.appArg!, c)
+    -- (an object a binding holds: tagged with the binding, `holds`; named through it by `objIdentities`)
+    if l.isAppOfArity ``ES.Binding.value 1 && r.isAppOfArity ``Option.some 2 && r.appArg!.isAppOfArity ``ES.Value.obj 1 then
+      return acc.push (r.appArg!.appArg!, `holds) |>.push (l.appArg!, `held)
+    return acc
+  let .const I us := t.getAppFn | return acc
+  match (← getEnv).find? I with
+  | some (.inductInfo iv) =>
+    if iv.ctors.length == 1 && iv.numIndices == 0 && t.getAppNumArgs == iv.numParams then
+      let cty ← instantiateForall ((← getConstInfo iv.ctors[0]!).instantiateTypeLevelParams us) t.getAppArgs
+      forallTelescope cty fun fs _ => do
+        let mut acc := acc
+        for f in fs do
+          let ft ← inferType f
+          if ← isProp ft then acc ← identities ft (depth + 1) acc
+        return acc
+    else return acc
+  | some (.defnInfo _) =>
+    if let some u ← unfoldDefinition? t then identities u (depth + 1) acc else return acc
+  | _ => return acc
+
+/-- `identities` with each object a binding holds named as that binding is (`obj:x` for the binding named `x`). -/
+def objIdentities (ids : Array (Expr × Name)) : Array (Expr × Name) := Id.run do
+  let mut out := ids.filter fun (_, n) => n != `holds && n != `held
+  for i in [:ids.size] do
+    if ids[i]!.2 == `holds && i + 1 < ids.size && ids[i+1]!.2 == `held then
+      let b := ids[i+1]!.1
+      for (e, n) in ids do
+        if e == b && n.toString.startsWith "name:" then
+          out := out.push (ids[i]!.1, Name.mkSimple ("obj:" ++ (n.toString.drop 5)))
+  return out
+
 /-- A contract `x` discharged by spec `U`: with `ob? = none` the obligation's type; with `some ob` (a local of that
 type) the contract's proof. -/
 def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Array (Name × Expr))
@@ -153,10 +216,20 @@ def armWork (x : Expr) (U : Name) (post : Syntax) (ob? : Option Expr) (ctx : Arr
       unless ← isDefEq ms[k]! e do throwError "facts_compose: {U}'s {nm} cannot be {e}"
     -- `same`: the callee's variables still open take the caller's of the same name and type (never `d`)
     if same then
+      -- (never two variables the premises tell apart: bindings of different names, data of different code)
+      let calleeIds := objIdentities (← identities (← inferType ms[ip]!))
+      let callerIds := objIdentities (← callerVars.foldlM (init := #[]) fun acc c => do
+        let ty ← inferType c
+        if ← isProp ty then identities ty 0 acc else pure acc)
       for k in [:ip] do
         if names[k]! != `d && (← instantiateMVars ms[k]!).isMVar then
           for c in callerVars do
             if (← c.fvarId!.getUserName) == names[k]! then
+              let mine := calleeIds.filterMap fun (e, n) => if e == ms[k]! then some n else none
+              let theirs := callerIds.filterMap fun (e, n) => if e == c then some n else none
+              if mine.any (fun n => !theirs.isEmpty && !theirs.contains n) then
+                logInfo m!"facts_compose: {U}'s {names[k]!} is not the caller's ({mine.toList} vs {theirs.toList}): kept apart"
+                continue
               let saved ← saveState
               unless ← isDefEq ms[k]! c do saved.restore
     -- the context's parameters (engine, host, its invariant) are the caller's

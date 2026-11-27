@@ -25,6 +25,139 @@ open Logic Logic.FactsForm
 
 namespace Logic.FactsDischarge
 
+/-- The step running (`timed`'s kind), for diagnosis. -/
+initialize curStep : IO.Ref String ← IO.mkRef ""
+
+/-- The identification `u.env = d.env` of two functions' records, `u` an unknown: `u` becomes its own data but for its
+record, `d`'s (`⟨?u.code, d.env, ?u.privEnv, …⟩`). Unifying `u.env =?= d.env` would be solved by `u := d`, making the two
+functions one (both codes, both records' facts): every module-level function shares its module's record. -/
+def identifyEnv (u d : Expr) : MetaM Bool := do
+  unless u.isMVar do return false
+  let mv := u.mvarId!
+  if ← mv.isAssigned then return false
+  let T ← whnf (← inferType u)
+  unless T.isConstOf ``ES.FuncData do return false
+  let env ← getEnv
+  let ctor := getStructureCtor env ``ES.FuncData
+  let nm := (← mv.getDecl).userName
+  let fs ← mv.withContext do
+    (getStructureFields env ``ES.FuncData).mapM fun f => do
+      if f == `env then return mkApp (mkConst ``ES.FuncData.env) d
+      let fty ← inferType (mkApp (mkConst (``ES.FuncData ++ f)) u)
+      mkFreshExprMVar fty (userName := nm ++ f)
+  let v := mkAppN (mkConst ctor.name) fs
+  unless ← Meta.isDefEq (← inferType v) T do return false
+  mv.assign v
+  return true
+
+/-- The unknowns of `e` that are bindings, functions' data or code: what a tactic run inside a step must not identify
+(`identifiesRecords`). -/
+def recordUnknowns (e : Expr) : MetaM (Array MVarId) := do
+  (← getMVars (← instantiateMVars e)).filterM fun m => do
+    if ← m.isAssigned then return false
+    let t ← whnfR (← instantiateMVars (← m.getType))
+    return t.isConstOf ``ES.Binding || t.isConstOf ``ES.FuncData || t.isConstOf ``ES.Func
+
+/-- Whether one of `pre` (unassigned before a tactic ran) is now another binding's, function's data or code: an
+identification a rewriting step (`simp [*] <;> rfl`) made by unifying, which it is not there for (two functions, or two
+bindings, made one). -/
+def identifiesRecords (pre : Array MVarId) : MetaM Bool :=
+  pre.anyM fun m => do
+    unless ← m.isAssigned do return false
+    let v ← instantiateMVars (mkMVar m)
+    return v.isMVar || v.isFVar || v.getAppFn.isFVar ||
+      (v.getAppFn.constName?.map fun c => c.getPrefix == ``ES.FuncData || c.getPrefix == ``ES.Binding).getD false
+
+/-- The record carriers made (`carrierExpand`): never expanded themselves. -/
+initialize carried : IO.Ref (Std.HashSet MVarId) ← IO.mkRef {}
+
+/-- Every function-data unknown `?u` that `e` projects (`FuncData.env ?u`, `FuncData.code ?u`, …) becomes its own data but for its
+record, a fresh unknown's (`⟨?u.code, FuncData.env ?u.rec, …⟩`, `identifyEnv`): records are then identified by unifying
+their carriers, never by making two functions' data one (`FuncData.env ?u =?= FuncData.env d` would set `?u := d`,
+with both codes). -/
+def carrierExpand (e : Expr) : MetaM Unit := do
+  let e ← instantiateMVars e
+  unless e.hasExprMVar do return
+  let mut us : Array MVarId := #[]
+  let mut seen : Std.HashSet MVarId := {}
+  let done ← carried.get
+  let rec go (t : Expr) (acc : Array MVarId) (fuel : Nat) : Array MVarId :=
+    match fuel with
+    | 0 => acc
+    | fuel + 1 =>
+      if !t.hasExprMVar then acc else
+      -- (any projection: `FuncData.code ?u =?= FuncData.code d` is solved `?u := d` as well)
+      let acc := match t with
+        | .app (.const fn _) a => if a.isMVar && fn != ``ES.FuncData.mk then acc.push a.mvarId! else acc
+        | _ => acc
+      match t with
+      | .app f a => go a (go f acc fuel) fuel
+      | .lam _ ty b _ | .forallE _ ty b _ => go b (go ty acc fuel) fuel
+      | .letE _ ty v b _ => go b (go v (go ty acc fuel) fuel) fuel
+      | .mdata _ b | .proj _ _ b => go b acc fuel
+      | _ => acc
+  for u in go e #[] 100000 do
+    if seen.contains u || done.contains u then continue
+    seen := seen.insert u
+    us := us.push u
+  for u in us do
+    if ← u.isAssigned then continue
+    let T ← whnf (← inferType (mkMVar u))
+    unless T.isConstOf ``ES.FuncData do continue
+    let d ← u.withContext do mkFreshExprMVar (mkConst ``ES.FuncData) (userName := (← u.getDecl).userName ++ `rec)
+    -- (only the carriers are remembered: an expansion a trial undoes is made again, its unknown unassigned)
+    carried.modify (·.insert d.mvarId!)
+    let _ ← identifyEnv (mkMVar u) d
+
+/-- `t` with projections of constructor applications reduced (`({ X with env := e }).env` is `e`). -/
+def redProjs (t : Expr) : MetaM Expr := do
+  unless (t.find? fun e => e.isApp && (e.getAppFn.constName?.map (·.getPrefix == ``ES.FuncData)).getD false).isSome do
+    return t
+  Meta.transform t (post := fun e => do
+    match e.getAppFn with
+    | .const fn _ =>
+      if fn.getPrefix != ``ES.FuncData then return .continue
+      let some info ← getProjectionFnInfo? fn | return .continue
+      unless e.getAppNumArgs == info.numParams + 1 && e.appArg!.isAppOf ``ES.FuncData.mk do return .continue
+      let some u ← unfoldDefinition? e | return .continue
+      let u' ← whnfCore u
+      return if u'.isProj then .continue else .done u'
+    | _ => return .continue)
+
+/-- Unification for matching: both sides' function-data unknowns given record carriers first (`carrierExpand`), so
+that unifying two records never makes two functions one. -/
+def defEqC (a b : Expr) : MetaM Bool := do
+  carrierExpand a
+  carrierExpand b
+  -- (projections of structures reduced first: `({ X with env := e }).env =?= ({ ?u with env := e' }).env` would
+  -- otherwise unify the two structures field by field, `?u.code := X.code`, where only `e =?= e'` is meant)
+  let a ← redProjs (← instantiateMVars a)
+  let b ← redProjs (← instantiateMVars b)
+  let some w ← IO.getEnv "FACTS_WATCH" | Meta.isDefEq a b
+  -- (diagnosis: function code or data unknowns this unification assigns to a term naming the watched unknown)
+  let pre ← (← getMVars (mkApp2 (mkConst ``Prod.mk [1, 1]) a b) <|> pure #[]).filterM fun m => do
+    if ← m.isAssigned then return false
+    let t ← whnfR (← instantiateMVars (← m.getType))
+    return t.isConstOf ``ES.Func || t.isConstOf ``ES.FuncData || t.isConstOf ``ES.Binding ||
+      (w == "objs" && t.isConstOf ``Nat)
+  let r ← Meta.isDefEq a b
+  if r then
+    for m in pre do
+      unless ← m.isAssigned do continue
+      let nm := (← m.getDecl).userName.toString
+      if nm == w then continue
+      let v ← instantiateMVars (mkMVar m)
+      let named ← if w == "objs" then pure (v.isMVar && (← whnfR (← inferType v)).isConstOf ``Nat)
+        else if w == "alias" then
+          -- (`alias`: a code unknown made another's, or a projection of other data)
+          pure (v.isMVar || v.isFVar || (v.getAppFn.constName?.map (·.getPrefix == ``ES.FuncData)).getD false)
+        else (← getMVars v).anyM fun x => do return (← x.getDecl).userName.toString == w
+      if named then
+        let h ← progressHandle
+        h.putStrLn s!"WATCH [{← curStep.get}] {nm} := {((toString (← ppExpr v)).replace "\n" " ").take 200}  from {((toString (← ppExpr (← instantiateMVars a))).replace "\n" " ").take 300}"
+        h.flush
+  return r
+
 /-- An unknown watched for diagnosis (its first assignment logged). -/
 initialize watched : IO.Ref (Option MVarId) ← IO.mkRef none
 
@@ -178,6 +311,7 @@ initialize stepTimes : IO.Ref (Array (String × Nat × Nat)) ← IO.mkRef #[]
 
 /-- Runs `x`, adding its time to step kind `k`. -/
 def timed {α : Type} {m : Type → Type} [Monad m] [MonadLiftT IO m] (k : String) (x : m α) : m α := do
+  (curStep.set k : IO Unit)
   let t0 ← (IO.monoNanosNow : IO Nat)
   let r ← x
   let dt := (← (IO.monoNanosNow : IO Nat)) - t0
@@ -202,8 +336,8 @@ initialize startState : IO.Ref (Option Expr) ← IO.mkRef none
 
 initialize firstBad : IO.Ref Bool ← IO.mkRef false
 
-/-- Diagnosis: `isDefEq` that logs when it gives an object unknown (type `ObjId`) a record's id. -/
-def defEqLog (_what : String) (a b : Expr) : MetaM Bool := withReducible (isDefEq a b)
+/-- Diagnosis: `defEqC` that logs when it gives an object unknown (type `ObjId`) a record's id. -/
+def defEqLog (_what : String) (a b : Expr) : MetaM Bool := withReducible (defEqC a b)
 
 initialize lastStep : IO.Ref String ← IO.mkRef ""
 
@@ -907,7 +1041,7 @@ def substOuter (g : MVarId) (top : Array FVarId) : TermElabM MVarId := do
         for (h', L', a', i', e', t, isIs') in recs do
           if t == x || t.containsFVar x.fvarId! then continue
           if t.hasAnyFVar (fun y => !top.contains y) then continue
-          unless ← withNewMCtxDepth (withReducible (isDefEq e e')) do continue
+          unless ← withNewMCtxDepth (withReducible (defEqC e e')) do continue
           let some src ← (do
               let hs ← recordFactAt h' L' a' i' isIs' e' t
               if a' == w then return some hs
@@ -929,7 +1063,7 @@ def substOuter (g : MVarId) (top : Array FVarId) : TermElabM MVarId := do
         for (h', L', a', i', e', t, isIs') in recs do
           if t == x || t.containsFVar x.fvarId! then continue
           if t.hasAnyFVar (fun y => !top.contains y) then continue
-          unless ← withNewMCtxDepth (withReducible (isDefEq e e')) do continue
+          unless ← withNewMCtxDepth (withReducible (defEqC e e')) do continue
           -- the other fact at `w`
           let some src ← (do
               let hs ← recordFactAt h' L' a' i' isIs' e' t
@@ -958,7 +1092,7 @@ def substOuter (g : MVarId) (top : Array FVarId) : TermElabM MVarId := do
           let some pf ← framePath s0 w | continue
           let mut found : Option (Expr × Expr) := none
           for (e', o0, F0) in ← startRecords.get do
-            if ← withNewMCtxDepth (withReducible (isDefEq e e')) then found := some (o0, F0); break
+            if ← withNewMCtxDepth (withReducible (defEqC e e')) then found := some (o0, F0); break
           let (o0, F0) ← match found with
             | some p => pure p
             | none => do
@@ -1307,7 +1441,7 @@ def toFactGoal (g : MVarId) : MetaM (Option MVarId) := g.withContext do
                   for i in [:elems.size] do
                     unless keys[i]!.1 == ``Logic.Fact.record || keys[i]!.1 == ``Logic.Fact.recordIs do continue
                     if let some (e', t, _) ← recordOf? elems[i]! then
-                      if !t.hasAnyFVar (fun y => !top.contains y) && (← withNewMCtxDepth (withReducible (isDefEq e e'))) then
+                      if !t.hasAnyFVar (fun y => !top.contains y) && (← withNewMCtxDepth (withReducible (defEqC e e'))) then
                         anyOuter := false
               let oG ← if anyOuter then mkFreshExprMVar (← inferType o) else pure o
               let pred ← withLocalDeclD `b (← mkAppM ``Option #[mkConst ``ES.Binding]) fun b => do
@@ -1385,7 +1519,7 @@ def rflOne (g : MVarId) : MetaM Bool := g.withContext do
   let some (_, l, r) := goal.eq? | return false
   if goal.approxDepth.toNat > 40 then return false
   let saved ← saveState
-  if ← (try isDefEq l r catch _ => pure false) then
+  if ← (try defEqC l r catch _ => pure false) then
     g.assign (← mkEqRefl l); return true
   saved.restore; return false
 
@@ -1443,7 +1577,7 @@ def matchOne (g : MVarId) (far : Bool := false) : TermElabM Bool := g.withContex
         let e ← instantiateMVars elems[i]!
         unless ← timed "match:objs" (objsAllow e f) do continue
         let saved ← saveState
-        let ok ← timed "match:fartrial" (try withReducible (isDefEq e f) catch _ => pure false)
+        let ok ← timed "match:fartrial" (try withReducible (defEqC e f) catch _ => pure false)
         saved.restore
         if ok && !(far.any fun x => x.2.2.2.2.1 == e) then far := far.push (h, L, a, i, e, pf)
     if far.size == 1 || (ground && far.size ≥ 1) then
@@ -1457,7 +1591,7 @@ def matchOne (g : MVarId) (far : Bool := false) : TermElabM Bool := g.withContex
       try
         let (L2, prf, nkept, _) ← timed "match:farcarry" (carry one pf)
         if nkept != 1 then saved.restore; return false
-        unless ← withReducible (isDefEq e f) do saved.restore; return false
+        unless ← withReducible (defEqC e f) do saved.restore; return false
         let hm1 ← idxLt 0 L2
         let g0 ← appFacts ``Logic.Facts.get #[L2, w, prf, mkNatLit 0, hm1]
         g.assign (← mkExpectedTypeHint g0 t)
@@ -1517,7 +1651,7 @@ def assumeRel (g : MVarId) (goal : Expr) : MetaM Bool := g.withContext do
     if let some (d, tas) := fit then
       for i in [:gas.size] do
         if gas[i]! != tas[i]! then
-          unless ← isDefEq gas[i]! tas[i]! do return false
+          unless ← defEqC gas[i]! tas[i]! do return false
       g.assign d.toExpr
       return true
   return false
@@ -1569,7 +1703,7 @@ def assumeEqLeft (g : MVarId) (goal : Expr) : MetaM Bool := g.withContext do
         let some (_, l', r') := ty.eq? | continue
         unless l' == l do continue
         let saved ← saveState
-        if ← (try withReducible (isDefEq r r') catch _ => pure false) then
+        if ← (try withReducible (defEqC r r') catch _ => pure false) then
           g.assign (← mkExpectedTypeHint d.toExpr goal); return true
         saved.restore
   return false
@@ -1879,6 +2013,7 @@ def forallMem?(g : MVarId) (t : Expr) : MetaM (Option MVarId) := g.withContext d
 partial def collectGoal (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.Ref Collected) (fuel : Nat := 100000) :
     TermElabM Unit := do
   if fuel == 0 then return
+  g.withContext do carrierExpand (← g.getType)
   let t0 ← g.withContext do instantiateMVars (← g.getType)
   -- a distinctness (`a ≠ b`, `¬ P`) is one premise, not an implication to introduce
   let t ← if t0.isAppOfArity ``Ne 3 || t0.isAppOfArity ``Not 1 then pure t0 else g.withContext (whnfR t0)
@@ -1909,12 +2044,12 @@ partial def collectGoal (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.R
           let ty ← instantiateMVars d.type
           unless (ty.find? fun e => e.isConstOf ``Scope.declLike?).isSome do continue
           let saved ← saveState
-          let ok ← try withReducible (isDefEq ty t) catch _ => pure false
+          let ok ← try withReducible (defEqC ty t) catch _ => pure false
           saved.restore
           if ok then fits := fits.push d
           if fits.size > 1 then break
         if fits.size == 1 then
-          if ← withReducible (isDefEq (← instantiateMVars fits[0]!.type) t) then
+          if ← withReducible (defEqC (← instantiateMVars fits[0]!.type) t) then
             g.assign fits[0]!.toExpr; return true
         return false
       if ok then st.modify fun c => { c with closed := c.closed + 1 }; return
@@ -1976,9 +2111,14 @@ partial def collectGoal (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.R
             if l.isAppOfArity ``ES.FuncData.env 1 && r.isAppOfArity ``ES.FuncData.env 1 then
               let l ← instantiateMVars l
               let r ← instantiateMVars r
-              if l.appArg!.getAppFn.isMVar && r.appArg!.getAppFn.isMVar && l != r then
+              carrierExpand l; carrierExpand r
+              let l ← whnfR (← instantiateMVars l)
+              let r ← whnfR (← instantiateMVars r)
+              -- (the records alone: their carriers, `carrierExpand`)
+              if l.isAppOfArity ``ES.FuncData.env 1 && r.isAppOfArity ``ES.FuncData.env 1 &&
+                  l.appArg!.isMVar && r.appArg!.isMVar && l != r then
                 let saved ← saveState
-                unless ← (try isDefEq l r catch _ => pure false) do saved.restore
+                unless ← (try defEqC l r catch _ => pure false) do saved.restore
     let (a, b) ← g.withContext do
       let a ← mkFreshExprSyntheticOpaqueMVar t.appFn!.appArg!
       let b ← mkFreshExprSyntheticOpaqueMVar t.appArg!
@@ -2003,12 +2143,16 @@ partial def collectGoal (g : MVarId) (top : Array FVarId) (s0 : Expr) (st : IO.R
           return ← collectGoal (← g.replaceTargetDefEq u) top s0 st (fuel - 1)
   -- an identification a composite asks for (`with u_d.env = d.env`): two functions' records, unknown, one record
   if let some (_, l, r) := (← g.withContext (instantiateMVars t)).eq? then
+    let (l, r) ← g.withContext do
+      carrierExpand l; carrierExpand r
+      return (← whnfR (← instantiateMVars l), ← whnfR (← instantiateMVars r))
     if l.isAppOfArity ``ES.FuncData.env 1 && r.isAppOfArity ``ES.FuncData.env 1 &&
-        l.appArg!.getAppFn.isMVar && r.appArg!.getAppFn.isMVar then
+        l.appArg!.isMVar && r.appArg!.isMVar then
       let ok ← g.withContext do
+        -- (the records alone: their carriers, `carrierExpand`)
         let saved ← saveState
-        if ← (try isDefEq l r catch _ => pure false) then
-          g.assign (← mkEqRefl l); pure true
+        if ← (try defEqC l r catch _ => pure false) then
+          g.assign (← mkExpectedTypeHint (← mkEqRefl l) t); pure true
         else saved.restore; pure false
       if ok then st.modify fun c => { c with closed := c.closed + 1 }; return
   -- the rest: an assumption, or counted
@@ -2224,7 +2368,7 @@ def existsMapOne (g : MVarId) : MetaM Bool := g.withContext do
   let some m := last | logE "no record hypothesis"; return false
   let saved ← saveState
   -- the witness chosen; the goal stays pending (proved of `m`, or not)
-  if ← (try isDefEq M m catch _ => pure false) then
+  if ← (try defEqC M m catch _ => pure false) then
     logE s!"chose {(toString (← ppExpr m)).take 40}"
     pendingPures.modify (·.push g); return true
   logE s!"cannot be {(toString (← ppExpr m)).take 40} (scope?)"
@@ -2289,13 +2433,13 @@ def recordFromDecl (g : MVarId) : TermElabM Bool := g.withContext do
       if M.isMVar then
         let h ← progressHandle
         h.putStrLn s!"RECDECL {msg} (hyp at {(toString (← ppExpr a)).take 10}, map {(toString (← ppExpr pr.appFn!.appArg!)).take 20})"; h.flush
-    unless ← withReducible (isDefEq ee.appArg! e) do rlog "env differs"; saved.restore; continue
+    unless ← withReducible (defEqC ee.appArg! e) do rlog "env differs"; saved.restore; continue
     -- (an unknown outer is never made a walk-local's: the record's outer, found elsewhere or left a start fact's)
     let top ← topLocals.get
     if (← instantiateMVars o).isMVar && pr.appArg!.hasAnyFVar (fun x => !top.contains x) then
       saved.restore; continue
-    unless ← withReducible (isDefEq pr.appArg! o) do rlog "outer differs"; saved.restore; continue
-    unless ← withReducible (isDefEq pr.appFn!.appArg! M) do rlog "map differs"; saved.restore; continue
+    unless ← withReducible (defEqC pr.appArg! o) do rlog "outer differs"; saved.restore; continue
+    unless ← withReducible (defEqC pr.appFn!.appArg! M) do rlog "map differs"; saved.restore; continue
     let unknownMap := M.isMVar
     let M := pr.appFn!.appArg!
     let rf := mkApp2 (mkConst ``Logic.Fact.record) e o
@@ -2371,12 +2515,12 @@ def bindFromDecl (g : MVarId) : MetaM Bool := g.withContext do
     unless pr.isAppOfArity ``Prod.mk 4 do continue
     let M := pr.appFn!.appArg!
     let saved ← saveState
-    unless ← withReducible (isDefEq ee.appArg! env) do saved.restore; continue
-    unless ← withReducible (isDefEq pr.appArg! oG) do saved.restore; continue
+    unless ← withReducible (defEqC ee.appArg! env) do saved.restore; continue
+    unless ← withReducible (defEqC pr.appArg! oG) do saved.restore; continue
     let lookT ← mkEq (← mkAppM ``GetElem?.getElem? #[M, x]) rb
     let gL ← mkFreshExprSyntheticOpaqueMVar lookT
     let pf ← mkAppOptM ``Logic.bind_fact_of #[w, ee.appArg!, M, pr.appArg!, x, v, d.toExpr, gL]
-    if ← withReducible (isDefEq (← inferType pf) t) then
+    if ← withReducible (defEqC (← inferType pf) t) then
       g.assign pf
       pendingPures.modify (·.push gL.mvarId!)
       return true
@@ -2441,6 +2585,7 @@ def lookupRewriteOne (g : MVarId) : TermElabM Bool := g.withContext do
     let gL ← mkFreshExprSyntheticOpaqueMVar (← mkEq l (← mkAppM ``Option.some #[b]))
     extra := extra.push (gL, ← inferType gL)
   if ds.isEmpty && extra.isEmpty then return false
+  let pre ← recordUnknowns goal
   let saved ← saveState
   try
     let mut g2 := g
@@ -2459,7 +2604,7 @@ def lookupRewriteOne (g : MVarId) : TermElabM Bool := g.withContext do
       `(Lean.Parser.Tactic.simpLemma| $i:ident)
     let rem ← Term.withoutErrToSorry <| Tactic.run g2 (Tactic.withoutRecover (Tactic.evalTactic
       (← `(tactic| (simp only [$lemmas,*, Option.map_some, Option.some.injEq]) <;> try rfl))))
-    if rem.isEmpty then
+    if rem.isEmpty && !(← identifiesRecords pre) then
       for (gL, _) in extra do pendingPures.modify (·.push gL.mvarId!)
       return true
     saved.restore; return false
@@ -2485,6 +2630,7 @@ def modifyOne (g : MVarId) : TermElabM Bool := g.withContext do
       -- lookups left in the map below: rewritten by the hypotheses that state them (`m[k]? = some b`)
       do
         -- the hypotheses named so the tactic can use them
+        let pre ← recordUnknowns t'
         let saved2 ← saveState
         try
           let mut g2 := g'
@@ -2509,7 +2655,7 @@ def modifyOne (g : MVarId) : TermElabM Bool := g.withContext do
               `(Lean.Parser.Tactic.simpLemma| $i:ident)
             let rem2 ← Term.withoutErrToSorry <| Tactic.run g2 (Tactic.withoutRecover (Tactic.evalTactic
               (← `(tactic| simp only [$lemmas,*, Option.map_some, Option.some.injEq]))))
-            if rem2.isEmpty then return true
+            if rem2.isEmpty && !(← identifiesRecords pre) then return true
           saved2.restore
         catch _ => saved2.restore
       pendingPures.modify (·.push g'); return true
@@ -2591,7 +2737,7 @@ def forallBindOne (g : MVarId) : TermElabM Bool := g.withContext do
               let Rg ← mkFreshExprMVarAt vd.lctx vd.localInstances
                 (mkApp2 (mkConst ``Logic.Fact.holds) (mkApp2 (mkConst ``Logic.Fact.record) e' o2) a) .syntheticOpaque `fact
               let val := mkAppN (mkConst ``forallBindVal) #[e', o2, x, Q, a, Rg, d.toExpr]
-              if (← isDefEq e e') && (← isDefEq V val) then
+              if (← defEqC e e') && (← defEqC V val) then
                 let pa := mkAppN (mkConst ``bind_exact_of_forall_rec) #[e', o2, x, Q, a, Rg, d.toExpr]
                 let pa ← mkExpectedTypeHint pa (mkApp2 (mkConst ``Logic.Fact.holds) f a)
                 -- at `w`: there, or carried along the frames from `a`
@@ -2615,7 +2761,7 @@ def forallBindOne (g : MVarId) : TermElabM Bool := g.withContext do
     let saved ← saveState
     let o2 ← mkFreshExprMVar (← mkAppM ``Option #[mkConst ``ES.EnvId])
     let f2 := mkApp4 (mkConst ``Logic.Fact.bind) e' o2 x (← existsBindPred Q)
-    unless ← (try withReducible (isDefEq f f2) catch _ => pure false) do
+    unless ← (try withReducible (defEqC f f2) catch _ => pure false) do
       hh.putStrLn s!"FBIND {d.userName}: no fit {← ppExpr f} vs {← ppExpr f2}"; hh.flush
       saved.restore; continue
     let Rg ← mkFreshExprSyntheticOpaqueMVar (mkApp2 (mkConst ``Logic.Fact.holds) (mkApp2 (mkConst ``Logic.Fact.record) e' o2) a) `fact
@@ -2657,7 +2803,8 @@ def recordIsFromRecord (g : MVarId) : TermElabM Bool := g.withContext do
   if M'.isAppOfArity ``recordMap 4 && M'.getAppArgs[2]! == w then
     let ra := M'.getAppArgs
     let saved ← saveState
-    if ← isDefEq xs[2]! ra[1]! then
+    -- (the record too: one map is one record's, the record not assumed)
+    if (← defEqC xs[0]! ra[0]!) && (← defEqC xs[2]! ra[1]!) then
       g.assign (← mkExpectedTypeHint (mkAppN (mkConst ``recordIs_of_record) #[ra[0]!, ra[1]!, w, ra[3]!]) t)
       return true
     saved.restore; return false
@@ -2672,7 +2819,7 @@ def recordIsFromRecord (g : MVarId) : TermElabM Bool := g.withContext do
   let Rg ← mkFreshExprMVarAt md.lctx md.localInstances
     (mkApp2 (mkConst ``Logic.Fact.holds) (mkApp2 (mkConst ``Logic.Fact.record) e o) w) .syntheticOpaque `fact
   let saved ← saveState
-  unless ← isDefEq M (mkAppN (mkConst ``recordMap) #[e, o, w, Rg]) do
+  unless ← defEqC M (mkAppN (mkConst ``recordMap) #[e, o, w, Rg]) do
     let hh ← progressHandle
     let md ← M.mvarId!.getDecl
     hh.putStrLn s!"RECMAP no fit: map's context has w {md.lctx.contains w.fvarId!}, depth {md.depth}"; hh.flush
@@ -2704,7 +2851,7 @@ def forallValOne (g : MVarId) : MetaM Bool := g.withContext do
   parts := parts.push (p, ty)
   for (pc, tc) in parts do
     let saved ← saveState
-    if ← (try withReducible (isDefEq tc t) catch _ => pure false) then
+    if ← (try withReducible (defEqC tc t) catch _ => pure false) then
       g.assign (← mkExpectedTypeHint pc t); return true
     saved.restore
   return false
@@ -2730,7 +2877,7 @@ def someGetOne (g : MVarId) : MetaM Bool := g.withContext do
         unless (collectFVars {} l).fvarIds.all vd.lctx.contains do continue
         let saved ← saveState
         let val ← mkAppOptM ``Option.get #[none, l, d.toExpr]
-        if ← isDefEq V val then
+        if ← defEqC V val then
           let pf ← mkEqSymm (← mkAppOptM ``Option.some_get #[none, l, d.toExpr])
           g.assign (← mkExpectedTypeHint pf goal); return true
         saved.restore
@@ -2749,6 +2896,7 @@ def fixedPoint (st : IO.Ref Collected) (rounds : Nat := 64) : TermElabM Nat := d
     let ps ← pendingPures.get
     let mut ps' := #[]
     for g in ps do
+      g.withContext do carrierExpand (← g.getType)
       let ty ← instantiateMVars (← g.getType)
       if (if far then triedFar.get? g else tried.get? g) == some ty then ps' := ps'.push g; continue
       if far then triedFar := triedFar.insert g ty else tried := tried.insert g ty
@@ -2777,6 +2925,7 @@ def fixedPoint (st : IO.Ref Collected) (rounds : Nat := 64) : TermElabM Nat := d
     let fs ← pendingFacts.get
     let mut fs' := #[]
     for g in fs do
+      g.withContext do carrierExpand (← g.getType)
       let ty ← instantiateMVars (← g.getType)
       if (if far then triedFar.get? g else tried.get? g) == some ty then fs' := fs'.push g; continue
       if far then triedFar := triedFar.insert g ty else tried := tried.insert g ty
@@ -3257,7 +3406,7 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
                       if k' == k then
                         let fpth ← framePath a w
                         let saved ← saveState
-                        let ok ← try withReducible (isDefEq (← instantiateMVars e) f) catch _ => pure false
+                        let ok ← try withReducible (defEqC (← instantiateMVars e) f) catch _ => pure false
                         saved.restore
                         hh.putStrLn s!"  SRC at {← one a} path {a == w || fpth.isSome} defeq {ok} head {c'}: {((toString (← ppExpr e)).replace "\n" " ").take 1500}"
                         if let some pf := fpth then
@@ -3527,7 +3676,7 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
                       unless keys[i]!.2 == k do continue
                       let e ← instantiateMVars elems[i]!
                       let saved ← saveState
-                      let ok ← try withReducible (isDefEq e f) catch _ => pure false
+                      let ok ← try withReducible (defEqC e f) catch _ => pure false
                       saved.restore
                       hh.putStrLn s!"    CAND at {← ppExpr a} (same state {a == w}, fits {ok}): {((toString (← ppExpr e)).replace "\n" " ").take 250}"
                   hh.flush
@@ -3555,11 +3704,11 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
               let mut sts : Array Expr := #[]
               for x in stIn do
                 if let some d := lctx0.find? x then
-                  if ← isDefEq d.type stTy then
+                  if ← defEqC d.type stTy then
                     if d.toExpr != w then sts := sts.push d.toExpr
               let named := !stIn.isEmpty && (← stIn.anyM fun x => do
                 match lctx0.find? x with
-                | some d => isDefEq d.type stTy
+                | some d => defEqC d.type stTy
                 | none => pure false)
               if named then
                 let mut hyps : Array (Expr × Expr) := #[(← inferType pf, pf)]
@@ -3685,13 +3834,13 @@ syntax (name := factsTop) "facts_top " ident ident " as " ident : command
           keyTables.set none
           let fill (tbl hn : Expr) (α : Expr) (l : Array (String × Expr)) (suffix : String) : TermElabM Unit := do
             let lit ← mkListLit α (l.toList.map (·.2))
-            unless ← isDefEq tbl lit do throwError "facts_top: key table"
+            unless ← defEqC tbl lit do throwError "facts_top: key table"
             let ty ← mkAppM ``List.Nodup #[lit]
             let inst ← synthInstance (← mkAppM ``Decidable #[ty])
             let prf := mkApp3 (mkConst ``of_decide_eq_true) ty inst (← mkEqRefl (mkConst ``Bool.true))
             let nm := N ++ Name.mkSimple suffix
             addDecl (.thmDecl { name := nm, levelParams := [], type := ty, value := prf })
-            unless ← isDefEq hn (mkConst nm) do throwError "facts_top: key table proof"
+            unless ← defEqC hn (mkConst nm) do throwError "facts_top: key table proof"
           fill kt.tb kt.hnb (mkConst ``ES.JSStr) (← keyListB.get) "keysB_nodup"
           fill kt.tp kt.hnp (mkConst ``ES.PropKey) (← keyListP.get) "keysP_nodup"
           mark s!"key tables: {(← keyListB.get).size} binding keys, {(← keyListP.get).size} property keys"

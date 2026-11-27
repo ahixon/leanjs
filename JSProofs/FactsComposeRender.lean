@@ -107,7 +107,10 @@ facts_compose click_comp := click_spec_c
   | hcRC => ReactReconcileChildren.click_comp (g := d.env) (El := E) (C := C) (RF := C1) (ln := two) (vEl := vT) (bG := bGc)
       (e1 := r_e1) (c1 := r_c1) (e2 := r_e2) (c2 := r_c2) (e3 := r_e3) (c3 := r_c3) (e4 := r_e4) (c4 := r_c4) (oG := oG)
       (ew := ew) (ee := ee) (ec := ec) (kw := kw) (ke := ke) (kc := kc) (yw := yw) (ye := ye) (yc := yc)
-      (pw := pw) (pe := pe) (pc := pc) (bdT := r_bdT) (bdTS := r_bdTS) same
+      (pw := pw) (pe := pe) (pc := pc) (bdT := r_bdT) (bdTS := r_bdTS)
+      -- (the reconciler's function, `reconcileChildFibers`'s closure, and `createWorkInProgress`: `same` would take the
+      -- caller's `fR`/`dR` and `fo`, `updateReducerImpl`'s and `updateReducer`'s, making one function of two)
+      (fR := r_fR) (dR := r_dR) (fo := r_fo) same
 
 end ReactUpdateFunction
 

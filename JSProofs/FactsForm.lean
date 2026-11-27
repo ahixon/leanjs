@@ -1391,6 +1391,9 @@ def carry (hE hFE : Expr) : TermElabM (Expr × Expr × Nat × Nat) := do
         | some (_, r) => ok := r.isSome
         | none =>
           let r ← closeNe A.envs[i]! A.envs[j]! false true; cache := cache.push ((false, i, j), r); ok := r.isSome
+          if ← progressOn then
+            let h ← progressHandle
+            h.putStrLn s!"CARRY-ENVNE {r.isSome} {(toString (← ppExpr A.envs[i]!)).take 80} vs {(toString (← ppExpr A.envs[j]!)).take 80} for fact {((toString (← ppExpr elems[k]!)).replace "\n" " ").take 400} FP {((toString (← ppExpr fp)).replace "\n" " ").take 600}"; h.flush
           if r.isNone && (← carryDebug.get) then
             let h ← progressHandle
             h.putStrLn s!"CARRY-NE env {((toString (← ppExpr A.envs[i]!)).replace "\n" " ").take 2000} ≠ {((toString (← ppExpr A.envs[j]!)).replace "\n" " ").take 2000}"; h.flush
