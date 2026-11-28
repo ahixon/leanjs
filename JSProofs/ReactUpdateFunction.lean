@@ -998,6 +998,8 @@ theorem click_spec_c {n : Nat}
         some (.data (.str (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) true true true) ∧
       (w.objEntry C1).props.get? (.str "lanes") = some (.data (.num (F64.fin false 0 (-1074))) true lw lc) ∧
       (w.objEntry C1).props.get? (.str "flags") = some (.data (.num (numberBinOp .bitOr fl1 (F64.fin false 4503599627370496 (-52)))) true fe fc) ∧
+      -- (the dispatcher `finishRenderingHooks` left: `ContextOnlyDispatcher`)
+      (w.objEntry RSI).props.get? (.str "H") = some (.data vCO true re rc) ∧
       (w.objEntry C).kind.isPlain = true ∧ C < w.heap.size ∧ s.heap.size ≤ C ∧
       (∃ F, ReactNewProps.NewProps w C F OP (JSStr.ofString "Count: " ++ numberToJSStr xE ++ JSStr.ofString "")) ∧
       ∃ bm, Scope.declLike? (w.envEntry d.env) = some (bm, oG) ∧
@@ -1227,12 +1229,18 @@ theorem click_spec_c {n : Nat}
     FDI.fdiCtx, Sem.inner]
   have hC1St : C1 < St.heap.size := Nat.lt_of_lt_of_le hC1 hSz
   refine ⟨Nat.lt_of_lt_of_le hC1St hF4.heap_le, by rw [kind_frame hF4 hC1St]; exact hSC1k, C, frame_restore FW s, ?_,
-    rfl, rfl, hCch4, ?_, ?_, ?_, Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hCb hSz2) hF4.heap_le, ?_,
+    rfl, rfl, hCch4, ?_, ?_, ?_, ?_, Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hCb hSz2) hF4.heap_le, ?_,
     ⟨F, by first | exact hNP4 | (unfold ReactNewProps.NewProps at hNP4 ⊢; simp only [restore_objEntry, restore_heap]; exact hNP4)⟩, ?_⟩
   · simp only [js_simp] at hfu1 hfu2 hfu3
     omega
   · rw [props_frame hF4 hC1St (by simp [ReactReconcileChildren.fpC, ReactReconcileFibers.fpR, ReactReconcileImpl.fpI, ReactCreateWIP.fp, rhRFX, Ne.symm rhRFX])]; exact hSC1l
   · rw [props_frame hF4 hC1St (by simp [ReactReconcileChildren.fpC, ReactReconcileFibers.fpR, ReactReconcileImpl.fpI, ReactCreateWIP.fp, rhRFX, Ne.symm rhRFX])]; exact hSC1f
+  · -- (`RSI.H`: renderWithHooks' post, kept by the check and the reconciliation, whose objects are `X` and `C1`)
+    have hRw2 : RSI < w2.heap.size := Nat.lt_of_lt_of_le (Nat.lt_of_lt_of_le hI hw1z) hw2z
+    have hXR : X ≠ RSI := (hdW X (by simp)).2.2.2
+    rw [props_frame hF4 (Nat.lt_of_lt_of_le hRw2 hSz2) (by simp [ReactReconcileChildren.fpC, ReactReconcileFibers.fpR,
+      ReactReconcileImpl.fpI, ReactCreateWIP.fp, dRC, hXR, Ne.symm hXR, Ne.symm dRC]), hSo2 RSI hRw2 dRC]
+    exact hRSIH
   · show (w4.objEntry C).kind.isPlain = true
     rw [kind_frame hF4 (Nat.lt_of_lt_of_le hCb hSz2), hSo2 C hCb hCC1, hCk]; rfl
   · exact Nat.le_trans (by have := hF1.heap_le; simp only [js_simp] at this; exact this) hCge

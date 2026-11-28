@@ -137,11 +137,13 @@ theorem work_render {eng : Engine} {σ : Type} {answer : HostAnswer σ} {HI : σ
     (r_Loop : ∀ sR, Frame {} s sR → s.fuel ≤ sR.fuel + 40 →
       ∀ w1 w h1, P1 w1 h1 → HI h1 → Frame (ReactRenderSync.fpOwn sR.envs.size) w1 w → sR.fuel ≤ w.fuel + kP + 100 →
       WP eng answer j h1 (callImpl eng (.obj fWL) .undefined #[]) w fun _ w' h' =>
-        Frame fpWL w w' ∧ w.fuel ≤ w'.fuel + kW ∧ ReactRenderSync.AfterLoop w' d.env oG ∧ P2 w' h' ∧ HI h')
+        Frame fpWL w w' ∧ w.fuel ≤ w'.fuel + kW ∧ ReactRenderSync.AfterLoop w' d.env oG ∧ P2 w' h' ∧ HI h' ∧
+          -- (the dispatcher: the render's hooks write it, and leave a writable data property)
+          (∃ v, (w'.objEntry I).props.get? (.str "H") = some (.data v true he hc)))
     (r_fpWB : fpWL.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
     (r_fpWF : (d.env, JSStr.ofString "finishQueueingConcurrentUpdates") ∉ fpWL.binds)
     (r_fpWI : (d.env, JSStr.ofString "ReactSharedInternals") ∉ fpWL.binds)
-    (r_fpWO : fpWL.props.all (fun q => q.1 != I && q.1 != fFQ) = true)
+    (r_fpWO : fpWL.props.all (fun q => (q.1 != I || q.2 == .str "H") && q.1 != fFQ) = true)
     (r_Finish : ∀ sR, Frame {} s sR → s.fuel ≤ sR.fuel + 40 →
       ∀ w2 w h1, P2 w2 h1 → HI h1 → Frame (ReactRenderSync.fpEnd sR.envs.size d.env I) w2 w → ReactRenderSync.EndBinds w d.env oG ec → sR.fuel ≤ w.fuel + kP + kW + 200 →
       WP eng answer j h1 (callImpl eng (.obj fFQ) .undefined #[]) w fun _ w' h' =>

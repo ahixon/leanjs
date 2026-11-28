@@ -122,11 +122,13 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     -- (`workLoopSync()`: the render)
     (hLoop : ∀ w1 w h1, P1 w1 h1 → HI h1 → Frame (fpOwn s.envs.size) w1 w → s.fuel ≤ w.fuel + kP + 100 →
       WP eng answer n h1 (callImpl eng (.obj fWL) .undefined #[]) w fun _ w' h' =>
-        Frame fpWL w w' ∧ w.fuel ≤ w'.fuel + kW ∧ AfterLoop w' d.env oG ∧ P2 w' h' ∧ HI h')
+        Frame fpWL w w' ∧ w.fuel ≤ w'.fuel + kW ∧ AfterLoop w' d.env oG ∧ P2 w' h' ∧ HI h' ∧
+          -- (the dispatcher: the render's hooks write it, and leave a writable data property)
+          (∃ v, (w'.objEntry I).props.get? (.str "H") = some (.data v true he hc)))
     (hfpWB : fpWL.binds.all (fun q => decide (q.1 < s.envs.size)) = true)
     (hfpWF : (d.env, JSStr.ofString "finishQueueingConcurrentUpdates") ∉ fpWL.binds)
     (hfpWI : (d.env, JSStr.ofString "ReactSharedInternals") ∉ fpWL.binds)
-    (hfpWO : fpWL.props.all (fun q => q.1 != I && q.1 != fFQ) = true)
+    (hfpWO : fpWL.props.all (fun q => (q.1 != I || q.2 == .str "H") && q.1 != fFQ) = true)
     -- (`finishQueueingConcurrentUpdates()`)
     (hFinish : ∀ w2 w h1, P2 w2 h1 → HI h1 → Frame (fpEnd s.envs.size d.env I) w2 w → EndBinds w d.env oG ec → s.fuel ≤ w.fuel + kP + kW + 200 →
       WP eng answer n h1 (callImpl eng (.obj fFQ) .undefined #[]) w fun _ w' h' =>
@@ -251,7 +253,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   case fu4 => simp only [js_simp]; simp at hfu1 hfu2; omega
   case post4 =>
   intro r w4 h4 ⟨hF4, hfu4, ⟨bm4, bdE4, bdW4, hW4, hW4E, hW4Ev, hW4W, hW4Wv, ⟨b1, hb1, hm1, hs1⟩, ⟨b2, hb2, hm2, hs2⟩,
-    ⟨b3, hb3, hm3, hs3⟩, ⟨b4, hb4, hm4, hs4⟩, ⟨b5, hb5, hm5, hs5⟩⟩, hP2, hHI4⟩
+    ⟨b3, hb3, hm3, hs3⟩, ⟨b4, hb4, hm4, hs4⟩, ⟨b5, hb5, hm5, hs5⟩⟩, hP2, hHI4, ⟨vH4, hIHv4⟩⟩
   try simp only [js_simp] at hfu4
   have hE4 := envEntry_frame hF4 (e := s.envs.size) (by simp only [js_simp]; exact hE3s) (binds_avoid hfpWB (Nat.le_refl _))
   have hE4s : s.envs.size < w4.envs.size := envs_frame hF4 (by simp only [js_simp]; exact hE3s)
@@ -262,7 +264,7 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   subst hbm4
   have hWFQ4 := hW4x _ hfpWF
   have hWRI4 := hW4x _ hfpWI
-  have hWOs : ∀ q ∈ fpWL.props, q.1 ≠ I ∧ q.1 ≠ fFQ := fun q hq => by
+  have hWOs : ∀ q ∈ fpWL.props, (q.1 ≠ I ∨ q.2 = .str "H") ∧ q.1 ≠ fFQ := fun q hq => by
     have := List.all_eq_true.mp hfpWO q hq; simp at this; exact this
   have hsz3 : ∀ {o : ObjId}, o < s.heap.size → o < w3.heap.size := fun ho =>
     heap_frame hF3 (by simp only [js_simp]; exact hsz2 ho)
@@ -275,8 +277,8 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
   have hFQk4 : (w4.objEntry fFQ).kind = .func dFQ := by
     rw [w4obj hFQo (fun q hq => (hWOs q hq).2) (fun q hq => (hPOs q hq).2.2) hIFQ]; exact hFQk
   have hI4 : I < w4.heap.size := heap_frame hF4 (by simp only [js_simp]; exact hsz3 hI)
-  have hI4p : ∀ k, (w4.objEntry I).props.get? k = (w2.objEntry I).props.get? k := fun k => by
-    rw [props_frame hF4 (by simp only [js_simp]; exact hsz3 hI) (by simpa using fun hp => (hWOs (I, k) hp).1 rfl)]
+  have hI4p : ∀ k, k ≠ .str "H" → (w4.objEntry I).props.get? k = (w2.objEntry I).props.get? k := fun k hk => by
+    rw [props_frame hF4 (by simp only [js_simp]; exact hsz3 hI) (by simpa using fun hp => ((hWOs (I, k) hp).1.resolve_left (fun h => h rfl)) |> hk)]
     simp only [js_simp]
     rw [props_frame hF3 (by simp only [js_simp]; exact hsz2 hI) (by simpa using fun hp => (hPOs (I, k) hp).1 rfl)]
     simp only [js_simp]
@@ -284,10 +286,10 @@ theorem call_spec {n : Nat} {h : σ} {fo : ObjId} {d : FuncData} {t : Value} {s 
     rw [kind_frame hF4 (by simp only [js_simp]; exact hsz3 hI)]; simp only [js_simp]
     rw [kind_frame hF3 (by simp only [js_simp]; exact hsz2 hI)]; simp only [js_simp]
     rw [kind_frame hF2 (by simp only [js_simp]; exact hI1)]; simp only [js_simp]; exact hIk1
-  have hIH4 : (w4.objEntry I).props.get? (.str "H") = some (.data (.obj C) true he hc) := by
-    rw [hI4p, props_frame hF2 (by simp only [js_simp]; exact hI1) (by simp [js_simp])]; simp only [js_simp]; exact hIH1
+  -- (`H`: what the loop left, a writable data property)
+  have hIH4 : (w4.objEntry I).props.get? (.str "H") = some (.data vH4 true he hc) := hIHv4
   have hIA4 : (w4.objEntry I).props.get? (.str "A") = some (.data (.obj D) true ae ac) := by
-    rw [hI4p]; exact hIA2
+    rw [hI4p _ (by simp)]; exact hIA2
   have hE4a : s.envs.size < w4.envs.size + 1 := Nat.lt_succ_of_lt hE4s
   have hE4b : s.envs.size ≠ w4.envs.size := Nat.ne_of_lt hE4s
   have hG4a : d.env < w4.envs.size + 1 := Nat.lt_succ_of_lt hG4s
