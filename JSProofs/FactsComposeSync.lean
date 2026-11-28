@@ -48,13 +48,15 @@ facts_compose work_render_fin {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {
     {wR_e_fl wxE wfl wB_e3 : F64} {wR_e_e3 wR_e_e5 wR_e_c3 wR_e_c5 wR_e_re wR_e_rc wr_e2 wr_c2 wr_e3 wr_c3 we5 wc5 we8 wc8 wrew wrec wB_se3 wB_sc3 wB_le3 wB_lc3 : Bool} (f_code : dFQ.code = FQCGen.finishQueueingConcurrentUpdates_func)
     (f_cls : dFQ.isClassCtor = false) (f_mode : dFQ.thisMode = .strict) (f_env : dFQ.env = d.env) :=
     ReactRenderClick.work_render
-    (P2 := fun w2 h => ReactFinishQueueing.Ready w2 d.env fFQ dFQ ∧ ∀ e w w', Frame (ReactRenderSync.fpEnd e d.env I) w2 w →
+    -- (the render's `ReactSharedInternals` is the commit's: one object, `cRSI`, else assumed another)
+    (I := cRSI)
+    (P2 := fun w2 h => ReactFinishQueueing.Ready w2 d.env fFQ dFQ ∧ ∀ e w w', Frame (ReactRenderSync.fpEnd e d.env cRSI) w2 w →
       ReactRenderSync.EndBinds w d.env oG ec → Frame (ReactFinishQueueing.fp d.env) w w' →
       ReactFinishQueueing.QueuesDone w' d.env → ∀ c, (fun x h => (∃ C' alt bm x1 x2 x3 x4 x5 x6 x7, ReactPerformWork.RenderDone x d.env oG R C' alt bm x1 x2 x3 x4 x5 x6 x7) ∧ PRu x h) (w'.restore c) h)
     (fpFQ := ReactFinishQueueing.fp d.env) (kF := 20) (j := j + 12)
     (PC := fun x h => ∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP cbFSR cbEn fE { cD with env := d.env } ws oG R v x h)
     (fpE := ReactEnsureRoot.fpS d.env) (kE := 20)
-    (fpWL := (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp d.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(d.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB d.env pFa lH0 pQo I lX) ⟨[(d.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB d.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU d.env lVS lCu lCx lCS lCF lRI pX pFa lX))))))
+    (fpWL := (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp d.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(d.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB d.env pFa lH0 pQo cRSI lX) ⟨[(d.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB d.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU d.env lVS lCu lCx lCS lCF lRI pX pFa lX))))))
     (fpC := (Footprint.union (Footprint.union ⟨[], [(R, .str (JSStr.ofString "timeoutHandle"))], false⟩
         (((ReactCommitEntry.FPE d.env R).union ((((((ReactCommitRootFn.FPC d.env R cRSI cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
           (ReactBeforeMutation.FB d.env)).union
@@ -68,14 +70,14 @@ facts_compose work_render_fin {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {
     (Q := fun x h => ReactFlushSync.After x d.env oG R cbFSR ∧
       (∃ a b c, (x.objEntry R).props.get? (.str "pendingLanes") = some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧
       (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP cbFSR cbEn fe { cD with env := d.env } ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS d.env)) y x))
-    (PRu := fun x (_ : σ) => (∃ bm, ReactPerformWork.RenderDone x d.env oG R pH (.obj pX) bm .null .null (.bool false) (.num (F64.fin false 0 (-1074))) (.num (F64.fin false 0 (-1074))) (.num (F64.fin false 0 (-1074))) (.bool false)) ∧ (∃ w3 w4, ReactRenderSync.EndBinds w3 d.env oG ec ∧ Frame (ReactFinishQueueing.fp d.env) w3 w4 ∧ ReactFinishQueueing.QueuesDone w4 d.env ∧ Frame {} w4 x) ∧ Facts.holds [Fact.bind d.env oG (JSStr.ofString "pendingEffectsLanes") (fun b => ∃ bd, b = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)] x ∧ ∃ wL e e' Cn F, Frame ((((({} : Footprint).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH)).union (ReactRenderSync.fpOwn e')).union (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp d.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(d.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB d.env pFa lH0 pQo I lX) ⟨[(d.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB d.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU d.env lVS lCu lCx lCS lCF lRI pX pFa lX)))))) s wL ∧ Facts.holds (ReactWorkLoop.work_loop_comp.PL { lD with env := d.env } oG pX pFa wR_e_fl wR_e_e3 wR_e_e5 wR_e_c3 wR_e_c5 wR_e_re wR_e_rc lOP wxE lX wfl wr_e2 wr_c2 wr_e3 wr_c3 we5 wc5 we8 wc8 wrew wrec wB_e3 wB_se3 wB_sc3 wB_le3 wB_lc3 Cn F) wL ∧
-      Frame ((ReactRenderSync.fpEnd e d.env I).union (ReactFinishQueueing.fp d.env)) wL x)
-    (P1 := fun w' (_ : σ) => ∃ w0, Frame (({} : Footprint).union (ReactRenderSync.fpPre d.env I)) s w0 ∧
+    (PRu := fun x (_ : σ) => (∃ bm, ReactPerformWork.RenderDone x d.env oG R pH (.obj pX) bm .null .null (.bool false) (.num (F64.fin false 0 (-1074))) (.num (F64.fin false 0 (-1074))) (.num (F64.fin false 0 (-1074))) (.bool false)) ∧ (∃ w3 w4, ReactRenderSync.EndBinds w3 d.env oG ec ∧ Frame (ReactFinishQueueing.fp d.env) w3 w4 ∧ ReactFinishQueueing.QueuesDone w4 d.env ∧ Frame {} w4 x) ∧ Facts.holds [Fact.bind d.env oG (JSStr.ofString "pendingEffectsLanes") (fun b => ∃ bd, b = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)] x ∧ ∃ wL e e' Cn F, Frame ((((({} : Footprint).union (ReactRenderSync.fpPre d.env cRSI)).union (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH)).union (ReactRenderSync.fpOwn e')).union (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp d.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(d.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB d.env pFa lH0 pQo cRSI lX) ⟨[(d.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB d.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU d.env lVS lCu lCx lCS lCF lRI pX pFa lX)))))) s wL ∧ Facts.holds (ReactWorkLoop.work_loop_comp.PL { lD with env := d.env } oG pX pFa wR_e_fl wR_e_e3 wR_e_e5 wR_e_c3 wR_e_c5 wR_e_re wR_e_rc lOP wxE lX wfl wr_e2 wr_c2 wr_e3 wr_c3 we5 wc5 we8 wc8 wrew wrec wB_e3 wB_se3 wB_sc3 wB_le3 wB_lc3 Cn F) wL ∧
+      Frame ((ReactRenderSync.fpEnd e d.env cRSI).union (ReactFinishQueueing.fp d.env)) wL x)
+    (P1 := fun w' (_ : σ) => ∃ w0, Frame (({} : Footprint).union (ReactRenderSync.fpPre d.env cRSI)) s w0 ∧
       Facts.holds [Fact.propP R (.str (JSStr.ofString "current")) (fun r => ∃ a b c, r = some (.data (.obj pH) a b c)),
         Fact.kindP R (fun K => K.isPlain = true),
         Fact.propP pH (.str (JSStr.ofString "alternate")) (fun r => ∃ a b c, r = some (.data (.obj pX) a b c)),
         Fact.kindP pH (fun K => K.isPlain = true),
-        Fact.propP I (.str (JSStr.ofString "H")) (fun r => ∃ v, r = some (.data v true he hc))] w0 ∧
+        Fact.propP cRSI (.str (JSStr.ofString "H")) (fun r => ∃ v, r = some (.data v true he hc))] w0 ∧
       (∃ bm, Scope.declLike? (w0.envEntry d.env) = some (bm, oG) ∧
         (∃ bd, bm[JSStr.ofString "executionContext"]? = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true) ∧
         (∃ bd, bm[JSStr.ofString "workInProgressTransitions"]? = some bd ∧ bd.value = some .null)) ∧
@@ -97,10 +99,12 @@ facts_compose work_render_fin {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {
          all_goals first
            | exact ⟨by facts_get hpreU, _, _, _, by facts_get hpreU⟩
            | exact ⟨by facts_get hpreU, by facts_get hpreU⟩
-           | (obtain ⟨v, hH⟩ := ‹∃ v, ((_ : State).objEntry I).props.get? (.str "H") = some (.data v true he hc)›
+           | (obtain ⟨v, hH⟩ := ‹∃ v, ((_ : State).objEntry cRSI).props.get? (.str "H") = some (.data v true he hc)›
               exact ⟨lt_of_props_ne_none (by rw [hH]; simp), v, hH⟩)
-  | r_Loop => ReactWorkLoop.work_loop_comp (dPU := { lD with env := d.env }) (oG := oG) (Rw := pX) (C1 := pFa) (OP := lOP) (X := lX)
-      (VS := lVS) (RI := lRI) (CF := lCF) (CS := lCS) (Cu := lCu) (Cx := lCx) (K_d := { lKd with env := d.env }) (H0 := lH0) (Q := pQo) (RSI := I) (U := pU) (un := (true, qune, qunc))
+  | r_Loop => ReactWorkLoop.work_loop_comp (dPU := { lD with env := d.env }) (oG := oG) (Rw := pX) (C1 := pFa)
+      -- (the counter's current fiber, `C1`'s alternate: the fresh stack's `F`, else an unknown the walk assumes another)
+      (C0 := pF) (OP := lOP) (X := lX)
+      (VS := lVS) (RI := lRI) (CF := lCF) (CS := lCS) (Cu := lCu) (Cx := lCx) (K_d := { lKd with env := d.env }) (H0 := lH0) (Q := pQo) (RSI := cRSI) (U := pU) (un := (true, qune, qunc))
       (R_e_fl := wR_e_fl) (R_e_e3 := wR_e_e3) (R_e_e5 := wR_e_e5) (R_e_c3 := wR_e_c3) (R_e_c5 := wR_e_c5) (R_e_re := wR_e_re) (R_e_rc := wR_e_rc) (xE := wxE) (fl := wfl) (r_e2 := wr_e2) (r_c2 := wr_c2) (r_e3 := wr_e3) (r_c3 := wr_c3) (e5 := we5) (c5 := wc5) (e8 := we8) (c8 := wc8) (rew := wrew) (rec := wrec) (B_e3 := wB_e3) (B_se3 := wB_se3) (B_sc3 := wB_sc3) (B_le3 := wB_le3) (B_lc3 := wB_lc3)
       with (2400 ≤ kW ∧ R ≠ lCu ∧ R ≠ lCS ∧ R ≠ lCF ∧ R ≠ lRI)
       by intro v w' h' hq
@@ -186,54 +190,54 @@ facts_compose work_render_fin {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {
       rintro v' w' h' ⟨hS, hfu, hA, hPL, hPu', hh⟩
       exact ⟨hS, hfu, ⟨hA, hPL, hPu'⟩, by rw [hh]; exact hHI1⟩
   | r_Finish := fun sR _ fuR w2 w h1 hP2 hHI1 hFe hEB hfu =>
-      wp_mono (ReactFinishQueueing.finish_of_ready (σ := σ) (EP := fun w => ReactRenderSync.EndBinds w d.env oG ec) (Post := (fun x h => (∃ C' alt bm x1 x2 x3 x4 x5 x6 x7, ReactPerformWork.RenderDone x d.env oG R C' alt bm x1 x2 x3 x4 x5 x6 x7) ∧ (∃ bm, ReactPerformWork.RenderDone x d.env oG R pH (.obj pX) bm .null .null (.bool false) (.num (F64.fin false 0 (-1074))) (.num (F64.fin false 0 (-1074))) (.num (F64.fin false 0 (-1074))) (.bool false)) ∧ (∃ w3 w4, ReactRenderSync.EndBinds w3 d.env oG ec ∧ Frame (ReactFinishQueueing.fp d.env) w3 w4 ∧ ReactFinishQueueing.QueuesDone w4 d.env ∧ Frame {} w4 x) ∧ Facts.holds [Fact.bind d.env oG (JSStr.ofString "pendingEffectsLanes") (fun b => ∃ bd, b = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)] x ∧ ∃ wL e e' Cn F, Frame ((((({} : Footprint).union (ReactRenderSync.fpPre d.env I)).union (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH)).union (ReactRenderSync.fpOwn e')).union (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp d.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(d.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB d.env pFa lH0 pQo I lX) ⟨[(d.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB d.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU d.env lVS lCu lCx lCS lCF lRI pX pFa lX)))))) s wL ∧ Facts.holds (ReactWorkLoop.work_loop_comp.PL { lD with env := d.env } oG pX pFa wR_e_fl wR_e_e3 wR_e_e5 wR_e_c3 wR_e_c5 wR_e_re wR_e_rc lOP wxE lX wfl wr_e2 wr_c2 wr_e3 wr_c3 we5 wc5 we8 wc8 wrew wrec wB_e3 wB_se3 wB_sc3 wB_le3 wB_lc3 Cn F) wL ∧ Frame ((ReactRenderSync.fpEnd e d.env I).union (ReactFinishQueueing.fp d.env)) wL x)) (c := sR) f_code f_cls f_mode f_env hP2.1 hP2.2 hFe hEB
+      wp_mono (ReactFinishQueueing.finish_of_ready (σ := σ) (EP := fun w => ReactRenderSync.EndBinds w d.env oG ec) (Post := (fun x h => (∃ C' alt bm x1 x2 x3 x4 x5 x6 x7, ReactPerformWork.RenderDone x d.env oG R C' alt bm x1 x2 x3 x4 x5 x6 x7) ∧ (∃ bm, ReactPerformWork.RenderDone x d.env oG R pH (.obj pX) bm .null .null (.bool false) (.num (F64.fin false 0 (-1074))) (.num (F64.fin false 0 (-1074))) (.num (F64.fin false 0 (-1074))) (.bool false)) ∧ (∃ w3 w4, ReactRenderSync.EndBinds w3 d.env oG ec ∧ Frame (ReactFinishQueueing.fp d.env) w3 w4 ∧ ReactFinishQueueing.QueuesDone w4 d.env ∧ Frame {} w4 x) ∧ Facts.holds [Fact.bind d.env oG (JSStr.ofString "pendingEffectsLanes") (fun b => ∃ bd, b = some bd ∧ bd.mutable = true ∧ bd.value.isSome = true)] x ∧ ∃ wL e e' Cn F, Frame ((((({} : Footprint).union (ReactRenderSync.fpPre d.env cRSI)).union (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH)).union (ReactRenderSync.fpOwn e')).union (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp d.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(d.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB d.env pFa lH0 pQo cRSI lX) ⟨[(d.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB d.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU d.env lVS lCu lCx lCS lCF lRI pX pFa lX)))))) s wL ∧ Facts.holds (ReactWorkLoop.work_loop_comp.PL { lD with env := d.env } oG pX pFa wR_e_fl wR_e_e3 wR_e_e5 wR_e_c3 wR_e_c5 wR_e_re wR_e_rc lOP wxE lX wfl wr_e2 wr_c2 wr_e3 wr_c3 we5 wc5 we8 wc8 wrew wrec wB_e3 wB_se3 wB_sc3 wB_le3 wB_lc3 Cn F) wL ∧ Frame ((ReactRenderSync.fpEnd e d.env cRSI).union (ReactFinishQueueing.fp d.env)) wL x)) (c := sR) f_code f_cls f_mode f_env hP2.1 hP2.2 hFe hEB
         (by omega)) (fun _ _ _ ⟨a, b, c, d⟩ => ⟨a, b, c, by rw [d]; exact hHI1⟩)
 
 set_option maxHeartbeats 4000000 in
 set_option maxRecDepth 20000 in
-facts_compose sync_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lX lOP : ObjId} {lVS lRI lCF lCS lCu lCx lH0 : ObjId} {lKd : FuncData} {cEA cXA cdom cRSI cRDSI : ObjId} {ckP : JSStr} {cR1 cR2 : State → σ → Prop} {cgP : EnvId} {cbFSR cbEn : Binding} {cD : FuncData}
+facts_compose sync_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lX lOP : ObjId} {lVS lRI lCF lCS lCu lCx lH0 : ObjId} {lKd : FuncData} {cEA cXA cdom cRDSI : ObjId} {ckP : JSStr} {cR1 cR2 : State → σ → Prop} {cgP : EnvId} {cbFSR cbEn : Binding} {cD : FuncData}
     {qfl qhc qfl' qal : F64} {qvT qvL qvC qvMP qvMS qvUQ qvS qvI qvR qvRC : Value} {qhcle qhclc qx0e qx0c qx1e qx1c qx2e qx2c qx3e qx3c qx4e qx4c qx5e qx5c qx6e qx6c qx7e qx7c qx8e qx8c qx9e qx9c qx10e qx10c qx11e qx11c qx12e qx12c qx13e qx13c qx14e qx14c qx15e qx15c qqpe qqpc qune qunc qfle qflc qfale qfalc : Bool} {wR_e_fl wxE wfl wB_e3 : F64} {wR_e_e3 wR_e_e5 wR_e_c3 wR_e_c5 wR_e_re wR_e_rc wr_e2 wr_c2 wr_e3 wr_c3 we5 wc5 we8 wc8 wrew wrec wB_se3 wB_sc3 wB_le3 wB_lc3 : Bool}
     {kWL kC j : Nat} {I R : ObjId}
     {wbdW wbdL wbdX wbdP : Binding} {wfP : ObjId} {wdP : FuncData} :=
     ReactPerformSync.call_spec (n := j + 13) (root := .obj R) (lanes := .num (F64.fin false 4503599627370496 (-51)))
     (fpW := ⟨(ReactRenderSync.fpRS dW.env I (ReactPrepareFresh.fp dW.env pX pA pQo pU pF pFa pH) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dW.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(dW.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB dW.env pFa lH0 pQo I lX) ⟨[(dW.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB dW.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU dW.env lVS lCu lCx lCS lCF lRI pX pFa lX))))) (ReactFinishQueueing.fp dW.env)).binds ++ (Footprint.union (Footprint.union ⟨[], [(R, .str (JSStr.ofString "timeoutHandle"))], false⟩
-        (((ReactCommitEntry.FPE dW.env R).union ((((((ReactCommitRootFn.FPC dW.env R cRSI cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
+        (((ReactCommitEntry.FPE dW.env R).union ((((((ReactCommitRootFn.FPC dW.env R I cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
           (ReactBeforeMutation.FB dW.env)).union
-          (((ReactFlushMutation.FPRE dW.env cRSI cRDSI).union ((ReactCommitRoot.F0 dW.env).union
+          (((ReactFlushMutation.FPRE dW.env I cRDSI).union ((ReactCommitRoot.F0 dW.env).union
             (Footprint.union ⟨[(dW.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩
               ⟨[(dW.env, JSStr.ofString "viewTransitionMutationContext")], [(cdom, .str ckP)], false⟩))).union
             ⟨[(dW.env, JSStr.ofString "selectionInformation"), (dW.env, JSStr.ofString "eventsEnabled"),
               (dW.env, JSStr.ofString "_enabled")], [(R, .str (JSStr.ofString "current"))], false⟩)).union
-          (ReactFlushLayout.FPL dW.env cRSI cRDSI)).union
+          (ReactFlushLayout.FPL dW.env I cRDSI)).union
           ((ReactSpawned.FPA dW.env cgP R).union (ReactEnsureCall.fpEn dW.env)))).union {})) {}).binds ++ (ReactEnsureRoot.fpS dW.env).binds,
       (ReactRenderSync.fpRS dW.env I (ReactPrepareFresh.fp dW.env pX pA pQo pU pF pFa pH) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dW.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(dW.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB dW.env pFa lH0 pQo I lX) ⟨[(dW.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB dW.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU dW.env lVS lCu lCx lCS lCF lRI pX pFa lX))))) (ReactFinishQueueing.fp dW.env)).props ++ (Footprint.union (Footprint.union ⟨[], [(R, .str (JSStr.ofString "timeoutHandle"))], false⟩
-        (((ReactCommitEntry.FPE dW.env R).union ((((((ReactCommitRootFn.FPC dW.env R cRSI cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
+        (((ReactCommitEntry.FPE dW.env R).union ((((((ReactCommitRootFn.FPC dW.env R I cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
           (ReactBeforeMutation.FB dW.env)).union
-          (((ReactFlushMutation.FPRE dW.env cRSI cRDSI).union ((ReactCommitRoot.F0 dW.env).union
+          (((ReactFlushMutation.FPRE dW.env I cRDSI).union ((ReactCommitRoot.F0 dW.env).union
             (Footprint.union ⟨[(dW.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩
               ⟨[(dW.env, JSStr.ofString "viewTransitionMutationContext")], [(cdom, .str ckP)], false⟩))).union
             ⟨[(dW.env, JSStr.ofString "selectionInformation"), (dW.env, JSStr.ofString "eventsEnabled"),
               (dW.env, JSStr.ofString "_enabled")], [(R, .str (JSStr.ofString "current"))], false⟩)).union
-          (ReactFlushLayout.FPL dW.env cRSI cRDSI)).union
+          (ReactFlushLayout.FPL dW.env I cRDSI)).union
           ((ReactSpawned.FPA dW.env cgP R).union (ReactEnsureCall.fpEn dW.env)))).union {})) {}).props ++ (ReactEnsureRoot.fpS dW.env).props,
       (ReactRenderSync.fpRS dW.env I (ReactPrepareFresh.fp dW.env pX pA pQo pU pF pFa pH) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp dW.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(dW.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB dW.env pFa lH0 pQo I lX) ⟨[(dW.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB dW.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU dW.env lVS lCu lCx lCS lCF lRI pX pFa lX))))) (ReactFinishQueueing.fp dW.env)).jobs || (Footprint.union (Footprint.union ⟨[], [(R, .str (JSStr.ofString "timeoutHandle"))], false⟩
-        (((ReactCommitEntry.FPE dW.env R).union ((((((ReactCommitRootFn.FPC dW.env R cRSI cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
+        (((ReactCommitEntry.FPE dW.env R).union ((((((ReactCommitRootFn.FPC dW.env R I cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
           (ReactBeforeMutation.FB dW.env)).union
-          (((ReactFlushMutation.FPRE dW.env cRSI cRDSI).union ((ReactCommitRoot.F0 dW.env).union
+          (((ReactFlushMutation.FPRE dW.env I cRDSI).union ((ReactCommitRoot.F0 dW.env).union
             (Footprint.union ⟨[(dW.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩
               ⟨[(dW.env, JSStr.ofString "viewTransitionMutationContext")], [(cdom, .str ckP)], false⟩))).union
             ⟨[(dW.env, JSStr.ofString "selectionInformation"), (dW.env, JSStr.ofString "eventsEnabled"),
               (dW.env, JSStr.ofString "_enabled")], [(R, .str (JSStr.ofString "current"))], false⟩)).union
-          (ReactFlushLayout.FPL dW.env cRSI cRDSI)).union
+          (ReactFlushLayout.FPL dW.env I cRDSI)).union
           ((ReactSpawned.FPA dW.env cgP R).union (ReactEnsureCall.fpEn dW.env)))).union {})) {}).jobs || (ReactEnsureRoot.fpS dW.env).jobs⟩)
     (kW := (400 + kWL + 20 + 300) + kC + 20 + 300)
     (Q := fun x h => ReactFlushSync.After x dW.env oG R cbFSR ∧
       (∃ a b c, (x.objEntry R).props.get? (.str "pendingLanes") = some (.data (.num (F64.fin false 0 (-1074))) a b c)) ∧
-      (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP cbFSR cbEn fe { cD with env := dW.env } ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS dW.env)) y x))
-  | hWork => ReactRenderClick.work_render_fin (fo := fW) (d := dW) (t := .undefined) (I := I) (j := j)
+      (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom I cRDSI ckP cR1 cR2 cgP cbFSR cbEn fe { cD with env := dW.env } ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS dW.env)) y x))
+  | hWork => ReactRenderClick.work_render_fin (fo := fW) (d := dW) (t := .undefined) (j := j)
       (pX := pX) (pA := pA) (pQo := pQo) (pU := pU) (pF := pF) (pFa := pFa) (pH := pH)
       (lD := lD) (lX := lX) (lOP := lOP)
-      (lVS := lVS) (lRI := lRI) (lCF := lCF) (lCS := lCS) (lCu := lCu) (lCx := lCx) (lH0 := lH0) (lKd := lKd) (cEA := cEA) (cXA := cXA) (cdom := cdom) (cRSI := cRSI) (cRDSI := cRDSI) (ckP := ckP) (cR1 := cR1) (cR2 := cR2)
+      (lVS := lVS) (lRI := lRI) (lCF := lCF) (lCS := lCS) (lCu := lCu) (lCx := lCx) (lH0 := lH0) (lKd := lKd) (cEA := cEA) (cXA := cXA) (cdom := cdom) (cRSI := I) (cRDSI := cRDSI) (ckP := ckP) (cR1 := cR1) (cR2 := cR2)
       (cgP := cgP) (cbEn := cbEn) (cD := cD)
       (qfl := qfl) (qhc := qhc) (qfl' := qfl') (qal := qal) (qvT := qvT) (qvL := qvL) (qvC := qvC) (qvMP := qvMP) (qvMS := qvMS) (qvUQ := qvUQ) (qvS := qvS) (qvI := qvI) (qvR := qvR) (qvRC := qvRC) (qhcle := qhcle) (qhclc := qhclc) (qx0e := qx0e) (qx0c := qx0c) (qx1e := qx1e) (qx1c := qx1c) (qx2e := qx2e) (qx2c := qx2c) (qx3e := qx3e) (qx3c := qx3c) (qx4e := qx4e) (qx4c := qx4c) (qx5e := qx5e) (qx5c := qx5c) (qx6e := qx6e) (qx6c := qx6c) (qx7e := qx7e) (qx7c := qx7c) (qx8e := qx8e) (qx8c := qx8c) (qx9e := qx9e) (qx9c := qx9c) (qx10e := qx10e) (qx10c := qx10c) (qx11e := qx11e) (qx11c := qx11c) (qx12e := qx12e) (qx12c := qx12c) (qx13e := qx13e) (qx13c := qx13c) (qx14e := qx14e) (qx14c := qx14c) (qx15e := qx15e) (qx15c := qx15c) (qqpe := qqpe) (qqpc := qqpc) (qune := qune) (qunc := qunc) (qfle := qfle) (qflc := qflc) (qfale := qfale) (qfalc := qfalc)
       (wR_e_fl := wR_e_fl) (wR_e_e3 := wR_e_e3) (wR_e_e5 := wR_e_e5) (wR_e_c3 := wR_e_c3) (wR_e_c5 := wR_e_c5) (wR_e_re := wR_e_re) (wR_e_rc := wR_e_rc) (wxE := wxE) (wfl := wfl) (wr_e2 := wr_e2) (wr_c2 := wr_c2) (wr_e3 := wr_e3) (wr_c3 := wr_c3) (we5 := we5) (wc5 := wc5) (we8 := we8) (wc8 := wc8) (wrew := wrew) (wrec := wrec) (wB_e3 := wB_e3) (wB_se3 := wB_se3) (wB_sc3 := wB_sc3) (wB_le3 := wB_le3) (wB_lc3 := wB_lc3) (cbFSR := cbFSR)
@@ -248,46 +252,46 @@ facts_compose sync_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} 
 
 set_option maxHeartbeats 4000000 in
 set_option maxRecDepth 20000 in
-facts_compose microtask_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lX lOP : ObjId} {lVS lRI lCF lCS lCu lCx lH0 : ObjId} {lKd : FuncData} {cEA cXA cdom cRSI cRDSI : ObjId} {ckP : JSStr} {cR1 cR2 : State → σ → Prop} {cgP : EnvId} {cbEn : Binding} {cD : FuncData}
+facts_compose microtask_render_comp {pX pA pQo pU pF pFa pH : ObjId} {lD : FuncData} {lX lOP : ObjId} {lVS lRI lCF lCS lCu lCx lH0 : ObjId} {lKd : FuncData} {cEA cXA cdom cRDSI : ObjId} {ckP : JSStr} {cR1 cR2 : State → σ → Prop} {cgP : EnvId} {cbEn : Binding} {cD : FuncData}
     {qfl qhc qfl' qal : F64} {qvT qvL qvC qvMP qvMS qvUQ qvS qvI qvR qvRC : Value} {qhcle qhclc qx0e qx0c qx1e qx1c qx2e qx2c qx3e qx3c qx4e qx4c qx5e qx5c qx6e qx6c qx7e qx7c qx8e qx8c qx9e qx9c qx10e qx10c qx11e qx11c qx12e qx12c qx13e qx13c qx14e qx14c qx15e qx15c qqpe qqpc qune qunc qfle qflc qfale qfalc : Bool} {wR_e_fl wxE wfl wB_e3 : F64} {wR_e_e3 wR_e_e5 wR_e_c3 wR_e_c5 wR_e_re wR_e_rc wr_e2 wr_c2 wr_e3 wr_c3 we5 wc5 we8 wc8 wrew wrec wB_se3 wB_sc3 wB_le3 wB_lc3 : Bool}
     {kWL kC j : Nat} {I : ObjId} {wD : FuncData} :=
     ReactMicrotaskClick.microtask_click (m := j + 14)
     (fpP := ⟨(ReactRenderSync.fpRS d.env I (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp d.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(d.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB d.env pFa lH0 pQo I lX) ⟨[(d.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB d.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU d.env lVS lCu lCx lCS lCF lRI pX pFa lX))))) (ReactFinishQueueing.fp d.env)).binds ++ (Footprint.union (Footprint.union ⟨[], [(R, .str (JSStr.ofString "timeoutHandle"))], false⟩
-        (((ReactCommitEntry.FPE d.env R).union ((((((ReactCommitRootFn.FPC d.env R cRSI cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
+        (((ReactCommitEntry.FPE d.env R).union ((((((ReactCommitRootFn.FPC d.env R I cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
           (ReactBeforeMutation.FB d.env)).union
-          (((ReactFlushMutation.FPRE d.env cRSI cRDSI).union ((ReactCommitRoot.F0 d.env).union
+          (((ReactFlushMutation.FPRE d.env I cRDSI).union ((ReactCommitRoot.F0 d.env).union
             (Footprint.union ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩
               ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [(cdom, .str ckP)], false⟩))).union
             ⟨[(d.env, JSStr.ofString "selectionInformation"), (d.env, JSStr.ofString "eventsEnabled"),
               (d.env, JSStr.ofString "_enabled")], [(R, .str (JSStr.ofString "current"))], false⟩)).union
-          (ReactFlushLayout.FPL d.env cRSI cRDSI)).union
+          (ReactFlushLayout.FPL d.env I cRDSI)).union
           ((ReactSpawned.FPA d.env cgP R).union (ReactEnsureCall.fpEn d.env)))).union {})) {}).binds ++ (ReactEnsureRoot.fpS d.env).binds,
       (ReactRenderSync.fpRS d.env I (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp d.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(d.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB d.env pFa lH0 pQo I lX) ⟨[(d.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB d.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU d.env lVS lCu lCx lCS lCF lRI pX pFa lX))))) (ReactFinishQueueing.fp d.env)).props ++ (Footprint.union (Footprint.union ⟨[], [(R, .str (JSStr.ofString "timeoutHandle"))], false⟩
-        (((ReactCommitEntry.FPE d.env R).union ((((((ReactCommitRootFn.FPC d.env R cRSI cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
+        (((ReactCommitEntry.FPE d.env R).union ((((((ReactCommitRootFn.FPC d.env R I cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
           (ReactBeforeMutation.FB d.env)).union
-          (((ReactFlushMutation.FPRE d.env cRSI cRDSI).union ((ReactCommitRoot.F0 d.env).union
+          (((ReactFlushMutation.FPRE d.env I cRDSI).union ((ReactCommitRoot.F0 d.env).union
             (Footprint.union ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩
               ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [(cdom, .str ckP)], false⟩))).union
             ⟨[(d.env, JSStr.ofString "selectionInformation"), (d.env, JSStr.ofString "eventsEnabled"),
               (d.env, JSStr.ofString "_enabled")], [(R, .str (JSStr.ofString "current"))], false⟩)).union
-          (ReactFlushLayout.FPL d.env cRSI cRDSI)).union
+          (ReactFlushLayout.FPL d.env I cRDSI)).union
           ((ReactSpawned.FPA d.env cgP R).union (ReactEnsureCall.fpEn d.env)))).union {})) {}).props ++ (ReactEnsureRoot.fpS d.env).props,
       (ReactRenderSync.fpRS d.env I (ReactPrepareFresh.fp d.env pX pA pQo pU pF pFa pH) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginRoot.fp d.env lVS lRI lCF lCS lCu lCx pX pFa) ⟨[(d.env, "workInProgress")], [(pX, .str "memoizedProps")], false⟩) (Logic.Footprint.union (Logic.Footprint.union (ReactBeginCounter.fpB d.env pFa lH0 pQo I lX) ⟨[(d.env, "workInProgress")], [(pFa, .str "memoizedProps")], false⟩) (Logic.Footprint.union (ReactBeginButton.fpBB d.env lX) (Logic.Footprint.union ⟨[], [(lX, .str "memoizedProps")], false⟩ (ReactCompleteUnit.fpU d.env lVS lCu lCx lCS lCF lRI pX pFa lX))))) (ReactFinishQueueing.fp d.env)).jobs || (Footprint.union (Footprint.union ⟨[], [(R, .str (JSStr.ofString "timeoutHandle"))], false⟩
-        (((ReactCommitEntry.FPE d.env R).union ((((((ReactCommitRootFn.FPC d.env R cRSI cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
+        (((ReactCommitEntry.FPE d.env R).union ((((((ReactCommitRootFn.FPC d.env R I cRDSI).union (ReactMarkFinished.FPM R cEA cXA)).union
           (ReactBeforeMutation.FB d.env)).union
-          (((ReactFlushMutation.FPRE d.env cRSI cRDSI).union ((ReactCommitRoot.F0 d.env).union
+          (((ReactFlushMutation.FPRE d.env I cRDSI).union ((ReactCommitRoot.F0 d.env).union
             (Footprint.union ⟨[(d.env, JSStr.ofString "offscreenDirectParentIsHidden")], [], false⟩
               ⟨[(d.env, JSStr.ofString "viewTransitionMutationContext")], [(cdom, .str ckP)], false⟩))).union
             ⟨[(d.env, JSStr.ofString "selectionInformation"), (d.env, JSStr.ofString "eventsEnabled"),
               (d.env, JSStr.ofString "_enabled")], [(R, .str (JSStr.ofString "current"))], false⟩)).union
-          (ReactFlushLayout.FPL d.env cRSI cRDSI)).union
+          (ReactFlushLayout.FPL d.env I cRDSI)).union
           ((ReactSpawned.FPA d.env cgP R).union (ReactEnsureCall.fpEn d.env)))).union {})) {}).jobs || (ReactEnsureRoot.fpS d.env).jobs⟩)
     (kP := (400 + kWL + 20 + 300) + kC + 20 + 300 + 100)
-    (Pu := fun x h => (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom cRSI cRDSI ckP cR1 cR2 cgP bdF cbEn fe { cD with env := d.env } ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS d.env)) y x))
+    (Pu := fun x h => (∃ e y fe, (∃ ws v, ReactCommitEntry.crw_comp.Post σ HI cEA cXA cdom I cRDSI ckP cR1 cR2 cgP bdF cbEn fe { cD with env := d.env } ws oG R v y h) ∧ Frame ((ReactPerformWork.fpOwn e).union (ReactEnsureRoot.fpS d.env)) y x))
   | hPerf => ReactRenderClick.sync_render_comp (fo := fS) (d := { dS with env := d.env }) (t := .undefined) (R := R) (oG := oG) (j := j)
       (dW := { wD with env := d.env }) (I := I) (pX := pX) (pA := pA) (pQo := pQo) (pU := pU) (pF := pF) (pFa := pFa) (pH := pH)
       (lD := lD) (lX := lX) (lOP := lOP)
-      (lVS := lVS) (lRI := lRI) (lCF := lCF) (lCS := lCS) (lCu := lCu) (lCx := lCx) (lH0 := lH0) (lKd := lKd) (cEA := cEA) (cXA := cXA) (cdom := cdom) (cRSI := cRSI) (cRDSI := cRDSI) (ckP := ckP) (cR1 := cR1) (cR2 := cR2)
+      (lVS := lVS) (lRI := lRI) (lCF := lCF) (lCS := lCS) (lCu := lCu) (lCx := lCx) (lH0 := lH0) (lKd := lKd) (cEA := cEA) (cXA := cXA) (cdom := cdom) (cRDSI := cRDSI) (ckP := ckP) (cR1 := cR1) (cR2 := cR2)
       (cgP := cgP) (cbEn := cbEn) (cD := cD)
       (qfl := qfl) (qhc := qhc) (qfl' := qfl') (qal := qal) (qvT := qvT) (qvL := qvL) (qvC := qvC) (qvMP := qvMP) (qvMS := qvMS) (qvUQ := qvUQ) (qvS := qvS) (qvI := qvI) (qvR := qvR) (qvRC := qvRC) (qhcle := qhcle) (qhclc := qhclc) (qx0e := qx0e) (qx0c := qx0c) (qx1e := qx1e) (qx1c := qx1c) (qx2e := qx2e) (qx2c := qx2c) (qx3e := qx3e) (qx3c := qx3c) (qx4e := qx4e) (qx4c := qx4c) (qx5e := qx5e) (qx5c := qx5c) (qx6e := qx6e) (qx6c := qx6c) (qx7e := qx7e) (qx7c := qx7c) (qx8e := qx8e) (qx8c := qx8c) (qx9e := qx9e) (qx9c := qx9c) (qx10e := qx10e) (qx10c := qx10c) (qx11e := qx11e) (qx11c := qx11c) (qx12e := qx12e) (qx12c := qx12c) (qx13e := qx13e) (qx13c := qx13c) (qx14e := qx14e) (qx14c := qx14c) (qx15e := qx15e) (qx15c := qx15c) (qqpe := qqpe) (qqpc := qqpc) (qune := qune) (qunc := qunc) (qfle := qfle) (qflc := qflc) (qfale := qfale) (qfalc := qfalc)
       (wR_e_fl := wR_e_fl) (wR_e_e3 := wR_e_e3) (wR_e_e5 := wR_e_e5) (wR_e_c3 := wR_e_c3) (wR_e_c5 := wR_e_c5) (wR_e_re := wR_e_re) (wR_e_rc := wR_e_rc) (wxE := wxE) (wfl := wfl) (wr_e2 := wr_e2) (wr_c2 := wr_c2) (wr_e3 := wr_e3) (wr_c3 := wr_c3) (we5 := we5) (wc5 := wc5) (we8 := we8) (wc8 := wc8) (wrew := wrew) (wrec := wrec) (wB_e3 := wB_e3) (wB_se3 := wB_se3) (wB_sc3 := wB_sc3) (wB_le3 := wB_le3) (wB_lc3 := wB_lc3) (cbFSR := bdF)

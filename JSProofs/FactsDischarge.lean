@@ -1630,6 +1630,51 @@ def matchOne (g : MVarId) (far : Bool := false) : TermElabM Bool := g.withContex
   g.assign (← mkExpectedTypeHint gi t)
   return true
 
+/-- A goal `prop o k (some (.data v w e c))` at `w` that one fact at `w` about the same object and key states with another
+value (`.data v' …`, the value a write left, `bitOr fl' 2` where `2` is read): that fact, and the values' equation a pure
+goal (`v = v'`, a premise the top states). The object is never guessed: it is the same term in both. -/
+def valueMatchOne (g : MVarId) : TermElabM Bool := g.withContext do
+  if ← g.isAssigned then return true
+  let t ← instantiateMVars (← g.getType)
+  unless t.isAppOfArity ``Logic.Fact.holds 2 do return false
+  let f ← whnfR t.appFn!.appArg!
+  let w := t.appArg!
+  unless f.isAppOfArity ``Logic.Fact.prop 3 do return false
+  let o := f.getArg! 0; let k := f.getArg! 1; let r := f.getArg! 2
+  unless r.isAppOfArity ``Option.some 2 && r.appArg!.isAppOfArity ``ES.Property.data 4 do return false
+  let pd := r.appArg!
+  let v := pd.getArg! 0
+  let mut found : Array (Expr × Expr × Nat × Expr) := #[]
+  for (h, Ls, keyed) in ← sourcesAt w do
+    for i in [:keyed.size] do
+      let (e, c', _) := keyed[i]!
+      unless c' == ``Logic.Fact.prop do continue
+      let e ← whnfR (← instantiateMVars e)
+      unless e.isAppOfArity ``Logic.Fact.prop 3 do continue
+      unless (← instantiateMVars (e.getArg! 0)) == (← instantiateMVars o) do continue
+      unless (← instantiateMVars (e.getArg! 1)) == (← instantiateMVars k) do continue
+      let r' := e.getArg! 2
+      unless r'.isAppOfArity ``Option.some 2 && r'.appArg!.isAppOfArity ``ES.Property.data 4 do continue
+      unless found.any (fun x => x.2.2.2 == e) do found := found.push (h, Ls, i, e)
+  let [(h, Ls, i, e)] := found.toList | return false
+  let pd' := (e.getArg! 2).appArg!
+  let saved ← saveState
+  -- the flags unify; the values are an equation
+  for j in [1, 2, 3] do
+    unless ← (try defEqC (pd.getArg! j) (pd'.getArg! j) catch _ => pure false) do saved.restore; return false
+  let v' := pd'.getArg! 0
+  let hv ← mkFreshExprSyntheticOpaqueMVar (← mkEq v v') `value
+  let _ ← idxLt i Ls
+  let gi ← factAt Ls w h i
+  let motive ← withLocalDeclD `x (← inferType v) fun x => do
+    let pdx := mkAppN pd.getAppFn #[x, pd.getArg! 1, pd.getArg! 2, pd.getArg! 3]
+    let rx := mkApp2 (mkConst ``Option.some [r.getAppFn.constLevels!.head!]) (r.getArg! 0) pdx
+    mkLambdaFVars #[x] (mkApp2 (mkConst ``Logic.Fact.holds) (mkApp3 (mkConst ``Logic.Fact.prop) o k rx) w)
+  let prf ← mkAppM ``Eq.mpr #[← mkAppM ``congrArg #[motive, hv], gi]
+  g.assign (← mkExpectedTypeHint prf t)
+  pendingPures.modify (·.push hv.mvarId!)
+  return true
+
 /-- `?R a ?x` (an unknown relation, e.g. a host's `R2`) from the one hypothesis `?R a b`: only the goal's unknown
 arguments (witnesses) are assigned. -/
 def assumeRel (g : MVarId) (goal : Expr) : MetaM Bool := g.withContext do
@@ -2935,6 +2980,7 @@ def fixedPoint (st : IO.Ref Collected) (rounds : Nat := 64) : TermElabM Nat := d
       let mo ← if mo then pure true else timed "recordDecl" (recordFromDecl g)
       let mo ← if mo then pure true else timed "forallBind" (forallBindOne g)
       let mo ← if mo || !far then pure mo else timed "recordIsMap" (recordIsFromRecord g)
+      let mo ← if mo || !far then pure mo else timed "valueMatch" (valueMatchOne g)
       if mo then
         progress := true; st.modify fun c => { c with matched := c.matched + 1 }
       else fs' := fs'.push g

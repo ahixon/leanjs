@@ -60,6 +60,23 @@ def sizeLtOf? (s t : Expr) (field : Name) : Option Expr := do
   guard (!x.containsFVar s.fvarId!)
   return x
 
+/-- An atom with projections of function data reduced (`({ X with env := e }).env` is `e`): one record written two ways
+is one atom, never two whose distinctness a carry would then need (`e ≠ e`). Definitionally equal to the term, so the
+reflection's `rfl` still checks. -/
+def redAtom (t : Expr) : MetaM Expr := do
+  let t ← instantiateMVars t
+  unless (t.find? fun e => e.isAppOf ``ES.FuncData.mk).isSome do return t
+  Meta.transform t (post := fun e => do
+    match e.getAppFn with
+    | .const fn _ =>
+      if fn.getPrefix != ``ES.FuncData then return .continue
+      let some info ← getProjectionFnInfo? fn | return .continue
+      unless e.getAppNumArgs == info.numParams + 1 && e.appArg!.isAppOf ``ES.FuncData.mk do return .continue
+      let some u ← unfoldDefinition? e | return .continue
+      let u' ← whnfCore u
+      return if u'.isProj then .continue else .done u'
+    | _ => return .continue)
+
 /-- The atoms: objects and records by index, added as they are met. -/
 structure AtomsB where
   objs : Array Expr := #[]
@@ -119,14 +136,14 @@ def reflectFoot (A : AtomsB) (fp : Expr) : Nat → MetaM (Option (AtomsB × Expr
       for b in bs do
         let b ← whnfR b
         unless b.isAppOfArity ``Prod.mk 4 do return none
-        let (A', i) := A.env b.appFn!.appArg!
+        let (A', i) := A.env (← redAtom b.appFn!.appArg!)
         A := A'
         bs' := bs'.push (← mkAppM ``Prod.mk #[mkNatLit i, b.appArg!])
       let mut ps' : Array Expr := #[]
       for p in ps do
         let p ← whnfR p
         unless p.isAppOfArity ``Prod.mk 4 do return none
-        let (A', i) := A.obj p.appFn!.appArg!
+        let (A', i) := A.obj (← redAtom p.appFn!.appArg!)
         A := A'
         ps' := ps'.push (← mkAppM ``Prod.mk #[mkNatLit i, p.appArg!])
       let bl ← mkListLit (← mkAppM ``Prod #[mkConst ``Nat, mkConst ``ES.JSStr]) bs'.toList
@@ -749,14 +766,14 @@ def reflectLoc (A : AtomsB) (loc : Expr) : MetaM (Option (AtomsB × Expr)) := do
   | some ``Logic.Loc.pure => return some (A, mkConst ``RLoc.pure)
   | some ``Logic.Loc.obj => return some (A, mkApp (mkConst ``RLoc.obj) args[0]!)
   | some ``Logic.Loc.prop =>
-    let (A, i) := A.obj args[0]!; return some (A, mkApp2 (mkConst ``RLoc.prop) (mkNatLit i) args[1]!)
+    let (A, i) := A.obj (← redAtom args[0]!); return some (A, mkApp2 (mkConst ``RLoc.prop) (mkNatLit i) args[1]!)
   | some ``Logic.Loc.bind =>
-    let (A, i) := A.env args[0]!; return some (A, mkApp2 (mkConst ``RLoc.bind) (mkNatLit i) args[1]!)
+    let (A, i) := A.env (← redAtom args[0]!); return some (A, mkApp2 (mkConst ``RLoc.bind) (mkNatLit i) args[1]!)
   | some ``Logic.Loc.record => return some (A, mkApp (mkConst ``RLoc.record) args[0]!)
   | some ``Logic.Loc.recordAll =>
-    let (A, i) := A.env args[0]!; return some (A, mkApp (mkConst ``RLoc.recordAll) (mkNatLit i))
+    let (A, i) := A.env (← redAtom args[0]!); return some (A, mkApp (mkConst ``RLoc.recordAll) (mkNatLit i))
   | some ``Logic.Loc.objAll =>
-    let (A, i) := A.obj args[0]!; return some (A, mkApp (mkConst ``RLoc.objAll) (mkNatLit i))
+    let (A, i) := A.obj (← redAtom args[0]!); return some (A, mkApp (mkConst ``RLoc.objAll) (mkNatLit i))
   | some ``Logic.Loc.closed =>
     let some (A, f) ← reflectFoot A args[0]! 64 | return none
     return some (A, mkApp (mkConst ``RLoc.closed) f)
@@ -1045,7 +1062,7 @@ def topNe? (x y : Expr) (envs : Bool := false) : MetaM (Option Expr) := do
   topNes.modify (·.push (a, b, g))
   if envs then
     let hh ← progressHandle
-    hh.putStrLn s!"TOPNE-ENV {← ppExpr a} ≠ {← ppExpr b}"; hh.flush
+    hh.putStrLn s!"TOPNE-ENV {← ppExpr a} ≠ {← ppExpr b}  FROM {((toString (← ppExpr (← instantiateMVars x))).replace "\n" " ").take 1500}  VS  {((toString (← ppExpr (← instantiateMVars y))).replace "\n" " ").take 1500}"; hh.flush
   return some g
 
 /-- `a ≠ z.envs.size` (or `z.heap.size`) from `a < y.envs.size` and frames `y → … → z` (sizes only grow along
